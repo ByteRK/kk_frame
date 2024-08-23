@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FF0000"
+    xmlns:tools="http://schemas.android.com/tools">
+    <RelativeLayout
+        android:id="@+id/mainBox"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+    </RelativeLayout>
+    <TextView
+        android:id="@+id/time"
+        android:layout_width="wrap_content"
+        android:layout_height="32dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginTop="17dp"
+        android:gravity="center_vertical"
+        android:textSize="28sp"
+        tools:text="23:00"/>
+    <ImageView
+        android:id="@+id/wifi"
+        android:layout_width="wrap_content"
+        android:layout_height="32dp"
+        android:layout_marginLeft="14dp"
+        android:layout_marginTop="17dp"
+        android:layout_toRightOf="@id/time"
+        android:scaleType="centerInside"/>
+    <LinearLayout
+        android:id="@+id/popBox"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#8C3B3B3B"
+        android:gravity="center"
+        android:visibility="gone">
+    </LinearLayout>
+    <TextView
+        android:id="@+id/popText"
+        android:layout_width="wrap_content"
+        android:layout_height="70dp"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="5dp"
+        android:paddingTop="20dp"
+        android:translationY="76dp"
+        android:gravity="center_horizontal"
+        android:textSize="20sp"
+        android:textColor="#A0000000"
+        tools:text="">
+    </TextView>
+
+    
+    <ImageView
+        android:id="@+id/logo"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"/>
+
+    <View
+        android:id="@+id/cover"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#000000"
+        android:visibility="gone"/>
+</RelativeLayout>

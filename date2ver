@@ -1,0 +1,40 @@
+#!/bin/sh
+
+if [ -d ./.git ]
+then
+GITLAB=`git log -1 | grep -E "^commit" | sed 's/commit //g'`
+else
+GITLAB=00
+fi
+
+v1=1
+v2=0
+v3=0
+v4=0
+
+HARD_VER_MAJ_NO=01
+HARD_VER_MIN_NO=00
+
+SOFT_VER_MAJ_NO=01
+SOFT_VER_MIN_NO=00
+date +%V
+HARD_VER=A0.$HARD_VER_MAJ_NO.$HARD_VER_MIN_NO
+
+
+DATE=$(date +"%Y-%m-%d %H:%M.%S %Z")
+VER_DATE=$(date +%g).$(date +%v).$(date +%j)
+
+VER="${v1}.${v2}.${v3}.${v4}"
+
+ln -sf $PWD/conf/cdroid_series_conf.h  src/common/hv_series_conf.h
+ln -sf $PWD/conf/defualt_config.h  src/common/hv_defualt_config.h
+
+echo "set version $VER"
+echo "set telnet version  $VER_DATE"
+echo "set version TIME $DATE"
+version_info=`cat conf/version.h | sed "s/RevTag/$VER/g" | sed "s/RevTIME/$DATE/g" | sed "s/HV_MAJ/$SOFT_VER_MAJ_NO/g" | sed "s/HV_MIN/$SOFT_VER_MIN_NO/g" | sed "s/RevGITLAB/$GITLAB/g" | sed "s/RevHardVer/$HARD_VER/g"`
+echo "$version_info" > src/common/hv_version.h
+if test -d packfs ; then
+version_system=`cat packfs/hv_system_conf | sed -r "s/.*HV_TELNET_VER.+/HV_TELNET_VER=$VER_DATE/g" | sed -r "s/.*HV_VERSION_NUM.+/HV_VERSION_NUM=$VER_MAIN_NO/g" | sed -r "s/.*HV_VERSION_CODE.+/HV_VERSION_CODE=V$VER_MAJ_NO.$VER_MIN_NO/g" | sed -r "s:.*HV_OUTPUT_PATH.+:HV_OUTPUT_PATH=$WORK_APP_OUT_PATH:g"`
+echo "$version_system" > packfs/hv_system_conf
+fi
