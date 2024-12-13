@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:07
- * @LastEditTime: 2024-07-12 01:14:19
+ * @LastEditTime: 2024-12-03 00:35:26
  * @FilePath: /kk_frame/src/viewlibs/rvNumberPicker.h
  * @Description: 使用RecycleView实现数字选择器
  * @BugList: 1、暂时不要使用SmoothscrolltoPosition
@@ -84,7 +84,7 @@ private:
         RVNumberPickerManage(Context* context, RVNumberPicker* pickerView, int orientation, bool reverseLayout);
         ~RVNumberPickerManage();
         void onScrollStateChanged(int state)override;
-        void onAttachedToWindow(RecyclerView* view) override;
+        void onAttachedToWindow(RecyclerView& view) override;
     private:
         void init();
         void onMeasure(RecyclerView::Recycler& recycler, RecyclerView::State& state, int widthSpec, int heightSpec)override;

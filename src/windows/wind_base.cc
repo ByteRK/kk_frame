@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2024-08-23 13:46:53
+ * @LastEditTime: 2024-12-03 00:49:34
  * @FilePath: /kk_frame/src/windows/wind_base.cc
  * @Description: 窗口类
  * @BugList:
@@ -134,7 +134,7 @@ ImageView* BaseWindow::getWifiView() {
 /// @return 
 bool BaseWindow::onKeyUp(int keyCode, KeyEvent& evt) {
     if (onKey(keyCode, HW_EVENT_UP))LOGD("onKey true");
-    return false;
+    return Window::onKeyUp(keyCode, evt);
 }
 
 /// @brief 键盘按下事件
@@ -143,7 +143,7 @@ bool BaseWindow::onKeyUp(int keyCode, KeyEvent& evt) {
 /// @return 
 bool BaseWindow::onKeyDown(int keyCode, KeyEvent& evt) {
     if (onKey(keyCode, HW_EVENT_DOWN))LOGD("onKey true");
-    return false;
+    return Window::onKeyDown(keyCode, evt);
 }
 
 /// @brief 按键处理

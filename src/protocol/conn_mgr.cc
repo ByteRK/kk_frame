@@ -7,17 +7,17 @@
 #include "this_func.h"
 #include "base_data.h"
 
-#define TICK_TIME 100 // tick触发时间（毫秒）
+#include <iostream>
+#include <fstream>
+
+#define TICK_TIME 200 // tick触发时间（毫秒）
 
 //////////////////////////////////////////////////////////////////
 
 CConnMgr::CConnMgr() {
     mPacket = new SDHWPacketBuffer();
-    mUartMCU = 0;
+    mUartMCU = nullptr;
     mNextEventTime = 0;
-    mLastSendTime = 0;
-    mLastStatusTime = 0;
-    mLastWarnTime = 0;
 
     mPacket->setType(BT_MCU, BT_MCU);
     CHandlerManager::ins()->addHandler(BT_MCU, this);
@@ -28,10 +28,10 @@ CConnMgr::~CConnMgr() {
 }
 
 int CConnMgr::init() {
-    LOGI("开始监听");
+    LOGI("CConnMgr Start");
+    
     UartOpenReq ss;
-
-    snprintf(ss.serialPort, sizeof(ss.serialPort), "/dev/ttyS3");
+    snprintf(ss.serialPort, sizeof(ss.serialPort), "/dev/ttyS1");
     ss.speed = 9600;
     ss.flow_ctrl = 0;
     ss.databits = 8;
@@ -41,7 +41,8 @@ int CConnMgr::init() {
     mUartMCU = new UartClient(mPacket, BT_MCU, ss, "192.168.0.113", 1142, 0);
     mUartMCU->init();
 
-    mLastAcceptTime = 0;
+    mLastSendTime = SystemClock::uptimeMillis();
+    mLastAcceptTime = SystemClock::uptimeMillis();
 
     // 启动延迟一会后开始发包
     mNextEventTime = SystemClock::uptimeMillis() + TICK_TIME * 10;
@@ -60,10 +61,8 @@ int CConnMgr::checkEvents() {
 
 int CConnMgr::handleEvents() {
     int64_t now_tick = SystemClock::uptimeMillis();
-
     if (mUartMCU) mUartMCU->onTick();
     send2MCU();
-
     return 1;
 }
 
@@ -71,16 +70,15 @@ void CConnMgr::send2MCU() {
     BuffData* bd = mPacket->obtain(BT_MCU, 0);
     UI2MCU   snd(bd, BT_MCU);
 
+    // snd.setData(2, 0x01); // 设置数据
     snd.checkcode(); // 修改检验位
-    LOG(VERBOSE) << "send to mcu. bytes=" << hexstr(bd->buf, bd->len) << "    -->";
-    mUartMCU->send(bd);
 
     mLastSendTime = SystemClock::uptimeMillis();
+    LOG(VERBOSE) << "[ <-- Send] bytes=" << hexstr(bd->buf, bd->len) << "    -->";
+    mUartMCU->send(bd);
 }
 
 void CConnMgr::onCommDeal(IAck* ack) {
-    if (mLastAcceptTime == 0)mLastAcceptTime = SystemClock::uptimeMillis();
-    LOG(VERBOSE) << "accept. bytes=" << hexstr(ack->mBuf, ack->mDlen) << "        <--";
-
     mLastAcceptTime = SystemClock::uptimeMillis();
+    LOG(VERBOSE) << "[ <-- Accept] bytes=" << hexstr(ack->mBuf, ack->mDlen);
 }

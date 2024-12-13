@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:47:17
- * @LastEditTime: 2024-08-22 17:15:02
+ * @LastEditTime: 2024-12-03 00:47:46
  * @FilePath: /kk_frame/src/function/this_func.h
  * @Description: 此项目的一些功能函数
  * @BugList: 
@@ -29,6 +29,9 @@
 /// @param name 
 void printProjectInfo(const char* name);
 
+/// @brief 打印按键映射
+void printKeyMap();
+
 /// @brief 发送按键
 /// @param code 
 /// @param value 
@@ -42,5 +45,16 @@ void refreshScreenSaver();
 /// @param swap 默认小端 
 /// @return 
 uint32_t uint8_t_to_uint32_t(uint8_t* data, bool swap = false);
+
+/// @brief 写入当前时间到文件
+/// @param filename 
+void writeCurrentDateTimeToFile(const std::string& filename);
+
+/// @brief 从文件读取时间
+/// @param filename 
+void setDateTimeFromFile(const std::string& filename);
+
+/// @brief 默认重启（保存当前时间）
+void defaultReboot();
 
 #endif

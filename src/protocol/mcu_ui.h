@@ -1,24 +1,25 @@
 
-#ifndef __mcu_ui_ack_h__
-#define __mcu_ui_ack_h__
+#ifndef __mcu_ui_h__
+#define __mcu_ui_h__
 
-#include <common.h>
-#include <comm_func.h>
+#include "common.h"
+#include "comm_func.h"
 
 #include "ipacket_buffer.h"
 #include "proto.h"
 
 // 帧头
-constexpr static uchar MCU_HEAD_SEND[2] = { 0x55, 0x15 };    // 电控板  发送
-constexpr static uchar MCU_HEAD_RESP[1] = { 0x55 };          // 电控板  接收
+constexpr static uchar MCU_HEAD_SEND[2] = { 0xA5, 0x5A };    // 电控板  发送
+constexpr static uchar MCU_HEAD_RESP[2] = { 0xA5, 0x5A };    // 电控板  接收
 constexpr static uchar FILM_HEAD_SEND[2] = { 0xAA, 0x0E };   // 彩膜按键 发送
 constexpr static uchar FILM_HEAD_RESP[2] = { 0xBB, 0x09 };   // 彩膜按键 接收
 constexpr static uchar TUYA_HEAD_SEND[2] = { 0x55, 0xAA };   // 涂鸦模组 发送
 constexpr static uchar TUYA_HEAD_RESP[2] = { 0x55, 0xAA };   // 涂鸦模组 接收
 
 // 固定数据位总长度 (定长为总长，不定长为帧头+帧尾+校验)
-#define MCU_LEN_SEND   22
-#define MCU_LEN_RESP   21
+#define MCU_LEN_SEND   23
+#define MCU_LEN_RESP   36
+#define MCU_LEN_RESP_OTA 5
 #define FILM_LEN_SEND  14
 #define FILM_LEN_RESP  9
 #define TUYA_LEN_SEND  7       // 不定长
@@ -53,7 +54,7 @@ public:
         return (~Sum(ptr, len) + 1) & 0xFF;
     }
     static unsigned char CheckMCU(unsigned char* ptr, unsigned short len) {
-        return Sum(ptr + 1, len - 2) & 0xFF;
+        return Sum(ptr + 2, len - 3) & 0xFF;
     }
     static unsigned char CheckBTN(unsigned char* ptr, unsigned short len) {
         return Sum(ptr, len - 1) & 0xFF;
@@ -125,7 +126,7 @@ public:
 // MCU -> UI
 class MCU2UI : public IAck, public DataCheck {
 public:
-    constexpr static ushort  BUF_LEN = 0x300;     // 缓冲区大小
+    constexpr static ushort  BUF_LEN = 0x466;     // 缓冲区大小
     u_int16_t mDataLen;         // 数据长度
     bool FindHead;              // 是否已找到包头
     int mType = BT_MCU;         // 判断这个包来自哪里
@@ -167,7 +168,7 @@ public:
             int headLen = getHeadLen();
             if (!FindHead && mDlen > headLen) {
                 for (i = 0, j = -1; i < mDlen; i++) {
-                    if (mBuf[i] == getHeadIn(0)) {
+                    if (mBuf[i] == getHeadIn(0) || (mType == BT_BTN && mBuf[0] == 0xAA)) {
                         if (headLen <= 1 || (i < mDlen - 1 && mBuf[i + 1] == getHeadIn(1))) {
                             j = i;
                             LOGV("FIND HEAD AT:%d", i);
@@ -189,8 +190,15 @@ public:
             *mPlen = mDlen;
         }
 
-        if (mType == BT_TUYA)
-            LOG(VERBOSE) << "mDlen:" << mDlen << " Bytes=" << hexstr(mBuf, mDlen);
+        LOG(VERBOSE) << "mDlen:" << mDlen << " Bytes=" << hexstr(mBuf, mDlen);
+
+        if (mType == BT_TUYA && FindHead && mDlen > TUYA_LEN_RESP) {
+            uint16_t RealLen = (mBuf[4] << 8) | mBuf[5] + TUYA_LEN_RESP;
+            if (mDlen > RealLen) {
+                rlen -= (mDlen - RealLen);
+                rlen = rlen < 0 ? 0 : rlen;
+            }
+        }
         return rlen;
     }
 
@@ -200,6 +208,12 @@ public:
         if (!FindHead)return false;
         switch (mType) {
         case BT_MCU:
+            if (mDlen >= MCU_LEN_RESP_OTA &&
+                mBuf[0] == MCU_HEAD_RESP[0] &&
+                mBuf[2] == 2) {
+                LOGV("The ota package has been received");
+                return true;
+            }
             if (mDlen >= MCU_LEN_RESP &&
                 mBuf[0] == MCU_HEAD_RESP[0]) {
                 LOGV("The package has been received");
@@ -208,7 +222,7 @@ public:
             break;
         case BT_BTN:
             if (mDlen >= FILM_LEN_RESP &&
-                mBuf[0] == FILM_HEAD_RESP[0] && mBuf[1] == FILM_HEAD_RESP[1]) {
+                (mBuf[0] == FILM_HEAD_RESP[0] || mBuf[0] == 0xAA) && mBuf[1] == FILM_HEAD_RESP[1]) {
                 LOGV("The package has been received");
                 return true;
             }
@@ -233,7 +247,9 @@ public:
 
         switch (mType) {
         case BT_MCU:
-            mDataLen = MCU_LEN_RESP;
+            if (mBuf[2] == 2) mDataLen = MCU_LEN_RESP_OTA;
+            else mDataLen = MCU_LEN_RESP;
+
             sum = mBuf[mDataLen - 1];
             realSum = CheckMCU(mBuf, mDataLen);
             break;

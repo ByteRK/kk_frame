@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:07
- * @LastEditTime: 2024-06-03 17:51:02
+ * @LastEditTime: 2024-12-02 16:31:37
  * @FilePath: /kk_frame/src/viewlibs/pickerLayoutManager.h
  * @Description: 
  * @BugList: 
@@ -53,7 +53,7 @@ public:
 
     /// @brief 添加SnapHelper
     /// @param view
-    void onAttachedToWindow(RecyclerView* view) override;
+    void onAttachedToWindow(RecyclerView& view) override;
 
     /// @brief 没有指定显示条目的数量时，RecyclerView的宽高由自身确定
     /// @brief 指定显示条目的数量时，根据MeasureMode计算RecyclerView的宽高

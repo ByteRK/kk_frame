@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:47:17
- * @LastEditTime: 2024-08-22 17:15:40
+ * @LastEditTime: 2024-12-03 00:48:16
  * @FilePath: /kk_frame/src/function/this_func.cc
  * @Description: 此项目的一些功能函数
  * @BugList:
@@ -29,7 +29,11 @@
 #include <iostream>
 #include <vector>
 #include <codecvt>
+#include <cstring>
+#include <ctime>
+#include <sys/time.h>
 
+#include <cdlog.h>
 #include <cdinput.h>
 #include <core/inputeventsource.h>
 
@@ -37,16 +41,19 @@ void printProjectInfo(const char* name) {
     char szTmp[128];
     int id = syscall(SYS_gettid);
 
-    fprintf(stderr, "\033[5;35m\n");
+    fprintf(stderr, "\033[1;35m\n");
 
-    // cdroid
-    fprintf(stderr, "\033[5;35m        ┏━┓┏┓╋╋╋┏┓┏┓       \n\033[0m");
-    fprintf(stderr, "\033[5;35m        ┃┏╋┛┣┳┳━╋╋┛┃       \n\033[0m");
-    fprintf(stderr, "\033[5;35m        ┃┗┫╋┃┏┫╋┃┃╋┃       \n\033[0m");
-    fprintf(stderr, "\033[5;35m        ┗━┻━┻┛┗━┻┻━┛       \n\033[0m");
+    // 猫咪
+    fprintf(stderr, "\033[1;35m             __                 \n\033[0m");
+    fprintf(stderr, "\033[1;35m            ` \\\\              \n\033[0m");
+    fprintf(stderr, "\033[1;35m    /\\=/\\-\"\"-.//            \n\033[0m");
+    fprintf(stderr, "\033[1;35m   = 'Y' =  ,  \\               \n\033[0m");
+    fprintf(stderr, "\033[1;35m    '-^-'  /(  /                \n\033[0m");
+    fprintf(stderr, "\033[1;35m     /;_,) |\\ \\ \\            \n\033[0m");
+    fprintf(stderr, "\033[1;35m    (_/ (_/ (_(_/    神兽在此   #\n\033[0m");
+    fprintf(stderr, "\033[1;35m    \"\"  \"\"  \"\" \"     漏洞退让   #\n\033[0m");
 
-
-    fprintf(stderr, "\033[1;35m############################\n");
+    fprintf(stderr, "\033[1;35m#################################\n");
     // 版本
     fprintf(stderr, "\033[1;35m#   ");
 #ifdef CDROID_SIGMA
@@ -61,10 +68,19 @@ void printProjectInfo(const char* name) {
 #endif
     // 信息
     fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", name);
-    fprintf(stderr, "\033[1;35m# %21s\033[0;39m\n", HV_FORMAT_VERSION_STRING(szTmp));
-    fprintf(stderr, "\033[1;35m# %21s\033[0;39m\n", HV_FORMAT_VER_TIME_STRING());
+    fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", HV_FORMAT_VERSION_STRING(szTmp));
+    fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", HV_FORMAT_VER_TIME_STRING());
     fprintf(stderr, "\033[1;35m# Git:%s\033[m\n", HV_FORMAT_GIT_HARD_STRING());
-    fprintf(stderr, "\033[1;35m########## Ricken ##########\n\n\033[0m");
+    fprintf(stderr, "\033[1;35m############ Ricken #############\n\n\033[0m");
+}
+
+void printKeyMap() {
+    // fprintf(stderr, "\033[1;30m############################ KeyBoardMap ############################\033[0;37m\n");
+    // fprintf(stderr, "\033[1;30m# Q:电源  W:左炉  E:风速  R:增加 ┏━━━━━━┓ U:温时  I:蒸蒸  O:气炸  P:预约   \033[0;37m\n");
+    // fprintf(stderr, "\033[1;30m# A:照明  S:右炉  D:自动  F:减少 ┃      ┃ H:启停  J:烤烤  K:附加  L:炉灯   \033[0;37m\n");
+    // fprintf(stderr, "\033[1;30m# Z:清洗  -:一一  -:一一  -:一一 ┗━━━━━━┛ -:一一  -:一一  -:一一  M:童锁   \033[0;37m\n");
+    // fprintf(stderr, "\033[1;30m#####################################################################\033[0;37m\n");
+    // fprintf(stderr, "\033[0;37m\n");
 }
 
 void analogInput(int code, int value) {
@@ -100,4 +116,61 @@ uint32_t uint8_t_to_uint32_t(uint8_t* data, bool swap) {
         value = data[0] << 24 | data[1] << 16 | data[2] << 8 | data[3];
     }
     return value;
+}
+
+void writeCurrentDateTimeToFile(const std::string& filename) {
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        std::cerr << "Error opening time file." << std::endl;
+        return;
+    }
+
+    time_t now = time(0);
+    tm* timeinfo = localtime(&now);
+
+    file << "Current Date and Time: " << asctime(timeinfo);
+
+    file.close();
+}
+
+void setDateTimeFromFile(const std::string& filename) {
+    std::ifstream file(filename);
+    if (!file.is_open()) {
+        std::cerr << "Error opening time file." << std::endl;
+        return;
+    }
+
+    std::string line;
+    std::getline(file, line);
+
+    // Extracting date and time from the line
+    char* cstr = new char[line.length() + 1];
+    std::strcpy(cstr, line.c_str());
+
+    tm timeinfo;
+    strptime(cstr, "Current Date and Time: %a %b %d %H:%M:%S %Y\n", &timeinfo);
+
+    delete[] cstr;
+
+    std::cout << "Date and Time read from file: " << asctime(&timeinfo);
+
+    struct timeval tv;
+    tv.tv_sec = mktime(&timeinfo);
+    tv.tv_usec = 0;
+#ifndef DEBUG
+    settimeofday(&tv, NULL);
+#endif
+
+    file.close();
+}
+
+void defaultReboot() {
+#ifndef CDROID_X64
+    writeCurrentDateTimeToFile("/appconfigs/nowTimeCache");
+    std::system("sync");
+    std::system("reboot");
+#else
+    writeCurrentDateTimeToFile("./nowTimeCache");
+    exit(0);
+#endif
 }

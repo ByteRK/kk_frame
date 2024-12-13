@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:07
- * @LastEditTime: 2024-07-12 01:58:24
+ * @LastEditTime: 2024-12-03 00:35:32
  * @FilePath: /kk_frame/src/viewlibs/rvNumberPicker.cc
  * @Description: 使用RecycleView实现数字选择器
  * @BugList: 1、暂时不要使用SmoothscrolltoPosition
@@ -151,7 +151,7 @@ void RVNumberPicker::RVNumberPickerManage::onScrollStateChanged(int state) {
 
 /// @brief 
 /// @param view 
-void RVNumberPicker::RVNumberPickerManage::onAttachedToWindow(RecyclerView* view) {
+void RVNumberPicker::RVNumberPickerManage::onAttachedToWindow(RecyclerView& view) {
     cdroid::LinearLayoutManager::onAttachedToWindow(view);
     scrollToPosition(mFriend->mPosition);
 }

@@ -7,7 +7,8 @@
                 "${workspaceFolder}/**",
                 "~/cdroid/src/*",
                 "~/cdroid/src/**",
-                "/opt/vcpkg/packages/**"
+                "/opt/vcpkg/packages/**",
+                "~/cdroid/outX64-Debug/src/gui/*"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

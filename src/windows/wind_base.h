@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2024-08-01 04:58:26
+ * @LastEditTime: 2024-12-03 01:03:47
  * @FilePath: /kk_frame/src/windows/wind_base.h
  * @Description: 窗口类
  * @BugList:
@@ -45,7 +45,7 @@ protected:
     TextView*         mPopText;     // 弹幕
     PageBase*         mPage;        // 页面
 
-    int8_t            mPopTextLevel; // 弹幕文本等级
+    int8_t            mPopTextLevel;  // 弹幕文本等级
     bool              mPopTextRunning;// 弹幕文本是否正在显示
 
     bool              mIsBlackView;

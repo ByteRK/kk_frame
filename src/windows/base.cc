@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2024-08-23 13:59:06
+ * @LastEditTime: 2024-12-03 01:01:53
  * @FilePath: /kk_frame/src/windows/base.cc
  * @Description: 页面基类
  * @BugList:
@@ -38,6 +38,7 @@ PageBase::PageBase(std::string resource) :RelativeLayout(-1, -1) {
 
 /// @brief 析构
 PageBase::~PageBase() {
+    __delete(mRootView);
 }
 
 /// @brief 挂载刷新
@@ -75,7 +76,7 @@ void PageBase::initUI() {
     setAnim();
     setView();
     loadData();
-    reload();
+    // reload();
     mInitUIFinish = true;
 }
 

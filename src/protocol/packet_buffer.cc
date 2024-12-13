@@ -54,7 +54,11 @@ BuffData* SDHWPacketBuffer::obtain(BufferType type, ushort datalen) {
     short len = datalen;
     switch (type) {
     case BT_MCU:
-        len = MCU_LEN_SEND + datalen; break;
+        if (datalen == 0xFFFF)
+            len = 7;
+        else
+            len = MCU_LEN_SEND + datalen;
+        break;
     case BT_BTN:
         len = FILM_LEN_SEND + datalen; break;
     case BT_TUYA:
