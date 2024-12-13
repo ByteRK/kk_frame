@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2024-08-23 13:59:38
+ * @LastEditTime: 2024-12-13 18:59:01
  * @FilePath: /kk_frame/src/windows/base.h
  * @Description: 页面基类
  * @BugList:
@@ -15,14 +15,9 @@
 #ifndef _BASE_H_
 #define _BASE_H_
 
-#include <cdlog.h>
-
-#include "proto.h"
-#include "common.h"
-#include "R.h"
-
-#include <widget/relativelayout.h>
-#include "rvNumberPicker.h"
+#include <string.h>
+#include <view/view.h>
+#include "json_func.h"
 
 #define __get(I)         findViewById(I)
 #define __getv(T, I)     (dynamic_cast<T *>(findViewById(I)))
@@ -46,10 +41,18 @@
 
 #define __delete(v)      if(v)delete v;
 
- // 页面定义
+// 语言定义
+enum {
+    LANG_ZH_CN,
+    LANG_ZH_TC,
+    LANG_EN_US
+};
+
+// 页面定义
 enum {
     PAGE_NULL,       // 空状态
     PAGE_STANDBY,    // 待机
+    PAGE_OTA,        // OTA
 };
 
 // 弹窗定义
@@ -59,82 +62,79 @@ enum {
     POP_TIP,         // 提示
 };
 
-/// @brief 页面基类
-class PopBase {
-public:
-    ViewGroup* mPopView = nullptr;
+/*
+ *************************************** 基类 ***************************************
+ */
+
+ /// @brief 基类
+class PBase {
 protected:
-    Context* mContext;
-    LayoutInflater* mInflater;
+    Looper*         mLooper = nullptr;     // 循环
+    Context*        mContext = nullptr;    // 上下文
+    LayoutInflater* mInflater = nullptr;   // 布局加载器
+    uint8_t         mLang = LANG_ZH_CN;    // 语言
+
+    ViewGroup*      mRootView = nullptr;   // 根节点
+    uint64_t        mLastTick = 0;         // 上次Tick时间
+    uint64_t        mLastClick = 0;        // 上次按键点击时间
 public:
-    PopBase(Context* context)
-        : mContext(context), mInflater(nullptr) {
-    };
-    PopBase(Context* context, std::string resource)
-        : mContext(context), mInflater(LayoutInflater::from(context)) {
-        mPopView = (ViewGroup*)mInflater->inflate(resource, nullptr);
-    };
-    virtual ~PopBase() {
-        if (mPopView)delete mPopView;
-    }
-    virtual void close() = 0;
-    virtual int8_t getType() = 0;
-    virtual bool checkLight(uint8_t* left, uint8_t* right) = 0;
-    virtual void onTick() = 0;
-    virtual bool onKey(uint16_t keyCode, uint8_t status) = 0;
+    PBase();
+    virtual ~PBase();
+
+    uint8_t getLang() const;
+    View* getRootView();
+    virtual uint8_t getType() const = 0;
+
+    void callTick();
+    void callAttach();
+    void callDetach();
+    void callMcu(uint8_t* data, uint8_t len);
+    bool callKey(uint16_t keyCode, uint8_t evt);
+    void callLangChange(uint8_t lang);
+    void callCheckLight(uint8_t* left, uint8_t* right);
+protected:
+    virtual void initUI() = 0;
+    View* findViewById(int id);
+
+    virtual void onTick();
+    virtual void onReload();
+    virtual void onDetach();
+    virtual void onMcu(uint8_t* data, uint8_t len);
+    virtual bool onKey(uint16_t keyCode, uint8_t evt);
+    virtual void onLangChange();
+    virtual void onCheckLight(uint8_t* left, uint8_t* right);
+
+    void setLangText(TextView* v, const Json::Value& value);
 };
 
-/// @brief 页面基类
-class PageBase :public RelativeLayout {
+/*
+ *************************************** 弹窗 ***************************************
+ */
+
+ /// @brief 页面基类
+class PopBase :public PBase {
 public:
+    PopBase(std::string resource);
+    virtual ~PopBase();
+};
 
+/*
+ *************************************** 页面 ***************************************
+ */
+
+ /// @brief 页面基类
+class PageBase :public PBase {
 protected:
-    Looper*         mloop;
-    Context*        mContext;
-    LayoutInflater* mInflater;
-
-    ViewGroup*      mRootView;        // 根布局
-    bool            mInitUIFinish;    // UI是否初始化完成
-
-    uint64_t        mLastTick = 0;    // 上次刷新时间
-    uint64_t        mLastClick = 0;   // 上次点击时间
-private:
-    Runnable        mGogoHomeRunner;
-    Runnable        mGoToBackRunner;
+    bool mInitUIFinish = false;    // UI是否初始化完成
 public:
     PageBase(std::string resource);
     virtual ~PageBase();
-
-    virtual void reload();
-    virtual void onTick();
-    virtual int8_t getPageType() = 0;
-    virtual void checkLight(uint8_t* left, uint8_t* right) = 0;
-
-    bool baseOnKey(uint16_t keyCode, uint8_t status);
-    virtual bool onKey(uint16_t keyCode, uint8_t status);
-    
 protected:
-    void initUI();
-
+    void initUI() override;
     virtual void getView() = 0;
     virtual void setAnim() = 0;
     virtual void setView() = 0;
     virtual void loadData() = 0;
-
-    View* getWifiView();
-
-    void goToBack(uint32_t delay = 0);
-    void goToHome(uint32_t delay = 0);
-
-    void hideAll();
-public:
-    PopBase* getPop();
-    bool showPop(int8_t type);
-    void removePop();
-    bool showBlack(bool upload = true);
-    void removeBlack();
-    void showPopText(std::string text, int8_t level, bool animate = true, bool lock = false);
-    void removePopText();
 private:
 };
 

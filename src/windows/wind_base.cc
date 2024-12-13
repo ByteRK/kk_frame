@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2024-12-03 00:49:34
+ * @LastEditTime: 2024-12-13 19:14:27
  * @FilePath: /kk_frame/src/windows/wind_base.cc
  * @Description: 窗口类
  * @BugList:
@@ -63,13 +63,11 @@ int BaseWindow::checkEvents() {
 int BaseWindow::handleEvents() {
     int64_t tick = SystemClock::uptimeMillis();
 
-    if (mPage) {
-        mPage->onTick();
-    }
+    if (mPage) mPage->callTick();
 
     if (tick >= m1sTick) {
         m1sTick = tick + 1000;
-        if (mPop)mPop->onTick();
+        if (mPop)mPop->callTick();
     }
 
     if (tick >= m2sTick) {
@@ -133,8 +131,7 @@ ImageView* BaseWindow::getWifiView() {
 /// @param evt 
 /// @return 
 bool BaseWindow::onKeyUp(int keyCode, KeyEvent& evt) {
-    if (onKey(keyCode, HW_EVENT_UP))LOGD("onKey true");
-    return Window::onKeyUp(keyCode, evt);
+    return onKey(keyCode, HW_EVENT_UP) || Window::onKeyUp(keyCode, evt);
 }
 
 /// @brief 键盘按下事件
@@ -142,8 +139,7 @@ bool BaseWindow::onKeyUp(int keyCode, KeyEvent& evt) {
 /// @param evt 
 /// @return 
 bool BaseWindow::onKeyDown(int keyCode, KeyEvent& evt) {
-    if (onKey(keyCode, HW_EVENT_DOWN))LOGD("onKey true");
-    return Window::onKeyDown(keyCode, evt);
+    return onKey(keyCode, HW_EVENT_DOWN) || Window::onKeyDown(keyCode, evt);
 }
 
 /// @brief 按键处理
@@ -152,14 +148,14 @@ bool BaseWindow::onKeyDown(int keyCode, KeyEvent& evt) {
 /// @return 是否需要响铃
 bool BaseWindow::onKey(uint16_t keyCode, uint8_t status) {
     if (mIsShowLogo)return false;
-    if (mPage)mPage->baseOnKey(KEY_MUTE, status);
+    if (mPage)mPage->callKey(KEY_MUTE, status);
     if (mIsBlackView) {
         if (status != HW_EVENT_DOWN)return false;
         hideBlack();
         return true;
     }
-    if (mPop)return mPop->onKey(keyCode, status);
-    if (mPage) return mPage->baseOnKey(keyCode, status);
+    if (mPop)return mPop->callKey(keyCode, status);
+    if (mPage) return mPage->callKey(keyCode, status);
     return false;
 }
 
@@ -176,7 +172,7 @@ PopBase* BaseWindow::getPop() {
 /// @brief 获取当前页面类型
 /// @return 
 int8_t BaseWindow::getPageType() {
-    return mPage ? mPage->getPageType() : PAGE_NULL;
+    return mPage ? mPage->getType() : PAGE_NULL;
 }
 
 /// @brief 获取当前弹窗类型
@@ -196,7 +192,7 @@ bool BaseWindow::showBlack(bool upload) {
 /// @brief 
 void BaseWindow::hideBlack() {
     g_windMgr->goTo(PAGE_STANDBY);
-    mPage->baseOnKey(KEY_MUTE, HW_EVENT_UP);
+    mPage->callKey(KEY_MUTE, HW_EVENT_UP);
     setBrightness(BL_MAX);
     mBlackView->setVisibility(GONE);
     mIsBlackView = false;
@@ -205,10 +201,13 @@ void BaseWindow::hideBlack() {
 /// @brief 显示页面
 /// @param page 
 void BaseWindow::showPage(PageBase* page) {
+    if (mPage)mPage->callDetach();
     mMainBox->removeAllViews();
-    mMainBox->addView(page);
-    page->reload();
     mPage = page;
+    if (mPage) {
+        mMainBox->addView(mPage->getRootView());
+        mPage->callAttach();
+    }
 }
 
 /// @brief 显示弹窗
@@ -217,18 +216,22 @@ void BaseWindow::showPage(PageBase* page) {
 bool BaseWindow::showPop(PopBase* pop) {
     if (mPop) {
         if (mPop->getType() > pop->getType())return false;
+        mPop->callDetach();
         removePop();
     }
     mPop = pop;
-    mPopBox->addView(pop->mPopView);
-    mPopBox->setVisibility(VISIBLE);
+    if (mPop) {
+        mPopBox->setVisibility(VISIBLE);
+        mPopBox->addView(mPop->getRootView());
+        mPop->callAttach();
+    }
     return true;
 }
 
 /// @brief 显示弹幕
 /// @param text 
 /// @param time 
-void BaseWindow::showPopText(std::string text, int8_t level, bool animate, bool lock) {
+void BaseWindow::showToast(std::string text, int8_t level, bool animate, bool lock) {
     if (mPopTextRunning && level <= mPopTextLevel)return;
 
     removeCallbacks(mPopTextRun);
@@ -248,8 +251,11 @@ void BaseWindow::showPopText(std::string text, int8_t level, bool animate, bool 
 
 /// @brief 移除页面
 void BaseWindow::removePage() {
-    mMainBox->removeAllViews();
-    mPage = nullptr;
+    if (mPage) {
+        mMainBox->removeAllViews();
+        mPage->callDetach();
+        mPage = nullptr;
+    }
 }
 
 /// @brief 移除弹窗
@@ -257,13 +263,14 @@ void BaseWindow::removePop() {
     if (mPop) {
         mPopBox->setVisibility(GONE);
         mPopBox->removeAllViews();
-        delete mPop;
+        mPop->callDetach();
+        __delete(mPop);
         mPop = nullptr;
     }
 }
 
 /// @brief 移除弹幕
-void BaseWindow::removePopText() {
+void BaseWindow::hideToast() {
     mPopTextLevel = -1;
     mPopTextRunning = false;
     mPopText->animate().cancel();

@@ -3,7 +3,7 @@
  # @Author: Ricken
  # @Email: me@ricken.cn
  # @Date: 2024-05-22 15:42:58
- # @LastEditTime: 2024-08-22 16:45:31
+ # @LastEditTime: 2024-12-13 15:59:55
  # @FilePath: /kk_frame/script/nfs.sh
  # @Description: 
  # @BugList: 
@@ -26,6 +26,7 @@ if [ "$1" = "-p" ]; then
     cd ~/image/$SOC/
     rm -rf ./images
     echo "------------------- NEXT -------------------"
+#   echo "export PATH=$PATH:/opt/gcc-sigmastar-9.1.0-2020.07-x86_64_arm-linux-gnueabihf/bin/"
     echo "export PATH=\$PATH:/opt/gcc-sigmastar-9.1.0-2020.07-x86_64_arm-linux-gnueabihf/bin/"
     echo "./build.sh"
     echo "zip ./images.zip -r ./images/*"

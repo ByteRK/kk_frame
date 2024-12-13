@@ -36,7 +36,7 @@ public:
     virtual IAck       *ack(BuffData *bf)                          = 0; // 转化成ack
 };
 
-// 显示板 -> MCU
+// 数据流出 UI -->
 class IAsk {
 public:
     virtual int getCMD() = 0;
@@ -44,7 +44,7 @@ public:
     BuffData *mBf;
 };
 
-// MCU -> 显示板
+// 数据流入 UI <--
 class IAck {
 public:
     virtual int  getType() = 0;                                //

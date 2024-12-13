@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-23 00:04:17
- * @LastEditTime: 2024-08-23 10:52:39
+ * @LastEditTime: 2024-12-13 18:43:00
  * @FilePath: /kk_frame/src/windows/page_standBy.cc
  * @Description: 待机页面
  * @BugList:
@@ -79,17 +79,22 @@ StandByPage::StandByPage() :PageBase("@layout/page_standby") {
 StandByPage::~StandByPage() {
 }
 
-void StandByPage::reload() {
+void StandByPage::onReload() {
     LOGI("StandByPage::reload");
     mLastClick = SystemClock::uptimeMillis();
     mLastTick = 0;
     onTick();
 }
 
+void StandByPage::onCheckLight(uint8_t* left, uint8_t* right) {
+    memset(left, BTN_HIGHT, 7);
+    memset(right, BTN_HIGHT, 8);
+}
+
 void StandByPage::onTick() {
 }
 
-int8_t StandByPage::getPageType() {
+uint8_t StandByPage::getType() const {
     return PAGE_STANDBY;
 }
 

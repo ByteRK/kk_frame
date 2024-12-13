@@ -1,6 +1,9 @@
 ## 项目名
 kk_frame
 
+## 项目信息
+Ricken 的项目模板
+
 ## 创建时间
 2024-08-22 16:27:42
 
@@ -27,6 +30,15 @@ kk_frame
 - - uart      串口相关
 - - viewlibs  自定义页面
 - - windows   页面函数
+~~~
+
+## CDROID版本
+TAG:V3.0.0
+CommitID:0ab2eb4cfce0b9d617d7a563dfeb92c0083e2aaa
+
+~~~
+graph_gfx.c ->
+    #define MAX_HWSURFACE 1
 ~~~
 
 ## 声明

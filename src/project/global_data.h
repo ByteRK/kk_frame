@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2024-08-23 09:35:09
+ * @LastEditTime: 2024-12-13 13:27:35
  * @FilePath: /kk_frame/src/project/global_data.h
  * @Description:
  * @BugList:
@@ -23,17 +23,17 @@
 
 class globalData :public MessageHandler {
 public:
-    enum {
-        WIFI_NULL = 0,
-        WIFI_1,
-        WIFI_2,
-        WIFI_3,
-        WIFI_4,
-        WIFI_ERROR,
-    };
-
-    uint8_t     mNetWork = WIFI_NULL;     // 网络状态
+    uint8_t     mNetWork = 0;             // 网络状态
     uint8_t     mNetWorkDetail = 0;       // 网络详细状态
+
+public: // 涂鸦部分
+    bool        mTUYAPower = true;        // 电源状态
+    int8_t      mTUYATem = 0;             // 涂鸦温度
+    int8_t      mTUYATemMin = 0;          // 涂鸦温度最小值
+    int8_t      mTUYATemMax = 0;          // 涂鸦温度最大值
+    std::string mTUYAWeather = "146";     // 涂鸦天气代码
+    uint16_t    mWifiTestRes = 0xFFFF;    // wifi测试结果
+
 
 private:
     globalData();
@@ -43,7 +43,7 @@ private:
         MSG_SAVE,
     };
 
-    Looper*          mLooper;        
+    Looper* mLooper;
     bool             mHaveChange;
     bool             mNeedSaveBak;
     uint64_t         mNextBakTick;

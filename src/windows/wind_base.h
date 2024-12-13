@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2024-12-03 01:03:47
+ * @LastEditTime: 2024-12-13 19:13:40
  * @FilePath: /kk_frame/src/windows/wind_base.h
  * @Description: 窗口类
  * @BugList:
@@ -19,7 +19,6 @@
 #include <widget/imageview.h>
 
 #include "base.h"
-#include "arc_seekbar.h"
 
 class BaseWindow :public Window, public EventHandler {
 public:
@@ -32,9 +31,9 @@ protected:
     TextView*         mTimeText;
     ImageView*        mWifiView;
 
-    u_int64_t         m200msTick;
-    u_int64_t         m1sTick;
-    u_int64_t         m2sTick;
+    uint64_t          m200msTick;
+    uint64_t          m1sTick;
+    uint64_t          m2sTick;
 
     bool              mIsShowLogo;  // 
     View*             mLogo;        // LOGO
@@ -78,10 +77,10 @@ public:
     void      hideBlack();
     void      showPage(PageBase* page);
     bool      showPop(PopBase* pop);
-    void      showPopText(std::string text, int8_t level, bool animate = true, bool lock = false);
+    void      showToast(std::string text, int8_t level, bool animate = true, bool lock = false);
     void      removePage();
     void      removePop();
-    void      removePopText();
+    void      hideToast();
 
     void      hideAll();
 

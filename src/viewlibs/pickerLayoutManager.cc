@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:07
- * @LastEditTime: 2024-12-02 16:31:33
+ * @LastEditTime: 2024-12-13 11:40:03
  * @FilePath: /kk_frame/src/viewlibs/pickerLayoutManager.cc
  * @Description: 
  * @BugList: 
@@ -44,7 +44,7 @@ PickerLayoutManager::PickerLayoutManager(Context* context, RecyclerView* recycle
 void PickerLayoutManager::onAttachedToWindow(RecyclerView& view) {
     cdroid::LinearLayoutManager::onAttachedToWindow(view);
     if (mSnapHelper)
-        mSnapHelper->attachToRecyclerView(view);
+        mSnapHelper->attachToRecyclerView(&view);
 }
 
 
