@@ -8,13 +8,6 @@
 #include "socket_server.h"
 #include "i2c_mcu.h"
 
-// #define I2C_SLAVE_ADDR 0x50
-// #define I2C_SLAVE_FW_VERSION_ADDR 0xA0
-// #define I2C_SLAVE_CUSTOM_ADDR 0xB0
-
-// 软件I2C地址
-#define I2C_ADDR_A 0x50 // 左
-
 #define LEN_4K 4096
 #define LEN_12 12
 
@@ -66,8 +59,8 @@ protected:
     void sendHeart();
     bool checkDealData();
 protected:
-    IPacketBuffer        *mPacketBuff;   // 数据包处理器
-    BufferType            mBufType;      // 缓存类型
+    IPacketBuffer        *mPacketBuff;     // 数据包处理器
+    BufferType            mBufType;        // 缓存类型
     I2COpenReq            mI2cOpenReq;     // I2C连接信息
     std::string           mIp;
     short                 mPort;
@@ -76,12 +69,11 @@ protected:
     BuffData             *mCurrRecv;     // 本次接收的数据包
     int64_t               mLastRecvTime; // 最后一次收包时间
     int64_t               mLastSendTime; // 最后一次发包时间
-    int64_t               mLastSndHeart;
-    uint8_t               read_data[9] = {0};//接收数据
+    int64_t               mLastSndHeart; // 最后一次发送心跳包时间
     int                   mChkErrCount;  // 错误次数
     int64_t               mSendCount;    // 发包个数
     int64_t               mRecvCount;    // 收包个数
-    int                   mRecvSpace;  // 发包后接收间隔时间（毫秒）
+    int                   mRecvSpace;    // 发包后接收间隔时间（毫秒）
     uchar                 mSerialOk : 1;
 
     IICBuf               *mRSBuf; 
