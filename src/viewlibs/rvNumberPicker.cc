@@ -2,12 +2,15 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:07
- * @LastEditTime: 2024-12-03 00:35:32
+ * @LastEditTime: 2024-12-16 16:37:09
  * @FilePath: /kk_frame/src/viewlibs/rvNumberPicker.cc
  * @Description: 使用RecycleView实现数字选择器
+ * 
  * @BugList: 1、暂时不要使用SmoothscrolltoPosition
  *           2、layout_width以及layout_height必须指定数值
  *           3、textColor全透颜色请使用#01000000,暂不支持全0透明度
+ * 
+ * @Todo:    1、notifyUpdate默认值为false,使用true可以对性能进行优化,但需测试
  *
  * Copyright (c) 2024 by Ricken, All Rights Reserved.
  *
@@ -18,6 +21,7 @@
 #include <view/layoutinflater.h>
 #include <widget/textview.h>
 #include <widget/imageview.h>
+#include <widget/relativelayout.h>
 
 DECLARE_WIDGET(RVNumberPicker)
 
@@ -52,7 +56,7 @@ RecyclerView::ViewHolder* RVNumberPicker::RVNumberPickerAdapter::onCreateViewHol
         }
         // imageView->setBackgroundResource(mFriend->mItemBackground);
         imageView->setScaleType(ScaleType::CENTER_INSIDE);
-        imageView->setTag((void*)1);
+        imageView->setTag((void*)PICKER_TYPE_IMAGE);
         view = imageView;
     } else {
         TextView* textView;
@@ -68,8 +72,29 @@ RecyclerView::ViewHolder* RVNumberPicker::RVNumberPickerAdapter::onCreateViewHol
         // textView->setBackgroundResource(mFriend->mItemBackground);
         textView->setGravity(mFriend->mGravity);
         textView->setTypeface(mFriend->mFontTypeface);
-        textView->setTag((void*)0);
+        textView->setTag((void*)PICKER_TYPE_TEXT);
         view = textView;
+        if(!mFriend->mSelectLayout.empty()){
+            RelativeLayout *layout;
+
+            TextView *selectView = (TextView *)LayoutInflater::from(parent->getContext())->inflate(mFriend->mSelectLayout,nullptr);
+            if(mFriend->mOrientation == HORIZONTAL){
+                layout = new RelativeLayout(LayoutParams::WRAP_CONTENT, LayoutParams::MATCH_PARENT);
+                layout->setLayoutParams(new LayoutParams(mFriend->mXMLWidth / mFriend->mDisplayCount, LayoutParams::MATCH_PARENT));
+                selectView->setLayoutParams(new LayoutParams(mFriend->mXMLWidth / mFriend->mDisplayCount, LayoutParams::MATCH_PARENT));
+            }else{
+                layout = new RelativeLayout(LayoutParams::MATCH_PARENT, LayoutParams::WRAP_CONTENT);
+                layout->setLayoutParams(new LayoutParams(LayoutParams::MATCH_PARENT, mFriend->mXMLHeight / mFriend->mDisplayCount));
+                selectView->setLayoutParams(new LayoutParams(LayoutParams::MATCH_PARENT, mFriend->mXMLHeight / mFriend->mDisplayCount));
+            }
+            selectView->setGravity(mFriend->mGravity);
+            selectView->setVisibility(View::INVISIBLE);
+            layout->addView(textView);
+            layout->addView(selectView);
+            layout->setBackgroundColor(0x00FFFFFF);
+            view = layout;
+        }
+       
     }
     return new ViewHolder(view);
 }
@@ -82,24 +107,43 @@ void RVNumberPicker::RVNumberPickerAdapter::onBindViewHolder(RecyclerView::ViewH
 
     int realPosition = position + mFriend->mMinNum;
     if (getItemViewType(position) == PICKER_TYPE_IMAGE) {
-        ImageView* imageView = dynamic_cast<ImageView*>(holder.itemView);
+        ImageView* imageView = (ImageView*)(holder.itemView);
         if (realPosition < mFriend->mImageList.size())
             imageView->setImageResource(mFriend->mImageList.at(realPosition));
         else
             imageView->setImageResource("#000000");
         view = imageView;
+        view->setBackgroundResource(mFriend->mItemBackground);
     } else {
-        TextView* textView = dynamic_cast<TextView*>(holder.itemView);
-        if (mFriend->mNumberFormatter)
-            textView->setText(mFriend->mNumberFormatter(realPosition));
-        else
-            textView->setText(std::to_string(realPosition));
-        view = textView;
+        if(mFriend->mSelectLayout.empty()){
+            TextView* textView = (TextView*)(holder.itemView);
+            if (mFriend->mNumberFormatter)
+                textView->setText(mFriend->mNumberFormatter(realPosition));
+            else
+                textView->setText(std::to_string(realPosition));
+            view = textView;
+            view->setBackgroundResource(mFriend->mItemBackground);
+        }else{
+            ViewGroup *layout = (ViewGroup*)(holder.itemView);
+            TextView *textView = (TextView *)layout->getChildAt(0);
+            TextView *selectTv = (TextView *)layout->getChildAt(1);
+            if (mFriend->mNumberFormatter){
+                textView->setText(mFriend->mNumberFormatter(realPosition));
+                if(mFriend->mSelectNumberFormatter) selectTv->setText(mFriend->mSelectNumberFormatter(realPosition));
+                else                                selectTv->setText(mFriend->mNumberFormatter(realPosition));
+            }else{
+                textView->setText(std::to_string(realPosition));
+                selectTv->setText(std::to_string(realPosition));
+            }
+            textView->setBackgroundResource(mFriend->mItemBackground);
+            view = layout;
+        }
     }
-
-    view->setBackgroundResource(mFriend->mItemBackground);
-    if (mFriend->mOnItemClickListener)
+    
+    if (mFriend->mOnItemClickListener){
         view->setOnClickListener([this, position](View& view) { mFriend->onItemClick(view, position); });
+        if(!mFriend->isSoundEffectsEnabled()) view->setSoundEffectsEnabled(false);
+    }
     else
         view->setClickable(false);
 }
@@ -116,6 +160,33 @@ int RVNumberPicker::RVNumberPickerAdapter::getItemCount() {
 int RVNumberPicker::RVNumberPickerAdapter::getItemViewType(int position) {
     return mFriend->mImageList.size() > 0 && position < mFriend->mImageList.size() ? PICKER_TYPE_IMAGE : PICKER_TYPE_TEXT;
 }
+
+
+/*****************************************SmoothScroller***********************************************/
+
+RVNumberPicker::RVSmoothScroller::RVSmoothScroller(Context* context):LinearSmoothScroller(context){
+    mDisplayMetrics = context->getDisplayMetrics();
+    mSmoothDuration = 300;
+}
+
+void RVNumberPicker::RVSmoothScroller::onTargetFound(View* targetView, RecyclerView::State& state, Action& action){
+    const int dx = calculateDxToMakeVisible(targetView, getHorizontalSnapPreference());
+    const int dy = calculateDyToMakeVisible(targetView, getVerticalSnapPreference());
+    const int distance = (int) std::sqrt(dx * dx + dy * dy);
+    const int time = rv_CalculateTimeForDeceleration(distance);
+    if (time > 0) {
+        action.update(-dx, -dy, time, mDecelerateInterpolator);
+    }
+}   
+
+void RVNumberPicker::RVSmoothScroller::setDuration(int duration){
+    mSmoothDuration = duration;
+}
+
+int RVNumberPicker::RVSmoothScroller::rv_CalculateTimeForDeceleration(int dx){
+    return std::ceil(std::abs(dx) * ((float)mSmoothDuration/ mDisplayMetrics.densityDpi)) / 0.3356f;
+}
+
 
 
 
@@ -156,9 +227,17 @@ void RVNumberPicker::RVNumberPickerManage::onAttachedToWindow(RecyclerView& view
     scrollToPosition(mFriend->mPosition);
 }
 
+/// @brief 
+/// @param view 
+void RVNumberPicker::RVNumberPickerManage::smoothScrollToPosition(RecyclerView& recyclerView, RecyclerView::State& state,int position){
+    RVSmoothScroller* rvSmoothScroller = new RVSmoothScroller(recyclerView.getContext());
+    rvSmoothScroller->setDuration(mFriend->mSmoothDuration);
+    rvSmoothScroller->setTargetPosition(position);
+    startSmoothScroll(rvSmoothScroller);
+}
+
 /// @brief 初始化
 void RVNumberPicker::RVNumberPickerManage::init() {
-    mCenterViewCache = nullptr;
     mCenterPositionCache = 0;
 }
 
@@ -202,9 +281,8 @@ void RVNumberPicker::RVNumberPickerManage::onMeasure(RecyclerView::Recycler& rec
 /// @brief 
 /// @param recycler 
 /// @param state 
-void RVNumberPicker::RVNumberPickerManage::onLayoutChildren(RecyclerView::Recycler& recycler, RecyclerView::State& state) {
-    cdroid::LinearLayoutManager::onLayoutChildren(recycler, state);
-    if (getItemCount() < 0 || state.isPreLayout()) return;
+void RVNumberPicker::RVNumberPickerManage::onLayoutCompleted(State& state){
+    LinearLayoutManager::onLayoutCompleted(state);
     if (mOrientation == HORIZONTAL) {
         adjustHorizontalChildView();
     } else if (mOrientation == VERTICAL) {
@@ -218,8 +296,9 @@ void RVNumberPicker::RVNumberPickerManage::onLayoutChildren(RecyclerView::Recycl
 /// @param state 
 /// @return 
 int RVNumberPicker::RVNumberPickerManage::scrollHorizontallyBy(int dx, RecyclerView::Recycler& recycler, RecyclerView::State& state) {
+    const int scrolled = cdroid::LinearLayoutManager::scrollHorizontallyBy(dx, recycler, state);
     adjustHorizontalChildView();
-    return cdroid::LinearLayoutManager::scrollHorizontallyBy(dx, recycler, state);
+    return scrolled;
 }
 
 /// @brief 
@@ -228,14 +307,15 @@ int RVNumberPicker::RVNumberPickerManage::scrollHorizontallyBy(int dx, RecyclerV
 /// @param state 
 /// @return 
 int RVNumberPicker::RVNumberPickerManage::scrollVerticallyBy(int dy, RecyclerView::Recycler& recycler, RecyclerView::State& state) {
+    const int scrolled = cdroid::LinearLayoutManager::scrollVerticallyBy(dy, recycler, state);
     adjustVerticalChildView();
-    return cdroid::LinearLayoutManager::scrollVerticallyBy(dy, recycler, state);
+    return scrolled;
 }
 
 /// @brief 横向调节
 void RVNumberPicker::RVNumberPickerManage::adjustHorizontalChildView() {
     float boxCenterX = getWidth() / 2.0f; // 容器中心线
-
+    bool selectlayoutIsEmpty = mFriend->mSelectLayout.empty();
     for (int i = 0; i < getChildCount(); i++) {
         View* child = getChildAt(i);
 
@@ -249,23 +329,34 @@ void RVNumberPicker::RVNumberPickerManage::adjustHorizontalChildView() {
 
         // 判断滑动中间项
         bool isCenterView = decoratedLeft < boxCenterX && decoratedRight > boxCenterX;
-        if (isCenterView && mCenterViewCache != child) {
-            int centerPosition = LinearLayoutManager::getPosition(child);
+        
+        if(!isCenterView && !selectlayoutIsEmpty){
+            ((ViewGroup*)child)->getChildAt(0)->setVisibility(View::VISIBLE);
+            ((ViewGroup*)child)->getChildAt(1)->setVisibility(View::INVISIBLE);
+        }else if(isCenterView && !selectlayoutIsEmpty) {
+            ((ViewGroup*)child)->getChildAt(0)->setVisibility(View::INVISIBLE);
+            ((ViewGroup*)child)->getChildAt(1)->setVisibility(View::VISIBLE);
+        }
+        
+        int centerPosition = LinearLayoutManager::getPosition(child);
+        if (isCenterView && mCenterPositionCache != centerPosition) {
             if (mFriend->mOnCenterViewChangeListener)mFriend->onCenterViewChanged(mCenterPositionCache, centerPosition);
             mCenterPositionCache = centerPosition;
-            mCenterViewCache = child;
         }
 
         // 文本类型则进行文字缩放
-        TextView* text = dynamic_cast<TextView*>(child);
-        if (text && child->getTag() == (void*)0) {
-            if (isCenterView) {
+        TextView* text;
+        if(selectlayoutIsEmpty) text = dynamic_cast<TextView*>(child);
+        else                    text = dynamic_cast<TextView*>(((ViewGroup*)child)->getChildAt(0));
+        if (text && child->getTag() == (void*)PICKER_TYPE_TEXT ) {
+            if (isCenterView && selectlayoutIsEmpty) {
                 text->setTextSize(mFriend->isActivated() ? mFriend->mActiveSize : mFriend->mCenterSize);
                 text->setTextColor(mFriend->isActivated() ? mFriend->mActiveColor : mFriend->mCenterColor);
-            } else {
+            } else if(!isCenterView){
                 text->setTextSize(calculateTextSize(absX));
                 text->setTextColor(calculateColorValue(absX));
             }
+            text->setSelected(isCenterView?true:false);
         }
 
         // 计算位置偏移
@@ -274,8 +365,10 @@ void RVNumberPicker::RVNumberPickerManage::adjustHorizontalChildView() {
 }
 
 /// @brief 垂直调节
+// 增加 bool 判断，是否来自 用户的滑动操作
 void RVNumberPicker::RVNumberPickerManage::adjustVerticalChildView() {
     float boxCenterY = getHeight() / 2.0f; // 容器中心线
+    bool selectlayoutIsEmpty = mFriend->mSelectLayout.empty();
 
     for (int i = 0; i < getChildCount(); i++) {
         View* child = getChildAt(i);
@@ -294,23 +387,34 @@ void RVNumberPicker::RVNumberPickerManage::adjustVerticalChildView() {
 
         // 判断滑动中间项
         bool isCenterView = decoratedTop < boxCenterY && decoratedBottom > boxCenterY;
-        if (isCenterView && mCenterViewCache != child) {
-            int centerPosition = LinearLayoutManager::getPosition(child);
+        
+        if(!isCenterView && !selectlayoutIsEmpty){
+            ((ViewGroup*)child)->getChildAt(0)->setVisibility(View::VISIBLE);
+            ((ViewGroup*)child)->getChildAt(1)->setVisibility(View::INVISIBLE);
+        }else if(isCenterView && !selectlayoutIsEmpty) {
+            ((ViewGroup*)child)->getChildAt(0)->setVisibility(View::INVISIBLE);
+            ((ViewGroup*)child)->getChildAt(1)->setVisibility(View::VISIBLE);
+        }
+
+        int centerPosition = LinearLayoutManager::getPosition(child);
+        if (isCenterView && mCenterPositionCache != centerPosition) {
             if (mFriend->mOnCenterViewChangeListener)mFriend->onCenterViewChanged(mCenterPositionCache, centerPosition);
             mCenterPositionCache = centerPosition;
-            mCenterViewCache = child;
         }
 
         // 文本类型则进行文字缩放
-        TextView* text = dynamic_cast<TextView*>(child);
-        if (text && child->getTag() == (void*)0) {
-            if (isCenterView) {
+        TextView* text;
+        if(selectlayoutIsEmpty) text = dynamic_cast<TextView*>(child);
+        else                    text = dynamic_cast<TextView*>(((ViewGroup*)child)->getChildAt(0));
+        if (text && child->getTag() == (void*)PICKER_TYPE_TEXT) {
+            if (isCenterView && selectlayoutIsEmpty) {
                 text->setTextSize(mFriend->isActivated() ? mFriend->mActiveSize : mFriend->mCenterSize);
                 text->setTextColor(mFriend->isActivated() ? mFriend->mActiveColor : mFriend->mCenterColor);
-            } else {
+            } else if(!isCenterView){
                 text->setTextSize(calculateTextSize(absY));
                 text->setTextColor(calculateColorValue(absY));
             }
+            text->setSelected(isCenterView?true:false);
         }
 
         // 计算位置偏移
@@ -576,6 +680,7 @@ RVNumberPicker::RVNumberPicker(Context* context, const AttributeSet& attr)
     }, DEFAULT_ORIENTATION);
     mReverse = attr.getBoolean("reverseLayout", false);
     mDisplayCount = attr.getInt("wheelItemCount", 3);
+    mSmoothDuration = attr.getInt("smoothDuration", 300);
     mMinNum = attr.getInt("min", 0);
     mMaxNum = attr.getInt("max", 5);
     mRealCount = mMaxNum - mMinNum + 1;
@@ -590,6 +695,8 @@ RVNumberPicker::RVNumberPicker(Context* context, const AttributeSet& attr)
     mActiveSize = attr.getDimensionPixelSize("activeSize", mCenterSize);
     mActiveColor = attr.getColor("activeColor", mCenterColor);
     mItemBackground = attr.getString("itemBackground", "#00FFFFFF");
+
+    mSelectLayout = attr.getString("internalLayout", "");
 
     mTextStyle = attr.getInt("textStyle", std::map<const std::string, int>{
         { "normal", (int)Typeface::NORMAL },
@@ -634,6 +741,18 @@ void RVNumberPicker::init() {
 /// @return 
 int RVNumberPicker::getValue() {
     return mPosition + mMinNum;
+}
+
+/// @brief 获取最大值
+/// @return 
+int  RVNumberPicker::getMaxValue(){
+    return mMaxNum;
+}
+
+/// @brief 获取最小值
+/// @return 
+int  RVNumberPicker::getMinValue(){
+    return mMinNum;
 }
 
 /// @brief 设置当前值
@@ -707,8 +826,15 @@ void RVNumberPicker::setMinValue(int minvalue) {
 }
 
 /// @brief 通知更新
-void RVNumberPicker::notifyUpdate() {
-    mAdapter->notifyDataSetChanged();
+/// @param isItemChange （ture），会优化notify时所需时间，但是否全部场景都适用，还待测试
+void RVNumberPicker::notifyUpdate(bool isItemChange) {
+    if(isItemChange) mAdapter->notifyItemRangeChanged(0,mMaxNum-mMinNum);
+    else             mAdapter->notifyDataSetChanged();
+}
+
+/// @brief 通知更新
+void RVNumberPicker::notifyUpdatePostion(int Pos) {
+    mAdapter->notifyItemChanged(Pos);
 }
 
 /// @brief 更新整个picker数据
@@ -733,6 +859,20 @@ void RVNumberPicker::updateStruct(int min, int max, int value) {
 /// @param l 
 void RVNumberPicker::setFormatter(TextFormatter l) {
     mNumberFormatter = l;
+    notifyUpdate();
+}
+
+/// @brief 设置 选中项 文本格式化
+/// @param l 
+void RVNumberPicker::setSelectFormatter(TextFormatter l) {
+    mSelectNumberFormatter = l;
+    notifyUpdate();
+}
+
+/// @brief 设置smooth时 duration
+/// @param duration
+void RVNumberPicker::setSmoothScrollerDuration(int duration){
+    mSmoothDuration = duration;
 }
 
 /// @brief 设置图片资源列表，当数量为非0时，启用图像模式

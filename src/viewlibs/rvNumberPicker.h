@@ -2,24 +2,26 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:07
- * @LastEditTime: 2024-12-03 00:35:26
+ * @LastEditTime: 2024-12-16 16:36:51
  * @FilePath: /kk_frame/src/viewlibs/rvNumberPicker.h
  * @Description: 使用RecycleView实现数字选择器
+ * 
  * @BugList: 1、暂时不要使用SmoothscrolltoPosition
  *           2、layout_width以及layout_height必须指定数值
  *           3、textColor全透颜色请使用#01000000,暂不支持全0透明度
+ * 
+ * @Todo:    1、notifyUpdate默认值为false,使用true可以对性能进行优化,但需测试
  *
  * Copyright (c) 2024 by Ricken, All Rights Reserved.
  *
  */
 
-
 #ifndef _RV_NUMBERPICKER_H_
 #define _RV_NUMBERPICKER_H_
 
- // #include "pickerLayoutManager.h"
 #include <core/context.h>
 #include <core/typeface.h>
+#include <widgetEx/recyclerview/linearsmoothscroller.h>
 #include <widgetEx/recyclerview/linearlayoutmanager.h>
 #include <widgetEx/recyclerview/snaphelper.h>
 #include <widgetEx/recyclerview/recyclerview.h>
@@ -39,6 +41,12 @@ public:
         TRANSFER_ABS = 0,           // 绝对值
         TRANSFER_RELATIVE = 1,      // 相对值
     };
+
+    enum {
+        PICKER_TYPE_TEXT,        // 文字模式
+        PICKER_TYPE_IMAGE,       // 图片模式
+    };
+
     // 位置变换结构体
     typedef struct Convert_Struct {
         float       position;       // 位置
@@ -61,10 +69,6 @@ private:
     class RVNumberPickerAdapter :public cdroid::RecyclerView::Adapter {
     private:
         RVNumberPicker* mFriend;     // RVNumberPicker指针
-        enum {
-            PICKER_TYPE_TEXT,        // 文字模式
-            PICKER_TYPE_IMAGE,       // 图片模式
-        };
     public:
         RVNumberPickerAdapter(RVNumberPicker* wheelView);
         ~RVNumberPickerAdapter();
@@ -74,21 +78,35 @@ private:
         int  getItemViewType(int position)override;
     };
 
+    class RVSmoothScroller:public LinearSmoothScroller {
+    private:
+        int mSmoothDuration;
+        DisplayMetrics mDisplayMetrics;
+    public:
+        RVSmoothScroller(Context* context);
+
+        void onTargetFound(View* targetView, RecyclerView::State& state, Action& action)override;
+        void setDuration(int duration);
+        int rv_CalculateTimeForDeceleration(int dx);
+    public:
+
+    };
+
     /// @brief RVNumberPicker布局管理器
     class RVNumberPickerManage :public LinearLayoutManager {
     private:
         RVNumberPicker* mFriend;     // RVNumberPicker指针
-        View* mCenterViewCache;      // 中间项页面指针缓存
         int   mCenterPositionCache;  // 中间项Position缓存
     public:
         RVNumberPickerManage(Context* context, RVNumberPicker* pickerView, int orientation, bool reverseLayout);
         ~RVNumberPickerManage();
         void onScrollStateChanged(int state)override;
         void onAttachedToWindow(RecyclerView& view) override;
+        void smoothScrollToPosition(RecyclerView& recyclerView, RecyclerView::State& state,int position)override;
+        void onLayoutCompleted(State& state)override;
     private:
         void init();
         void onMeasure(RecyclerView::Recycler& recycler, RecyclerView::State& state, int widthSpec, int heightSpec)override;
-        void onLayoutChildren(RecyclerView::Recycler& recycler, RecyclerView::State& state)override;
         int  scrollHorizontallyBy(int dx, RecyclerView::Recycler& recycler, RecyclerView::State& state)override;
         int  scrollVerticallyBy(int dy, RecyclerView::Recycler& recycler, RecyclerView::State& state)override;
         void adjustHorizontalChildView();
@@ -136,7 +154,8 @@ private:
     std::string mItemBackground;                                       // 背景
     int         mXMLWidth, mXMLHeight;                                 // xml宽高
     std::string mFontFamily;                                           // 字体
-    Typeface* mFontTypeface;                                         // 字体面
+    std::string mSelectLayout;                                         // 选中项布局（与picker的editeText类似）
+    Typeface* mFontTypeface;                                           // 字体面
     std::vector<std::string>   mImageList;                             // 图片列表
     std::vector<ConvertStruct> mConvertList;                           // 转换信息列表
 private:
@@ -145,6 +164,8 @@ private:
     RVNumberPickerManage* mLayoutManage;                               // 布局管理器
     SnapHelper* mSnapHelper;                                           // 滑动辅助类
     TextFormatter              mNumberFormatter;                       // 数字格式化
+    TextFormatter              mSelectNumberFormatter;                 // 选中项 数字格式化
+    int                        mSmoothDuration;                        // smoothScroll 的Duration
 
     int                        mPosition = 0;                          // 当前项位置
     OnItemClickListener        mOnItemClickListener = nullptr;         // 点击事件
@@ -157,15 +178,20 @@ public:
     ~RVNumberPicker();
     void init();
     int  getValue();
+    int  getMaxValue();
+    int  getMinValue();
     void setValue(int value, bool smooth = false, bool callBack = false);
     void nextValue(bool smooth = false, bool cycle = false);
     void prevValue(bool smooth = false, bool cycle = false);
     void setMaxValue(int maxvalue);
     void setMinValue(int minvalue);
-    void notifyUpdate();
+    void notifyUpdate(bool isItemChange = false);
+    void notifyUpdatePostion(int Pos);
     void updateStruct(int min, int max);
     void updateStruct(int min, int max, int value);
     void setFormatter(TextFormatter l);
+    void setSelectFormatter(TextFormatter l);
+    void setSmoothScrollerDuration(int duration);
     void setImageList(std::vector<std::string> list, bool update = false, int newValue = -1);
     void setConvertList(std::vector<ConvertStruct> list);
     void setOnItemClickListener(OnItemClickListener l);
