@@ -253,6 +253,8 @@ void UartClient::sendConn() {
     memcpy(req, &mUartInfo, sizeof(UartOpenReq));
     head->size += sizeof(UartOpenReq);
 
+    hexdump("uart connect", (unsigned char*)buf, head->size, 100);
+
     sendData(buf, head->size);
     LOG(INFO) << "connect uart. name=" << req->serialPort;
 }

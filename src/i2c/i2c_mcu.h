@@ -29,12 +29,14 @@ extern "C" {
 //     MCU_I2C_ADDR_READ = 0x89,
 // } mcu_i2c_addr_t;
 
-// 硬件I2C
-int i2c_mcu_read(uint8_t addr, uint8_t reg_addr, uint8_t* str, uint32_t len);
-int i2c_mcu_write(uint8_t addr, uint8_t reg_addr, uint8_t* data, uint32_t len);
+// 硬件I2C读
+int i2c_mcu_read_hw(uint8_t addr, uint8_t reg_addr, uint8_t* str, uint32_t len);
+// 硬件I2C写
+int i2c_mcu_write_hw(uint8_t addr, uint8_t reg_addr, uint8_t* data, uint32_t len);
 
-// 软件I2C
-int i2c_mcu_read2(uint8_t addr, uint8_t* str, uint32_t len);
-int i2c_mcu_write2(uint8_t addr, uint8_t* data, uint32_t len);
+// 软件I2C读
+int i2c_mcu_read_sw(uint8_t addr, uint8_t* str, uint32_t len);
+// 软件I2C写
+int i2c_mcu_write_sw(uint8_t addr, uint8_t* data, uint32_t len);
 
 #endif /* I2C_MCU */
