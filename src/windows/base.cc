@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2024-12-13 18:59:12
+ * @LastEditTime: 2024-12-16 10:11:21
  * @FilePath: /kk_frame/src/windows/base.cc
  * @Description: 页面基类
  * @BugList:
@@ -46,6 +46,7 @@ View* PBase::getRootView() {
 
 void PBase::callTick() {
     onTick();
+    mLastTick = SystemClock::uptimeMillis();
 }
 
 void PBase::callAttach() {

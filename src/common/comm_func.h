@@ -94,6 +94,9 @@ int stringSplit(const std::string& str, std::vector<std::string>& out, char ch =
 void timeSet(int year, int month, int day, int hour, int min, int sec);
 void timeSet(const int64_t& time_sec);
 
+// 获取星期几 [0-6]
+std::string getDayOnWeek(int day);
+
 // 获取字的长度
 int         wordLen(const char* buffer);
 std::string getWord(const char* buffer, int count);

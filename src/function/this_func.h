@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:47:17
- * @LastEditTime: 2024-12-03 00:47:46
+ * @LastEditTime: 2024-12-16 10:16:16
  * @FilePath: /kk_frame/src/function/this_func.h
  * @Description: 此项目的一些功能函数
  * @BugList: 
@@ -39,12 +39,6 @@ void analogInput(int code, int value);
 
 /// @brief 刷新屏保
 void refreshScreenSaver();
-
-/// @brief 
-/// @param data 
-/// @param swap 默认小端 
-/// @return 
-uint32_t uint8_t_to_uint32_t(uint8_t* data, bool swap = false);
 
 /// @brief 写入当前时间到文件
 /// @param filename 

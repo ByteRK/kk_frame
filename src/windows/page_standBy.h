@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-23 00:04:23
- * @LastEditTime: 2024-12-13 18:41:25
+ * @LastEditTime: 2024-12-16 09:49:50
  * @FilePath: /kk_frame/src/windows/page_standBy.h
  * @Description: 待机页面
  * @BugList:
@@ -32,7 +32,6 @@ protected:
 
     void onTick() override;
     void onReload() override;
-    void onCheckLight(uint8_t* left, uint8_t* right) override;
     bool onKey(uint16_t keyCode, uint8_t status) override;
 };
 

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:47:17
- * @LastEditTime: 2024-12-03 00:48:16
+ * @LastEditTime: 2024-12-16 10:16:11
  * @FilePath: /kk_frame/src/function/this_func.cc
  * @Description: 此项目的一些功能函数
  * @BugList:
@@ -106,16 +106,6 @@ void refreshScreenSaver() {
 #else
     cdroid::InputEventSource::getInstance().closeScreenSaver();
 #endif
-}
-
-uint32_t uint8_t_to_uint32_t(uint8_t* data, bool swap) {
-    uint32_t value = 0;
-    if (swap) {
-        value = data[3] << 24 | data[2] << 16 | data[1] << 8 | data[0];
-    } else {
-        value = data[0] << 24 | data[1] << 16 | data[2] << 8 | data[3];
-    }
-    return value;
 }
 
 void writeCurrentDateTimeToFile(const std::string& filename) {

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2024-08-23 10:35:03
+ * @LastEditTime: 2024-12-16 10:29:31
  * @FilePath: /kk_frame/src/windows/manage.cc
  * @Description: 页面管理类
  * @BugList:
@@ -48,7 +48,7 @@ void CWindMgr::handleMessage(Message& message) {
     case MSG_AUTO_CLOSE: {
         int8_t nowPage = getNowPageType();
         for (auto it = mPageList.begin(); it != mPageList.end(); ) {
-            if (it->second->getPageType() != nowPage) {
+            if (it->second->getType() != nowPage) {
                 __delete(it->second);
                 LOGW("close page: %d <- %p | page count=%d", it->first, it->second, mPageList.size() - 1);
                 it = mPageList.erase(it);
@@ -85,8 +85,8 @@ void CWindMgr::add(PageBase* page) {
 #if OPEN_SCREENSAVER
     refreshScreenSaver();
 #endif
-    mPageList.insert(std::make_pair(page->getPageType(), page));
-    LOGW("add new page: %d <- %p | page count=%d ", page->getPageType(), page, mPageList.size());
+    mPageList.insert(std::make_pair(page->getType(), page));
+    LOGW("add new page: %d <- %p | page count=%d ", page->getType(), page, mPageList.size());
 }
 
 /// @brief 关闭指定PAGE (建议只在PAGE内部调用)
@@ -112,7 +112,7 @@ void CWindMgr::close(int page) {
     auto it = mPageList.find(page);
     if (it != mPageList.end()) {
         mPageList.erase(it);
-        LOGW("close page: %d <- %p | page count=%d ", it->second->getPageType(), it->second, mPageList.size());
+        LOGW("close page: %d <- %p | page count=%d ", it->second->getType(), it->second, mPageList.size());
         __delete(it->second);
         return;
     }
@@ -126,7 +126,7 @@ void CWindMgr::closeAll() {
     for (const auto& pair : mPageList)vec.push_back(pair.second);
     mPageList.clear();
     for (auto it : vec) {
-        LOGW("close page: %d <- %p | page count=%d ", it->getPageType(), it, mPageList.size());
+        LOGW("close page: %d <- %p | page count=%d ", it->getType(), it, mPageList.size());
         __delete(it);
     }
 }
@@ -136,7 +136,7 @@ void CWindMgr::closeAll() {
 void CWindMgr::goTo(int page, bool showBlack) {
     mWindow->removePop();
     if (page == getNowPageType()) {
-        mWindow->getPage()->reload();
+        mWindow->getPage()->callDetach();
         if (showBlack)mWindow->showBlack();
         return;
     }

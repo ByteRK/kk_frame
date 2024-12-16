@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2024-12-13 18:59:01
+ * @LastEditTime: 2024-12-16 10:28:55
  * @FilePath: /kk_frame/src/windows/base.h
  * @Description: 页面基类
  * @BugList:
@@ -17,6 +17,8 @@
 
 #include <string.h>
 #include <view/view.h>
+#include <widget/textview.h>
+
 #include "json_func.h"
 
 #define __get(I)         findViewById(I)

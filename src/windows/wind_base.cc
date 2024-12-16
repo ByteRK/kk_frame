@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2024-12-13 19:14:27
+ * @LastEditTime: 2024-12-16 10:14:25
  * @FilePath: /kk_frame/src/windows/wind_base.cc
  * @Description: 窗口类
  * @BugList:
@@ -11,17 +11,13 @@
  *
  */
 
-
-#include "wind_base.h"
 #include <core/app.h>
+
+#include "manage.h"
+#include "wind_base.h"
 #include "comm_func.h"
 #include "R.h"
-#include "rvNumberPicker.h"
-
-#include "config_mgr.h"
-#include "manage.h"
 #include "global_data.h"
-#include "btn_mgr.h"
 
 #define BL_MAX 96 // 最大亮度
 #define BL_MIN 1  // 最小亮度

@@ -247,6 +247,11 @@ void timeSet(const int64_t& time_sec) {
 #endif
 }
 
+std::string getDayOnWeek(int day) {
+    static const std::string weekList[7] = { "星期日","星期一", "星期二", "星期三", "星期四", "星期五", "星期六" };
+    return weekList[day % 7];
+}
+
 int wordLen(const char* buffer) {
     int         word = 0;
     const char* pos = buffer;

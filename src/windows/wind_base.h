@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2024-12-13 19:13:40
+ * @LastEditTime: 2024-12-16 10:12:56
  * @FilePath: /kk_frame/src/windows/wind_base.h
  * @Description: 窗口类
  * @BugList:
@@ -81,9 +81,7 @@ public:
     void      removePage();
     void      removePop();
     void      hideToast();
-
     void      hideAll();
-
 private:
     void timeTextTick();
     void btnLightTick();
