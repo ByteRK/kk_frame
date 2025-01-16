@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-08-01 03:03:02
- * @LastEditTime: 2024-12-13 13:29:12
+ * @LastEditTime: 2025-01-17 01:05:08
  * @FilePath: /kk_frame/src/protocol/tuya_mgr.cc
  * @Description:
  * @BugList:
@@ -19,7 +19,7 @@
 #include <cstring>
 
 #include "config_mgr.h"
-#include "hv_version.h"
+#include "version.h"
 
 #include "conn_mgr.h"
 #include "manage.h"
@@ -162,14 +162,6 @@ void TuyaMgr::onCommDeal(IAck* ack) {
     case TYCOMM_ACCEPT: {
         uint16_t dealDpLen = 7 + ack->getData2(TUYA_DATA_LEN_H);
         acceptDP(ack->mBuf + TUYA_DATA_START, ack->getData2(TUYA_DATA_LEN_H));
-
-        // if (ack->mDlen > dealDpLen + 7) {
-        //     uint8_t* newDp = ack->mBuf + dealDpLen;
-        //     uint8_t  newPacketLen = newDp[TUYA_DATA_LEN_H] << 8 | newDp[TUYA_DATA_LEN_L];
-        //     if (ack->mDlen >= dealDpLen + 7 + newPacketLen) {
-        //         acceptDP(newDp + TUYA_DATA_START, newDp[TUYA_DATA_LEN_H] << 8 | newDp[TUYA_DATA_LEN_L]);
-        //     }
-        // }
     }   break;
     case TYCOMM_CHECK:
         sendDp();
@@ -237,7 +229,13 @@ void TuyaMgr::resetWifi(bool clear) {
 
 void TuyaMgr::sendSetConnectMode(uint8_t mode) {
     LOG(VERBOSE) << "设置配网模式";
-    std::string str = "{\"p\":\"cdwan0nqtmbyqvx3\",\"v\":\"" + std::string(HV_SOFT_VER_EXT) + "\",\"m\":" + std::to_string(mode % 10) + "}";
+
+    std::string version{ APP_VERSION };
+    int count = 0;
+    for (char c : version)if (c == '.')count++;
+    if (count != 3)throw std::runtime_error("APP_VERSION 格式错误!!! 涂鸦版本号必须为x.x.x");
+
+    std::string str = "{\"p\":\"cdwan0nqtmbyqvx3\",\"v\":\"" + version + "\",\"m\":" + std::to_string(mode % 10) + "}";
     LOGE("[tuyaConfig] -> %s", str.c_str());
     uint8_t data[0x2a];
     memcpy(data, str.c_str(), 0x2a);
@@ -465,7 +463,7 @@ void TuyaMgr::dealOTAComm(uint8_t* data, uint16_t len) {
     send2MCU(send, 1, TYCOMM_OTA_START);
 
     LOGI("[OTA START] allLen=%d oneByte=%d", mOTALen, send[0]);
-    // g_windMgr->goTo(PAGE_OTA);
+    g_windMgr->goTo(PAGE_OTA);
 }
 
 void TuyaMgr::dealOTAData(uint8_t* data, uint16_t len) {

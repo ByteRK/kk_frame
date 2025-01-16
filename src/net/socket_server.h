@@ -31,7 +31,7 @@ public:
     virtual void onTick();
 
     virtual int sendData(const char *data, int len);
-    virtual int sendData(const uchar *data, int len);
+    virtual int sendData(const uint8_t *data, int len);
     void close(int fd);
 
 protected:

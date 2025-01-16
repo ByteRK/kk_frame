@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 11)
 
 include_directories(
     ./
-    ./3rdparty
+    ./config
 
     ./src/common
     ./src/data
@@ -45,6 +45,7 @@ elseif(CDROID_CHIPSET STREQUAL tinat113)
 endif()
 
 aux_source_directory(./ PRJ_SRC)
+aux_source_directory(./config PRJ_SRC_CONFIG)
 aux_source_directory(./src/common PRJ_SRC_COMM)
 aux_source_directory(./src/data PRJ_SRC_DATA)
 aux_source_directory(./src/project PRJ_SRC_PROJECT)
@@ -61,6 +62,7 @@ message("PROJECT_NAME=${PROJECT_NAME}")
 add_executable(
     ${PROJECT_NAME}
     ${PRJ_SRC}
+    ${PRJ_SRC_CONFIG}
     ${PRJ_SRC_COMM}
     ${PRJ_SRC_DATA}
     ${PRJ_SRC_PROJECT}

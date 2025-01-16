@@ -9,7 +9,7 @@ public:
     SocketClient();
     ~SocketClient();
 
-    virtual int  init(const char *ip = 0, ushort port = 0);
+    virtual int  init(const char *ip = 0, uint16_t port = 0);
     virtual void onTick();
 
 protected:
@@ -22,8 +22,8 @@ protected:
 protected:
     bool        mInit;
     std::string mIp;
-    ushort      mPort;
-    ushort      mRPort;
+    uint16_t      mPort;
+    uint16_t      mRPort;
     int64_t     mLastConnTime;
     int         mSockId;
 };

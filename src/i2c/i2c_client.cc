@@ -124,7 +124,7 @@ bool I2CClient::isTimeout(int out_time) {
     return false;
 }
 
-int I2CClient::onI2cData(uchar* buf, int len) {
+int I2CClient::onI2cData(uint8_t* buf, int len) {
     int offset = 0;
     if (len > 0) { LOG(VERBOSE) << "len:" << len << " hex:" << hexstr(buf, len); }
 

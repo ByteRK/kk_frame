@@ -6,7 +6,7 @@
 
 ///////////////////////////////////////////////////////////////////////////
 
-#define __make_short(a, b) (ushort(a) << 8 | (b))
+#define __make_short(a, b) (uint16_t(a) << 8 | (b))
 #define __bind_hander(F) std::bind(F, this, std::placeholders::_1)
 
 typedef std::function<void(IAck *)> cmd_callback;

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2025-01-17 01:17:40
+ * @LastEditTime: 2025-01-17 01:21:48
  * @FilePath: /kk_frame/src/windows/wind_base.h
  * @Description: 窗口类
  * @BugList:
@@ -22,22 +22,20 @@
 
 class BaseWindow :public Window, public EventHandler {
 protected:
-    Context*          mContext;
-    uint64_t          m200msTick;
-    uint64_t          m1sTick;
-    uint64_t          m2sTick;
-
+    Context*          mContext;        // 上下文
     ViewGroup*        mRootView;       // 根容器
     ViewGroup*        mPageBox;        // 页面容器
     ViewGroup*        mPopBox;         // 弹窗容器
-
     View*             mLogo;           // LOGO
-    PopBase*          mPop;            // 弹窗
-    PageBase*         mPage;           // 页面
     TextView*         mToast;          // 弹幕
-    TextView*         mTimeText;       // 时间
-    ImageView*        mWifiView;       // wifi图标
     View*             mBlackView;      // 黑屏
+
+    PopBase*          mPop;            // 弹窗指针
+    PageBase*         mPage;           // 页面指针
+
+    uint64_t          mLastTick;       // 上次Tick时间
+    uint64_t          mPopTickTime;    // 弹窗Tick时间
+    uint64_t          mPageTickTime;   // 页面Tick时间
     
     bool              mIsShowLogo;     // LOGO是否正在显示
     bool              mIsBlackView;    // 黑屏是否正在显示
@@ -46,11 +44,10 @@ protected:
     Runnable          mCloseLogo;      // LOGO计时
     Runnable          mToastRun;       // 弹幕计时
     int8_t            mToastLevel;     // 弹幕文本等级
-
 private:
     BaseWindow();
-    ~BaseWindow();
 public:
+    ~BaseWindow();
     static BaseWindow* ins() {
         static BaseWindow* instance = new BaseWindow();
         return instance;
@@ -61,10 +58,9 @@ public:
 
     void init();
     void showLogo(uint32_t time = 2000);
-    ImageView* getWifiView();
 
-    virtual bool onKeyUp(int keyCode, KeyEvent& evt) override;
-    virtual bool onKeyDown(int keyCode, KeyEvent& evt) override;
+    bool onKeyUp(int keyCode, KeyEvent& evt) override;
+    bool onKeyDown(int keyCode, KeyEvent& evt) override;
     bool onKey(uint16_t keyCode, uint8_t status);
 
     PageBase* getPage();
@@ -74,15 +70,14 @@ public:
     bool      showBlack(bool upload = true);
     void      hideBlack();
     void      showPage(PageBase* page);
-    bool      showPop(PopBase* pop);
+    void      showPop(PopBase* pop);
     void      showToast(std::string text, int8_t level, bool animate = true, bool lock = false);
     void      removePage();
     void      removePop();
     void      hideToast();
     void      hideAll();
 private:
-    void timeTextTick();
-    void btnLightTick();
+    bool      selfKey(uint16_t keyCode, uint8_t status);
 };
 
 #endif

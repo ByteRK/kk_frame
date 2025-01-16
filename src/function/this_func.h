@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:47:17
- * @LastEditTime: 2024-12-16 10:16:16
+ * @LastEditTime: 2025-01-17 01:19:15
  * @FilePath: /kk_frame/src/function/this_func.h
  * @Description: 此项目的一些功能函数
  * @BugList: 
@@ -15,6 +15,7 @@
 #define _THIS_FUNC_H_
 
 #include <string>
+#include <stdint.h>
 
 // char转short
 #define CHARTOSHORT(H,L) (((H) << 8) | (L)) 

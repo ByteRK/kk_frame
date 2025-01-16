@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:47:17
- * @LastEditTime: 2024-12-16 10:16:11
+ * @LastEditTime: 2025-01-17 01:19:06
  * @FilePath: /kk_frame/src/function/this_func.cc
  * @Description: 此项目的一些功能函数
  * @BugList:
@@ -15,8 +15,8 @@
 #include "this_func.h"
 #include "comm_func.h"
 
-#include "hv_version.h"
-#include "hv_series_conf.h"
+#include "version.h"
+#include "series_config.h"
 
 #include <sys/syscall.h>   // for SYS_xxx definitions
 #include <unistd.h>        // for syscall()
@@ -68,9 +68,9 @@ void printProjectInfo(const char* name) {
 #endif
     // 信息
     fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", name);
-    fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", HV_FORMAT_VERSION_STRING(szTmp));
-    fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", HV_FORMAT_VER_TIME_STRING());
-    fprintf(stderr, "\033[1;35m# Git:%s\033[m\n", HV_FORMAT_GIT_HARD_STRING());
+    fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", std::string(APP_VER_INFO));
+    fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", std::string(BUILD_DATE));
+    fprintf(stderr, "\033[1;35m# Git:%s\033[m\n", std::string(APP_VERSION));
     fprintf(stderr, "\033[1;35m############ Ricken #############\n\n\033[0m");
 }
 

@@ -1,11 +1,11 @@
 ## 项目名
-kk_frame
+{{project_name}}
 
 ## 项目信息
-Ricken 的 cdroid 项目模板
+
 
 ## 创建时间
-2024-08-22 16:27:42
+{{create_time}}
 
 ## 目录结构
 ~~~
@@ -32,8 +32,7 @@ Ricken 的 cdroid 项目模板
 ~~~
 
 ## CDROID版本
-TAG:V3.0.0
-CommitID:0ab2eb4cfce0b9d617d7a563dfeb92c0083e2aaa
+CommitID:{{commit_id}}
 
 ## 声明
 **Base  On [Cdroid](https://gitee.com/houstudio/cdroid)**

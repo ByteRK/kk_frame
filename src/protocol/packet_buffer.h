@@ -23,9 +23,9 @@ protected:
 
 protected:
     virtual BuffData   *obtain(BufferType type);                    // 创建(接收消息用)
-    virtual BuffData   *obtain(BufferType type, ushort datalen);    // 创建(发送消息用)
+    virtual BuffData   *obtain(BufferType type, uint16_t datalen);    // 创建(发送消息用)
     virtual void        recycle(BuffData *buf);                     // 回收
-    virtual int         add(BuffData *buf, uchar *in_buf, int len); // 添加数据
+    virtual int         add(BuffData *buf, uint8_t *in_buf, int len); // 添加数据
     virtual bool        complete(BuffData *buf);                    // 数据完整
     virtual bool        compare(BuffData *src, BuffData *dst);      // 对比数据
     virtual bool        check(BuffData *buf);                       // 校验数据

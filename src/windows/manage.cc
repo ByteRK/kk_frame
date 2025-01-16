@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2025-01-17 01:15:22
+ * @LastEditTime: 2025-01-17 01:21:03
  * @FilePath: /kk_frame/src/windows/manage.cc
  * @Description: 页面管理类
  * @BugList:
@@ -14,39 +14,28 @@
 #define AUTO_CLOSE true
 #define OPEN_SCREENSAVER false
 
-
 #include "manage.h"
-#include "struct.h"
-#include "global_data.h"
-#include "conn_mgr.h"
-#include "btn_mgr.h"
-#include "config_mgr.h"
-#include "this_func.h"
-#include "hv_time_common.h"
-
 #include <core/inputeventsource.h>
 
+ /******* 页面头文件列表开始 *******/
 #include "page_standBy.h"
+/******* 页面头文件列表结束 *******/
 
 CWindMgr::CWindMgr() {
-    mLockMsg.what = MSG_LOCK;
-    mCloseMsg.what = MSG_AUTO_CLOSE;
-    mInitTime = SystemClock::uptimeMillis();
 }
 
 CWindMgr::~CWindMgr() {
     mLooper->removeMessages(this);
-    closeAll();
+    closeAll(true);
+    __delete(mWindow);
 }
 
 /// @brief 消息处理
 /// @param message 
 void CWindMgr::handleMessage(Message& message) {
     switch (message.what) {
-    case MSG_LOCK:
-        break;
     case MSG_AUTO_CLOSE: {
-        int8_t nowPage = getNowPageType();
+        int8_t nowPage = mWindow->getPageType();
         for (auto it = mPageList.begin(); it != mPageList.end(); ) {
             if (it->second->getType() != nowPage) {
                 __delete(it->second);
@@ -65,8 +54,9 @@ void CWindMgr::init() {
     mLooper = Looper::getMainLooper();
     mWindow = BaseWindow::ins();
     mWindow->init();
-    mWindow->showLogo();
-    mLastTouchTime = SystemClock::uptimeMillis();
+
+    mAutoCloseMsg.what = MSG_AUTO_CLOSE;
+    mInitTime = SystemClock::uptimeMillis();
 
 #if OPEN_SCREENSAVER
     InputEventSource::getInstance().setScreenSaver(
@@ -74,13 +64,11 @@ void CWindMgr::init() {
         20
     );
 #endif
-
     goTo(PAGE_STANDBY);
 }
 
-/// @brief 新增PAGE (PAGE构造自动触发,请勿主动调用)
-/// @param page 
-/// @return 
+/// @brief 新增页面 (页面构造自动触发,请勿主动调用)
+/// @param page 页面指针
 void CWindMgr::add(PageBase* page) {
 #if OPEN_SCREENSAVER
     refreshScreenSaver();
@@ -89,16 +77,16 @@ void CWindMgr::add(PageBase* page) {
     LOGW("add new page: %d <- %p | page count=%d ", page->getType(), page, mPageList.size());
 }
 
-/// @brief 关闭指定PAGE (建议只在PAGE内部调用)
-/// @param win 
+/// @brief 关闭指定页面
+/// @param page 页面指针
 void CWindMgr::close(PageBase* page) {
     if (mPageList.size() == 0)return;
     auto it = std::find_if(mPageList.begin(), mPageList.end(), \
         [page](const std::pair<int, PageBase*>& pair) { return pair.second == page; });
     if (it != mPageList.end()) {
         int type = it->first;
+        if (type == mWindow->getPageType())mWindow->removePage();
         mPageList.erase(it);
-        if (type == getNowPageType())mWindow->removePage();
         __delete(page);
         LOGW("close page: %d <- %p | page count=%d", type, page, mPageList.size());
         return;
@@ -106,22 +94,27 @@ void CWindMgr::close(PageBase* page) {
     LOGE("close page but not found: %p | page count=%d", page, mPageList.size());
 }
 
-/// @brief 关闭指定PAGE
-/// @param page 
+/// @brief 关闭指定页面
+/// @param page 页面ID
 void CWindMgr::close(int page) {
+    if (mPageList.size() == 0)return;
     auto it = mPageList.find(page);
     if (it != mPageList.end()) {
+        void* ptr = it->second;
+        if (page == mWindow->getPageType())mWindow->removePage();
         mPageList.erase(it);
-        LOGW("close page: %d <- %p | page count=%d ", it->second->getType(), it->second, mPageList.size());
         __delete(it->second);
+        LOGW("close page: %d <- %p | page count=%d ", page, ptr, mPageList.size());
         return;
     }
     LOGE("close page but not found: %d | page count=%d", page, mPageList.size());
 }
 
 /// @brief 关闭所有页面
-void CWindMgr::closeAll() {
+/// @param withPop 是否包含弹窗
+void CWindMgr::closeAll(bool withPop) {
     mWindow->removePage();
+    if (withPop)mWindow->removePop();
     std::vector<PageBase*> vec;
     for (const auto& pair : mPageList)vec.push_back(pair.second);
     mPageList.clear();
@@ -132,23 +125,24 @@ void CWindMgr::closeAll() {
 }
 
 /// @brief 前往指定页面 (新建页面必须从此处调用)
-/// @param id
+/// @param page 页面ID
+/// @param showBlack 跳转后是否息屏
 void CWindMgr::goTo(int page, bool showBlack) {
     mWindow->removePop();
-    if (page == getNowPageType()) {
-        mWindow->getPage()->callDetach();
-        if (showBlack)mWindow->showBlack();
-        return;
-    }
-#if AUTO_CLOSE
-    mLooper->removeMessages(this);
-    mLooper->sendMessageDelayed(1000, this, mCloseMsg);
-#endif
     if (page == PAGE_NULL) {
         mWindow->removePage();
         if (showBlack)mWindow->showBlack();
         return;
     }
+    if (page == mWindow->getPageType()) {
+        mWindow->getPage()->callReload();
+        if (showBlack)mWindow->showBlack();
+        return;
+    }
+#if AUTO_CLOSE
+    mLooper->removeMessages(this);
+    mLooper->sendMessageDelayed(1000, this, mAutoCloseMsg);
+#endif
     auto it = mPageList.find(page);
     if (it == mPageList.end() && !createPage(page)) {
         if (showBlack)mWindow->showBlack();
@@ -159,61 +153,52 @@ void CWindMgr::goTo(int page, bool showBlack) {
     LOGI("show page: %d <- %p", page, mPageList[page]);
 }
 
-/// @brief 向其它窗口发送消息
-/// @param page 
-/// @param type 
-/// @param data 
+/// @brief 向指定页面发送消息
+/// @param page 页面ID
+/// @param type 消息类型
+/// @param data 消息数据
 void CWindMgr::sendMsg(int page, int type, void* data) {
-}
-
-/// @brief 获取当前窗口类型
-/// @return 
-int8_t CWindMgr::getNowPageType() {
-    return mWindow->getPageType();
-}
-
-/// @brief 获取当前窗口
-/// @return 
-PageBase* CWindMgr::getNowPage() {
-    if (getNowPageType() == PAGE_NULL)return nullptr;
-    return mWindow->getPage();
-}
-
-/// @brief 按键转发
-/// @param keyCode 
-/// @param status 
-void CWindMgr::sendKey(uint16_t keyCode, uint8_t status) {
-    bool res = mWindow->onKey(keyCode, status);
-    // g_data->mBuzzer = res && status != HW_EVENT_UP;
-    if (res) {
-        static bool sendLong = false;
-        switch (status) {
-        case HW_EVENT_DOWN:
-        case HW_EVENT_UP:
-            sendLong = false;
-            break;
-        case HW_EVENT_LONG:
-            sendLong = true;
-            break;
-        }
-        mLastTouchTime = SystemClock::uptimeMillis();
+    auto it = mPageList.find(page);
+    if (it != mPageList.end()) {
+        it->second->callMsg(type, data);
     }
 }
 
-/// @brief 特殊按键处理
-/// @param key 
-void CWindMgr::specialKey(uint8_t key) {
+/// @brief 显示弹窗
+/// @param type 弹窗ID
+/// @return 是否显示成功
+bool CWindMgr::showPop(int8_t type) {
+    if (type == mWindow->getPopType())return true;
+    if (type < mWindow->getPopType())return false;
+    PopBase* pop = nullptr;
+    switch (type) {
+    case POP_TIP: {
+        // pop = new PopTip(mWindow->getContext());
+    }   break;
+    case POP_LOCK: {
+        // pop = new PopLock(mWindow->getContext());
+    }   break;
+    default:
+        LOGE("can not show pop: %d", type);
+        break;
+    }
+    if (pop)mWindow->showPop(pop);
+    return pop != nullptr;
 }
 
-/// @brief 获取最后一次触摸时间
-/// @return 
-uint64_t CWindMgr::getLastTouchTime() {
-    return mLastTouchTime;
+/// @brief 向指定弹窗发送消息
+/// @param pop 弹窗ID
+/// @param type 消息类型
+/// @param data 消息数据
+void CWindMgr::sendPopMsg(int pop, int8_t type, void* data) {
+    if (pop && pop == mWindow->getPopType()) {
+        mWindow->getPop()->callMsg(type, data);
+    }
 }
 
-/// @brief 新建PAGE
-/// @param page 
-/// @return 
+/// @brief 新建页面
+/// @param page 页面ID
+/// @return 是否创建成功
 bool CWindMgr::createPage(int page) {
     switch (page) {
     case PAGE_STANDBY: {
@@ -225,9 +210,9 @@ bool CWindMgr::createPage(int page) {
 }
 
 /// @brief 屏幕保护（休眠）
-/// @param lock 
+/// @param lock 解锁/上锁
 void CWindMgr::screenSaver(bool lock) {
-    LOGE("CWindMgr::screenSaver  =  %d", lock);
+    LOGE("CWindMgr::screenSaver = %d", lock);
     if (lock) {
     } else {
     }

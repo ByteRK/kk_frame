@@ -1,15 +1,6 @@
 #include "conn_mgr.h"
 #include <core/app.h>
 
-#include "config_mgr.h"
-
-#include "manage.h"
-#include "this_func.h"
-#include "base_data.h"
-
-#include <iostream>
-#include <fstream>
-
 #define TICK_TIME 200 // tick触发时间（毫秒）
 
 //////////////////////////////////////////////////////////////////
@@ -69,8 +60,7 @@ int CConnMgr::handleEvents() {
 void CConnMgr::send2MCU() {
     BuffData* bd = mPacket->obtain(BT_MCU, 0);
     UI2MCU   snd(bd, BT_MCU);
-
-    // snd.setData(2, 0x01); // 设置数据
+    
     snd.checkcode(); // 修改检验位
 
     mLastSendTime = SystemClock::uptimeMillis();

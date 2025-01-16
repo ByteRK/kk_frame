@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2024-12-16 16:58:48
+ * @LastEditTime: 2025-01-17 01:20:43
  * @FilePath: /kk_frame/src/windows/base.cc
  * @Description: 页面基类
  * @BugList:
@@ -50,11 +50,21 @@ void PBase::callTick() {
 }
 
 void PBase::callAttach() {
-    onReload();
+    mIsAttach = true;
+    onAttach();
 }
 
 void PBase::callDetach() {
+    mIsAttach = false;
     onDetach();
+}
+
+void PBase::callReload() {
+    onReload();
+}
+
+void PBase::callMsg(int type, void* data) {
+    onMsg(type, data);
 }
 
 void PBase::callMcu(uint8_t* data, uint8_t len) {
@@ -64,7 +74,7 @@ void PBase::callMcu(uint8_t* data, uint8_t len) {
 bool PBase::callKey(uint16_t keyCode, uint8_t evt) {
     LOGV("onKeyDown keyCode:%d", keyCode);
     mLastClick = SystemClock::uptimeMillis();
-    if (keyCode == KEY_MUTE)return false;  // 刷新时间用
+    if (keyCode == KEY_WINDOW)return false;  // 刷新时间用
     return onKey(keyCode, evt);
 }
 
@@ -85,10 +95,16 @@ View* PBase::findViewById(int id) {
 void PBase::onTick() {
 }
 
-void PBase::onReload() {
+void PBase::onAttach() {
 }
 
 void PBase::onDetach() {
+}
+
+void PBase::onReload() {
+}
+
+void PBase::onMsg(int type, void* data) {
 }
 
 void PBase::onMcu(uint8_t* data, uint8_t len) {

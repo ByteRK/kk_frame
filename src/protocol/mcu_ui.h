@@ -9,12 +9,12 @@
 #include "proto.h"
 
 // 帧头
-constexpr static uchar MCU_HEAD_SEND[2] = { 0xA5, 0x5A };    // 电控板  发送
-constexpr static uchar MCU_HEAD_RESP[2] = { 0xA5, 0x5A };    // 电控板  接收
-constexpr static uchar FILM_HEAD_SEND[2] = { 0xAA, 0x0E };   // 彩膜按键 发送
-constexpr static uchar FILM_HEAD_RESP[2] = { 0xBB, 0x09 };   // 彩膜按键 接收
-constexpr static uchar TUYA_HEAD_SEND[2] = { 0x55, 0xAA };   // 涂鸦模组 发送
-constexpr static uchar TUYA_HEAD_RESP[2] = { 0x55, 0xAA };   // 涂鸦模组 接收
+constexpr static uint8_t MCU_HEAD_SEND[2] = { 0xA5, 0x5A };    // 电控板  发送
+constexpr static uint8_t MCU_HEAD_RESP[2] = { 0xA5, 0x5A };    // 电控板  接收
+constexpr static uint8_t FILM_HEAD_SEND[2] = { 0xAA, 0x0E };   // 彩膜按键 发送
+constexpr static uint8_t FILM_HEAD_RESP[2] = { 0xBB, 0x09 };   // 彩膜按键 接收
+constexpr static uint8_t TUYA_HEAD_SEND[2] = { 0x55, 0xAA };   // 涂鸦模组 发送
+constexpr static uint8_t TUYA_HEAD_RESP[2] = { 0x55, 0xAA };   // 涂鸦模组 接收
 
 // 固定数据位总长度 (定长为总长，不定长为帧头+帧尾+校验)
 #define MCU_LEN_SEND   23
@@ -67,7 +67,7 @@ public:
 // UI -> MCU
 class UI2MCU : public IAsk, public DataCheck {
 public:
-    constexpr static uchar BUF_LEN = 0xFF;
+    constexpr static uint8_t BUF_LEN = 0xFF;
 
 public:
     int mType = BT_MCU;                          // 判断这个包来自哪里
@@ -103,10 +103,10 @@ protected:
 public:
     void setType(int type) { mType = type; }
 
-    uchar getData(uchar pos) { return mBf->buf[pos]; };
+    uint8_t getData(uint8_t pos) { return mBf->buf[pos]; };
 
-    void setData(uchar pos, uchar data) { mBf->buf[pos] = data; }
-    void setData(uchar* data, uchar pos, uchar len) { memcpy(mBf->buf + pos, data, len); }
+    void setData(uint8_t pos, uint8_t data) { mBf->buf[pos] = data; }
+    void setData(uint8_t* data, uint8_t pos, uint8_t len) { memcpy(mBf->buf + pos, data, len); }
 
     void checkcode() {
         switch (mType) {
@@ -126,7 +126,7 @@ public:
 // MCU -> UI
 class MCU2UI : public IAck, public DataCheck {
 public:
-    constexpr static ushort  BUF_LEN = 0x466;     // 缓冲区大小
+    constexpr static uint16_t  BUF_LEN = 0x466;     // 缓冲区大小
     u_int16_t mDataLen;         // 数据长度
     bool FindHead;              // 是否已找到包头
     int mType = BT_MCU;         // 判断这个包来自哪里
@@ -148,7 +148,7 @@ public:
     /// @param bf 
     /// @param len 
     /// @return 
-    int add(uchar* bf, int len) {
+    int add(uint8_t* bf, int len) {
         LOGV("接收数据");
         int  i, j, rlen = 0;
         if (mDlen == 0) FindHead = false;
@@ -243,7 +243,7 @@ public:
     /// @brief 检查数据是否正确
     /// @return 
     bool check() {
-        uchar sum = 0x00, realSum = 0x01;
+        uint8_t sum = 0x00, realSum = 0x01;
 
         switch (mType) {
         case BT_MCU:
@@ -313,11 +313,11 @@ public:
     }
     int getData2(int pos, bool swap = false) {
         if (pos >= 0 && pos + 1 < mDataLen - 1) {
-            ushort result;
+            uint16_t result;
             if (swap)
-                result = (static_cast<ushort>(mBuf[pos + 1]) << 8) | mBuf[pos];
+                result = (static_cast<uint16_t>(mBuf[pos + 1]) << 8) | mBuf[pos];
             else
-                result = (static_cast<ushort>(mBuf[pos]) << 8) | mBuf[pos + 1];
+                result = (static_cast<uint16_t>(mBuf[pos]) << 8) | mBuf[pos + 1];
             return result;
         }
         return 0;

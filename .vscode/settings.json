@@ -72,6 +72,10 @@
         "bitset": "cpp",
         "any": "cpp",
         "complex": "cpp",
-        "csignal": "cpp"
+        "csignal": "cpp",
+        "charconv": "cpp",
+        "codecvt": "cpp",
+        "span": "cpp",
+        "format": "cpp"
     }
 }

@@ -2,8 +2,8 @@
 ###
  # @Author: Ricken
  # @Email: me@ricken.cn
- # @Date: 2024-05-22 15:42:58
- # @LastEditTime: 2024-08-22 16:45:56
+ # @Date: 2024-12-03 00:21:57
+ # @LastEditTime: 2025-01-15 23:52:39
  # @FilePath: /kk_frame/script/upgrade.sh
  # @Description: 升级脚本
  # @BugList: 
@@ -43,14 +43,12 @@ if [ ! -z "$1" ]; then
     fi
 fi
 
-
+NAME=kk_frame
 BASE_NAME=customer
 
 SRC_DIR=./                               # 更新资源路径（此变量无需手动更改）
 TAR_DIR=/tmp                             # 升级包解压路径
 DST_DIR=/$BASE_NAME                      # 新文件需要拷贝到的路径（即运行目录）
-# LOG_FILE=$DST_DIR/upgrade.txt            # 程序LOG文件
-# UPD_FILE=$DST_DIR/update.txt             # 更新日志
 LOG_FILE=/appconfigs/upgrade.txt         # 程序LOG文件
 UPD_FILE=/appconfigs/update.txt          # 更新日志
 RUN_TIME=`date +'%Y-%m-%d %H:%M:%S'`     # 脚本运行时间
@@ -209,6 +207,13 @@ if [ "$FIND_PACK" -eq 0 ]; then
     echo "no updates found."
     echo "no updates found." >> "$LOG_FILE"
     exit 1
+fi
+
+# 备份原本程序
+if [ "$FROM_USB" -eq 0 ]; then
+    mount -o remount,rw /$BASE_NAME
+    cp -f /customer/app/$NAME /customer/app/$NAME.bak
+    sync
 fi
 
 # 同步文件

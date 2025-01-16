@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2024-08-23 10:24:02
+ * @LastEditTime: 2025-01-15 23:58:29
  * @FilePath: /kk_frame/src/windows/manage.h
  * @Description: 页面管理类
  * @BugList:
@@ -19,26 +19,24 @@
 #include "wind_base.h"
 
 enum {
-    HW_EVENT_DOWN,     // 按下
-    HW_EVENT_LONG,     // 长按
-    HW_EVENT_UP,       // 松开
+    KK_EVENT_DOWN,     // 按下
+    KK_EVENT_LONG,     // 长按
+    KK_EVENT_UP,       // 松开
 };
 
 #define g_windMgr CWindMgr::ins()
+#define g_window  g_windMgr->mWindow
 
 class CWindMgr :public MessageHandler {
 public:
     BaseWindow* mWindow;
 protected:
     enum {
-        MSG_LOCK,       // 休眠与关机
         MSG_AUTO_CLOSE, // 自动关闭无用窗口
     };
 
-    Message  mLockMsg;
-    Message  mCloseMsg;
+    Message  mAutoCloseMsg;
     Looper*  mLooper;
-    uint64_t mLastTouchTime;
     uint64_t mInitTime;      // 初始化时间
 
     std::map<int, PageBase*> mPageList;  // 页面列表
@@ -51,22 +49,19 @@ public:
 private:
     CWindMgr();
 public:
-    void init();
     ~CWindMgr();
+    
+    void init();
 
     void add(PageBase* page);
     void close(PageBase* page);
     void close(int page);
-    void closeAll();
+    void closeAll(bool withPop = false);
     void goTo(int page, bool showBlack = false);
-
     void sendMsg(int page, int type, void* data);
-    int8_t getNowPageType();
-    PageBase* getNowPage();
 
-    void sendKey(uint16_t keyCode, uint8_t status);
-    void specialKey(uint8_t key);
-    uint64_t getLastTouchTime();
+    bool showPop(int8_t type);
+    void sendPopMsg(int pop, int8_t type, void* data);
 private:
     bool createPage(int page);
     void screenSaver(bool lock);

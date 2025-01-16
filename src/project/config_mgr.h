@@ -18,7 +18,7 @@
 #include <core/uieventsource.h>
 #include <core/preferences.h>
 #include "common.h"
-#include "hv_defualt_config.h"
+#include "defualt_config.h"
 
 #define g_config configMgr::ins()
 

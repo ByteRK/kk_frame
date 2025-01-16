@@ -2,6 +2,7 @@
 #define __common_h__
 
 #include <sys/types.h>
+#include <stdint.h> // uintxx_t
 
 #include <stdio.h>
 #include <string.h>
@@ -14,11 +15,6 @@
 #include <algorithm>  // std::find
 
 #include <cdlog.h>
-
-typedef signed   char  byte;
-typedef unsigned char  uchar;
-typedef unsigned short ushort;
-typedef unsigned int   uint;
 
 #endif
 

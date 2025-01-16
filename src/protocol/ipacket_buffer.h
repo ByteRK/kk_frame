@@ -16,7 +16,7 @@ typedef struct {
     short type;   // 数据类型
     short slen;   // 分配缓冲区大小
     short len;    // 有效数据长度
-    uchar buf[1]; // 缓冲区
+    uint8_t buf[1]; // 缓冲区
 } BuffData;
 #pragma pack()
 
@@ -25,9 +25,9 @@ class IPacketBuffer {
 public:
     virtual void        setType(BufferType type,BufferType cmd)    = 0; // 配置ack包属性
     virtual BuffData   *obtain(BufferType type)                    = 0; // 创建
-    virtual BuffData   *obtain(BufferType type, ushort datalen)    = 0; // 创建
+    virtual BuffData   *obtain(BufferType type, uint16_t datalen)    = 0; // 创建
     virtual void        recycle(BuffData *buf)                     = 0; // 回收
-    virtual int         add(BuffData *buf, uchar *in_buf, int len) = 0; // 添加数据
+    virtual int         add(BuffData *buf, uint8_t *in_buf, int len) = 0; // 添加数据
     virtual bool        complete(BuffData *buf)                    = 0; // 数据完整
     virtual bool        compare(BuffData *src, BuffData *dst)      = 0; // 对比数据
     virtual bool        check(BuffData *buf)                       = 0; // 校验数据
@@ -54,7 +54,7 @@ public:
 public:
     short  mDlen;
     short *mPlen;
-    uchar *mBuf;
+    uint8_t *mBuf;
 };
 
 #endif

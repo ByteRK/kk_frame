@@ -45,14 +45,14 @@ ArcSeekBar::ArcSeekBar(Context *ctx, const AttributeSet &attrs) : View(ctx, attr
 
     mStrokeCap = (Cairo::Context::LineCap)attrs.getInt(
         "strokeCap",
-        std::map<const std::string, int>{{"butt", (int)Cairo::Context::LineCap::BUTT},
+        std::unordered_map<std::string, int>{{"butt", (int)Cairo::Context::LineCap::BUTT},
                                          {"round", (int)Cairo::Context::LineCap::ROUND},
                                          {"square", (int)Cairo::Context::LineCap::SQUARE}},
         (int)mStrokeCap);
 
     mStrokeCapMiddle = (Cairo::Context::LineCap)attrs.getInt(
         "strokeCapMiddle",
-        std::map<const std::string, int>{{"butt", (int)Cairo::Context::LineCap::BUTT},
+        std::unordered_map<std::string, int>{{"butt", (int)Cairo::Context::LineCap::BUTT},
                                          {"round", (int)Cairo::Context::LineCap::ROUND},
                                          {"square", (int)Cairo::Context::LineCap::SQUARE}},
         (int)mStrokeCap);

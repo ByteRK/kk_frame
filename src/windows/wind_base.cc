@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2025-01-17 01:16:59
+ * @LastEditTime: 2025-01-17 01:21:38
  * @FilePath: /kk_frame/src/windows/wind_base.cc
  * @Description: 窗口类
  * @BugList:
@@ -22,11 +22,14 @@
 #define BL_MAX 96 // 最大亮度
 #define BL_MIN 1  // 最小亮度
 
-#define POPTEXT_TRANSLATIONY 76  // 弹幕的Y轴偏移量
-#define POPTEXT_ANIMATETIME 600  // 弹幕动画时间
+constexpr int POP_TICK_INTERVAL = 1000;  // 弹窗刷新间隔
+constexpr int PAGE_TICK_INTERVAL = 200;  // 页面刷新间隔
 
- /// @brief 点击时系统自动调用
- /// @param sound 音量大小(一般不用)
+constexpr int POPTEXT_TRANSLATIONY = 76;    // 弹幕的Y轴偏移量
+constexpr int POPTEXT_ANIMATETIME = 600;   // 弹幕动画时间
+
+/// @brief 点击时系统自动调用
+/// @param sound 音量大小(一般不用)
 static void playSound(int sound) {
     LOGV("bi~~~~~~~~~~~~~~~~~~~~~~~~");
 }
@@ -34,9 +37,9 @@ static void playSound(int sound) {
 /// @brief 构造以及基础内容检查
 /// @return 返回BaseWindow对象
 BaseWindow::BaseWindow() :Window(0, 0, -1, -1) {
-    m200msTick = 0;
-    m1sTick = 0;
-    m2sTick = 0;
+    mLastTick = 0;
+    mPopTickTime = 0;
+    mPageTickTime = 0;
     App::getInstance().addEventHandler(this);
 }
 
@@ -49,8 +52,8 @@ BaseWindow::~BaseWindow() {
 
 int BaseWindow::checkEvents() {
     int64_t tick = SystemClock::uptimeMillis();
-    if (tick >= m200msTick) {
-        m200msTick = tick + 200;
+    if (tick >= mLastTick) {
+        mLastTick = tick + 100;
         return 1;
     }
     return 0;
@@ -59,19 +62,16 @@ int BaseWindow::checkEvents() {
 int BaseWindow::handleEvents() {
     int64_t tick = SystemClock::uptimeMillis();
 
-    if (mPage) mPage->callTick();
+    if (tick >= mPageTickTime) {
+        mPageTickTime = tick + PAGE_TICK_INTERVAL;
+        if (mPage)mPage->callTick();
+    }
 
-    if (tick >= m1sTick) {
-        m1sTick = tick + 1000;
+    if (tick >= mPopTickTime) {
+        mPopTickTime = tick + POP_TICK_INTERVAL;
         if (mPop)mPop->callTick();
     }
 
-    if (tick >= m2sTick) {
-        m2sTick = tick + 2000;
-        timeTextTick();
-    }
-
-    btnLightTick();
     return 1;
 }
 
@@ -84,15 +84,10 @@ void BaseWindow::init() {
     mPopBox = __getgv(mRootView, ViewGroup, kk_frame::R::id::popBox);
     mLogo = __getg(mRootView, kk_frame::R::id::logo);
     mToast = __getgv(mRootView, TextView, kk_frame::R::id::toast);
-    mTimeText = __getgv(mRootView, TextView, kk_frame::R::id::time);
-    mWifiView = __getgv(mRootView, ImageView, kk_frame::R::id::wifi);
     mBlackView = __getgv(mRootView, View, kk_frame::R::id::cover);
 
-
-    if (!(mPageBox && mPopBox && mTimeText && mWifiView && mToast)) {
-        printf("BaseWindow Error\n");
-        throw "BaseWindow Error";
-    }
+    if (!(mPageBox && mPopBox && mToast))
+        throw std::runtime_error("BaseWindow Error");
 
     mPage = nullptr;
     mPop = nullptr;
@@ -110,6 +105,8 @@ void BaseWindow::init() {
         mToastRunning = false;
         mToast->animate().translationY(POPTEXT_TRANSLATIONY).setDuration(POPTEXT_ANIMATETIME).start();
         };
+
+    showLogo();
 }
 
 /// @brief 显示 LOGO
@@ -121,16 +118,12 @@ void BaseWindow::showLogo(uint32_t time) {
     postDelayed(mCloseLogo, time);
 }
 
-ImageView* BaseWindow::getWifiView() {
-    return mWifiView;
-}
-
 /// @brief 键盘抬起事件
 /// @param keyCode 
 /// @param evt 
 /// @return 
 bool BaseWindow::onKeyUp(int keyCode, KeyEvent& evt) {
-    return onKey(keyCode, HW_EVENT_UP) || Window::onKeyUp(keyCode, evt);
+    return onKey(keyCode, KK_EVENT_UP) || Window::onKeyUp(keyCode, evt);
 }
 
 /// @brief 键盘按下事件
@@ -138,7 +131,7 @@ bool BaseWindow::onKeyUp(int keyCode, KeyEvent& evt) {
 /// @param evt 
 /// @return 
 bool BaseWindow::onKeyDown(int keyCode, KeyEvent& evt) {
-    return onKey(keyCode, HW_EVENT_DOWN) || Window::onKeyDown(keyCode, evt);
+    return onKey(keyCode, KK_EVENT_DOWN) || Window::onKeyDown(keyCode, evt);
 }
 
 /// @brief 按键处理
@@ -146,14 +139,14 @@ bool BaseWindow::onKeyDown(int keyCode, KeyEvent& evt) {
 /// @param status 
 /// @return 是否需要响铃
 bool BaseWindow::onKey(uint16_t keyCode, uint8_t status) {
-    if (mIsShowLogo)return false;
-    if (mPage)mPage->callKey(KEY_MUTE, status);
+    if (mIsShowLogo) return false;
+    if (mPage)mPage->callKey(KEY_WINDOW, status);
     if (mIsBlackView) {
-        if (status != HW_EVENT_DOWN)return false;
+        if (status != KK_EVENT_DOWN)return false;
         hideBlack();
         return true;
     }
-    if (mPop)return mPop->callKey(keyCode, status);
+    if (mPop) return mPop->callKey(keyCode, status);
     if (mPage) return mPage->callKey(keyCode, status);
     return false;
 }
@@ -164,6 +157,8 @@ PageBase* BaseWindow::getPage() {
     return mPage;
 }
 
+/// @brief 获取当前弹窗指针
+/// @return 
 PopBase* BaseWindow::getPop() {
     return mPop;
 }
@@ -191,40 +186,35 @@ bool BaseWindow::showBlack(bool upload) {
 /// @brief 
 void BaseWindow::hideBlack() {
     g_windMgr->goTo(PAGE_STANDBY);
-    mPage->callKey(KEY_MUTE, HW_EVENT_UP);
-    setBrightness(BL_MAX);
+    mPage->callKey(KEY_WINDOW, KK_EVENT_UP);
     mBlackView->setVisibility(GONE);
     mIsBlackView = false;
+    setBrightness(BL_MAX);
 }
 
 /// @brief 显示页面
 /// @param page 
 void BaseWindow::showPage(PageBase* page) {
-    if (mPage)mPage->callDetach();
-    mPageBox->removeAllViews();
+    removePage();
     mPage = page;
     if (mPage) {
         mPageBox->addView(mPage->getRootView());
         mPage->callAttach();
+        mPage->callReload();
     }
 }
 
 /// @brief 显示弹窗
 /// @param pop 
-/// @return 
-bool BaseWindow::showPop(PopBase* pop) {
-    if (mPop) {
-        if (mPop->getType() > pop->getType())return false;
-        mPop->callDetach();
-        removePop();
-    }
+void BaseWindow::showPop(PopBase* pop) {
+    removePop();
     mPop = pop;
     if (mPop) {
         mPopBox->setVisibility(VISIBLE);
         mPopBox->addView(mPop->getRootView());
         mPop->callAttach();
+        mPop->callReload();
     }
-    return true;
 }
 
 /// @brief 显示弹幕
@@ -274,26 +264,16 @@ void BaseWindow::hideToast() {
     mToastRunning = false;
     mToast->animate().cancel();
     mToast->setTranslationY(POPTEXT_TRANSLATIONY);
+    removeCallbacks(mToastRun);
 }
 
 /// @brief 隐藏全部元素
 void BaseWindow::hideAll() {
-    mTimeText->setVisibility(GONE);
-    mWifiView->setVisibility(GONE);
     mPopBox->setVisibility(GONE);
     mToast->setVisibility(GONE);
     mBlackView->setVisibility(GONE);
 }
 
-/// @brief 时间文本更新
-void BaseWindow::timeTextTick() {
-    auto now = std::chrono::system_clock::now();
-    std::time_t now_c = std::chrono::system_clock::to_time_t(now);
-    std::tm now_tm = *std::localtime(&now_c);
-    mTimeText->setText(fillLength(now_tm.tm_hour, 2) + ":" + fillLength(now_tm.tm_min, 2));
-    mWifiView->setImageLevel(g_data->mNetWork);
-}
-
-/// @brief 按键灯更新
-void BaseWindow::btnLightTick() {
+bool BaseWindow::selfKey(uint16_t keyCode, uint8_t status) {
+    return false;
 }

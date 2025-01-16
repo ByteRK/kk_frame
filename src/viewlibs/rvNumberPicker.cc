@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:07
- * @LastEditTime: 2024-12-16 16:37:09
+ * @LastEditTime: 2025-01-17 01:21:31
  * @FilePath: /kk_frame/src/viewlibs/rvNumberPicker.cc
  * @Description: 使用RecycleView实现数字选择器
  * 
@@ -674,7 +674,7 @@ RVNumberPicker::RVNumberPicker(int w, int h) :RecyclerView(w, h) {
 /// @param attr 
 RVNumberPicker::RVNumberPicker(Context* context, const AttributeSet& attr)
     :RecyclerView(context, attr), mContext(context) {
-    mOrientation = attr.getInt("orientation", std::map<const std::string, int>{
+    mOrientation = attr.getInt("orientation", std::unordered_map<std::string, int>{
         { "horizontal", (int)HORIZONTAL},
         { "vertical",(int)VERTICAL }
     }, DEFAULT_ORIENTATION);
@@ -696,9 +696,7 @@ RVNumberPicker::RVNumberPicker(Context* context, const AttributeSet& attr)
     mActiveColor = attr.getColor("activeColor", mCenterColor);
     mItemBackground = attr.getString("itemBackground", "#00FFFFFF");
 
-    mSelectLayout = attr.getString("internalLayout", "");
-
-    mTextStyle = attr.getInt("textStyle", std::map<const std::string, int>{
+    mTextStyle = attr.getInt("textStyle", std::unordered_map<std::string, int>{
         { "normal", (int)Typeface::NORMAL },
         { "bold"  , (int)Typeface::BOLD },
         { "italic", (int)Typeface::ITALIC }

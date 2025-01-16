@@ -13,7 +13,7 @@
 
 #include "config_mgr.h"
 
-#include "hv_version.h"
+#include "version.h"
 #include "comm_func.h"
 #include "global_data.h"
 

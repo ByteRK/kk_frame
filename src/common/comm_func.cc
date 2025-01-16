@@ -16,7 +16,7 @@
 #include <cdlog.h>
 #include "comm_func.h"
 
-#include "hv_defualt_config.h"
+#include "defualt_config.h"
 
 bool isNumric(const char* str_nums) {
     for (const char* p = str_nums; *p; p++) {
@@ -61,11 +61,11 @@ std::string getDateTime() {
     gettimeofday(&_val, NULL);
     now = _val.tv_sec;
     tm_now = localtime(&now);
-    strftime(datetime, sizeof(datetime), "%Y-%m-%d %H:%M:%S", tm_now);
+    strftime(datetime, sizeof(datetime), "%Y.%m.%d", tm_now);
 
-    snprintf(buffer, sizeof(buffer), "%s.%03d.%03d", datetime, _val.tv_usec / 1000, _val.tv_usec % 1000);
+    // snprintf(buffer, sizeof(buffer), "%s.%03d.%03d", datetime, _val.tv_usec / 1000, _val.tv_usec % 1000);
 
-    return std::string(buffer);
+    return std::string(datetime);
 }
 
 std::string getDateTime(long int now, bool fmt) {
@@ -227,13 +227,13 @@ void timeSet(int year, int month, int day, int hour, int min, int sec) {
     if (year > 0) cur.tm_year = year - 1900;
     if (month > 0) cur.tm_mon = month - 1;
     if (day > 0) cur.tm_mday = day;
-    if (hour >= 0) cur.tm_hour = hour;
-    if (min >= 0) cur.tm_min = min;
+    if (hour > 0) cur.tm_hour = hour;
+    if (min > 0) cur.tm_min = min;
     cur.tm_sec = sec;
 
     tv.tv_sec = mktime(&cur);
     tv.tv_usec = 0;
-#ifndef DEBUG
+#ifndef PRODUCT_X64
     settimeofday(&tv, NULL);
 #endif
 }
@@ -242,7 +242,7 @@ void timeSet(const int64_t& time_sec) {
     struct timeval set_tv;
     set_tv.tv_sec = time_sec;
     set_tv.tv_usec = 0;
-#ifndef DEBUG
+#ifndef PRODUCT_X64
     settimeofday(&set_tv, NULL);
 #endif
 }
@@ -253,19 +253,27 @@ std::string getDayOnWeek(int day) {
 }
 
 int wordLen(const char* buffer) {
-    int         word = 0;
+    int word = 0;
     const char* pos = buffer;
 
     while (*pos) {
-        if (*pos > 0 && *pos <= 127) {
-            // ascii字符
+        if ((*pos & 0x80) == 0) {
+            // ASCII字符 (1字节)
             pos++;
-            word++;
-        } else {
-            // utf-8字符
+        } else if ((*pos & 0xE0) == 0xC0) {
+            // 2字节字符
+            pos += 2;
+        } else if ((*pos & 0xF0) == 0xE0) {
+            // 3字节字符
             pos += 3;
-            word++;
+        } else if ((*pos & 0xF8) == 0xF0) {
+            // 4字节字符
+            pos += 4;
+        } else {
+            // 无效字节，直接跳过
+            pos++;
         }
+        word++;
     }
     return word;
 }
@@ -275,16 +283,138 @@ std::string getWord(const char* buffer, int count) {
     int         wordCount = 0;
     const char* pos = buffer;
     while (*pos && wordCount < count) {
-        if (*pos > 0 && *pos <= 127) {
-            wordCount++;
-            words.append(1, *(pos++));
+        if (*pos & 0x80) {
+            // 多字节字符
+            int numBytes = 0;
+
+            if ((*pos & 0xE0) == 0xC0) {
+                // 2字节字符
+                numBytes = 1;
+            } else if ((*pos & 0xF0) == 0xE0) {
+                // 3字节字符
+                numBytes = 2;
+            } else if ((*pos & 0xF8) == 0xF0) {
+                // 4字节字符
+                numBytes = 3;
+            }
+
+            for (int i = 0; i < numBytes + 1; ++i) {
+                words.push_back(*(pos++));
+            }
+
         } else {
-            wordCount++;
-            words.append(1, *(pos++));
-            words.append(1, *(pos++));
-            words.append(1, *(pos++));
+            words.push_back(*(pos++));
+        }
+        wordCount++;
+    }
+    LOGV(" words = (%s) To (%s)", buffer, words.c_str());
+    return words;
+}
+
+std::string decLastWord(const char* buffer) {
+    std::string words;
+    const char* pos = buffer;
+    while (*pos) {
+        if (*pos & 0x80) {
+            // 多字节字符
+            int numBytes = 0;
+
+            if ((*pos & 0xE0) == 0xC0) {
+                // 2字节字符
+                numBytes = 1;
+            } else if ((*pos & 0xF0) == 0xE0) {
+                // 3字节字符
+                numBytes = 2;
+            } else if ((*pos & 0xF8) == 0xF0) {
+                // 4字节字符
+                numBytes = 3;
+            }
+
+            if (!*(pos + numBytes + 1)) break;
+            for (int i = 0; i < numBytes + 1; ++i) {
+                words.push_back(*(pos++));
+            }
+
+        } else {
+            if (!*(pos + 1)) break;
+            words.push_back(*(pos++));
         }
     }
+    LOGV(" words = (%s) To (%s)", buffer, words.c_str());
+    return words;
+}
+
+std::string keepSpecifiedWord(const char* buffer, int count, bool en2cn, std::string spec) {
+    int nowWordCount = 0;
+    const char* cpos = buffer;
+
+    // 计算当前字符数量
+    while (*cpos) {
+        if ((*cpos & 0x80) == 0) {
+            // ASCII字符 (1字节)
+            cpos++;
+            nowWordCount++;
+        } else if ((*cpos & 0xE0) == 0xC0) {
+            // 2字节字符
+            cpos += 2;
+            nowWordCount++;
+            if (en2cn) nowWordCount++;
+        } else if ((*cpos & 0xF0) == 0xE0) {
+            // 3字节字符
+            cpos += 3;
+            nowWordCount++;
+            if (en2cn) nowWordCount++;
+        } else if ((*cpos & 0xF8) == 0xF0) {
+            // 4字节字符
+            cpos += 4;
+            nowWordCount++;
+            if (en2cn) nowWordCount++;
+        }
+    }
+
+    // 如果当前字符数量小于等于目标数量，直接返回原字符串
+    if (nowWordCount <= count) return std::string(buffer);
+
+    std::string words;
+    int wordCount = 0;
+    const char* pos = buffer;
+
+    // 提取字符直到达到目标数量
+    while (*pos) {
+        if ((*pos & 0x80) == 0) {
+            // ASCII字符 (1字节)
+            words.push_back(*(pos++));
+            wordCount++;
+        } else if ((*pos & 0xE0) == 0xC0) {
+            // 2字节字符
+            words.append(pos, pos + 2);
+            pos += 2;
+            wordCount++;
+            if (en2cn) wordCount++;
+        } else if ((*pos & 0xF0) == 0xE0) {
+            // 3字节字符
+            words.append(pos, pos + 3);
+            pos += 3;
+            wordCount++;
+            if (en2cn) wordCount++;
+        } else if ((*pos & 0xF8) == 0xF0) {
+            // 4字节字符
+            words.append(pos, pos + 4);
+            pos += 4;
+            wordCount++;
+            if (en2cn) wordCount++;
+        }
+
+        // 达到目标字符数量，停止
+        if (wordCount >= count) break;
+    }
+
+    // 添加指定的后缀
+    words += spec;
+
+    // 打印调试信息
+    std::cout << "words = (" << buffer << ") To (" << words << ")" << std::endl;
+
     return words;
 }
 
@@ -428,12 +558,11 @@ void setBrightness(int value) {
     }
 
     char shell[128];
-    snprintf(shell, sizeof(shell), "echo %d > %s", (100 - pwm) * 1000, path_duty_cycle);
+    snprintf(shell, sizeof(shell), "echo %d > %s", pwm, path_duty_cycle);
     system(shell);
     LOG(VERBOSE) << shell;
-#else
-    LOGI("设置屏幕亮度");
 #endif
+    LOGI("设置屏幕亮度 %d", value);
 }
 
 bool readLoaclFile(const char* filename, std::string& content) {
@@ -464,48 +593,6 @@ bool readLoaclFile(const char* filename, std::string& content) {
         return true;
     }
     return false;
-}
-
-uint8_t crc8_maxim(uint8_t* ptr, uint32_t len) {
-    const static u_char crc8_table[256] = {
-        0, 94, 188, 226, 97, 63, 221, 131, 194, 156, 126, 32, 163, 253, 31, 65,
-        157, 195, 33, 127, 252, 162, 64, 30, 95, 1, 227, 189, 62, 96, 130, 220,
-        35, 125, 159, 193, 66, 28, 254, 160, 225, 191, 93, 3, 128, 222, 60, 98,
-        190, 224, 2, 92, 223, 129, 99, 61, 124, 34, 192, 158, 29, 67, 161, 255,
-        70, 24, 250, 164, 39, 121, 155, 197, 132, 218, 56, 102, 229, 187, 89, 7,
-        219, 133, 103, 57, 186, 228, 6, 88, 25, 71, 165, 251, 120, 38, 196, 154,
-        101, 59, 217, 135, 4, 90, 184, 230, 167, 249, 27, 69, 198, 152, 122, 36,
-        248, 166, 68, 26, 153, 199, 37, 123, 58, 100, 134, 216, 91, 5, 231, 185,
-        140, 210, 48, 110, 237, 179, 81, 15, 78, 16, 242, 172, 47, 113, 147, 205,
-        17, 79, 173, 243, 112, 46, 204, 146, 211, 141, 111, 49, 178, 236, 14, 80,
-        175, 241, 19, 77, 206, 144, 114, 44, 109, 51, 209, 143, 12, 82, 176, 238,
-        50, 108, 142, 208, 83, 13, 239, 177, 240, 174, 76, 18, 145, 207, 45, 115,
-        202, 148, 118, 40, 171, 245, 23, 73, 8, 86, 180, 234, 105, 55, 213, 139,
-        87, 9, 235, 181, 54, 104, 138, 212, 149, 203, 41, 119, 244, 170, 72, 22,
-        233, 183, 85, 11, 136, 214, 52, 106, 43, 117, 151, 201, 74, 20, 246, 168,
-        116, 42, 200, 150, 21, 75, 169, 247, 182, 232, 10, 84, 215, 137, 107, 53
-    };
-    u_char crc = 0x00;
-    while (len--) {
-        crc = crc8_table[(crc ^ *ptr++) & 0xff];
-    }
-    LOGV("CRC-8/MAXIM-DOW : 0x%x", crc);
-    return crc;
-}
-
-uint16_t calculateCRC16XModem(const uint8_t* data, size_t length) {
-    uint16_t crc = 0x0000; // 初始 CRC 寄存器值
-    for (size_t i = 0; i < length; ++i) {
-        crc ^= static_cast<uint16_t>(data[i]) << 8; // 将数据字节与 CRC 寄存器高位异或
-        for (int j = 0; j < 8; ++j) {
-            if (crc & 0x8000) {
-                crc = (crc << 1) ^ 0x1021; // CRC 寄存器左移一位并与多项式异或
-            } else {
-                crc <<= 1; // CRC 寄存器左移一位
-            }
-        }
-    }
-    return crc;
 }
 
 std::vector<int> splitVersionString(const std::string& version) {
@@ -541,4 +628,39 @@ int compareVersionNumbers(const std::string& version1, const std::string& versio
     }
 
     return 0; // version1 == version2
+}
+
+// 拆分版本号字符串为数字部分
+std::vector<int> splitVersion(const std::string& version) {
+    std::vector<int> result;
+    std::istringstream iss(version);
+    std::string part;
+    while (std::getline(iss, part, '.')) {
+        result.push_back(std::stoi(part));
+    }
+    return result;
+}
+
+// 检查网络版本号 是否大于 当前的版本号
+int checkVersion(const std::string &version,const std::string &localVersion){
+    std::vector<int> otaVersion     = splitVersion(version);
+    std::vector<int> localOtaVersion   = splitVersion(localVersion);
+
+    // 比较每个部分
+    for (size_t i = 0; i < std::min(otaVersion.size(), localOtaVersion.size()); ++i) {
+        if (otaVersion[i] < localOtaVersion[i]) {
+            return -1;
+        } else if (otaVersion[i] > localOtaVersion[i]) {
+            return 1; 
+        }
+    }
+
+    // 版本号的前缀部分相同，比较长度确定大小关系
+    if (otaVersion.size() < localOtaVersion.size()) {
+        return -1;
+    } else if (otaVersion.size() > localOtaVersion.size()) {
+        return 1;
+    }
+
+    return 0;
 }

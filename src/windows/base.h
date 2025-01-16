@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2024-12-16 10:28:55
+ * @LastEditTime: 2025-01-17 01:19:46
  * @FilePath: /kk_frame/src/windows/base.h
  * @Description: 页面基类
  * @BugList:
@@ -19,6 +19,7 @@
 #include <view/view.h>
 #include <widget/textview.h>
 
+
 #include "json_func.h"
 
 #define __get(I)         findViewById(I)
@@ -30,31 +31,25 @@
 #define __clickv(V, L)    (V)->setOnClickListener(L)
 #define __clickg(G ,I, L) __getg(G, I)->setOnClickListener((L))
 
-#define __able(I)        __get(I)->setEnabled(true)
-#define __unable(I)      __get(I)->setEnabled(false)
-#define __ablev(V)       (V)->setEnabled(true)
-#define __unablev(V)     (V)->setEnabled(false)
-#define __ableg(G, I)    __getg(G,I)->setEnabled(true)
-#define __unableg(G, I)  __getg(G,I)->setEnabled(false)
-
 #define __visible(I,S)    __get(I)->setVisibility(S)
 #define __visiblev(V,S)   (V)->setVisibility(S)
 #define __visibleg(G,I,S) __getg(G,I)->setVisibility(S)
 
 #define __delete(v)      if(v)delete v;
 
-// 语言定义
+ // 语言定义
 enum {
     LANG_ZH_CN,
     LANG_ZH_TC,
-    LANG_EN_US
+    LANG_EN_US,
+    LANG_MAX,
 };
 
 // 页面定义
 enum {
-    PAGE_NULL,       // 空状态
-    PAGE_STANDBY,    // 待机
-    PAGE_OTA,        // OTA
+    PAGE_NULL,           // 空状态
+    PAGE_STANDBY,        // 待机
+    PAGE_OTA,            // OTA
 };
 
 // 弹窗定义
@@ -62,6 +57,15 @@ enum {
     POP_NULL,        // 空状态
     POP_LOCK,        // 童锁
     POP_TIP,         // 提示
+};
+
+static std::string langToText(uint8_t lang) {
+    const static char* langText[] = {
+        "中文",
+        "繁体",
+        "English"
+    };
+    return langText[lang % LANG_MAX];
 };
 
 /*
@@ -79,17 +83,20 @@ protected:
     ViewGroup*      mRootView = nullptr;   // 根节点
     uint64_t        mLastTick = 0;         // 上次Tick时间
     uint64_t        mLastClick = 0;        // 上次按键点击时间
+    bool            mIsAttach = false;     // 是否已经Attach
 public:
     PBase();
     virtual ~PBase();
 
     uint8_t getLang() const;
-    View* getRootView();
+    View*   getRootView();
     virtual uint8_t getType() const = 0;
 
     void callTick();
     void callAttach();
     void callDetach();
+    void callReload();
+    void callMsg(int type, void* data);
     void callMcu(uint8_t* data, uint8_t len);
     bool callKey(uint16_t keyCode, uint8_t evt);
     void callLangChange(uint8_t lang);
@@ -99,8 +106,10 @@ protected:
     View* findViewById(int id);
 
     virtual void onTick();
-    virtual void onReload();
+    virtual void onAttach();
     virtual void onDetach();
+    virtual void onReload();
+    virtual void onMsg(int type, void* data);
     virtual void onMcu(uint8_t* data, uint8_t len);
     virtual bool onKey(uint16_t keyCode, uint8_t evt);
     virtual void onLangChange();
@@ -137,7 +146,6 @@ protected:
     virtual void setAnim() = 0;
     virtual void setView() = 0;
     virtual void loadData() = 0;
-private:
 };
 
 #endif

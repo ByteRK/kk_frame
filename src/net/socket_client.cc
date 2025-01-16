@@ -1,5 +1,5 @@
 #include "socket_client.h"
-#include <comm_func.h>
+#include "comm_func.h"
 
 #define RPORT_LEN 0 // 端口往后顺序找的范围
 #define CONN_TIMEOUT 5
@@ -16,7 +16,7 @@ SocketClient::SocketClient() {
 
 SocketClient::~SocketClient() {}
 
-int SocketClient::init(const char *ip, ushort port) {
+int SocketClient::init(const char *ip, uint16_t port) {
     if (mInit) return 0;
     if (ip) mIp = ip;
     if (port > 0) mPort = port;

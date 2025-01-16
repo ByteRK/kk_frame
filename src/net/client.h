@@ -20,11 +20,11 @@
 using namespace cdroid;
 
 typedef struct {
-    uchar *start;
-    uchar *pos;
-    uchar *last;
-    uchar *end;
-    uchar  buf[1];
+    uint8_t *start;
+    uint8_t *pos;
+    uint8_t *last;
+    uint8_t *end;
+    uint8_t  buf[1];
 } SockBuf;
 
 class Client : public LooperCallback, public EventHandler {
@@ -51,7 +51,7 @@ public:
     virtual bool isTimeout(int out_time = 0);
 
     virtual int sendData(const char *data, int len);
-    virtual int sendData(const uchar *data, int len);
+    virtual int sendData(const uint8_t *data, int len);
 
 protected:
     // 收包处理：0继续循环接收；!0中断本次接收

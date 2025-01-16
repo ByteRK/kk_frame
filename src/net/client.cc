@@ -112,7 +112,7 @@ int  Client::sendData(const char* data, int len) {
     return send(mFd, data, len, MSG_NOSIGNAL);
 }
 
-int  Client::sendData(const uchar* data, int len) { return sendData((const char*)data, len); }
+int  Client::sendData(const uint8_t* data, int len) { return sendData((const char*)data, len); }
 
 void Client::onStatusChange() {
     if (mStatus == ST_DISCONNECT) {

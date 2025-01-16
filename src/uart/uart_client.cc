@@ -132,7 +132,7 @@ int UartClient::onRecvData() {
     return count;
 }
 
-int UartClient::onUartData(uchar* buf, int len) {
+int UartClient::onUartData(uint8_t* buf, int len) {
     int offset = 0;
 
     if (len > 0) { LOG(VERBOSE) << "len:" << len << " hex:" << hexstr(buf, len); }

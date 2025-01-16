@@ -156,4 +156,4 @@ int SocketServer::sendData(const char *data, int len) {
     return send_client_count;
 }
 
-int SocketServer::sendData(const uchar *data, int len) { return sendData((const char *)data, len); }
+int SocketServer::sendData(const uint8_t *data, int len) { return sendData((const char *)data, len); }

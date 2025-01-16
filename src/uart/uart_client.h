@@ -30,7 +30,7 @@ protected:
     virtual int  handleEvents();
     virtual int  getRecvSpace();
 
-    int  onUartData(uchar *buf, int len);
+    int  onUartData(uint8_t *buf, int len);
     void sendTrans(BuffData *ask);
     void sendConn();
     void sendHeart();
@@ -51,7 +51,7 @@ protected:
     int64_t               mSendCount;    // 发包个数
     int64_t               mRecvCount;    // 收包个数
     int                   mRecvSpace;  // 发包后接收间隔时间（毫秒）
-    uchar                 mSerialOk : 1;
+    uint8_t                 mSerialOk : 1;
 };
 
 #endif

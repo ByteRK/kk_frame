@@ -1,5 +1,3 @@
-src/common/hv_version.h
-src/common/hv_defualt_config.h
-src/common/hv_series_conf.h
+config/version.h
 assets/values/ID.xml
 R.h

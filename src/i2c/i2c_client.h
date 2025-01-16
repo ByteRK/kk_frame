@@ -12,11 +12,11 @@
 #define LEN_12 12
 
 typedef struct {
-    uchar *start;
-    uchar *pos;
-    uchar *last;
-    uchar *end;
-    uchar  buf[1];
+    uint8_t *start;
+    uint8_t *pos;
+    uint8_t *last;
+    uint8_t *end;
+    uint8_t  buf[1];
 } IICBuf;
 
 typedef struct {
@@ -54,7 +54,7 @@ protected:
     virtual int  handleEvents();
     virtual int  getRecvSpace();
 
-    int  onI2cData(uchar *buf, int len);
+    int  onUartData(uint8_t *buf, int len);
     void sendTrans(BuffData *ask);
     void sendHeart();
     bool checkDealData();
@@ -73,9 +73,8 @@ protected:
     int                   mChkErrCount;  // 错误次数
     int64_t               mSendCount;    // 发包个数
     int64_t               mRecvCount;    // 收包个数
-    int                   mRecvSpace;    // 发包后接收间隔时间（毫秒）
-    uchar                 mSerialOk : 1;
-
+    int                   mRecvSpace;  // 发包后接收间隔时间（毫秒）
+    uint8_t               mSerialOk : 1;
     IICBuf               *mRSBuf; 
     int64_t               mLastDealDataTime;  // 上一次处理数据的时间
 };

@@ -100,6 +100,8 @@ std::string getDayOnWeek(int day);
 // 获取字的长度
 int         wordLen(const char* buffer);
 std::string getWord(const char* buffer, int count);
+std::string decLastWord(const char *buffer);    // 删除以后一个字符（可自适应 各种长度的符号）
+std::string keepSpecifiedWord(const char *buffer, int count, bool en2cn, std::string spec = "");    // 保留指定长度的字符
 
 // system结果
 std::string sysCommand(const std::string& cmd);
@@ -130,19 +132,6 @@ void setBrightness(int value);
 /// @param content 
 bool readLoaclFile(const char* filename, std::string& content);
 
-/// @brief 计算CRC8
-/// @brief CRC-8-MAXIM算法
-/// @param ptr 
-/// @param len 
-/// @return 
-uint8_t crc8_maxim(uint8_t* ptr, uint32_t len);
-
-/// @brief CRC16-XModem 算法
-/// @param data 
-/// @param length 
-/// @return 
-uint16_t calculateCRC16XModem(const uint8_t* data, size_t length);
-
 // 将版本号字符串按照 '.' 分割成数字部分
 std::vector<int> splitVersionString(const std::string& version);
 
@@ -151,5 +140,11 @@ std::vector<int> splitVersionString(const std::string& version);
 //  0 version1 == version2
 // -1 version1 < version2
 int compareVersionNumbers(const std::string& version1, const std::string& version2);
+
+// 拆分版本号字符串为数字部分
+std::vector<int> splitVersion(const std::string& version);
+
+// 检查网络版本号 是否大于 当前的版本号
+int checkVersion(const std::string &version,const std::string &localVersion);
 
 #endif

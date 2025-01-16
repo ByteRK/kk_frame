@@ -50,7 +50,7 @@ BuffData* SDHWPacketBuffer::obtain(BufferType type) {
     return bf;
 }
 
-BuffData* SDHWPacketBuffer::obtain(BufferType type, ushort datalen) {
+BuffData* SDHWPacketBuffer::obtain(BufferType type, uint16_t datalen) {
     short len = datalen;
     switch (type) {
     case BT_MCU:
@@ -91,7 +91,7 @@ void SDHWPacketBuffer::recycle(BuffData* buf) {
     mBuffs.push_back(buf);
 }
 
-int SDHWPacketBuffer::add(BuffData* buf, uchar* in_buf, int len) {
+int SDHWPacketBuffer::add(BuffData* buf, uint8_t* in_buf, int len) {
     mRCV.parse(buf);
     return mRCV.add(in_buf, len);
 }
