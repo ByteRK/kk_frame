@@ -54,7 +54,7 @@ protected:
     virtual int  handleEvents();
     virtual int  getRecvSpace();
 
-    int  onUartData(uint8_t *buf, int len);
+    int  onI2cData(uint8_t *buf, int len);
     void sendTrans(BuffData *ask);
     void sendHeart();
     bool checkDealData();
