@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2025-01-17 01:19:46
+ * @LastEditTime: 2025-01-17 01:28:54
  * @FilePath: /kk_frame/src/windows/base.h
  * @Description: 页面基类
  * @BugList:
@@ -18,7 +18,6 @@
 #include <string.h>
 #include <view/view.h>
 #include <widget/textview.h>
-
 
 #include "json_func.h"
 
@@ -59,6 +58,9 @@ enum {
     POP_TIP,         // 提示
 };
 
+/// @brief 语言转文本
+/// @param lang 语言
+/// @return 
 static std::string langToText(uint8_t lang) {
     const static char* langText[] = {
         "中文",

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-08-01 03:03:02
- * @LastEditTime: 2025-01-17 01:05:08
+ * @LastEditTime: 2025-01-17 01:26:37
  * @FilePath: /kk_frame/src/protocol/tuya_mgr.cc
  * @Description:
  * @BugList:
@@ -24,6 +24,7 @@
 #include "conn_mgr.h"
 #include "manage.h"
 #include "this_func.h"
+#include "global_data.h"
 
 #define TICK_TIME 50 // tick触发时间（毫秒）
 

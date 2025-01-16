@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:47:17
- * @LastEditTime: 2025-01-17 01:19:06
+ * @LastEditTime: 2025-01-17 01:32:49
  * @FilePath: /kk_frame/src/function/this_func.cc
  * @Description: 此项目的一些功能函数
  * @BugList:
@@ -68,9 +68,9 @@ void printProjectInfo(const char* name) {
 #endif
     // 信息
     fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", name);
-    fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", std::string(APP_VER_INFO));
-    fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", std::string(BUILD_DATE));
-    fprintf(stderr, "\033[1;35m# Git:%s\033[m\n", std::string(APP_VERSION));
+    fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", APP_VER_INFO);
+    fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", BUILD_DATE);
+    fprintf(stderr, "\033[1;35m# Git:%s\033[m\n", APP_VERSION);
     fprintf(stderr, "\033[1;35m############ Ricken #############\n\n\033[0m");
 }
 

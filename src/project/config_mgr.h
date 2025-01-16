@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2024-08-22 18:22:56
+ * @LastEditTime: 2025-01-17 01:25:43
  * @FilePath: /kk_frame/src/project/config_mgr.h
  * @Description:
  * @BugList:
@@ -18,7 +18,6 @@
 #include <core/uieventsource.h>
 #include <core/preferences.h>
 #include "common.h"
-#include "defualt_config.h"
 
 #define g_config configMgr::ins()
 

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2024-08-22 18:23:01
+ * @LastEditTime: 2025-01-17 01:25:47
  * @FilePath: /kk_frame/src/project/config_mgr.cc
  * @Description:
  * @BugList:
@@ -12,6 +12,7 @@
  */
 
 #include "config_mgr.h"
+#include "defualt_config.h"
 
 #include "version.h"
 #include "comm_func.h"

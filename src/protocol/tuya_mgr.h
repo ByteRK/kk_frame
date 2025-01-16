@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-06-20 15:14:05
- * @LastEditTime: 2024-12-13 12:10:59
+ * @LastEditTime: 2025-01-17 01:26:31
  * @FilePath: /kk_frame/src/protocol/tuya_mgr.h
  * @Description:
  * @BugList:
@@ -17,7 +17,6 @@
 #include "packet_buffer.h"
 #include "uart_client.h"
 #include "cmd_handler.h"
-#include "global_data.h"
 
 #include "common.h"
 #include "struct.h"

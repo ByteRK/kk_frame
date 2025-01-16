@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2025-01-15 23:58:29
+ * @LastEditTime: 2025-01-17 01:28:44
  * @FilePath: /kk_frame/src/windows/manage.h
  * @Description: 页面管理类
  * @BugList:
@@ -15,7 +15,6 @@
 #ifndef _MANAGE_H_
 #define _MANAGE_H_
 
-#include "base.h"
 #include "wind_base.h"
 
 enum {

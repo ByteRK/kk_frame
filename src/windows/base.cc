@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2025-01-17 01:20:43
+ * @LastEditTime: 2025-01-17 01:30:57
  * @FilePath: /kk_frame/src/windows/base.cc
  * @Description: 页面基类
  * @BugList:
@@ -145,7 +145,7 @@ PopBase::~PopBase() {
 PageBase::PageBase(std::string resource) :PBase() {
     int64_t startTime = SystemClock::uptimeMillis();
     mRootView = (ViewGroup*)mInflater->inflate(resource, nullptr);
-    LOGI("Load UI cost:%lldms", SystemClock::uptimeMillis() - startTime);
+    LOGI("Load UI[%s] cost:%lldms", resource.c_str(), SystemClock::uptimeMillis() - startTime);
 }
 
 /// @brief 析构

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2024-12-05 01:51:33
+ * @LastEditTime: 2025-01-17 01:26:48
  * @FilePath: /kk_frame/main.cc
  * @Description: 
  * @BugList: 
@@ -15,11 +15,12 @@
 #include <core/app.h>
 
 #include "this_func.h"
+#include "global_data.h"
 #include "config_mgr.h"
+#include "manage.h"
 #include "conn_mgr.h"
 #include "btn_mgr.h"
 #include "tuya_mgr.h"
-#include "manage.h"
 
 int main(int argc, const char* argv[]) {
     printProjectInfo(argv[0]);
