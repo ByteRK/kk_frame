@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2024-12-16 10:14:25
+ * @LastEditTime: 2025-01-17 01:16:59
  * @FilePath: /kk_frame/src/windows/wind_base.cc
  * @Description: 窗口类
  * @BugList:
@@ -41,8 +41,8 @@ BaseWindow::BaseWindow() :Window(0, 0, -1, -1) {
 }
 
 BaseWindow::~BaseWindow() {
-    removeCallbacks(mPopTextRun);
-    mPopText->animate().cancel();
+    removeCallbacks(mToastRun);
+    mToast->animate().cancel();
     __delete(mPop);
     // __delete(g_windMgr);
 }
@@ -77,35 +77,38 @@ int BaseWindow::handleEvents() {
 
 void BaseWindow::init() {
     mContext = getContext();
-    mInflater = LayoutInflater::from(mContext);
-    mBaseView = (ViewGroup*)(mInflater->inflate("@layout/wind_base", this));
-    mMainBox = __getgv(mBaseView, ViewGroup, kk_frame::R::id::mainBox);
-    mTimeText = __getgv(mBaseView, TextView, kk_frame::R::id::time);
-    mWifiView = __getgv(mBaseView, ImageView, kk_frame::R::id::wifi);
-    mPopBox = __getgv(mBaseView, ViewGroup, kk_frame::R::id::popBox);
-    mPopText = __getgv(mBaseView, TextView, kk_frame::R::id::popText);
-    mBlackView = __getgv(mBaseView, View, kk_frame::R::id::cover);
-    if (!(mMainBox && mPopBox && mTimeText && mWifiView && mPopText)) {
+    mRootView = (ViewGroup*)(
+        LayoutInflater::from(mContext)->inflate("@layout/wind_base", this)
+        );
+    mPageBox = __getgv(mRootView, ViewGroup, kk_frame::R::id::mainBox);
+    mPopBox = __getgv(mRootView, ViewGroup, kk_frame::R::id::popBox);
+    mLogo = __getg(mRootView, kk_frame::R::id::logo);
+    mToast = __getgv(mRootView, TextView, kk_frame::R::id::toast);
+    mTimeText = __getgv(mRootView, TextView, kk_frame::R::id::time);
+    mWifiView = __getgv(mRootView, ImageView, kk_frame::R::id::wifi);
+    mBlackView = __getgv(mRootView, View, kk_frame::R::id::cover);
+
+
+    if (!(mPageBox && mPopBox && mTimeText && mWifiView && mToast)) {
         printf("BaseWindow Error\n");
         throw "BaseWindow Error";
     }
 
+    mPage = nullptr;
+    mPop = nullptr;
     mIsShowLogo = false;
-    mLogo = __getg(mBaseView, kk_frame::R::id::logo);
     mCloseLogo = [this] { mLogo->setVisibility(GONE);mIsShowLogo = false; };
     mPopBox->setOnTouchListener([ ](View& view, MotionEvent& evt) { return true; });
 
-    mPage = nullptr;
-    mPop = nullptr;
     mIsBlackView = false;
 
     // 增加点击反馈
     mAttachInfo->mPlaySoundEffect = playSound;
 
-    mPopTextRun = [this] {
-        mPopTextLevel = -1;
-        mPopTextRunning = false;
-        mPopText->animate().translationY(POPTEXT_TRANSLATIONY).setDuration(POPTEXT_ANIMATETIME).start();
+    mToastRun = [this] {
+        mToastLevel = -1;
+        mToastRunning = false;
+        mToast->animate().translationY(POPTEXT_TRANSLATIONY).setDuration(POPTEXT_ANIMATETIME).start();
         };
 }
 
@@ -198,10 +201,10 @@ void BaseWindow::hideBlack() {
 /// @param page 
 void BaseWindow::showPage(PageBase* page) {
     if (mPage)mPage->callDetach();
-    mMainBox->removeAllViews();
+    mPageBox->removeAllViews();
     mPage = page;
     if (mPage) {
-        mMainBox->addView(mPage->getRootView());
+        mPageBox->addView(mPage->getRootView());
         mPage->callAttach();
     }
 }
@@ -228,28 +231,28 @@ bool BaseWindow::showPop(PopBase* pop) {
 /// @param text 
 /// @param time 
 void BaseWindow::showToast(std::string text, int8_t level, bool animate, bool lock) {
-    if (mPopTextRunning && level <= mPopTextLevel)return;
+    if (mToastRunning && level <= mToastLevel)return;
 
-    removeCallbacks(mPopTextRun);
-    mPopTextRunning = true;
-    mPopTextLevel = level;
-    mPopText->setText(text);
-    mPopText->animate().cancel();
+    removeCallbacks(mToastRun);
+    mToastRunning = true;
+    mToastLevel = level;
+    mToast->setText(text);
+    mToast->animate().cancel();
     if (animate) {
-        mPopText->setTranslationY(POPTEXT_TRANSLATIONY);
-        mPopText->animate().translationY(0).setDuration(POPTEXT_ANIMATETIME / 3 * 2).start();
+        mToast->setTranslationY(POPTEXT_TRANSLATIONY);
+        mToast->animate().translationY(0).setDuration(POPTEXT_ANIMATETIME / 3 * 2).start();
     } else {
-        mPopText->setTranslationY(0);
+        mToast->setTranslationY(0);
     }
     if (!lock)
-        postDelayed(mPopTextRun, 3000);
+        postDelayed(mToastRun, 3000);
 }
 
 /// @brief 移除页面
 void BaseWindow::removePage() {
     if (mPage) {
-        mMainBox->removeAllViews();
         mPage->callDetach();
+        mPageBox->removeAllViews();
         mPage = nullptr;
     }
 }
@@ -258,8 +261,8 @@ void BaseWindow::removePage() {
 void BaseWindow::removePop() {
     if (mPop) {
         mPopBox->setVisibility(GONE);
-        mPopBox->removeAllViews();
         mPop->callDetach();
+        mPopBox->removeAllViews();
         __delete(mPop);
         mPop = nullptr;
     }
@@ -267,10 +270,10 @@ void BaseWindow::removePop() {
 
 /// @brief 移除弹幕
 void BaseWindow::hideToast() {
-    mPopTextLevel = -1;
-    mPopTextRunning = false;
-    mPopText->animate().cancel();
-    mPopText->setTranslationY(POPTEXT_TRANSLATIONY);
+    mToastLevel = -1;
+    mToastRunning = false;
+    mToast->animate().cancel();
+    mToast->setTranslationY(POPTEXT_TRANSLATIONY);
 }
 
 /// @brief 隐藏全部元素
@@ -278,7 +281,7 @@ void BaseWindow::hideAll() {
     mTimeText->setVisibility(GONE);
     mWifiView->setVisibility(GONE);
     mPopBox->setVisibility(GONE);
-    mPopText->setVisibility(GONE);
+    mToast->setVisibility(GONE);
     mBlackView->setVisibility(GONE);
 }
 

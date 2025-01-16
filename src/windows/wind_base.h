@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2024-12-16 10:12:56
+ * @LastEditTime: 2025-01-17 01:17:40
  * @FilePath: /kk_frame/src/windows/wind_base.h
  * @Description: 窗口类
  * @BugList:
@@ -21,34 +21,32 @@
 #include "base.h"
 
 class BaseWindow :public Window, public EventHandler {
-public:
 protected:
     Context*          mContext;
-    LayoutInflater*   mInflater;
-    ViewGroup*        mBaseView;
-    ViewGroup*        mMainBox;
-    ViewGroup*        mPopBox;
-    TextView*         mTimeText;
-    ImageView*        mWifiView;
-
     uint64_t          m200msTick;
     uint64_t          m1sTick;
     uint64_t          m2sTick;
 
-    bool              mIsShowLogo;  // 
-    View*             mLogo;        // LOGO
-    Runnable          mCloseLogo;   // LOGO计时
+    ViewGroup*        mRootView;       // 根容器
+    ViewGroup*        mPageBox;        // 页面容器
+    ViewGroup*        mPopBox;         // 弹窗容器
 
-    PopBase*          mPop;         // 弹窗
-    Runnable          mPopTextRun;  // 弹幕计时
-    TextView*         mPopText;     // 弹幕
-    PageBase*         mPage;        // 页面
+    View*             mLogo;           // LOGO
+    PopBase*          mPop;            // 弹窗
+    PageBase*         mPage;           // 页面
+    TextView*         mToast;          // 弹幕
+    TextView*         mTimeText;       // 时间
+    ImageView*        mWifiView;       // wifi图标
+    View*             mBlackView;      // 黑屏
+    
+    bool              mIsShowLogo;     // LOGO是否正在显示
+    bool              mIsBlackView;    // 黑屏是否正在显示
+    bool              mToastRunning;   // Toast是否正在显示
 
-    int8_t            mPopTextLevel;  // 弹幕文本等级
-    bool              mPopTextRunning;// 弹幕文本是否正在显示
+    Runnable          mCloseLogo;      // LOGO计时
+    Runnable          mToastRun;       // 弹幕计时
+    int8_t            mToastLevel;     // 弹幕文本等级
 
-    bool              mIsBlackView;
-    View*             mBlackView;
 private:
     BaseWindow();
     ~BaseWindow();

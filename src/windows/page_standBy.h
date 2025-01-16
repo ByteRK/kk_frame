@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-23 00:04:23
- * @LastEditTime: 2024-12-16 09:49:50
+ * @LastEditTime: 2025-01-17 01:16:13
  * @FilePath: /kk_frame/src/windows/page_standBy.h
  * @Description: 待机页面
  * @BugList:

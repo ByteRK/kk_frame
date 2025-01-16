@@ -71,7 +71,7 @@ enum {
  /// @brief 基类
 class PBase {
 protected:
-    Looper*         mLooper = nullptr;     // 循环
+    Looper*         mLooper = nullptr;     // 事件循环
     Context*        mContext = nullptr;    // 上下文
     LayoutInflater* mInflater = nullptr;   // 布局加载器
     uint8_t         mLang = LANG_ZH_CN;    // 语言
