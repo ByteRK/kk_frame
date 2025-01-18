@@ -696,6 +696,8 @@ RVNumberPicker::RVNumberPicker(Context* context, const AttributeSet& attr)
     mActiveColor = attr.getColor("activeColor", mCenterColor);
     mItemBackground = attr.getString("itemBackground", "#00FFFFFF");
 
+    mSelectLayout = attr.getString("internalLayout", "");
+
     mTextStyle = attr.getInt("textStyle", std::unordered_map<std::string, int>{
         { "normal", (int)Typeface::NORMAL },
         { "bold"  , (int)Typeface::BOLD },
