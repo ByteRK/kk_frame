@@ -72,7 +72,7 @@ void PBase::callMcu(uint8_t* data, uint8_t len) {
 }
 
 bool PBase::callKey(uint16_t keyCode, uint8_t evt) {
-    LOGV("onKeyDown keyCode:%d", keyCode);
+    LOGV("callKey -> keyCode:%d evt:%d", keyCode, evt);
     mLastClick = SystemClock::uptimeMillis();
     if (keyCode == KEY_WINDOW)return false;  // 刷新时间用
     return onKey(keyCode, evt);
