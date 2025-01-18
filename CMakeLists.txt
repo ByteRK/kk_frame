@@ -28,10 +28,13 @@ include_directories(
     ${CMAKE_BINARY_DIR}/include
     ${CMAKE_BINARY_DIR}/include/gui
     ${CMAKE_BINARY_DIR}/include/porting
+    ${PIXMAN_INCLUDE_DIRS}
 )
 
 find_package(jsoncpp CONFIG REQUIRED)
+find_package(OpenSSL REQUIRED)
 find_package(CURL REQUIRED)
+find_package(Pixman)
 
 # add_definitions(-DKEYBOARD_ENABLE)
 
@@ -87,6 +90,7 @@ target_link_libraries(
     cdroid PRIVATE
     JsonCpp::JsonCpp
     ${CURL_LIBRARIES}
+    ${OPENSSL_LIBRARIES}
 )
 
 install(TARGETS ${PROJECT_NAME} DESTINATION bin)
