@@ -6,9 +6,9 @@
 
 typedef enum {
     BT_NULL = 0,
-    BT_MCU,
-    BT_BTN,
-    BT_TUYA,
+    BT_MCU,       // MCU数据
+    BT_BTN,       // 按键数据
+    BT_TUYA,      // 涂鸦数据
 } BufferType;
 
 #pragma pack(1)

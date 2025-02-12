@@ -3,7 +3,6 @@
 #define __mcu_ui_h__
 
 #include "common.h"
-#include "comm_func.h"
 
 #include "ipacket_buffer.h"
 #include "proto.h"
@@ -129,8 +128,8 @@ public:
     constexpr static uint16_t  BUF_LEN = 0x466;     // 缓冲区大小
     u_int16_t mDataLen;         // 数据长度
     bool FindHead;              // 是否已找到包头
-    int mType = BT_MCU;         // 判断这个包来自哪里
-    int mCMD = BT_MCU;          // 判断分配给哪个函数进行处理
+    int mType = BT_MCU;         // 判断这个包类型
+    int mCMD = BT_MCU;          // 判断分配给哪个类(IHandler)进行处理
 
 public:
     MCU2UI() { }
