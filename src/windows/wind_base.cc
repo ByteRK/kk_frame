@@ -2,22 +2,24 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2025-01-17 01:21:38
+ * @LastEditTime: 2025-02-20 01:54:43
  * @FilePath: /kk_frame/src/windows/wind_base.cc
  * @Description: 窗口类
  * @BugList:
  *
- * Copyright (c) 2024 by Ricken, All Rights Reserved.
+ * Copyright (c) 2025 by Ricken, All Rights Reserved.
  *
  */
 
 #include <core/app.h>
-
 #include "manage.h"
 #include "wind_base.h"
 #include "comm_func.h"
-#include "R.h"
 #include "global_data.h"
+
+#include "btn_mgr.h"
+#include "config_mgr.h"
+#include "defualt_config.h"
 
 #define BL_MAX 96 // 最大亮度
 #define BL_MIN 1  // 最小亮度
@@ -26,7 +28,7 @@ constexpr int POP_TICK_INTERVAL = 1000;  // 弹窗刷新间隔
 constexpr int PAGE_TICK_INTERVAL = 200;  // 页面刷新间隔
 
 constexpr int POPTEXT_TRANSLATIONY = 76;    // 弹幕的Y轴偏移量
-constexpr int POPTEXT_ANIMATETIME = 600;   // 弹幕动画时间
+constexpr int POPTEXT_ANIMATETIME = 600;    // 弹幕动画时间
 
 /// @brief 点击时系统自动调用
 /// @param sound 音量大小(一般不用)
@@ -37,6 +39,7 @@ static void playSound(int sound) {
 /// @brief 构造以及基础内容检查
 /// @return 返回BaseWindow对象
 BaseWindow::BaseWindow() :Window(0, 0, -1, -1) {
+    mLastAction = SystemClock::uptimeMillis();
     mLastTick = 0;
     mPopTickTime = 0;
     mPageTickTime = 0;
@@ -47,7 +50,6 @@ BaseWindow::~BaseWindow() {
     removeCallbacks(mToastRun);
     mToast->animate().cancel();
     __delete(mPop);
-    // __delete(g_windMgr);
 }
 
 int BaseWindow::checkEvents() {
@@ -72,6 +74,7 @@ int BaseWindow::handleEvents() {
         if (mPop)mPop->callTick();
     }
 
+    btnLightTick();
     return 1;
 }
 
@@ -96,6 +99,7 @@ void BaseWindow::init() {
     mPopBox->setOnTouchListener([ ](View& view, MotionEvent& evt) { return true; });
 
     mIsBlackView = false;
+    mBlackView->setOnClickListener([this](View& view) { hideBlack(); });
 
     // 增加点击反馈
     mAttachInfo->mPlaySoundEffect = playSound;
@@ -123,7 +127,7 @@ void BaseWindow::showLogo(uint32_t time) {
 /// @param evt 
 /// @return 
 bool BaseWindow::onKeyUp(int keyCode, KeyEvent& evt) {
-    return onKey(keyCode, KK_EVENT_UP) || Window::onKeyUp(keyCode, evt);
+    return onKey(keyCode, VIRT_EVENT_UP) || Window::onKeyUp(keyCode, evt);
 }
 
 /// @brief 键盘按下事件
@@ -131,7 +135,7 @@ bool BaseWindow::onKeyUp(int keyCode, KeyEvent& evt) {
 /// @param evt 
 /// @return 
 bool BaseWindow::onKeyDown(int keyCode, KeyEvent& evt) {
-    return onKey(keyCode, KK_EVENT_DOWN) || Window::onKeyDown(keyCode, evt);
+    return onKey(keyCode, VIRT_EVENT_DOWN) || Window::onKeyDown(keyCode, evt);
 }
 
 /// @brief 按键处理
@@ -139,16 +143,26 @@ bool BaseWindow::onKeyDown(int keyCode, KeyEvent& evt) {
 /// @param status 
 /// @return 是否需要响铃
 bool BaseWindow::onKey(uint16_t keyCode, uint8_t status) {
+    mLastAction = SystemClock::uptimeMillis();
+    if (keyCode == KEY_WINDOW)return false;  // 刷新mLastAction用
     if (mIsShowLogo) return false;
-    if (mPage)mPage->callKey(KEY_WINDOW, status);
     if (mIsBlackView) {
-        if (status != KK_EVENT_DOWN)return false;
+        if (status != VIRT_EVENT_DOWN)return false;
         hideBlack();
         return true;
     }
+    if (selfKey(keyCode, status)) return true;
     if (mPop) return mPop->callKey(keyCode, status);
     if (mPage) return mPage->callKey(keyCode, status);
     return false;
+}
+
+/// @brief 重载触摸事件入口，方便计时最后一次触摸时间
+/// @param evt 
+/// @return 
+bool BaseWindow::dispatchTouchEvent(MotionEvent& evt) {
+    mLastAction = SystemClock::uptimeMillis();
+    return Window::dispatchTouchEvent(evt);
 }
 
 /// @brief 获取当前页面指针
@@ -177,7 +191,8 @@ int8_t BaseWindow::getPopType() {
 
 /// @brief 显示黑屏
 bool BaseWindow::showBlack(bool upload) {
-    setBrightness(BL_MIN);
+    if (mIsBlackView)return true;
+    setBrightness(CONFIG_BRIGHTNESS_MIN);
     mBlackView->setVisibility(VISIBLE);
     mIsBlackView = true;
     return true;
@@ -185,11 +200,12 @@ bool BaseWindow::showBlack(bool upload) {
 
 /// @brief 
 void BaseWindow::hideBlack() {
+    if (!mIsBlackView)return;
     g_windMgr->goTo(PAGE_STANDBY);
-    mPage->callKey(KEY_WINDOW, KK_EVENT_UP);
+    mPage->callKey(KEY_WINDOW, VIRT_EVENT_UP);
     mBlackView->setVisibility(GONE);
     mIsBlackView = false;
-    setBrightness(BL_MAX);
+    setBrightness(g_config->getBrightness());
 }
 
 /// @brief 显示页面
@@ -276,4 +292,14 @@ void BaseWindow::hideAll() {
 
 bool BaseWindow::selfKey(uint16_t keyCode, uint8_t status) {
     return false;
+}
+
+/// @brief 按键灯更新
+void BaseWindow::btnLightTick() {
+    // uint8_t btnLight[ALL_BTN_COUNT] = { 0 };
+
+    // if (mPop)mPop->callCheckLight(btnLight, btnLight + LEFT_BTN_COUNT);
+    // else if (mPage)mPage->callCheckLight(btnLight, btnLight + LEFT_BTN_COUNT);
+
+    // g_btnMgr->setLight(btnLight);
 }

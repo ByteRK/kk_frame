@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2024-12-13 13:27:35
+ * @LastEditTime: 2025-02-18 19:22:09
  * @FilePath: /kk_frame/src/project/global_data.h
  * @Description:
  * @BugList:
@@ -34,6 +34,9 @@ public: // 涂鸦部分
     std::string mTUYAWeather = "146";     // 涂鸦天气代码
     uint16_t    mWifiTestRes = 0xFFFF;    // wifi测试结果
 
+public: // 设备信息
+    bool        mPower = false;           // 开关机
+    bool        mLock = false;            // 童锁
 
 private:
     globalData();
@@ -43,11 +46,10 @@ private:
         MSG_SAVE,
     };
 
-    Looper* mLooper;
+    Looper*          mLooper;
     bool             mHaveChange;
     bool             mNeedSaveBak;
     uint64_t         mNextBakTick;
-
 
     Message          mSaveMsg;
     uint64_t         mPowerOnTime;  // 启动时间
@@ -62,10 +64,10 @@ public:
 
     uint64_t getPowerOnTime();
 private:
-    /*模式信息*/
-    void loadMode();
+    /*本地信息*/
     bool loadFromFile();
-    bool saveMode(bool isBak = false);
+    bool saveToFile(bool isBak = false);
+public:
 };
 
 #endif // _GLOBAL_DATA_H_

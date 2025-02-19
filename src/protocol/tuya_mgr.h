@@ -2,8 +2,8 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-06-20 15:14:05
- * @LastEditTime: 2025-01-17 01:26:31
- * @FilePath: /kk_frame/src/protocol/tuya_mgr.h
+ * @LastEditTime: 2025-01-19 16:43:53
+ * @FilePath: /kaidu_tr_pro/src/protocol/tuya_mgr.h
  * @Description:
  * @BugList:
  *
@@ -16,7 +16,7 @@
 
 #include "packet_buffer.h"
 #include "uart_client.h"
-#include "cmd_handler.h"
+#include "packet_handler.h"
 
 #include "common.h"
 #include "struct.h"

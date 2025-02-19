@@ -22,8 +22,8 @@ protected:
 protected:
     bool        mInit;
     std::string mIp;
-    uint16_t      mPort;
-    uint16_t      mRPort;
+    uint16_t    mPort;
+    uint16_t    mRPort;
     int64_t     mLastConnTime;
     int         mSockId;
 };

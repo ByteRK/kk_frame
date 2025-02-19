@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////
 
 BtnMgr::BtnMgr() {
-    mPacket = new SDHWPacketBuffer();
+    mPacket = new BtnPacketBuffer();
     mUartMCU = 0;
     mNextEventTime = 0;
     mLastSendTime = 0;
@@ -16,8 +16,7 @@ BtnMgr::BtnMgr() {
     memset(mBtnLight, BTN_HIGHT, ALL_BTN_COUNT);
     mBtnLightChanged = true;
 
-    mPacket->setType(BT_BTN, BT_BTN);
-    CHandlerManager::ins()->addHandler(BT_BTN, this);
+    g_packetMgr->addHandler(BT_BTN, this);
 }
 
 BtnMgr::~BtnMgr() {
@@ -35,7 +34,7 @@ int BtnMgr::init() {
     ss.stopbits = 1;
     ss.parity = 'N';
 
-    mUartMCU = new UartClient(mPacket, BT_BTN, ss, "192.168.0.113", 1134, 0);
+    mUartMCU = new UartClient(mPacket, ss, "192.168.0.113", 1134, 0);
     mUartMCU->init();
 
     // 启动延迟一会后开始发包
@@ -74,11 +73,11 @@ int BtnMgr::handleEvents() {
 
 /// @brief 发送串口消息
 void BtnMgr::send2MCU() {
-    BuffData* bd = mPacket->obtain(BT_BTN, 0);
-    UI2MCU   snd(bd, BT_BTN);
+    BuffData* bd = mPacket->obtain(false, 0);
+    BtnAsk   snd(bd);
     snd.setData(2, 0x01);
     memcpy(bd->buf + 3, mBtnLight, ALL_BTN_COUNT);
-    snd.checkcode();
+    snd.checkCode();
     LOG(VERBOSE) << "send to btn. bytes=" << hexstr(bd->buf, bd->len);
     mUartMCU->send(bd);
     mLastSendTime = SystemClock::uptimeMillis();
@@ -93,11 +92,15 @@ void BtnMgr::onCommDeal(IAck* ack) {
 /// @brief 设置按键灯亮度
 /// @param light 
 void BtnMgr::setLight(uint8_t* light) {
-    for (uint8_t i = 0; i < ALL_BTN_COUNT; i++) {
-        if (light[i] != mBtnLight[i]) {
-            memcpy(mBtnLight, light, ALL_BTN_COUNT);
-            mBtnLightChanged = true;
-            break;
-        }
+    // for (uint8_t i = 0; i < ALL_BTN_COUNT; i++) {
+    //     if (light[i] != mBtnLight[i]) {
+    //         memcpy(mBtnLight, light, ALL_BTN_COUNT);
+    //         mBtnLightChanged = true;
+    //         break;
+    //     }
+    // }
+    if (memcmp(mBtnLight, light, ALL_BTN_COUNT)) {
+        memcpy(mBtnLight, light, ALL_BTN_COUNT);
+        mBtnLightChanged = true;
     }
 }

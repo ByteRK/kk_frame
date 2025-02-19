@@ -6,12 +6,11 @@
 //////////////////////////////////////////////////////////////////
 
 CConnMgr::CConnMgr() {
-    mPacket = new SDHWPacketBuffer();
+    mPacket = new McuPacketBuffer();
     mUartMCU = nullptr;
     mNextEventTime = 0;
 
-    mPacket->setType(BT_MCU, BT_MCU);
-    CHandlerManager::ins()->addHandler(BT_MCU, this);
+    g_packetMgr->addHandler(BT_MCU, this);
 }
 
 CConnMgr::~CConnMgr() {
@@ -29,7 +28,7 @@ int CConnMgr::init() {
     ss.stopbits = 1;
     ss.parity = 'N';
 
-    mUartMCU = new UartClient(mPacket, BT_MCU, ss, "192.168.0.113", 1142, 0);
+    mUartMCU = new UartClient(mPacket, ss, "192.168.0.113", 1142, 0);
     mUartMCU->init();
 
     mLastSendTime = SystemClock::uptimeMillis();
@@ -39,6 +38,10 @@ int CConnMgr::init() {
     mNextEventTime = SystemClock::uptimeMillis() + TICK_TIME * 10;
     App::getInstance().addEventHandler(this);
     return 0;
+}
+
+std::string CConnMgr::getVersion() {
+    return std::string("-.-");
 }
 
 int CConnMgr::checkEvents() {
@@ -58,10 +61,10 @@ int CConnMgr::handleEvents() {
 }
 
 void CConnMgr::send2MCU() {
-    BuffData* bd = mPacket->obtain(BT_MCU, 0);
-    UI2MCU   snd(bd, BT_MCU);
+    BuffData* bd = mPacket->obtain(false, 0);
+    McuAsk    snd(bd);
     
-    snd.checkcode(); // 修改检验位
+    snd.checkCode(); // 修改检验位
 
     mLastSendTime = SystemClock::uptimeMillis();
     LOG(VERBOSE) << "[ <-- Send] bytes=" << hexstr(bd->buf, bd->len) << "    -->";

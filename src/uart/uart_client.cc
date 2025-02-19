@@ -1,6 +1,6 @@
 
 #include "uart_client.h"
-#include "cmd_handler.h"
+#include "packet_handler.h"
 #include <core/app.h>
 #include <uart.h>
 
@@ -15,17 +15,17 @@
 
 #define ADD_TCP_HEARD false
 
-UartClient::UartClient(IPacketBuffer* ipacket, BufferType type, UartOpenReq& uartInfo, const std::string& ip,
-    short port, int recv_space)
-    : mPacketBuff(ipacket), mBufType(type), mUartInfo(uartInfo), mIp(ip), mPort(port), mRecvSpace(recv_space) {
+UartClient::UartClient(IPacketBuffer* ipacket, UartOpenReq& uartInfo, const std::string& ip,
+    short port, int recv_space, bool enableRepeatAcc)
+    : mPacketBuff(ipacket), mUartInfo(uartInfo), mIp(ip), mPort(port), mRecvSpace(recv_space), mEnableRepeatAcc(enableRepeatAcc) {
 
     mLastSendTime = 0; // 最后一次发包时间
     mSendCount    = 0;
     mRecvCount    = 0;
     mChkErrCount  = 0;
     mLastRecvTime = SystemClock::uptimeMillis() + 5000;
-    mLastRecv     = mPacketBuff->obtain(type);
-    mCurrRecv     = mPacketBuff->obtain(type);
+    mLastRecv     = mPacketBuff->obtain();
+    mCurrRecv     = mPacketBuff->obtain();
     mLastSndHeart = SystemClock::uptimeMillis();
     mSerialOk     = 0;
 }
@@ -40,8 +40,12 @@ UartClient::~UartClient() {
 
 int UartClient::init() {
 
+#ifdef CDROID_X64
+    LOGI("Uart: %s-%d %p", mIp.c_str(), mPort, this);
+#else
     LOGI("Uart: %s %d-%d-%d-%d-%C %p", mUartInfo.serialPort, mUartInfo.speed, mUartInfo.flow_ctrl, mUartInfo.databits,
         mUartInfo.stopbits, mUartInfo.parity, this);
+#endif
 
 #if CONN_TCP
 #ifdef DEBUG
@@ -147,10 +151,10 @@ int UartClient::onUartData(uint8_t* buf, int len) {
         if (mPacketBuff->check(mCurrRecv)) {
             mChkErrCount = 0;
             // 检查重复数据包
-            if (1 || !mPacketBuff->compare(mCurrRecv, mLastRecv)) {
+            if (mEnableRepeatAcc || !mPacketBuff->compare(mCurrRecv, mLastRecv)) {
                 LOG(VERBOSE) << "new packet:" << mPacketBuff->str(mCurrRecv);
                 IAck* ack = mPacketBuff->ack(mCurrRecv);
-                g_objHandler->onCommand(ack);
+                g_packetMgr->onCommand(ack);
 
                 // 保存本次数据包
                 mLastRecv->len = mCurrRecv->len;
@@ -180,8 +184,6 @@ void UartClient::onTick() {
             << " check_fail=" << mChkErrCount;
     }
 
-    g_objHandler->onTick();
-
     SocketClient::onTick();
 #if CONN_TCP
     if (now_tick - mLastSndHeart >= HEART_TIME && isTimeout(HEART_TIME)) {
@@ -197,7 +199,7 @@ void UartClient::onTick() {
         BuffData* ask = mSendQueue.front();
         mSendQueue.pop_front();
 
-        mPacketBuff->check_code(ask);
+        mPacketBuff->checkCode(ask);
         sendTrans(ask);
         mPacketBuff->recycle(ask);
         mSendCount++;

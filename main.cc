@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2025-01-17 01:26:48
+ * @LastEditTime: 2025-02-20 01:53:49
  * @FilePath: /kk_frame/main.cc
  * @Description: 
  * @BugList: 
@@ -24,6 +24,7 @@
 
 int main(int argc, const char* argv[]) {
     printProjectInfo(argv[0]);
+    // printKeyMap();
 
     App app(argc, argv);
     cdroid::Context* ctx = &app;

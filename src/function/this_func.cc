@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:47:17
- * @LastEditTime: 2025-01-17 01:32:49
+ * @LastEditTime: 2025-02-20 01:52:06
  * @FilePath: /kk_frame/src/function/this_func.cc
  * @Description: 此项目的一些功能函数
  * @BugList:
@@ -15,7 +15,7 @@
 #include "this_func.h"
 #include "comm_func.h"
 
-#include "version.h"
+#include "config/version.h"
 #include "series_config.h"
 
 #include <sys/syscall.h>   // for SYS_xxx definitions
@@ -67,20 +67,20 @@ void printProjectInfo(const char* name) {
     fprintf(stderr, "\033[1;32m REALSE\n");
 #endif
     // 信息
+    fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", APP_ID);
     fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", name);
     fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", APP_VER_INFO);
     fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", BUILD_DATE);
-    fprintf(stderr, "\033[1;35m# Git:%s\033[m\n", APP_VERSION);
+    fprintf(stderr, "\033[1;35m# Git:%s\033[m\n", GIT_VERSION);
     fprintf(stderr, "\033[1;35m############ Ricken #############\n\n\033[0m");
 }
 
 void printKeyMap() {
-    // fprintf(stderr, "\033[1;30m############################ KeyBoardMap ############################\033[0;37m\n");
-    // fprintf(stderr, "\033[1;30m# Q:电源  W:左炉  E:风速  R:增加 ┏━━━━━━┓ U:温时  I:蒸蒸  O:气炸  P:预约   \033[0;37m\n");
-    // fprintf(stderr, "\033[1;30m# A:照明  S:右炉  D:自动  F:减少 ┃      ┃ H:启停  J:烤烤  K:附加  L:炉灯   \033[0;37m\n");
-    // fprintf(stderr, "\033[1;30m# Z:清洗  -:一一  -:一一  -:一一 ┗━━━━━━┛ -:一一  -:一一  -:一一  M:童锁   \033[0;37m\n");
-    // fprintf(stderr, "\033[1;30m#####################################################################\033[0;37m\n");
-    // fprintf(stderr, "\033[0;37m\n");
+    fprintf(stderr, "\033[1;30m################################### KeyBoardMap ################################### \033[0;37m\n");
+    fprintf(stderr, "\033[1;30m# 6:电源  5:鲜蒸  4:嫩烤  3:湿烤  2:飓风 ┏━━━━━━┓ 8:魔方  9:香炸 10:炖焗 11:智能 12:辅助   \033[0;37m\n");
+    fprintf(stderr, "\033[1;30m# 7:加水  -:一一  -:一一  -:一一  -:一一 ┗━━━━━━┛ -:一一  -:一一  -:一一  -:一一  -:一一   \033[0;37m\n");
+    fprintf(stderr, "\033[1;30m################################################################################### \033[0;37m\n");
+    fprintf(stderr, "\033[0;37m\n");
 }
 
 void analogInput(int code, int value) {

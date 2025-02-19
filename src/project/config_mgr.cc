@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2025-01-17 01:25:47
+ * @LastEditTime: 2025-02-18 19:04:38
  * @FilePath: /kk_frame/src/project/config_mgr.cc
  * @Description:
  * @BugList:
@@ -14,7 +14,7 @@
 #include "config_mgr.h"
 #include "defualt_config.h"
 
-#include "version.h"
+#include "config/version.h"
 #include "comm_func.h"
 #include "global_data.h"
 
@@ -66,8 +66,6 @@ void configMgr::init() {
         mConfig.load(CONFIG_FILE_PATH);
     } else if (access(CONFIG_FILE_BAK_PATH, F_OK) == 0) {
         mConfig.load(CONFIG_FILE_BAK_PATH);
-    } else {
-        mConfig.setValue(CONFIG_SECTION, HV_STRING(MCU), HV_SYS_CONFIG_MCU);
     }
 
     mUpdates = 0;
@@ -78,5 +76,16 @@ void configMgr::init() {
     mLooper = Looper::getMainLooper();
     mLooper->sendMessageDelayed(2000, this, mMsg);
 }
-
 /**************************************************************************************/
+
+/// @brief 获取屏幕亮度
+/// @return 
+int configMgr::getBrightness() {
+    return mConfig.getInt(CONFIG_SECTION, HV_STRING(BRIGHTNESS), CONFIG_BRIGHTNESS);
+}
+
+/// @brief 设置屏幕亮度
+/// @param value 
+void configMgr::setBrightness(int value) {
+    mConfig.setValue(CONFIG_SECTION, HV_STRING(BRIGHTNESS), value);
+}

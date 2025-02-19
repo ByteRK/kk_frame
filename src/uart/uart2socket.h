@@ -28,12 +28,12 @@ typedef struct tagUartHeader {
 } UartHeader, UARTHEADER, *LPUARTHEADER;
 
 typedef struct tagUartOpenReq {
-    char  serialPort[UART_PORT_LEN]; // /dev/ttySxx
-    int   speed;          // 串口速度
+    char    serialPort[UART_PORT_LEN]; // /dev/ttySxx
+    int     speed;          // 串口速度
     uint8_t flow_ctrl;      // 数据流控制
     uint8_t databits;       // 数据位   取值为 7 或者8
     uint8_t stopbits;       // 停止位   取值为 1 或者2
-    char  parity;         // 效验类型 取值为N,E,O,,S
+    char    parity;         // 效验类型 取值为N,E,O,,S
 } UartOpenReq;
 
 typedef struct {

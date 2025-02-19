@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-06-12 14:49:06
- * @LastEditTime: 2025-01-16 00:05:44
+ * @LastEditTime: 2025-01-19 16:43:44
  * @FilePath: /kk_frame/src/protocol/btn_mgr.h
  * @Description:
  * @BugList:
@@ -16,7 +16,7 @@
 
 #include "packet_buffer.h"
 #include "uart_client.h"
-#include "cmd_handler.h"
+#include "packet_handler.h"
 
 // 按键数量
 constexpr int LEFT_BTN_COUNT = 6;
@@ -37,9 +37,9 @@ private:
     int64_t          mLastSendTime;
     UartClient*      mUartMCU; // 按键串口
 
-    uint8_t            mVersionL;
-    uint8_t            mVersionR;
-    uint8_t            mBtnLight[ALL_BTN_COUNT]; // 按键灯状态列表
+    uint8_t          mVersionL;
+    uint8_t          mVersionR;
+    uint8_t          mBtnLight[ALL_BTN_COUNT]; // 按键灯状态列表
     bool             mBtnLightChanged;         // 按键灯状态是否改变
 protected:
     BtnMgr();

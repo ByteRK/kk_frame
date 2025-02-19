@@ -17,17 +17,20 @@
 - - mipmap    图片
 - - strings   文本
 - - values    数据
-- conf     配置文件(touch后编译生效,文件生成于src/common)
+- config   配置文件
 - docs     项目文档
 - fonts    项目字体
+- lang     语言文件
+- script   脚本文件
 - src      功能代码
 - - common    常用函数
 - - data      数据存储
 - - function  功能函数
+- - i2c       I2C相关
 - - net       网络相关
 - - protocol  通信协议
 - - uart      串口相关
-- - viewlibs  自定义页面
+- - viewlibs  自定义组件库
 - - windows   页面函数
 ~~~
 

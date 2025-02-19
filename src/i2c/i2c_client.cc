@@ -1,6 +1,6 @@
 
 #include "i2c_client.h"
-#include "cmd_handler.h"
+#include "packet_handler.h"
 
 #include <core/app.h>
 #include <core/systemclock.h>
@@ -9,17 +9,17 @@
 #define RECV_PACKET_TIME_SPACE 100  // epoll_wait 收包间隔ms
 #define SEND_PACKET_TIME_SPACE 50   // 发包间隔ms
 
-I2CClient::I2CClient(IPacketBuffer* ipacket, BufferType type, I2COpenReq& i2cInfo
+I2CClient::I2CClient(IPacketBuffer* ipacket, I2COpenReq& i2cInfo
     , const std::string& ip, short port, int recv_space)
-    : mPacketBuff(ipacket), mBufType(type), mI2cOpenReq(i2cInfo), mIp(ip), mPort(port), mRecvSpace(recv_space) {
+    : mPacketBuff(ipacket), mI2cOpenReq(i2cInfo), mIp(ip), mPort(port), mRecvSpace(recv_space) {
 
     mLastSendTime = 0; // 最后一次发包时间
     mSendCount = 0;
     mRecvCount = 0;
     mChkErrCount = 0;
     mLastRecvTime = SystemClock::uptimeMillis() + 5000;
-    mLastRecv = mPacketBuff->obtain(type);
-    mCurrRecv = mPacketBuff->obtain(type);
+    mLastRecv = mPacketBuff->obtain();
+    mCurrRecv = mPacketBuff->obtain();
     mLastSndHeart = SystemClock::uptimeMillis();
     mSerialOk = 0;
 
@@ -141,7 +141,7 @@ int I2CClient::onI2cData(uint8_t* buf, int len) {
             if (!mPacketBuff->compare(mCurrRecv, mLastRecv) || checkDealData()) {
                 LOG(DEBUG) << "new packet:" << mPacketBuff->str(mCurrRecv);
                 IAck* ack = mPacketBuff->ack(mCurrRecv);
-                g_objHandler->onCommand(ack);
+                g_packetMgr->onCommand(ack);
 
                 // 保存本次数据包
                 mLastRecv->len = mCurrRecv->len;
@@ -171,8 +171,6 @@ void I2CClient::onTick() {
             << " check_fail=" << mChkErrCount;
     }
 
-    g_objHandler->onTick();
-
     SocketClient::onTick();
 #if CONN_TCP
     if (now_tick - mLastSndHeart >= HEART_TIME && isTimeout(HEART_TIME)) {
@@ -188,7 +186,7 @@ void I2CClient::onTick() {
 
         mSendQueue.pop_front();
 
-        mPacketBuff->check_code(ask);
+        mPacketBuff->checkCode(ask);
 
         sendTrans(ask);
         mPacketBuff->recycle(ask);

@@ -124,8 +124,9 @@ std::string& replace_all(std::string& src, const std::string& old_value, const s
 int calculation_signal(float Quality, int SignalLevel);
 
 /// @brief 设置屏幕亮度
-/// @param value 亮度值 [1-99]
-void setBrightness(int value);
+/// @param value 亮度值 [0-100]
+/// @param swap 是否反转亮度值 默认false
+void setBrightness(uint8_t value, bool swap = false);
 
 /// @brief 读取本地文件
 /// @param filename 

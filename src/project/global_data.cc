@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2024-08-22 18:10:09
+ * @LastEditTime: 2025-02-18 19:22:25
  * @FilePath: /kk_frame/src/project/global_data.cc
  * @Description:
  * @BugList:
@@ -21,9 +21,8 @@
 
 #include <unistd.h>
 
-#define TIME_INTERVAL (1000 * 10)
-
-#define SAVE_MODE_FILE false;
+// 备份时间间隔
+constexpr uint32_t TIME_INTERVAL = 1000 * 10;
 
  /// @brief 
 globalData::globalData() {
@@ -41,7 +40,7 @@ void globalData::handleMessage(Message& message) {
     switch (message.what) {
     case MSG_SAVE:
         if (mHaveChange) {
-            saveMode();
+            saveToFile();
             sync();
             mHaveChange = false;
             mNeedSaveBak = true;
@@ -49,7 +48,7 @@ void globalData::handleMessage(Message& message) {
             LOG(INFO) << "[app] save globalData. file=" << APP_FILE_FULL_PATH;
         }
         if (mNeedSaveBak && (now >= mSaveMsg.when)) {
-            saveMode(true);
+            saveToFile(true);
             sync();
             mNeedSaveBak = false;
             LOG(INFO) << "[app] save globalData bak. file=" << APP_FILE_BAK_PATH;
@@ -64,7 +63,7 @@ void globalData::handleMessage(Message& message) {
 /// @brief 初始化
 void globalData::init() {
     mPowerOnTime = SystemClock::uptimeMillis();
-    loadMode();
+    loadFromFile();
 
     mHaveChange = false;
     mNeedSaveBak = false;
@@ -82,34 +81,31 @@ uint64_t globalData::getPowerOnTime() {
     return mPowerOnTime;
 }
 
-/// @brief 载入模式数据
-void globalData::loadMode() {
-    LOG(INFO) << "Loading built-in data";
-}
-
 /// @brief 载入本地文件
 /// @return 
 bool globalData::loadFromFile() {
-    // Json::Value appJson;
-    // std::string loadingPath = "";
-    // if (access(APP_FILE_FULL_PATH, F_OK) == 0) {
-    //     loadingPath = APP_FILE_FULL_PATH;
-    // } else if (access(APP_FILE_BAK_PATH, F_OK) == 0) {
-    //     loadingPath = APP_FILE_BAK_PATH;
-    // }
-    // if (!convertStringToJson(loadingPath, appJson) || !appJson.isArray())
-    //     return false;
+    Json::Value appJson;
+    std::string loadingPath = "";
+    if (access(APP_FILE_FULL_PATH, F_OK) == 0) {
+        loadingPath = APP_FILE_FULL_PATH;
+    } else if (access(APP_FILE_BAK_PATH, F_OK) == 0) {
+        loadingPath = APP_FILE_BAK_PATH;
+    }
+    LOG(INFO) << "Loading local data, file=" << loadingPath;
+    if (!loadLocalJson(loadingPath, appJson))
+        return false;
+
     return true;
 }
 
 /// @brief 保存文件到本地
 /// @param isBak 
 /// @return 
-bool globalData::saveMode(bool isBak) {
-    // Json::Value appJson(Json::arrayValue);
-    // if (isBak)
-    //     return saveLocalJson(APP_FILE_BAK_PATH, appJson);
-    // else
-    //     return saveLocalJson(APP_FILE_FULL_PATH, appJson);
+bool globalData::saveToFile(bool isBak) {
+    Json::Value appJson(Json::arrayValue);
+    if (isBak)
+        return saveLocalJson(APP_FILE_BAK_PATH, appJson);
+    else
+        return saveLocalJson(APP_FILE_FULL_PATH, appJson);
     return true;
 }

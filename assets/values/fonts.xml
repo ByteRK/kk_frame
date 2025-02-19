@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="HarmonyOS">
+        <item name="android:text">hello</item>
+        <item name="android:fontFamily">@font/HarmonyOS_Sans_SC_Regular</item>
+    </style>
+    <style name="HarmonyOS_Medium">
+        <item name="android:text">hello</item>
+        <item name="android:fontFamily">@font/HarmonyOS_Sans_SC_Medium</item>
+    </style>
+    <style name="HarmonyOS_Bold">
+        <item name="android:text">hello</item>
+        <item name="android:fontFamily">@font/HarmonyOS_Sans_SC_Bold</item>
+    </style>
+</resources>

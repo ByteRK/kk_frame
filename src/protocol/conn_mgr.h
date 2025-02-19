@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:54:27
- * @LastEditTime: 2025-01-16 00:10:44
+ * @LastEditTime: 2025-02-18 19:19:58
  * @FilePath: /kk_frame/src/protocol/conn_mgr.h
  * @Description: 
  * @BugList: 
@@ -16,7 +16,7 @@
 
 #include "packet_buffer.h"
 #include "uart_client.h"
-#include "cmd_handler.h"
+#include "packet_handler.h"
 
 #include "common.h"
 #include "struct.h"
@@ -40,6 +40,7 @@ public:
         return &stIns;
     }
     int init();
+    std::string getVersion();
 protected:
     int checkEvents();
     int handleEvents();

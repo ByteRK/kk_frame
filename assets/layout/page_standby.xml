@@ -2,14 +2,14 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@mipmap/bg_standby"
     xmlns:tools="http://schemas.android.com/tools">
     <TextView
-        android:id="@+id/date"
+        android:id="@+id/hello"
+        style="@style/HarmonyOS_Medium"
+
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="68dp"
-        android:layout_marginTop="94dp"
-        android:textSize="28sp"
-        tools:text="3月20日\n星期五"/>
+        android:layout_alignParentCenter="true"
+        android:textSize="50sp"
+        android:text="Hello World!"/>
 </RelativeLayout>

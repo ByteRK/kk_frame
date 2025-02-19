@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2025-01-17 01:30:57
+ * @LastEditTime: 2025-02-20 01:57:24
  * @FilePath: /kk_frame/src/windows/base.cc
  * @Description: 页面基类
  * @BugList:
@@ -28,8 +28,7 @@ PBase::PBase() {
     mContext = &App::getInstance();;
     mLooper = Looper::getMainLooper();
     mInflater = LayoutInflater::from(mContext);
-    mLastTick = SystemClock::uptimeMillis();
-    mLastClick = mLastTick;
+    mLastTick = 0;
 }
 
 PBase::~PBase() {
@@ -45,8 +44,12 @@ View* PBase::getRootView() {
 }
 
 void PBase::callTick() {
-    onTick();
-    mLastTick = SystemClock::uptimeMillis();
+    if (mAutoExit && SystemClock::uptimeMillis() - g_window->mLastAction > mAutoExit) {
+        LOGI("auto exit");
+        g_windMgr->goTo(PAGE_STANDBY, mAutoExitWithBlack);
+    } else {
+        onTick();
+    }
 }
 
 void PBase::callAttach() {
@@ -73,8 +76,6 @@ void PBase::callMcu(uint8_t* data, uint8_t len) {
 
 bool PBase::callKey(uint16_t keyCode, uint8_t evt) {
     LOGV("callKey -> keyCode:%d evt:%d", keyCode, evt);
-    mLastClick = SystemClock::uptimeMillis();
-    if (keyCode == KEY_WINDOW)return false;  // 刷新时间用
     return onKey(keyCode, evt);
 }
 
@@ -120,6 +121,11 @@ void PBase::onLangChange() {
 void PBase::onCheckLight(uint8_t* left, uint8_t* right) {
 }
 
+void PBase::setAutoBackToStandby(uint32_t time, bool withBlack) {
+    mAutoExit = time * 1000;
+    mAutoExitWithBlack = withBlack;
+}
+
 void PBase::setLangText(TextView* v, const Json::Value& value) {
     if (v == nullptr) LOGE("TextView is nullptr");
     else v->setText(jsonToString(value, "null"));
@@ -155,11 +161,10 @@ PageBase::~PageBase() {
 /// @brief 初始化UI
 void PageBase::initUI() {
     mInitUIFinish = false;
+    loadBase();
     getView();
     setAnim();
     setView();
     loadData();
     mInitUIFinish = true;
-
-    g_windMgr->add(this);
 }

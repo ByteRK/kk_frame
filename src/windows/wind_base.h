@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2025-01-17 01:21:48
+ * @LastEditTime: 2025-02-18 19:43:26
  * @FilePath: /kk_frame/src/windows/wind_base.h
  * @Description: 窗口类
  * @BugList:
@@ -16,11 +16,12 @@
 
 #include <widget/cdwindow.h>
 #include <widget/textview.h>
-#include <widget/imageview.h>
 
 #include "base.h"
 
 class BaseWindow :public Window, public EventHandler {
+public:
+    uint64_t          mLastAction;     // 上次用户动作时间
 protected:
     Context*          mContext;        // 上下文
     ViewGroup*        mRootView;       // 根容器
@@ -62,6 +63,7 @@ public:
     bool onKeyUp(int keyCode, KeyEvent& evt) override;
     bool onKeyDown(int keyCode, KeyEvent& evt) override;
     bool onKey(uint16_t keyCode, uint8_t status);
+    bool dispatchTouchEvent(MotionEvent& evt) override;
 
     PageBase* getPage();
     PopBase*  getPop();
@@ -78,6 +80,8 @@ public:
     void      hideAll();
 private:
     bool      selfKey(uint16_t keyCode, uint8_t status);
+    
+    void      btnLightTick();
 };
 
 #endif

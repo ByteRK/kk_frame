@@ -35,7 +35,7 @@ public:
         I2C_TYPE_SW,
     };
 public:
-    I2CClient(IPacketBuffer *ipacket, BufferType type, I2COpenReq &i2cInfo
+    I2CClient(IPacketBuffer *ipacket, I2COpenReq &i2cInfo
         , const std::string &ip, short port, int recv_space);
     ~I2CClient();
 
@@ -60,7 +60,6 @@ protected:
     bool checkDealData();
 protected:
     IPacketBuffer        *mPacketBuff;     // 数据包处理器
-    BufferType            mBufType;        // 缓存类型
     I2COpenReq            mI2cOpenReq;     // I2C连接信息
     std::string           mIp;
     short                 mPort;

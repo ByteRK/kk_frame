@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2025-01-17 01:28:44
+ * @LastEditTime: 2025-02-18 20:28:50
  * @FilePath: /kk_frame/src/windows/manage.h
  * @Description: 页面管理类
  * @BugList:
@@ -17,10 +17,10 @@
 
 #include "wind_base.h"
 
-enum {
-    KK_EVENT_DOWN,     // 按下
-    KK_EVENT_LONG,     // 长按
-    KK_EVENT_UP,       // 松开
+enum { // 虚拟事件类型(适配串口按键以及非标准按键)
+    VIRT_EVENT_DOWN,     // 虚拟按下
+    VIRT_EVENT_LONG,     // 虚拟长按
+    VIRT_EVENT_UP,       // 虚拟松开
 };
 
 #define g_windMgr CWindMgr::ins()
@@ -38,7 +38,10 @@ protected:
     Looper*  mLooper;
     uint64_t mInitTime;      // 初始化时间
 
-    std::map<int, PageBase*> mPageList;  // 页面列表
+    std::unordered_map<int, PageBase*> mPageList;  // 页面列表
+private:
+    std::unordered_map<int, std::function<PopBase*()>>  mPopFactory;  // 弹窗工厂
+    std::unordered_map<int, std::function<PageBase*()>> mPageFactory; // 页面工厂
 public:
     static CWindMgr* ins() {
         static CWindMgr* instance = new CWindMgr();
@@ -51,8 +54,6 @@ public:
     ~CWindMgr();
     
     void init();
-
-    void add(PageBase* page);
     void close(PageBase* page);
     void close(int page);
     void closeAll(bool withPop = false);

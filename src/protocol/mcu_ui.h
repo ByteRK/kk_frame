@@ -3,324 +3,197 @@
 #define __mcu_ui_h__
 
 #include "common.h"
+#include "comm_func.h"
 
-#include "ipacket_buffer.h"
+#include "packet_base.h"
 #include "proto.h"
 
-// 帧头
-constexpr static uint8_t MCU_HEAD_SEND[2] = { 0xA5, 0x5A };    // 电控板  发送
-constexpr static uint8_t MCU_HEAD_RESP[2] = { 0xA5, 0x5A };    // 电控板  接收
-constexpr static uint8_t FILM_HEAD_SEND[2] = { 0xAA, 0x0E };   // 彩膜按键 发送
-constexpr static uint8_t FILM_HEAD_RESP[2] = { 0xBB, 0x09 };   // 彩膜按键 接收
-constexpr static uint8_t TUYA_HEAD_SEND[2] = { 0x55, 0xAA };   // 涂鸦模组 发送
-constexpr static uint8_t TUYA_HEAD_RESP[2] = { 0x55, 0xAA };   // 涂鸦模组 接收
+/// @brief 计算校验和
+/// @param ptr 首地址
+/// @param len 长度
+/// @return 校验和
+static uint64_t calculateCheckSum(uint8_t* ptr, uint16_t len) {
+    uint64_t sum = 0;
+    for (int i = 0; i < len; i++) {
+        sum += ptr[i];
+    }
+    return sum;
+};
 
-// 固定数据位总长度 (定长为总长，不定长为帧头+帧尾+校验)
-#define MCU_LEN_SEND   23
-#define MCU_LEN_RESP   36
-#define MCU_LEN_RESP_OTA 5
-#define FILM_LEN_SEND  14
-#define FILM_LEN_RESP  9
-#define TUYA_LEN_SEND  7       // 不定长
-#define TUYA_LEN_RESP  7       // 不定长
-
-class DataCheck {
+class BtnAsk :public IAsk {
 public:
-    DataCheck() { }
-    static unsigned char CRC8(unsigned char* ptr, unsigned short len) {
-        unsigned char crc;
-        unsigned char i;
-        crc = 0;
-        while (len--) {
-            crc ^= *ptr++;
-            for (i = 0; i < 8; i++) {
-                if (crc & 0x80) {
-                    crc = (crc << 1) ^ 0x07;
-                } else
-                    crc <<= 1;
-            }
-        }
-        return crc;
+    constexpr static uint16_t MIN_LEN = 18;
+public:
+    BtnAsk() { };
+    BtnAsk(BuffData* buf) { parse(buf); }
+    void parse(BuffData* buf)override {
+        IAsk::parse(buf);
+        mBf->buf[0] = 0xAA;
+        mBf->buf[1] = 0x0E;
     }
-    static unsigned int Sum(unsigned char* ptr, unsigned short len) {
-        unsigned int sum = 0;
-        for (int i = 0; i < len; i++) {
-            sum += ptr[i];
-        }
-        return sum;
-    }
-    static unsigned char RebellionSumAdd1(unsigned char* ptr, unsigned short len) {
-        return (~Sum(ptr, len) + 1) & 0xFF;
-    }
-    static unsigned char CheckMCU(unsigned char* ptr, unsigned short len) {
-        return Sum(ptr + 2, len - 3) & 0xFF;
-    }
-    static unsigned char CheckBTN(unsigned char* ptr, unsigned short len) {
-        return Sum(ptr, len - 1) & 0xFF;
-    }
-    static unsigned char CheckTUYA(unsigned char* ptr, unsigned short len) {
-        return Sum(ptr, len - 1) % 0x100;
+    void checkCode()override {
+        mBf->buf[mBf->len - 1] = calculateCheckSum(mBf->buf, mBf->len - 1) & 0xFF;
     }
 };
 
-// UI -> MCU
-class UI2MCU : public IAsk, public DataCheck {
+class McuAsk :public IAsk {
 public:
-    constexpr static uint8_t BUF_LEN = 0xFF;
-
+    constexpr static uint16_t MIN_LEN = 23;
 public:
-    int mType = BT_MCU;                          // 判断这个包来自哪里
-    UI2MCU() { }
-    UI2MCU(BuffData* buf) { parse(buf); }
-    UI2MCU(BuffData* buf, int type) { setType(type); parse(buf); }
-    void parse(BuffData* buf) {
-        mBf = buf;
-        if (mBf->len == 0) {
-            mBf->len = mBf->slen;
-            switch (mType) {
-            case BT_MCU:
-                mBf->buf[0] = MCU_HEAD_SEND[0];
-                mBf->buf[1] = MCU_HEAD_SEND[1];
-                break;
-            case BT_BTN:
-                mBf->buf[0] = FILM_HEAD_SEND[0];
-                mBf->buf[1] = FILM_HEAD_SEND[1];
-                break;
-            case BT_TUYA:
-                mBf->buf[0] = TUYA_HEAD_SEND[0];
-                mBf->buf[1] = TUYA_HEAD_SEND[1];
-                break;
-            }
-        }
-        LOG(VERBOSE) << "parse=" << hexstr(mBf->buf, mBf->len);
+    McuAsk() { };
+    McuAsk(BuffData* buf) { parse(buf); }
+    void parse(BuffData* buf)override {
+        IAsk::parse(buf);
+        mBf->buf[0] = 0xA5;
+        mBf->buf[1] = 0x5A;
     }
-
-protected:
-    virtual int getType() { return mType; }
-    virtual int getCMD() { return 0; }
-
-public:
-    void setType(int type) { mType = type; }
-
-    uint8_t getData(uint8_t pos) { return mBf->buf[pos]; };
-
-    void setData(uint8_t pos, uint8_t data) { mBf->buf[pos] = data; }
-    void setData(uint8_t* data, uint8_t pos, uint8_t len) { memcpy(mBf->buf + pos, data, len); }
-
-    void checkcode() {
-        switch (mType) {
-        case BT_MCU:
-            mBf->buf[mBf->len - 1] = CheckMCU(mBf->buf, mBf->len);
-            break;
-        case BT_BTN:
-            mBf->buf[mBf->len - 1] = CheckBTN(mBf->buf, mBf->len);
-            break;
-        case BT_TUYA:
-            mBf->buf[mBf->len - 1] = CheckTUYA(mBf->buf, mBf->len);
-            break;
-        }
+    void checkCode()override {
+        mBf->buf[mBf->len - 1] = calculateCheckSum(mBf->buf + 2, mBf->len - 3) & 0xFF;
     }
 };
 
-// MCU -> UI
-class MCU2UI : public IAck, public DataCheck {
+class TuyaAsk :public IAsk {
 public:
-    constexpr static uint16_t  BUF_LEN = 0x466;     // 缓冲区大小
-    u_int16_t mDataLen;         // 数据长度
-    bool FindHead;              // 是否已找到包头
-    int mType = BT_MCU;         // 判断这个包类型
-    int mCMD = BT_MCU;          // 判断分配给哪个类(IHandler)进行处理
-
+    constexpr static uint16_t MIN_LEN = 7;
 public:
-    MCU2UI() { }
-    MCU2UI(BuffData* bf) { parse(bf); }
-
-    /// @brief 构造
-    /// @param bf 
-    void parse(BuffData* bf) {
-        mDlen = bf->len;
-        mPlen = &bf->len;
-        mBuf = bf->buf;
+    TuyaAsk() { };
+    TuyaAsk(BuffData* buf) { parse(buf); }
+    void parse(BuffData* buf)override {
+        IAsk::parse(buf);
+        mBf->buf[0] = 0x55;
+        mBf->buf[1] = 0xAA;
     }
+    void checkCode()override {
+        mBf->buf[mBf->len - 1] = calculateCheckSum(mBf->buf, mBf->len - 1) % 0x100;
+    }
+};
 
-    /// @brief 接收数据
-    /// @param bf 
-    /// @param len 
-    /// @return 
-    int add(uint8_t* bf, int len) {
-        LOGV("接收数据");
-        int  i, j, rlen = 0;
-        if (mDlen == 0) FindHead = false;
+class BtnAck :public IAck {
+public:
+    constexpr static uint16_t BUF_LEN = 0xFF;                 // 缓冲区大小
+    constexpr static uint8_t  MIN_LEN = 9;                    // 接收数据最小长度
+private:
+    uint8_t  mHeadList[2] = { 0xAA, 0x12 };                   // 帧头列表
+public:
+    BtnAck() { };
+    BtnAck(BuffData* buf) { parse(buf); }
 
+    int add(uint8_t* bf, int len)override {
+        int rlen = 0;
         while (mDlen < BUF_LEN && rlen < len) {
-            // add data
-            if (BUF_LEN - mDlen >= len - rlen) {
-                memcpy(mBuf + mDlen, bf + rlen, len - rlen);
-                mDlen += len - rlen;
-                rlen = len;
-            } else {
-                memcpy(mBuf + mDlen, bf + rlen, BUF_LEN - mDlen);
-                rlen += BUF_LEN - mDlen;
-                mDlen = BUF_LEN;
-            }
-            // find head
-            int headLen = getHeadLen();
-            if (!FindHead && mDlen > headLen) {
-                for (i = 0, j = -1; i < mDlen; i++) {
-                    if (mBuf[i] == getHeadIn(0) || (mType == BT_BTN && mBuf[0] == 0xAA)) {
-                        if (headLen <= 1 || (i < mDlen - 1 && mBuf[i + 1] == getHeadIn(1))) {
-                            j = i;
-                            LOGV("FIND HEAD AT:%d", i);
-                            FindHead = true;
-                            break;
-                        } else {
-                            if (i == mDlen - 1) { j = i; }
-                        }
-                    }
-                }
-                if (j == -1) {
-                    LOGV("NO HEAD!!!");
-                    mDlen = 0;
-                } else if (j > 0) {
-                    memmove(mBuf, mBuf + j, mDlen - j);
-                    mDlen -= j;
-                }
-            }
+            addData(BUF_LEN, bf, len, rlen);
+            if (!checkHead(mHeadList, 2))findHead(mHeadList, 2);
+        }
+        LOG(VERBOSE) << "mDlen:" << mDlen << " Bytes=" << hexstr(mBuf, mDlen);
+        return rlen;
+    };
+
+    bool complete()override {
+        if (!checkHead(mHeadList, 2))return false;
+        return mDlen >= MIN_LEN;
+    };
+
+    bool check()override {
+        mDataLen = MIN_LEN;
+        uint8_t sum = mBuf[mDataLen - 1];
+        uint8_t realSum = calculateCheckSum(mBuf, mDataLen - 1) & 0xFF;
+        bool res = sum == realSum;
+        LOGE_IF(!res, "[BTN] check error 0x%x -> 0x%x", realSum, sum);
+        return res;
+    };
+
+    int getType()override {
+        return BT_BTN;
+    };
+};
+
+
+class McuAck :public IAck {
+public:
+    constexpr static uint16_t BUF_LEN = 0xFF;                 // 缓冲区大小
+    constexpr static uint8_t  MIN_LEN = 36;                   // 接收数据最小长度
+private:
+    uint8_t  mHeadList[2] = { 0xA5, 0x5A };                   // 帧头列表
+public:
+    McuAck() { };
+    McuAck(BuffData* buf) { parse(buf); }
+
+    int add(uint8_t* bf, int len)override {
+        int rlen = 0;
+        while (mDlen < BUF_LEN && rlen < len) {
+            addData(BUF_LEN, bf, len, rlen);
+            if (!checkHead(mHeadList, 2))findHead(mHeadList, 2);
+        }
+        LOG(VERBOSE) << "mDlen:" << mDlen << " Bytes=" << hexstr(mBuf, mDlen);
+        return rlen;
+    };
+
+    bool complete()override {
+        if (!checkHead(mHeadList, 2))return false;
+        return mDlen >= MIN_LEN;
+    };
+
+    bool check()override {
+        mDataLen = MIN_LEN;
+        uint8_t sum = mBuf[mDataLen - 1];
+        uint8_t realSum = calculateCheckSum(mBuf, mDataLen - 1) & 0xFF;
+        bool res = sum == realSum;
+        LOGE_IF(!res, "[BTN] check error 0x%x -> 0x%x", realSum, sum);
+        return res;
+    };
+
+    int getType()override {
+        return BT_MCU;
+    };
+};
+
+
+class TuyaAck :public IAck {
+public:
+    constexpr static uint16_t BUF_LEN = 0x466;                // 缓冲区大小
+    constexpr static uint8_t  MIN_LEN = 7;                    // 接收数据最小长度
+private:
+    uint8_t  mHeadList[2] = { 0x55, 0xAA };                   // 帧头列表
+public:
+    TuyaAck() { };
+    TuyaAck(BuffData* buf) { parse(buf); }
+
+    int add(uint8_t* bf, int len)override {
+        int rlen = 0;
+        while (mDlen < BUF_LEN && rlen < len) {
+            addData(BUF_LEN, bf, len, rlen);
+            if (!checkHead(mHeadList, 2))findHead(mHeadList, 2);
             *mPlen = mDlen;
         }
-
-        LOG(VERBOSE) << "mDlen:" << mDlen << " Bytes=" << hexstr(mBuf, mDlen);
-
-        if (mType == BT_TUYA && FindHead && mDlen > TUYA_LEN_RESP) {
-            uint16_t RealLen = (mBuf[4] << 8) | mBuf[5] + TUYA_LEN_RESP;
-            if (mDlen > RealLen) {
-                rlen -= (mDlen - RealLen);
+        // 裁剪真实数据长度，避免数据包拼接导致遗漏
+        if (checkHead(mHeadList, 2) && mDlen > MIN_LEN) {
+            uint16_t realLen = (mBuf[4] << 8) | mBuf[5] + MIN_LEN;
+            if (mDlen > realLen) {
+                rlen -= (mDlen - realLen);
                 rlen = rlen < 0 ? 0 : rlen;
             }
         }
+        LOG(VERBOSE) << "mDlen:" << mDlen << " Bytes=" << hexstr(mBuf, mDlen);
         return rlen;
-    }
+    };
 
-    /// @brief 检查数据长度完整性
-    /// @return 
-    bool complete() {
-        if (!FindHead)return false;
-        switch (mType) {
-        case BT_MCU:
-            if (mDlen >= MCU_LEN_RESP_OTA &&
-                mBuf[0] == MCU_HEAD_RESP[0] &&
-                mBuf[2] == 2) {
-                LOGV("The ota package has been received");
-                return true;
-            }
-            if (mDlen >= MCU_LEN_RESP &&
-                mBuf[0] == MCU_HEAD_RESP[0]) {
-                LOGV("The package has been received");
-                return true;
-            }
-            break;
-        case BT_BTN:
-            if (mDlen >= FILM_LEN_RESP &&
-                (mBuf[0] == FILM_HEAD_RESP[0] || mBuf[0] == 0xAA) && mBuf[1] == FILM_HEAD_RESP[1]) {
-                LOGV("The package has been received");
-                return true;
-            }
-            break;
-        case BT_TUYA:
-            if (mDlen >= TUYA_LEN_RESP &&
-                mDlen >= (mBuf[4] << 8 | mBuf[5]) + TUYA_LEN_RESP &&
-                mBuf[0] == TUYA_HEAD_RESP[0] && mBuf[1] == TUYA_HEAD_RESP[1]) {
-                LOGV("The package has been received");
-                return true;
-            }
-            break;
-        }
-        LOGV("Package not received yet");
-        return false;
-    }
+    bool complete()override {
+        if (!checkHead(mHeadList, 2))return false;
+        return (mDlen >= MIN_LEN) && (mDlen >= (mBuf[4] << 8 | mBuf[5]) + MIN_LEN);
+    };
 
-    /// @brief 检查数据是否正确
-    /// @return 
-    bool check() {
-        uint8_t sum = 0x00, realSum = 0x01;
-
-        switch (mType) {
-        case BT_MCU:
-            if (mBuf[2] == 2) mDataLen = MCU_LEN_RESP_OTA;
-            else mDataLen = MCU_LEN_RESP;
-
-            sum = mBuf[mDataLen - 1];
-            realSum = CheckMCU(mBuf, mDataLen);
-            break;
-        case BT_BTN:
-            mDataLen = FILM_LEN_RESP;
-            sum = mBuf[mDataLen - 1];
-            realSum = CheckBTN(mBuf, mDataLen);
-            break;
-        case BT_TUYA:
-            mDataLen = (mBuf[4] << 8 | mBuf[5]) + TUYA_LEN_RESP;
-            sum = mBuf[mDataLen - 1];
-            realSum = CheckTUYA(mBuf, mDataLen);
-            break;
-        }
-
+    bool check()override {
+        mDataLen = (mBuf[4] << 8 | mBuf[5]) + MIN_LEN;
+        uint8_t sum = mBuf[mDataLen - 1];
+        uint8_t realSum = calculateCheckSum(mBuf, mDataLen - 1) & 0xFF;
         bool res = sum == realSum;
-        LOGE_IF(!res, "[%d] check error 0x%x -> 0x%x", mType, realSum, sum);
+        LOGE_IF(!res, "[BTN] check error 0x%x -> 0x%x", realSum, sum);
         return res;
-    }
+    };
 
-protected:
-    virtual int getType() { return mType; }
-    virtual int getCMD() { return mCMD; }
-
-    /// @brief 获取帧头长度
-    /// @return 
-    int getHeadLen() {
-        switch (mType) {
-        case BT_MCU:
-            return sizeof(MCU_HEAD_RESP);
-        case BT_BTN:
-            return sizeof(FILM_HEAD_RESP);
-        case BT_TUYA:
-            return sizeof(TUYA_HEAD_RESP);
-        }
-        return 2;
-    }
-
-    /// @brief 获取帧头数据
-    /// @param index 
-    /// @return 
-    int getHeadIn(int index) {
-        switch (mType) {
-        case BT_MCU:
-            return MCU_HEAD_RESP[index];
-        case BT_BTN:
-            return FILM_HEAD_RESP[index];
-        case BT_TUYA:
-            return TUYA_HEAD_RESP[index];
-        }
-        return 0;
-    }
-
-public:
-    void setCMD(int cmd) { mCMD = cmd; }
-    void setType(int type) { mType = type; }
-
-    int getData(int pos) {
-        if (pos >= 0 && pos < mDataLen - 1) { return mBuf[pos]; }
-        return 0;
-    }
-    int getData2(int pos, bool swap = false) {
-        if (pos >= 0 && pos + 1 < mDataLen - 1) {
-            uint16_t result;
-            if (swap)
-                result = (static_cast<uint16_t>(mBuf[pos + 1]) << 8) | mBuf[pos];
-            else
-                result = (static_cast<uint16_t>(mBuf[pos]) << 8) | mBuf[pos + 1];
-            return result;
-        }
-        return 0;
-    }
+    int getType()override {
+        return BT_TUYA;
+    };
 };
 
 #endif

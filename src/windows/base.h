@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2025-01-17 01:28:54
+ * @LastEditTime: 2025-02-20 02:15:08
  * @FilePath: /kk_frame/src/windows/base.h
  * @Description: 页面基类
  * @BugList:
@@ -19,6 +19,7 @@
 #include <view/view.h>
 #include <widget/textview.h>
 
+#include "R.h"
 #include "json_func.h"
 
 #define __get(I)         findViewById(I)
@@ -36,19 +37,18 @@
 
 #define __delete(v)      if(v)delete v;
 
- // 语言定义
+// 语言定义
 enum {
-    LANG_ZH_CN,
-    LANG_ZH_TC,
-    LANG_EN_US,
-    LANG_MAX,
+    LANG_ZH_CN,      // 简体中文
+    LANG_ZH_TC,      // 繁体中文
+    LANG_EN_US,      // 英文
+    LANG_MAX,        // 语言数量
 };
 
 // 页面定义
 enum {
-    PAGE_NULL,           // 空状态
-    PAGE_STANDBY,        // 待机
-    PAGE_OTA,            // OTA
+    PAGE_NULL,       // 空状态
+    PAGE_STANDBY,    // 待机
 };
 
 // 弹窗定义
@@ -77,47 +77,50 @@ static std::string langToText(uint8_t lang) {
  /// @brief 基类
 class PBase {
 protected:
-    Looper*         mLooper = nullptr;     // 事件循环
-    Context*        mContext = nullptr;    // 上下文
-    LayoutInflater* mInflater = nullptr;   // 布局加载器
-    uint8_t         mLang = LANG_ZH_CN;    // 语言
+    Looper*         mLooper = nullptr;                         // 事件循环
+    Context*        mContext = nullptr;                        // 上下文
+    LayoutInflater* mInflater = nullptr;                       // 布局加载器
+    uint8_t         mLang = LANG_ZH_CN;                        // 语言
 
-    ViewGroup*      mRootView = nullptr;   // 根节点
-    uint64_t        mLastTick = 0;         // 上次Tick时间
-    uint64_t        mLastClick = 0;        // 上次按键点击时间
-    bool            mIsAttach = false;     // 是否已经Attach
+    ViewGroup*      mRootView = nullptr;                       // 根节点
+    uint64_t        mLastTick = 0;                             // 上次Tick时间
+    bool            mIsAttach = false;                         // 是否已经Attach
+private:
+    uint32_t        mAutoExit = 0;                             // 自动退出到待机的时间
+    bool            mAutoExitWithBlack = false;                // 自动退出到待机时是否显示黑屏
 public:
-    PBase();
-    virtual ~PBase();
+    PBase();                                                   // 构造函数
+    virtual ~PBase();                                          // 析构函数
 
-    uint8_t getLang() const;
-    View*   getRootView();
-    virtual uint8_t getType() const = 0;
+    uint8_t getLang() const;                                   // 获取当前页面语言
+    View*   getRootView();                                     // 获取根节点
+    virtual uint8_t getType() const = 0;                       // 获取页面类型
 
-    void callTick();
-    void callAttach();
-    void callDetach();
-    void callReload();
-    void callMsg(int type, void* data);
-    void callMcu(uint8_t* data, uint8_t len);
-    bool callKey(uint16_t keyCode, uint8_t evt);
-    void callLangChange(uint8_t lang);
-    void callCheckLight(uint8_t* left, uint8_t* right);
+    void callTick();                                           // 调用定时器
+    void callAttach();                                         // 通知页面挂载
+    void callDetach();                                         // 通知页面剥离
+    void callReload();                                         // 调用重加载
+    void callMsg(int type, void* data);                        // 接受消息
+    void callMcu(uint8_t* data, uint8_t len);                  // 接受电控数据
+    bool callKey(uint16_t keyCode, uint8_t evt);               // 接受按键事件
+    void callLangChange(uint8_t lang);                         // 调用语言切换
+    void callCheckLight(uint8_t* left, uint8_t* right);        // 调用检查按键灯
 protected:
-    virtual void initUI() = 0;
-    View* findViewById(int id);
+    virtual void initUI() = 0;                                 // 初始化UI
+    View* findViewById(int id);                                // 查找View(弥补非继承自View)
 
-    virtual void onTick();
-    virtual void onAttach();
-    virtual void onDetach();
-    virtual void onReload();
-    virtual void onMsg(int type, void* data);
-    virtual void onMcu(uint8_t* data, uint8_t len);
-    virtual bool onKey(uint16_t keyCode, uint8_t evt);
-    virtual void onLangChange();
-    virtual void onCheckLight(uint8_t* left, uint8_t* right);
+    virtual void onTick();                                     // 定时器回调
+    virtual void onAttach();                                   // 挂载页面回调
+    virtual void onDetach();                                   // 剥离页面回调
+    virtual void onReload();                                   // 重新加载回调
+    virtual void onMsg(int type, void* data);                  // 消息回调
+    virtual void onMcu(uint8_t* data, uint8_t len);            // 电控数据回调
+    virtual bool onKey(uint16_t keyCode, uint8_t evt);         // 按键事件回调
+    virtual void onLangChange();                               // 语言切换通知回调
+    virtual void onCheckLight(uint8_t* left, uint8_t* right);  // 检查按键灯回调
 
-    void setLangText(TextView* v, const Json::Value& value);
+    void setAutoBackToStandby(uint32_t time, bool withBlack = false);  // 设置自动退出到待机
+    void setLangText(TextView* v, const Json::Value& value);           // 设置语言文本
 };
 
 /*
@@ -138,16 +141,17 @@ public:
  /// @brief 页面基类
 class PageBase :public PBase {
 protected:
-    bool mInitUIFinish = false;    // UI是否初始化完成
+    bool mInitUIFinish = false;     // UI是否初始化完成
 public:
-    PageBase(std::string resource);
-    virtual ~PageBase();
+    PageBase(std::string resource); // 构造函数
+    virtual ~PageBase();            // 析构函数
 protected:
     void initUI() override;
-    virtual void getView() = 0;
-    virtual void setAnim() = 0;
-    virtual void setView() = 0;
-    virtual void loadData() = 0;
+    virtual void loadBase(){ };     // 加载基础数据
+    virtual void getView(){ };      // 获取页面指针
+    virtual void setAnim(){ };      // 设置动画属性
+    virtual void setView(){ };      // 设置页面属性
+    virtual void loadData(){ };     // 加载页面数据
 };
 
 #endif

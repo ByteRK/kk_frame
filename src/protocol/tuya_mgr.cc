@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-08-01 03:03:02
- * @LastEditTime: 2025-01-17 01:26:37
+ * @LastEditTime: 2025-02-18 20:01:42
  * @FilePath: /kk_frame/src/protocol/tuya_mgr.cc
  * @Description:
  * @BugList:
@@ -19,7 +19,7 @@
 #include <cstring>
 
 #include "config_mgr.h"
-#include "version.h"
+#include "config/version.h"
 
 #include "conn_mgr.h"
 #include "manage.h"
@@ -42,15 +42,14 @@
   //////////////////////////////////////////////////////////////////
 
 TuyaMgr::TuyaMgr() {
-    mPacket = new SDHWPacketBuffer();
+    mPacket = new TuyaPacketBuffer();
     mUartTUYA = 0;
     mNextEventTime = 0;
     mLastSendTime = 0;
     mLastSyncDateTime = 0;
     mLastSendDiffDPTime = 0;
 
-    mPacket->setType(BT_TUYA, BT_TUYA);
-    CHandlerManager::ins()->addHandler(BT_TUYA, this);
+    g_packetMgr->addHandler(BT_TUYA, this);
 }
 
 TuyaMgr::~TuyaMgr() {
@@ -69,7 +68,7 @@ int TuyaMgr::init() {
     ss.stopbits = 1;
     ss.parity = 'N';
 
-    mUartTUYA = new UartClient(mPacket, BT_TUYA, ss, "192.168.0.113", 1144, 0);
+    mUartTUYA = new UartClient(mPacket, ss, "192.168.0.113", 1144, 0, true);
     mUartTUYA->init();
 
     mLastAcceptTime = 0;
@@ -124,8 +123,8 @@ void TuyaMgr::send2MCU(uint8_t cmd) {
 }
 
 void TuyaMgr::send2MCU(uint8_t* buf, uint16_t len, uint8_t cmd) {
-    BuffData* bd = mPacket->obtain(BT_TUYA, len);
-    UI2MCU   snd(bd, BT_TUYA);
+    BuffData* bd = mPacket->obtain(false, len);
+    TuyaAsk   snd(bd);
 
     snd.setData(TUYA_VERSION, 0x03);
     snd.setData(TUYA_COMM, cmd);
@@ -133,7 +132,7 @@ void TuyaMgr::send2MCU(uint8_t* buf, uint16_t len, uint8_t cmd) {
     snd.setData(TUYA_DATA_LEN_L, len & 0xFF);
     snd.setData(buf, TUYA_DATA_START, len);
 
-    snd.checkcode();    // 修改检验位
+    snd.checkCode();    // 修改检验位
     LOG(VERBOSE) << "send to tuya. bytes=" << hexstr(bd->buf, bd->len);
     mUartTUYA->send(bd);
     mLastSendTime = SystemClock::uptimeMillis();
@@ -192,12 +191,12 @@ void TuyaMgr::onCommDeal(IAck* ack) {
         break;
     default:
         show = true;
-        LOG(INFO) << "[default]accept. bytes=" << hexstr(ack->mBuf, ack->mDlen);
+        LOG(INFO) << "[default]accept. bytes=" << hexstr(ack->mBuf, ack->mDataLen);
         break;
     }
 
     if (!show)
-        LOG(VERBOSE) << "[default]accept. bytes=" << hexstr(ack->mBuf, ack->mDlen);
+        LOG(VERBOSE) << "[default]accept. bytes=" << hexstr(ack->mBuf, ack->mDataLen);
 
     mLastAcceptTime = SystemClock::uptimeMillis();
 }
@@ -234,7 +233,7 @@ void TuyaMgr::sendSetConnectMode(uint8_t mode) {
     std::string version{ APP_VERSION };
     int count = 0;
     for (char c : version)if (c == '.')count++;
-    if (count != 3)throw std::runtime_error("APP_VERSION 格式错误!!! 涂鸦版本号必须为x.x.x");
+    if (count != 2)throw std::runtime_error("APP_VERSION 格式错误!!! 涂鸦版本号必须为x.x.x");
 
     std::string str = "{\"p\":\"cdwan0nqtmbyqvx3\",\"v\":\"" + version + "\",\"m\":" + std::to_string(mode % 10) + "}";
     LOGE("[tuyaConfig] -> %s", str.c_str());

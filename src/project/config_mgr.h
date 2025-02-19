@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2025-01-17 01:25:43
+ * @LastEditTime: 2025-02-20 02:13:34
  * @FilePath: /kk_frame/src/project/config_mgr.h
  * @Description:
  * @BugList:
@@ -44,6 +44,10 @@ public:
     void handleMessage(Message& message)override;
 
     void init();
+
+    // 亮度
+    int  getBrightness();
+    void setBrightness(int value);
 };
 
 

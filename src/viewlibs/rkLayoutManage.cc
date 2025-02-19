@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:07
- * @LastEditTime: 2024-05-31 16:56:38
+ * @LastEditTime: 2025-02-18 19:28:55
  * @FilePath: /kk_frame/src/viewlibs/rkLayoutManage.cc
  * @Description: 
  * @BugList: 
@@ -28,6 +28,7 @@ RKLayoutManage::RKLayoutManage(Context* context, RecyclerView* recyclerView, int
 }
 
 RKLayoutManage::~RKLayoutManage() {
+    delete mSnapHelper;
 }
 
 void RKLayoutManage::runExpandAnim() {

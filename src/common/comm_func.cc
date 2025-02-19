@@ -16,7 +16,7 @@
 #include <cdlog.h>
 #include "comm_func.h"
 
-#include "defualt_config.h"
+#include "series_config.h"
 
 bool isNumric(const char* str_nums) {
     for (const char* p = str_nums; *p; p++) {
@@ -540,29 +540,34 @@ int calculation_signal(float Quality, int SignalLevel) {
         return 1;
 }
 
-void setBrightness(int value) {
+void setBrightness(uint8_t value, bool swap) {
 #ifndef CDROID_X64
-    value = 100 - value;
-    // /sys/class/pwm/pwmchip0/pwmN/duty_cycle 数值就为pwm占空比，范围[1-99]
-    char path_duty_cycle[] = "/sys/class/pwm/pwmchip0/pwm2/duty_cycle";
-    if (access(path_duty_cycle, F_OK)) { return; }
+    value = value % 101; // 限制在0-100之间
+    if (swap)value = 100 - value; // 反转亮度值
+    char pwm_path[128];
+    snprintf(pwm_path, 128, "%s%s", "/sys/class/pwm/pwmchip0/", SYS_SCREEN_BEIGHTNESS_PWM);
+    if (access(pwm_path, F_OK)) { return; }
 
-    int pwm = (value) * 99 / HV_SYS_CONFIG_MAX_SCREEN_BRIGHTNESS;
-    if (true) {
-        if (pwm > 99) {
-            pwm = (HV_SYS_CONFIG_MAX_SCREEN_BRIGHTNESS - HV_SYS_CONFIG_SCREEN_BRIGHTNESS) * 99 / HV_SYS_CONFIG_MAX_SCREEN_BRIGHTNESS;   // 暗
-        }
-        if (pwm < 1) {
-            pwm = 1;   // 亮
-        }
+    if (value) {
+        char setEnable[128];
+        snprintf(setEnable, 128, "echo 1 > %s%s", pwm_path, "/enable");
+        system(setEnable);
+        LOG(VERBOSE) << setEnable;
+
+        char setDutyCycle[128];
+        int pwm = (value * (SYS_SCREEN_BRIGHTNESS_MAX - SYS_SCREEN_BRIGHTNESS_MIN)) / 100; // 转换pwm值
+        snprintf(setDutyCycle, 128, "echo %d > %s%s", pwm, pwm_path, "/duty_cycle");
+        system(setDutyCycle);
+        LOG(VERBOSE) << setDutyCycle;
+    } else {
+        char shell[128];
+        snprintf(shell, sizeof(shell), "echo 0 > %s%s", pwm_path, "/enable");
+        system(shell);
+        LOG(VERBOSE) << shell;
     }
-
-    char shell[128];
-    snprintf(shell, sizeof(shell), "echo %d > %s", pwm, path_duty_cycle);
-    system(shell);
-    LOG(VERBOSE) << shell;
-#endif
+#else
     LOGI("设置屏幕亮度 %d", value);
+#endif
 }
 
 bool readLoaclFile(const char* filename, std::string& content) {
@@ -642,16 +647,16 @@ std::vector<int> splitVersion(const std::string& version) {
 }
 
 // 检查网络版本号 是否大于 当前的版本号
-int checkVersion(const std::string &version,const std::string &localVersion){
-    std::vector<int> otaVersion     = splitVersion(version);
-    std::vector<int> localOtaVersion   = splitVersion(localVersion);
+int checkVersion(const std::string& version, const std::string& localVersion) {
+    std::vector<int> otaVersion      = splitVersion(version);
+    std::vector<int> localOtaVersion = splitVersion(localVersion);
 
     // 比较每个部分
     for (size_t i = 0; i < std::min(otaVersion.size(), localOtaVersion.size()); ++i) {
         if (otaVersion[i] < localOtaVersion[i]) {
             return -1;
         } else if (otaVersion[i] > localOtaVersion[i]) {
-            return 1; 
+            return 1;
         }
     }
 
