@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2025-02-20 02:15:08
+ * @LastEditTime: 2025-02-20 09:51:54
  * @FilePath: /kk_frame/src/windows/base.h
  * @Description: 页面基类
  * @BugList:
@@ -49,6 +49,7 @@ enum {
 enum {
     PAGE_NULL,       // 空状态
     PAGE_STANDBY,    // 待机
+    PAGE_OTA,        // OTA
 };
 
 // 弹窗定义
