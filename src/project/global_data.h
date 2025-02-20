@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2025-02-18 19:22:09
+ * @LastEditTime: 2025-02-20 22:24:01
  * @FilePath: /kk_frame/src/project/global_data.h
  * @Description:
  * @BugList:
@@ -37,10 +37,6 @@ public: // 涂鸦部分
 public: // 设备信息
     bool        mPower = false;           // 开关机
     bool        mLock = false;            // 童锁
-
-private:
-    globalData();
-    ~globalData();
 private:
     enum {
         MSG_SAVE,
@@ -48,12 +44,16 @@ private:
 
     Looper*          mLooper;
     bool             mHaveChange;
-    bool             mNeedSaveBak;
-    uint64_t         mNextBakTick;
+    uint64_t         mNextBakTime;
 
     Message          mSaveMsg;
     uint64_t         mPowerOnTime;  // 启动时间
+
+private:
+    globalData();
+    void update();
 public:
+    ~globalData();
     static globalData* ins() {
         static globalData s_globalData;
         return &s_globalData;

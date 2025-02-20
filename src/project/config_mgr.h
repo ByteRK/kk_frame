@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2025-02-20 02:13:34
+ * @LastEditTime: 2025-02-20 22:20:46
  * @FilePath: /kk_frame/src/project/config_mgr.h
  * @Description:
  * @BugList:
@@ -23,20 +23,21 @@
 
 class configMgr :public MessageHandler {
 private:
+    enum {
+        MSG_SAVE,
+    };
+
     Message  mMsg;
     Looper*  mLooper;
-    int      mUpdates;
-    uint64_t mNextBakTick;
+    uint64_t mNextBakTime;
 
     cdroid::Preferences mConfig; // 配置文件读写
 
 private:
-protected:
     configMgr();
-    ~configMgr();
-
     void update();
 public:
+    ~configMgr();
     static configMgr* ins() {
         static configMgr stIns;
         return &stIns;

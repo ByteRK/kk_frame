@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2025-02-18 19:04:38
+ * @LastEditTime: 2025-02-20 22:25:48
  * @FilePath: /kk_frame/src/project/config_mgr.cc
  * @Description:
  * @BugList:
@@ -14,15 +14,8 @@
 #include "config_mgr.h"
 #include "defualt_config.h"
 
-#include "config/version.h"
-#include "comm_func.h"
-#include "global_data.h"
-
 #include <cdlog.h>
 #include <unistd.h>
-
-#include "proto.h"
-#include "manage.h"
 
 #define TIME_INTERVAL (1000 * 10) // 备份时间间隔 10s
 
@@ -37,25 +30,29 @@ configMgr::~configMgr() {
 void configMgr::update() {
     uint64_t now = SystemClock::uptimeMillis();
     if (mConfig.getUpdates()) {
-        mUpdates += mConfig.getUpdates();
         mConfig.save(CONFIG_FILE_PATH);
         sync();
-        mMsg.when = now + TIME_INTERVAL;
+        mNextBakTime = now + TIME_INTERVAL;
         LOG(INFO) << "[config] save config. file=" << CONFIG_FILE_PATH;
     }
-    if (mUpdates && (now >= mMsg.when)) {
+    if (now >= mNextBakTime) {
         mConfig.save(CONFIG_FILE_BAK_PATH);
         sync();
-        mUpdates = 0;
         LOG(INFO) << "[config] save config. file=" << CONFIG_FILE_BAK_PATH;
     }
+    mLooper->sendMessageDelayed(2000, this, mMsg);
 }
 
 /// @brief 定时任务，用于保存修改后的配置
 /// @param message 
 void configMgr::handleMessage(Message& message) {
-    update();
-    mLooper->sendMessageDelayed(1000, this, mMsg);
+    switch (message.what) {
+    case MSG_SAVE:
+        update();
+        break;
+    default:
+        break;
+    }
 }
 
 /// @brief 初始化
@@ -68,11 +65,8 @@ void configMgr::init() {
         mConfig.load(CONFIG_FILE_BAK_PATH);
     }
 
-    mUpdates = 0;
-    mNextBakTick = SystemClock::uptimeMillis();
-
-    mMsg.what = 1;
-    mMsg.when = mNextBakTick;
+    mNextBakTime = 0xFFFFFFFF;
+    mMsg.what = MSG_SAVE;
     mLooper = Looper::getMainLooper();
     mLooper->sendMessageDelayed(2000, this, mMsg);
 }
@@ -81,11 +75,11 @@ void configMgr::init() {
 /// @brief 获取屏幕亮度
 /// @return 
 int configMgr::getBrightness() {
-    return mConfig.getInt(CONFIG_SECTION, HV_STRING(BRIGHTNESS), CONFIG_BRIGHTNESS);
+    return mConfig.getInt(CONFIG_SECTION, "BRIGHTNESS", CONFIG_BRIGHTNESS);
 }
 
 /// @brief 设置屏幕亮度
 /// @param value 
 void configMgr::setBrightness(int value) {
-    mConfig.setValue(CONFIG_SECTION, HV_STRING(BRIGHTNESS), value);
+    mConfig.setValue(CONFIG_SECTION, "BRIGHTNESS", value);
 }
