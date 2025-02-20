@@ -217,6 +217,7 @@ void BaseWindow::showPage(PageBase* page) {
         mPageBox->addView(mPage->getRootView());
         mPage->callAttach();
         mPage->callReload();
+        mPage->callTick(); // 为了避免有些页面变化是通过tick更新的，导致页面刚载入时闪烁
     }
 }
 
@@ -230,6 +231,7 @@ void BaseWindow::showPop(PopBase* pop) {
         mPopBox->addView(mPop->getRootView());
         mPop->callAttach();
         mPop->callReload();
+        mPop->callTick(); // 为了避免有些页面变化是通过tick更新的，导致页面刚载入时闪烁
     }
 }
 
