@@ -116,6 +116,7 @@ void BaseWindow::init() {
 /// @brief 显示 LOGO
 /// @param time 
 void BaseWindow::showLogo(uint32_t time) {
+    setBrightness(g_config->getBrightness());
     removeCallbacks(mCloseLogo);
     mIsShowLogo = true;
     mLogo->setVisibility(VISIBLE);
