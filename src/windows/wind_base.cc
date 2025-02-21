@@ -21,9 +21,6 @@
 #include "config_mgr.h"
 #include "defualt_config.h"
 
-#define BL_MAX 96 // 最大亮度
-#define BL_MIN 1  // 最小亮度
-
 constexpr int POP_TICK_INTERVAL = 1000;  // 弹窗刷新间隔
 constexpr int PAGE_TICK_INTERVAL = 200;  // 页面刷新间隔
 
