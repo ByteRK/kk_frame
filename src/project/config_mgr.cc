@@ -38,6 +38,7 @@ void configMgr::update() {
     if (now >= mNextBakTime) {
         mConfig.save(CONFIG_FILE_BAK_PATH);
         sync();
+        mNextBakTime = 0xFFFFFFFF;
         LOG(INFO) << "[config] save config. file=" << CONFIG_FILE_BAK_PATH;
     }
     mLooper->sendMessageDelayed(2000, this, mMsg);
