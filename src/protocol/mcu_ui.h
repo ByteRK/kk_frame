@@ -83,6 +83,7 @@ public:
         while (mDlen < BUF_LEN && rlen < len) {
             addData(BUF_LEN, bf, len, rlen);
             if (!checkHead(mHeadList, 2))findHead(mHeadList, 2);
+            *mPlen = mDlen;
         }
         LOG(VERBOSE) << "mDlen:" << mDlen << " Bytes=" << hexstr(mBuf, mDlen);
         return rlen;
@@ -123,6 +124,7 @@ public:
         while (mDlen < BUF_LEN && rlen < len) {
             addData(BUF_LEN, bf, len, rlen);
             if (!checkHead(mHeadList, 2))findHead(mHeadList, 2);
+            *mPlen = mDlen;
         }
         LOG(VERBOSE) << "mDlen:" << mDlen << " Bytes=" << hexstr(mBuf, mDlen);
         return rlen;
