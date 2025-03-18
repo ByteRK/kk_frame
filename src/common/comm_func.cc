@@ -543,12 +543,14 @@ int calculation_signal(float Quality, int SignalLevel) {
 void setBrightness(uint8_t value, bool swap) {
 #ifndef CDROID_X64
     value = value % 101; // 限制在0-100之间
-    if (swap)value = 100 - value; // 反转亮度值
     char pwm_path[128];
     snprintf(pwm_path, 128, "%s%s", "/sys/class/pwm/pwmchip0/", SYS_SCREEN_BEIGHTNESS_PWM);
     if (access(pwm_path, F_OK)) { return; }
 
     if (value) {
+        if (swap)value = 100 - value; // 反转亮度值
+        if (value == 0) value = 1;    // 亮度值不能为0
+
         char setEnable[128];
         snprintf(setEnable, 128, "echo 1 > %s%s", pwm_path, "/enable");
         system(setEnable);
