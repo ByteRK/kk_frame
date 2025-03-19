@@ -44,11 +44,11 @@ for arg in "$@"; do
 done
 
 # 检查package目录
-if [ ! -d "$APP_DIR/package" ]; then
-    mkdir -p "$APP_DIR/package"
+if [ ! -d "$APP_DIR/package/customer/lib" ]; then
+    mkdir -p "$APP_DIR/package/customer/lib"
 fi
-if [ ! -d "$APP_DIR/package/lib" ]; then
-    mkdir -p "$APP_DIR/package/lib"
+if [ ! -d "$APP_DIR/package/customer/app" ]; then
+    mkdir -p "$APP_DIR/package/customer/app"
 fi
 
 # 生成版本号
@@ -62,7 +62,7 @@ make $NAME -j33
 chmod +x $APP_OUT_DIR/$NAME
 
 # 复制文件
-cp $APP_OUT_DIR/$SRC_DIR/$NAME $APP_DIR/package/
-cp $APP_OUT_DIR/$SRC_DIR/$NAME.pak $APP_DIR/package/
-cp $CDROID_DIR/$PRODUCT_DIR/src/gui/cdroid.pak $APP_DIR/package/
-cp $CDROID_DIR/$PRODUCT_DIR/src/gui/libcdroid.so $APP_DIR/package/lib/
+cp $APP_OUT_DIR/$SRC_DIR/$NAME $APP_DIR/package/customer/app/
+cp $APP_OUT_DIR/$SRC_DIR/$NAME.pak $APP_DIR/package/customer/app/
+cp $CDROID_DIR/$PRODUCT_DIR/src/gui/cdroid.pak $APP_DIR/package/customer/app/
+cp $CDROID_DIR/$PRODUCT_DIR/src/gui/libcdroid.so $APP_DIR/package/customer/lib/
