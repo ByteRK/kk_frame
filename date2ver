@@ -8,7 +8,7 @@
  # @BugList: 
  #
  # @InfoList:
- #      1、如果使用涂鸦，请关闭v4版本号，否则会冲突
+ #      1、如果使用涂鸦，请使用APP_VERSION版本号，否则会冲突
  # 
  # Copyright (c) 2025 by Ricken, All Rights Reserved. 
  # 
