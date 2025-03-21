@@ -60,11 +60,37 @@ int64_t getTimeSec();
 // 获取毫秒级时间戳
 int64_t getTimeMSec();
 
-// 字符串时间
-std::string getDateTime();
-std::string getDateTime(long int now, bool fmt = false);
-std::string getDate(long int now, bool fmt = false, bool language = false);
-std::string getTime(long int now, bool fmt = false, bool language = false);
+/// @brief 获取当前格式化时间
+/// @param fmt 格式化参数(具体搜索strftime格式说明符)
+/// @brief %Y-%m-%d->2025-03-21
+/// @brief %H:%M:%S->12:00:00
+/// @brief %Y-%m-%d %H:%M:%S->2025-03-21 12:00:00
+/// @return 
+std::string getDateTime(const char* fmt);
+
+/// @brief 获取指定格式化时间
+/// @param time_sec 时间戳
+/// @param fmt 格式化参数(具体搜索strftime格式说明符)
+/// @brief %Y-%m-%d->2025-03-21
+/// @brief %H:%M:%S->12:00:00
+/// @brief %Y-%m-%d %H:%M:%S->2025-03-21 12:00:00
+/// @return 
+std::string getDateTime(long int time_sec, const char* fmt);
+
+/// @brief 获取当前格式化时间(区分上下午采用不同的格式化参数)
+/// @param fmt_am 上午格式化参数 (小时位请使用%I以格式化为12小时制)
+/// @param fmt_pm 下午格式化参数 (小时位请使用%I以格式化为12小时制）
+/// @brief 使用方式类似于getDateTime,具体上午跟下午返回值的区别取决于fmt_am和fmt_pm的格式
+/// @return 
+std::string getDateTimeAP(const char* fmt_am, const char* fmt_pm);
+
+/// @brief 获取指定格式化时间(区分上下午采用不同的格式化参数)
+/// @param time_sec 时间戳
+/// @param fmt_am 上午格式化参数 (小时位请使用%I以格式化为12小时制)
+/// @param fmt_pm 下午格式化参数 (小时位请使用%I以格式化为12小时制）
+/// @brief 使用方式类似于getDateTime,具体上午跟下午返回值的区别取决于fmt_am和fmt_pm的格式
+/// @return
+std::string getDateTimeAP(long int time_sec, const char* fmt_am, const char* fmt_pm);
 
 //通过年 月，来设置 最大的日期（如 2月份只有29或28天）
 int getMaxDay(int year,int mon);

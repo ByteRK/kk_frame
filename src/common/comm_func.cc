@@ -50,59 +50,35 @@ int64_t getTimeMSec() {
     return (int64_t)_val.tv_sec * 1000 + _val.tv_usec / 1000;
 }
 
-std::string getDateTime() {
-    char           buffer[128];
-    struct timeval _val;
-
-    time_t     now;
-    struct tm* tm_now;
-    char       datetime[128];
-
-    gettimeofday(&_val, NULL);
-    now = _val.tv_sec;
-    tm_now = localtime(&now);
-    strftime(datetime, sizeof(datetime), "%Y.%m.%d", tm_now);
-
-    // snprintf(buffer, sizeof(buffer), "%s.%03d.%03d", datetime, _val.tv_usec / 1000, _val.tv_usec % 1000);
-
-    return std::string(datetime);
+std::string getDateTime(const char* fmt) {
+    auto now = std::chrono::system_clock::now();
+    std::time_t now_c = std::chrono::system_clock::to_time_t(now);
+    return getDateTime(now_c, fmt);
 }
 
-std::string getDateTime(long int now, bool fmt) {
-    struct tm* tm_now;
-    tm_now = localtime(&now);
+std::string getDateTime(long int time_sec, const char* fmt) {
+    std::tm* time_tm = std::localtime(&time_sec);
     char       datetime[128];
-    strftime(datetime, sizeof(datetime), "%Y-%m-%d %H:%M:%S", tm_now);
+    strftime(datetime, sizeof(datetime), fmt, time_tm);
     return datetime;
 }
 
-std::string getDate(long int now, bool fmt, bool language) {
-    struct tm* tm_now;
-    tm_now = localtime(&now);
-    char       datetime[128];
-    strftime(datetime, sizeof(datetime), "%Y-%m-%d", tm_now);
-    return datetime;
+std::string getDateTimeAP(const char* fmt_am, const char* fmt_pm) {
+    auto now = std::chrono::system_clock::now();
+    std::time_t now_c = std::chrono::system_clock::to_time_t(now);
+    return getDateTimeAP(now_c, fmt_am, fmt_pm);
 }
 
-std::string getTime(long int now, bool fmt, bool language) {
-    struct tm* tm_now;
-    tm_now = localtime(&now);
+std::string getDateTimeAP(long int time_sec, const char* fmt_am, const char* fmt_pm) {
+    std::tm* time_tm = std::localtime(&time_sec);
     char       datetime[128];
-    if (fmt) {
-        snprintf(datetime, sizeof(datetime), "%02d:%02d", tm_now->tm_hour, tm_now->tm_min);
+    if (time_tm->tm_hour >= 12) {
+        // 屏蔽，通过格式化小时参数为%I进行自动计算
+        // time_tm->tm_hour = time_tm->tm_hour > 0 ? time_tm->tm_hour -= 12 : 12;
+        strftime(datetime, sizeof(datetime), fmt_pm, time_tm);
     } else {
-        int PM = (tm_now->tm_hour / 12);
-        if (PM) {
-            tm_now->tm_hour = tm_now->tm_hour > 0 ? tm_now->tm_hour -= 12 : 12;
-        }
-        if (language) {
-            snprintf(datetime, sizeof(datetime), "%s %02d:%02d", PM ? "下午" : "上午", tm_now->tm_hour, tm_now->tm_min);
-        } else {
-            snprintf(datetime, sizeof(datetime), "%s %02d:%02d", PM ? "PM" : "AM", tm_now->tm_hour, tm_now->tm_min);
-        }
-
+        strftime(datetime, sizeof(datetime), fmt_am, time_tm);
     }
-
     return datetime;
 }
 
@@ -650,7 +626,7 @@ std::vector<int> splitVersion(const std::string& version) {
 
 // 检查网络版本号 是否大于 当前的版本号
 int checkVersion(const std::string& version, const std::string& localVersion) {
-    std::vector<int> otaVersion      = splitVersion(version);
+    std::vector<int> otaVersion = splitVersion(version);
     std::vector<int> localOtaVersion = splitVersion(localVersion);
 
     // 比较每个部分
