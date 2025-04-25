@@ -220,6 +220,9 @@ void timeSet(const int64_t& time_sec) {
     set_tv.tv_usec = 0;
 #ifndef PRODUCT_X64
     settimeofday(&set_tv, NULL);
+#ifdef CDROID_SIGMA
+    sysCommand("hwclock --systohc");
+#endif
 #endif
 }
 
