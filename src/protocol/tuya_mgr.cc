@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-08-01 03:03:02
- * @LastEditTime: 2025-04-25 13:56:21
+ * @LastEditTime: 2025-04-25 14:25:44
  * @FilePath: /kk_frame/src/protocol/tuya_mgr.cc
  * @Description:
  * @BugList:
@@ -19,7 +19,7 @@
 #include <cstring>
 
 #include "config_mgr.h"
-#include "config/version.h"
+#include "app_version.h"
 
 #include "conn_mgr.h"
 #include "manage.h"

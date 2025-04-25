@@ -2,7 +2,7 @@
  # @Author: Ricken
  # @Email: me@ricken.cn
  # @Date: 2024-12-03 00:21:57
- # @LastEditTime: 2025-02-20 01:53:39
+ # @LastEditTime: 2025-04-25 14:26:27
  # @FilePath: /kk_frame/date2ver
  # @Description: 版本号生成脚本
  # @BugList: 
@@ -29,7 +29,7 @@ GIT_VER='no_git'
 CUR_DATE="$(date +%Y%m%d)"
 CUR_DATE_FULL="$(date +"%Y-%m-%d %H:%M.%S %Z")"
 DIR_PATH="$(pwd)"
-VERSION_FILE="${DIR_PATH}/config/version.h"
+VERSION_FILE="${DIR_PATH}/config/app_version.h"
 VERSION_INFO="${NAME}_Build_V${v1}.${v2}.${v3}.${v4}_${GIT_VER}_${CUR_DATE}"
 
 # 检查当前目录是否为 Git 仓库
@@ -67,8 +67,8 @@ echo "" >> $VERSION_FILE
 echo "#include \"series_config.h\"" >> $VERSION_FILE
 echo "" >> $VERSION_FILE
 
-echo "#ifndef __VERSION_H__" >> $VERSION_FILE
-echo "#define __VERSION_H__" >> $VERSION_FILE
+echo "#ifndef __APP_VERSION_H__" >> $VERSION_FILE
+echo "#define __APP_VERSION_H__" >> $VERSION_FILE
 echo "" >> $VERSION_FILE
 
 echo "#define APP_ID           \"${PROJECT_ID}\"" >> $VERSION_FILE
