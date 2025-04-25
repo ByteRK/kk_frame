@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-08-01 03:03:02
- * @LastEditTime: 2025-02-18 20:01:42
+ * @LastEditTime: 2025-04-25 13:56:21
  * @FilePath: /kk_frame/src/protocol/tuya_mgr.cc
  * @Description:
  * @BugList:
@@ -393,7 +393,7 @@ void TuyaMgr::acceptDP(uint8_t* data, uint16_t len) {
 
 void TuyaMgr::acceptTime(uint8_t* data) {
     if (!data[0])return; // 消息错误
-    timeSet(data[1] + 2000, data[2], data[3], data[4], data[5], 0);
+    timeSet(data[1] + 2000, data[2], data[3], data[4], data[5], data[6]);
 }
 
 void TuyaMgr::acceptOpenWeather(uint8_t* data) {
