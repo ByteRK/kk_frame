@@ -66,7 +66,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     $<$<STREQUAL:${CDROID_CHIPSET},sigma>:CDROID_SIGMA>
     $<$<STREQUAL:${CDROID_CHIPSET},tinat113>:CDROID_T113>
 
-    # KEYBOARD_DISABLE # 禁用键盘
+    KEYBOARD_DISABLE # 禁用键盘
 )
 
 # 公共链接库

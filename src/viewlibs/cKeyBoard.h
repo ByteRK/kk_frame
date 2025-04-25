@@ -1,13 +1,15 @@
-#ifdef KEYBOARD_ENABLE // CMakeLists.txt -> add_definitions(-DKEYBOARD_ENABLE)
+#ifndef KEYBOARD_DISABLE // CMakeLists.txt -> add_definitions(-DKEYBOARD_ENABLE)
 
-#ifndef __c_keyboard_h__
-#define __c_keyboard_h__
+// 输入法 CDROID版
+// 键盘控件，放置于最外层控件组首个
+#ifndef __keyboard_h__
+#define __keyboard_h__
 
-#include <view/view.h>
-#include <widget/relativelayout.h>
-#include <widget/textview.h>
-#include <widget/edittext.h>
+#include <set>
 #include <widget/button.h>
+#include <widget/edittext.h>
+#include <view/viewgroup.h>
+#include <widget/relativelayout.h>
 
 // 小写按键
 enum emKeyBoardPageType
@@ -23,6 +25,7 @@ class CKeyBoard : public RelativeLayout
 {
 public:
     DECLARE_UIEVENT(void, OnCompleteListener, const std::string &editTxt);
+    DECLARE_UIEVENT(void, OnCancelListener, void);
     typedef enum {
         LT_NULL = 0,
         LT_NUMBER, // 数字
@@ -38,22 +41,20 @@ public:
     // 显示
     void showWindow();
     // 输入内容类型
-    void setEditType(int editType=LT_CN);
+    void setEditType(int editType=EditText::TYPE_TEXT);
     // 输入字长度
     void setWordCount(int count) {mWordCount = count;}
 
-    // 获取文本框内容
     std::string getEnterText();
-    // 设置文本框描述
-    void setDescriptionText(const std::string &txt);
-
-    void setText(const std::string &txt);
-    void setText(const std::string &txt, TextView *txtView, int maxLen = 40, int minSize = 16, int maxSize = 34);
-    void decText(TextView *txtView);
+    void setDescription(const std::string &txt);// 设置描述文本（输入框文本为空时 显示）
+    void setEditText(const std::string &txt);   // 用于创建键盘时，输入框带默认文本
+    void setText(const std::string &txt);       // 用于键盘修改 输入框 文本
+    void setText(const std::string &txt, TextView *txtView, int maxLen = 40, int minSize = 16, int maxSize = 34);   // 修改不同控件的文本
+    void decText(TextView *txtView);            // 删除最后一个文本
     
 public:
     virtual void setOnCompleteListener(OnCompleteListener l);
-
+    virtual void setOnCancelListener(OnCancelListener l);
 protected:
     template<typename T = View>
     T *getView(int id)
@@ -68,6 +69,7 @@ protected:
     void onClick(View &v);
     void onClickID(int id);
     void onClickWord(View &v);
+    void onLayoutChanged(View&v,int l,int t,int w,int h,int oldL,int oldT,int oldW,int oldH);
     // 转到下一页面
     void trun2NextPage();
     // 内容输入
@@ -79,16 +81,18 @@ protected:
     // 输入内容变化
     void onTextChanged(EditText & ls);
 
-
     std::string &decStr(std::string &txt);
 
     void setEnterText(const std::string &txt);
+    // 清空候选区
+    void clearCandidate();
 
 protected:
     std::string mDescription;
     std::string mEnterText;
     EditText * mText;      // 确认的内容
     Button *   mOk;        // 确认按钮
+    Button *   mCancel;    // 取消按钮
     ViewGroup *mWorldVG;   // 候选区容器
     ViewGroup *mRow2VG;    // 第二行的容器
     TextView * mWord;       // 输入词
@@ -96,6 +100,11 @@ protected:
     TextView * mWord3;       // 输入词3
     TextView * mWord4;       // 输入词4
     TextView * mWord5;       // 输入词5
+    TextView * mWord6;       // 输入词6
+    TextView * mWord7;       // 输入词7
+    TextView * mWord8;       // 输入词8
+    TextView * mWord9;       // 输入词9
+    TextView * mWord10;       // 输入词10
     View   *   mHide;        // 隐藏键盘,下一页
     View   *   mPrePage;     // 上一页
     Button *   mKeyQ;        // Q键
@@ -134,23 +143,27 @@ protected:
     Button *   mPeriod;      // 句号
     Button *   mWrap;        // 换行
     TextView  *mZhPingyin;   // 中文拼音
+
+    View::OnLayoutChangeListener mOnLayoutChangeListener;
 protected:
     LoadType  mLoadType;
     int  mLastPageType;        // 上一次键盘类型
     int  mPageType;            // 小写按钮状态值
     bool mHideLetter;          // 字母隐藏
-    int  mLetterRow2Padding;   // 字母页行2行内间距
+    // int  mLetterRow2Padding;   // 字母页行2行内间距
     int  mNumberWidth;         // 数字切换键宽度
     int  mZhEnWidth;           // 中英文切换键宽度
     bool mZhPage;              // 中文页面
 
     int  mEditTextType;        // 输入内容的类型 EditText::INPUTTYPE
+    int  mMaxCountWork;        // 中文预选栏最大的数量  5-10
 
     // 语言 页面 按钮 值
     std::vector<std::map<int, std::string>> mENPageValue;   // 英文页面按钮值
     std::vector<std::map<int, std::string>> mZHPageValue;   // 中文页面按钮值
 
     OnCompleteListener mCompleteListener;
+    OnCancelListener   mCancelListener;
 
     std::string              mLastTxt; // 上一次的内容
     std::vector<std::string> mHzList;  // 汉字选择项
