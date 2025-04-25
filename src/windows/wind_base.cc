@@ -40,6 +40,10 @@ BaseWindow::BaseWindow() :Window(0, 0, -1, -1) {
     mLastTick = 0;
     mPopTickTime = 0;
     mPageTickTime = 0;
+
+    mToastRunning = false;
+    mToastLevel = -1;
+
     App::getInstance().addEventHandler(this);
 }
 
