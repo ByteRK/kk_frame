@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2025-02-20 01:57:24
+ * @LastEditTime: 2025-04-25 14:07:46
  * @FilePath: /kk_frame/src/windows/base.cc
  * @Description: 页面基类
  * @BugList:
@@ -161,7 +161,7 @@ PageBase::~PageBase() {
 /// @brief 初始化UI
 void PageBase::initUI() {
     mInitUIFinish = false;
-    loadBase();
+    initBase();
     getView();
     setAnim();
     setView();
