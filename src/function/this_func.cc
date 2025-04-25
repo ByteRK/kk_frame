@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:47:17
- * @LastEditTime: 2025-02-20 01:52:06
+ * @LastEditTime: 2025-04-25 14:33:34
  * @FilePath: /kk_frame/src/function/this_func.cc
  * @Description: 此项目的一些功能函数
  * @BugList:
@@ -15,7 +15,7 @@
 #include "this_func.h"
 #include "comm_func.h"
 
-#include "config/version.h"
+#include "app_version.h"
 #include "series_config.h"
 
 #include <sys/syscall.h>   // for SYS_xxx definitions
@@ -121,6 +121,10 @@ void writeCurrentDateTimeToFile(const std::string& filename) {
     file << "Current Date and Time: " << asctime(timeinfo);
 
     file.close();
+
+#ifndef CDROID_X64
+    std::system("sync");
+#endif
 }
 
 void setDateTimeFromFile(const std::string& filename) {
@@ -144,12 +148,7 @@ void setDateTimeFromFile(const std::string& filename) {
 
     std::cout << "Date and Time read from file: " << asctime(&timeinfo);
 
-    struct timeval tv;
-    tv.tv_sec = mktime(&timeinfo);
-    tv.tv_usec = 0;
-#ifndef DEBUG
-    settimeofday(&tv, NULL);
-#endif
+    timeSet(mktime(&timeinfo));
 
     file.close();
 }
