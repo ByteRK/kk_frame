@@ -1,5 +1,4 @@
-#ifndef KEYBOARD_DISABLE // CMakeLists.txt -> add_definitions(-DKEYBOARD_ENABLE)
-
+﻿
 // 输入法 CDROID版
 // 键盘控件，放置于最外层控件组首个
 #ifndef __keyboard_h__
@@ -21,11 +20,10 @@ enum emKeyBoardPageType
     KB_PT_COUNT,
 };
 
-class CKeyBoard : public RelativeLayout
+class CdroidKeyBoard : public RelativeLayout
 {
 public:
     DECLARE_UIEVENT(void, OnCompleteListener, const std::string &editTxt);
-    DECLARE_UIEVENT(void, OnCancelListener, void);
     typedef enum {
         LT_NULL = 0,
         LT_NUMBER, // 数字
@@ -33,15 +31,15 @@ public:
         LT_EN,    // 英文
     }LoadType;
 public:
-    CKeyBoard(int, int);
-    CKeyBoard(Context *, const AttributeSet &attr);
+    CdroidKeyBoard(int, int);
+    CdroidKeyBoard(Context *, const AttributeSet &attr);
 
     // 加载后首次界面
     void setLoadType(LoadType lt);
     // 显示
     void showWindow();
     // 输入内容类型
-    void setEditType(int editType=EditText::TYPE_TEXT);
+    void setEditType(int editType=LT_CN);
     // 输入字长度
     void setWordCount(int count) {mWordCount = count;}
 
@@ -54,7 +52,7 @@ public:
     
 public:
     virtual void setOnCompleteListener(OnCompleteListener l);
-    virtual void setOnCancelListener(OnCancelListener l);
+
 protected:
     template<typename T = View>
     T *getView(int id)
@@ -92,7 +90,6 @@ protected:
     std::string mEnterText;
     EditText * mText;      // 确认的内容
     Button *   mOk;        // 确认按钮
-    Button *   mCancel;    // 取消按钮
     ViewGroup *mWorldVG;   // 候选区容器
     ViewGroup *mRow2VG;    // 第二行的容器
     TextView * mWord;       // 输入词
@@ -163,7 +160,6 @@ protected:
     std::vector<std::map<int, std::string>> mZHPageValue;   // 中文页面按钮值
 
     OnCompleteListener mCompleteListener;
-    OnCancelListener   mCancelListener;
 
     std::string              mLastTxt; // 上一次的内容
     std::vector<std::string> mHzList;  // 汉字选择项
@@ -173,5 +169,3 @@ protected:
 };
 
 #endif
-
-#endif // KEYBOARD_ENABLE
