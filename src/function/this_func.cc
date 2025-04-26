@@ -1,13 +1,13 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
+ * @Author: cy
+ * @Email: 964028708@qq.com
  * @Date: 2024-05-22 15:47:17
  * @LastEditTime: 2025-04-25 14:33:34
- * @FilePath: /kk_frame/src/function/this_func.cc
+ * @FilePath: /cy_frame/src/function/this_func.cc
  * @Description: 此项目的一些功能函数
  * @BugList:
  *
- * Copyright (c) 2024 by Ricken, All Rights Reserved.
+ * Copyright (c) 2024 by Cy, All Rights Reserved.
  *
  */
 

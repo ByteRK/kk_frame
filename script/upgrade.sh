@@ -1,14 +1,13 @@
-#!/bin/sh
-###
- # @Author: Ricken
- # @Email: me@ricken.cn
- # @Date: 2024-12-03 00:21:57
- # @LastEditTime: 2025-01-15 23:52:39
- # @FilePath: /kk_frame/script/upgrade.sh
- # @Description: 升级脚本
+##
+ # @Author: cy
+ # @Email: 964028708@qq.com
+ # @Date: 2025-04-26 14:33:55
+ # @LastEditTime: 2025-04-26 14:49:58
+ # @FilePath: /cy_frame/script/upgrade.sh
+ # @Description: 
  # @BugList: 
  # 
- # Copyright (c) 2024 by Ricken, All Rights Reserved. 
+ # Copyright (c) 2025 by cy, All Rights Reserved. 
  # 
 ### 
 

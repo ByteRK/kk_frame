@@ -1,13 +1,13 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
+ * @Author: cy
+ * @Email: 964028708@qq.com
  * @Date: 2024-06-12 14:49:06
  * @LastEditTime: 2025-01-19 16:43:44
- * @FilePath: /kk_frame/src/protocol/btn_mgr.h
+ * @FilePath: /cy_frame/src/protocol/btn_mgr.h
  * @Description:
  * @BugList:
  *
- * Copyright (c) 2024 by Ricken, All Rights Reserved.
+ * Copyright (c) 2024 by Cy, All Rights Reserved.
  *
  */
 

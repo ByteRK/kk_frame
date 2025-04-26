@@ -1,13 +1,13 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
+ * @Author: cy
+ * @Email: 964028708@qq.com
  * @Date: 2024-05-22 15:55:26
  * @LastEditTime: 2025-04-25 14:07:35
- * @FilePath: /kk_frame/src/windows/base.h
+ * @FilePath: /cy_frame/src/windows/base.h
  * @Description: 页面基类
  * @BugList:
  *
- * Copyright (c) 2024 by Ricken, All Rights Reserved.
+ * Copyright (c) 2024 by Cy, All Rights Reserved.
  *
  */
 

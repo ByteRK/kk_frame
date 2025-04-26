@@ -1,13 +1,13 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
+ * @Author: cy
+ * @Email: 964028708@qq.com
  * @Date: 2024-05-22 15:53:50
  * @LastEditTime: 2025-02-20 22:20:46
- * @FilePath: /kk_frame/src/project/config_mgr.h
+ * @FilePath: /cy_frame/src/project/config_mgr.h
  * @Description:
  * @BugList:
  *
- * Copyright (c) 2024 by Ricken, All Rights Reserved.
+ * Copyright (c) 2024 by Cy, All Rights Reserved.
  *
  */
 

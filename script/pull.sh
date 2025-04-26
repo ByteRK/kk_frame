@@ -1,13 +1,13 @@
 ###
- # @Author: Ricken
- # @Email: me@ricken.cn
+ # @Author: cy
+ # @Email: 964028708@qq.com
  # @Date: 2024-07-11 14:18:06
- # @LastEditTime: 2025-03-10 10:58:41
- # @FilePath: /kk_frame/script/pull.sh
+ # @LastEditTime: 2025-04-26 15:26:03
+ # @FilePath: /cy_frame/script/pull.sh
  # @Description: 更新脚本 - 调试用
  # @BugList: 
  # 
- # Copyright (c) 2024 by Ricken, All Rights Reserved. 
+ # Copyright (c) 2024 by Cy, All Rights Reserved. 
  # 
 ### 
 

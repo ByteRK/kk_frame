@@ -1,13 +1,13 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
+ * @Author: cy
+ * @Email: 964028708@qq.com
  * @Date: 2024-05-22 15:39:39
  * @LastEditTime: 2024-06-06 02:57:18
- * @FilePath: /kk_frame/src/common/json_func.h
+ * @FilePath: /cy_frame/src/common/json_func.h
  * @Description: Json数据处理
  * @BugList: 
  * 
- * Copyright (c) 2024 by Ricken, All Rights Reserved. 
+ * Copyright (c) 2024 by Cy, All Rights Reserved. 
  * 
  */
 

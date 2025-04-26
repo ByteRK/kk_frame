@@ -2,15 +2,15 @@
 #set -x
 
 ###
- # @Author: Ricken
- # @Email: me@ricken.cn
+ # @Author: cy
+ # @Email: 964028708@qq.com
  # @Date: 2024-05-22 15:42:58
  # @LastEditTime: 2025-01-15 23:35:48
- # @FilePath: /kk_frame/script/build.sh
+ # @FilePath: /cy_frame/script/build.sh
  # @Description: 
  # @BugList: 
  # 
- # Copyright (c) 2024 by Ricken, All Rights Reserved. 
+ # Copyright (c) 2024 by Cy, All Rights Reserved. 
  # 
 ### 
 

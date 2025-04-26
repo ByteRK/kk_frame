@@ -1,6 +1,6 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
+ * @Author: cy
+ * @Email: 964028708@qq.com
  * @Date: 2024-05-22 15:55:07
  * @LastEditTime: 2024-12-16 16:36:51
  * @FilePath: /kaidu_tr_pro/src/viewlibs/rvNumberPicker.h
@@ -12,7 +12,7 @@
  * 
  * @Todo:    1、notifyUpdate默认值为false,使用true可以对性能进行优化,但需测试
  *
- * Copyright (c) 2024 by Ricken, All Rights Reserved.
+ * Copyright (c) 2024 by Cy, All Rights Reserved.
  *
  */
 

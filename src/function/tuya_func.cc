@@ -1,13 +1,13 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
+ * @Author: cy
+ * @Email: 964028708@qq.com
  * @Date: 2024-12-16 09:51:02
  * @LastEditTime: 2024-12-16 10:17:14
- * @FilePath: /kk_frame/src/function/tuya_func.cc
+ * @FilePath: /cy_frame/src/function/tuya_func.cc
  * @Description:
  * @BugList:
  *
- * Copyright (c) 2024 by Ricken, All Rights Reserved.
+ * Copyright (c) 2024 by Cy, All Rights Reserved.
  *
  */
 

@@ -1,13 +1,13 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
+ * @Author: cy
+ * @Email: 964028708@qq.com
  * @Date: 2025-01-18 11:33:02
  * @LastEditTime: 2025-02-20 01:45:18
- * @FilePath: /kk_frame/config/defualt_config.h
+ * @FilePath: /cy_frame/config/defualt_config.h
  * @Description: 项目信息
  * @BugList: 
  * 
- * Copyright (c) 2025 by Ricken, All Rights Reserved. 
+ * Copyright (c) 2025 by Cy, All Rights Reserved. 
  * 
  */
 

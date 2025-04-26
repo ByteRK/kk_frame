@@ -1,13 +1,13 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
+ * @Author: cy
+ * @Email: 964028708@qq.com
  * @Date: 2024-06-20 15:14:05
  * @LastEditTime: 2025-01-19 16:43:53
  * @FilePath: /kaidu_tr_pro/src/protocol/tuya_mgr.h
  * @Description:
  * @BugList:
  *
- * Copyright (c) 2024 by Ricken, All Rights Reserved.
+ * Copyright (c) 2024 by Cy, All Rights Reserved.
  *
  */
 

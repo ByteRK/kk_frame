@@ -1,13 +1,13 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
+ * @Author: cy
+ * @Email: 964028708@qq.com
  * @Date: 2024-05-22 15:55:07
  * @LastEditTime: 2024-12-02 16:31:37
- * @FilePath: /kk_frame/src/viewlibs/pickerLayoutManager.h
+ * @FilePath: /cy_frame/src/viewlibs/pickerLayoutManager.h
  * @Description: 
  * @BugList: 
  * 
- * Copyright (c) 2024 by Ricken, All Rights Reserved. 
+ * Copyright (c) 2024 by Cy, All Rights Reserved. 
  * 
  */
 

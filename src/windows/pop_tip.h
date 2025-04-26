@@ -1,13 +1,13 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
+ * @Author: cy
+ * @Email: 964028708@qq.com
  * @Date: 2024-05-23 00:04:23
  * @LastEditTime: 2025-02-18 19:54:51
- * @FilePath: /kk_frame/src/windows/pop_tip.h
+ * @FilePath: /cy_frame/src/windows/pop_tip.h
  * @Description:
  * @BugList:
  *
- * Copyright (c) 2025 by Ricken, All Rights Reserved.
+ * Copyright (c) 2025 by Cy, All Rights Reserved.
  *
  */
 

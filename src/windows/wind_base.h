@@ -1,13 +1,13 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
+ * @Author: cy
+ * @Email: 964028708@qq.com
  * @Date: 2024-05-22 14:51:04
  * @LastEditTime: 2025-02-18 19:43:26
- * @FilePath: /kk_frame/src/windows/wind_base.h
+ * @FilePath: /cy_frame/src/windows/wind_base.h
  * @Description: 窗口类
  * @BugList:
  *
- * Copyright (c) 2024 by Ricken, All Rights Reserved.
+ * Copyright (c) 2024 by Cy, All Rights Reserved.
  *
  */
 

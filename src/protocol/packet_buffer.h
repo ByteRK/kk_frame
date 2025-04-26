@@ -1,13 +1,13 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
+ * @Author: cy
+ * @Email: 964028708@qq.com
  * @Date: 2025-01-18 11:31:51
  * @LastEditTime: 2025-02-06 14:18:08
- * @FilePath: /kk_frame/src/protocol/packet_buffer.h
+ * @FilePath: /cy_frame/src/protocol/packet_buffer.h
  * @Description: 数据包缓存
  * @BugList: 
  * 
- * Copyright (c) 2025 by Ricken, All Rights Reserved. 
+ * Copyright (c) 2025 by Cy, All Rights Reserved. 
  * 
  */
 

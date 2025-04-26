@@ -1,14 +1,14 @@
 #!/bin/sh
 ###
- # @Author: Ricken
- # @Email: me@ricken.cn
+ # @Author: cy
+ # @Email: 964028708@qq.com
  # @Date: 2024-05-22 15:42:58
- # @LastEditTime: 2024-06-21 16:40:14
- # @FilePath: /kk_frame/script/updating.sh
+ # @LastEditTime: 2025-04-26 15:26:47
+ # @FilePath: /cy_frame/script/updating.sh
  # @Description: 
  # @BugList: 
  # 
- # Copyright (c) 2024 by Ricken, All Rights Reserved. 
+ # Copyright (c) 2024 by Cy, All Rights Reserved. 
  # 
 ### 
 

@@ -1,14 +1,14 @@
 #!/bin/sh
 ###
- # @Author: Ricken
- # @Email: me@ricken.cn
+ # @Author: cy
+ # @Email: 964028708@qq.com
  # @Date: 2024-11-23 02:05:28
  # @LastEditTime: 2025-01-15 23:45:36
- # @FilePath: /kk_frame/script/run.sh
+ # @FilePath: /cy_frame/script/run.sh
  # @Description: Startup Script
  # @BugList: 
  # 
- # Copyright (c) 2024 by Ricken, All Rights Reserved. 
+ # Copyright (c) 2024 by Cy, All Rights Reserved. 
  # 
 ### 
 
