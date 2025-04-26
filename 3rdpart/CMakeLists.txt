@@ -1,0 +1,8 @@
+SUBDIRLIST(APPDIRS ${CMAKE_CURRENT_SOURCE_DIR})
+
+include_directories(./)
+
+message("util dirs:${APPDIRS}")
+FOREACH(SUB_DIR ${APPDIRS})
+    ADD_SUBDIRECTORY(${SUB_DIR})
+ENDFOREACH()

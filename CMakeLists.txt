@@ -95,6 +95,22 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 #     target_compile_definitions(${PROJECT_NAME} PRIVATE HISENSE_IOT_DISABLE)
 # endif()
 
+# Gauss相关的库
+find_package(Pixman)
+if(CDROID_CHIPSET STREQUAL sigma)
+    find_package(OpenMP REQUIRED)
+    if(OpenMP_C_FOUND)
+        add_definitions(-DENABLE_OMP=1)
+        target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_C)
+    endif()
+else()
+    include_directories(./3rdpart/ARM_NEON_2_x86_SSE)
+    set(AVX_SSE -mavx -msse)
+endif()
+
+# 增加 3rdpart 的CMAKE 
+add_subdirectory(./3rdpart)
+
 # PAK打包
 CreatePAK(
     ${PROJECT_NAME}
