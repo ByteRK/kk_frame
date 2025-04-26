@@ -1,4 +1,4 @@
-﻿/************************************************************
+/************************************************************
  * Description: 弧形进度条，弧形缺口>20度
  * Author     : hookjc
  * C-Date     : 2023/4/29
@@ -7,10 +7,16 @@
 #ifndef __arc_seekbar_h__
 #define __arc_seekbar_h__
 
+#include "libs.h"
 #include <view/view.h>
-#include "paint.h"
+
+#define ARC_MULTIPLE 10
 
 class ArcSeekBar : public View {
+private:
+    friend class VISUAL_ARC_PROGRESS;
+
+    static constexpr int PROGRESS_ANIM_DURATION = 200;
 public:
     DECLARE_UIEVENT(bool, OnArcSeekBarChangeCheckListener, View &v, int progress);
     DECLARE_UIEVENT(void, OnArcSeekBarChangeListener, View &v, int progress);
@@ -26,23 +32,26 @@ public:
     void setMax(int max);
     int  getMax();
     void setRange(int r0, int r2);
+    void setProgress(float progress);
     void setProgress(int progress);
+    void setProgress(int progress, bool animate);
     int  getProgress();
     void setOnChangeListener(OnArcSeekBarChangeListener l);
     void setOnChangeListener2(OnArcSeekBarChangeListener2 l);
     void setOnChangeCheckListener(OnArcSeekBarChangeCheckListener l);
-
-
-    void setBackgroundColor(int color);
+    void setShowSlider(bool Show);
     void setForegroundColor(int color);
     void setForegroundColor2(int color);
-
 protected:
     virtual void onMeasure(int widthMeasureSpec, int heightMeasureSpec);
     virtual void onDraw(Canvas &ctx);
     virtual bool onTouchEvent(MotionEvent &evt);
     virtual void onChangeProgress();
     virtual void onDrawStroke(Canvas &ctx);
+
+    void setProgressInternal(float progress, bool fromUser=false,bool animate=false);
+    void doRefreshProgress(float progress, bool fromUser, bool animate);
+    void setVisualProgress(float progress);
 
 protected:
     static double ARC_EXTEND_ANGLE;
@@ -56,7 +65,7 @@ protected:
     void  onDrawTimer();
     int   getWidthProgress();
     void  calcTouchState(int x, int y);
-    void  checkRange(int &progress);
+    void  checkRange(float &progress);
 
 protected:
     int                             mWidth;                 // 可绘制圆的宽度
@@ -76,7 +85,9 @@ protected:
     int                             mRadius;                // 圆弧半径
     int                             mMin;                   // 最小值
     int                             mMax;                   // 最大值
-    int                             mProgress;              // 当前进度
+    int                             mValue;                 // 当前进度值
+    float                           mProgress;              // 当前进度（进度条）
+    float                           mVisualProgress;        // 当前的虚拟进度
     int                             mSliderWidth;           // 滑块线条宽度
     int                             mSliderColor;           // 滑块线条颜色
     int                             mSliderFillColor;       // 滑块圆形填充颜色
@@ -102,6 +113,8 @@ protected:
     int                             mBorderColor;           // 线条颜色
     int                             mBorderWidth;           // 线条宽
     bool                            mIsReverse;             // 反向进度[逆时针]
+
+    ObjectAnimator                 *mLastProgressAnimator;  // 调节进度的动画
 };
 
 #endif

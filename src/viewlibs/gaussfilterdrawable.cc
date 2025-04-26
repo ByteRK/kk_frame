@@ -228,8 +228,10 @@ void GaussFilterDrawable::computeBitmapGasuss(){
     free(bitmapRGBGaussData);
 #endif
     LOGI("diff Time = %ld",SystemClock::uptimeMillis()-startTime);
-#else //USE_PIXMAN
-    
+#else //!USE_PIXMAN
+    // 不使用PixMan，且gaussianFilter_u8_Neon当时只支持RGB的数据格式
+    // 因此把RGBA的数据，转换成RGB，再进行模糊计算，再添加杂色，
+    // 比较早的版本，不建议使用，仅留个记录
     for(int i=0; i<mGaussHeight; i++){
         for(int j=0; j<mGaussWidth; j++){
             bitmapPos = (i*mScale+mGaussRegion.top)*mBitmap->get_width()+(j*mScale+mGaussRegion.left);

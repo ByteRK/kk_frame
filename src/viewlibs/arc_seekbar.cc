@@ -1,10 +1,21 @@
-﻿
-#include "arc_seekbar.h"
-#include "comm_func.h"
-
+﻿#include "arc_seekbar.h"
+#include <core/pools.h>
 DECLARE_WIDGET(ArcSeekBar)
 
 double ArcSeekBar::ARC_EXTEND_ANGLE = 10.0;
+
+class VISUAL_ARC_PROGRESS:public Property{
+public:
+    VISUAL_ARC_PROGRESS():Property("visual_arc_progress"){}
+    void set(void*object,const AnimateValue&value)override {
+        float fv = GET_VARIANT(value,float);
+        ((ArcSeekBar*)object)->setVisualProgress(fv);
+        ((ArcSeekBar*)object)->mVisualProgress = fv;
+    }
+    AnimateValue get(void*object) override{
+        return ((ArcSeekBar*)object)->mVisualProgress;
+    }
+};
 
 ArcSeekBar::ArcSeekBar(int w, int h) : View(w, h) {
     initViewData();
@@ -29,7 +40,7 @@ ArcSeekBar::ArcSeekBar(Context *ctx, const AttributeSet &attrs) : View(ctx, attr
 
     mMin      = attrs.getInt("min", mMin);
     mMax      = attrs.getInt("max", mMax);
-    mProgress = attrs.getInt("progress", mProgress);
+    setProgress(attrs.getInt("progress", mValue));
 
     mSliderRadius    = attrs.getDimensionPixelSize("sliderRadius", 14);
     mSliderWidth     = attrs.getDimensionPixelSize("sliderWidth", 1);
@@ -59,13 +70,14 @@ ArcSeekBar::ArcSeekBar(Context *ctx, const AttributeSet &attrs) : View(ctx, attr
 
     mBorderColor = attrs.getColor("borderColor", mBorderColor);
     mBorderWidth = attrs.getDimensionPixelSize("borderWidth", mBorderWidth);
-    mIsReverse   = attrs.getBoolean("reverse", mIsReverse);
+    mIsReverse   = attrs.getBoolean("reverse", mIsReverse);    
 
-    LOGV("radius=%d startAngle=%d mEndAngle=%d", mRadius, mStartAngle, mEndAngle);
+    LOG(VERBOSE) << "radius=" << mRadius << " startAngle=" << mStartAngle << " endAngle=" << mEndAngle;
 }
 
 ArcSeekBar::~ArcSeekBar() {
     delete mSlider;
+    delete mLastProgressAnimator;
 }
 
 void ArcSeekBar::initViewData() {
@@ -79,7 +91,8 @@ void ArcSeekBar::initViewData() {
     mEndAngle              = 390;
     mMin                   = 0;
     mMax                   = 100;
-    mProgress              = 30;
+    mProgress              = 0.f;
+    mValue                 = 30;
     mSliderRadius          = 14;
     mSliderWidth           = 1;
     mSliderColor           = 0xffd9d9d9;
@@ -91,6 +104,7 @@ void ArcSeekBar::initViewData() {
     mOnChangeListener      = nullptr;
     mOnChangeListener2     = nullptr;
     mOnChangeCheckListener = nullptr;
+    mLastProgressAnimator  = nullptr;
     mForegroundColor2      = mForegroundColor;
     mTouchLastX            = 0;
     mTouchLastY            = 0;
@@ -98,15 +112,20 @@ void ArcSeekBar::initViewData() {
     mBorderWidth           = 0;
     mBorderColor           = 0xFFFF0000;
     mIsReverse             = false;
+    mVisualProgress        = 0;
 
     mShowProgressTxt   = false;
     mIsPercentProgress = false;
     mPaintTxt.setColor(Color::WHITE);
-    mPaintTxt.setTextSize((mRadius - __max(mBackgroundWidth, mForegroundWidth) / 2.0) * 0.65);
+    mPaintTxt.setTextSize((mRadius - MAX(mBackgroundWidth, mForegroundWidth) / 2.0) * 0.65);
 
     mStrokeCap       = Cairo::Context::LineCap::ROUND;
     mStrokeCapMiddle = mStrokeCap;
     bzero(mRange, sizeof(mRange));
+
+    if(Property::fromName("visual_arc_progress")==nullptr){
+        Property::reigsterProperty("visual_arc_progress",new VISUAL_ARC_PROGRESS());
+    }
 }
 
 void ArcSeekBar::onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -118,13 +137,13 @@ void ArcSeekBar::onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
     mCircleX = mWidth / 2;
     mCircleY = mHeight / 2;
 
-    LOGV("w=%d h=%d cx=%d cy=%d", mWidth, mHeight, mCircleX, mCircleY);
+    LOG(VERBOSE) << "w=" << mWidth << " h=" << mHeight << " cx=" << mCircleX << " cy=" << mCircleY;
 }
 
 void ArcSeekBar::onDraw(Canvas &ctx) {
     View::onDraw(ctx);
 
-    int progress = mIsReverse ? (mMax - mProgress) : mProgress;
+    float progress = mIsReverse ? (1 - mVisualProgress) : mVisualProgress;
 
     checkRange(progress);
 
@@ -142,13 +161,13 @@ void ArcSeekBar::onDraw(Canvas &ctx) {
 
     int startAngle, endAngle;
     if (mIsReverse) {
-        startAngle = mStartAngle + (mEndAngle - mStartAngle) * (progress - mMin) / getWidthProgress();
+        startAngle = mStartAngle + (mEndAngle - mStartAngle) * progress;
         endAngle   = mEndAngle;
     } else {
         startAngle = mStartAngle;
-        endAngle   = mStartAngle + (mEndAngle - mStartAngle) * (progress - mMin) / getWidthProgress();
+        endAngle   = mStartAngle + (mEndAngle - mStartAngle) * progress;
     }
-    LOGV("%d progress=%d end=%d", getId(), progress, endAngle);
+    LOG(VERBOSE) << getId() << " progress=" << progress << " end=" << endAngle;
 
     // 前景
     if (endAngle > startAngle) {
@@ -164,7 +183,7 @@ void ArcSeekBar::onDraw(Canvas &ctx) {
                     int endAngle2 = endAngle - 1;
                     sPaint.drawArc(mCircleX, mCircleY, mRadius, endAngle2, endAngle);
                     if (endAngle2 > startAngle) {
-                        sPaint.setStrokeCap(mStrokeCapMiddle);
+                        sPaint.setStrokeCap(mStrokeCapMiddle);                    
                         if (mStrokeCapMiddle == Cairo::Context::LineCap::BUTT && (startAngle % 360 >= 210 || startAngle % 360 <= 60)) {
                             // 项目浮动值
                             sPaint.drawArc(mCircleX, mCircleY, mRadius, std::max(mStartAngle, startAngle - 1), endAngle2);
@@ -176,7 +195,7 @@ void ArcSeekBar::onDraw(Canvas &ctx) {
                     int endAngle2 = std::min(startAngle + 1, endAngle);
                     sPaint.drawArc(mCircleX, mCircleY, mRadius, startAngle, endAngle2);
                     if (endAngle2 < endAngle) {
-                        sPaint.setStrokeCap(mStrokeCapMiddle);
+                        sPaint.setStrokeCap(mStrokeCapMiddle);                    
                         if (mStrokeCapMiddle == Cairo::Context::LineCap::BUTT && endAngle % 360 < 210) {
                             // 项目浮动值
                             sPaint.drawArc(mCircleX, mCircleY, mRadius, endAngle2, endAngle + 1.0);
@@ -218,7 +237,7 @@ void ArcSeekBar::onDraw(Canvas &ctx) {
         int y = mCircleY + mRadius * sin(sliderAngle * M_PI / 180.0);
 
         if (mSlider != nullptr) {
-            BitmapDrawable *bitmap = __dc(BitmapDrawable, mSlider);
+            BitmapDrawable *bitmap = dynamic_cast<BitmapDrawable *>(mSlider);
 
             mRectSlider.width  = mSlider->getIntrinsicWidth();
             mRectSlider.height = mSlider->getIntrinsicHeight();
@@ -278,12 +297,15 @@ void ArcSeekBar::onDraw(Canvas &ctx) {
 
 bool ArcSeekBar::onTouchEvent(MotionEvent &evt) {
     if (!mShowSlider || !isEnabled()) { return false; }
-    LOGV("action=%d (%.f,%.f)", evt.getAction(), evt.getX(), evt.getY());
+
+    LOG(VERBOSE) << "action=" << evt.getAction() << " x=" << evt.getX() << " y=" << evt.getY();
+
     switch (evt.getAction()) {
-    case MotionEvent::ACTION_DOWN:
-        mSliderDown = mRectSlider.contains(evt.getX(), evt.getY());
-        if (!mSliderDown) {
-            // 未点击滑块，必须点击在弧上
+    case MotionEvent::ACTION_DOWN:{
+        // 判断是否点击在滑块上
+        // mSliderDown = mRectSlider.contains(evt.getX(), evt.getY());
+        // if (!mSliderDown) {
+            // 未点击滑块，必须点击在弧上（目前是直接判断是否在弧上）
             int angle = getRelativeDegrees(evt.getX(), evt.getY());
             if (angle >= mStartAngle - ARC_EXTEND_ANGLE && angle <= mEndAngle + ARC_EXTEND_ANGLE) {
                 // 满足弧线内
@@ -295,46 +317,52 @@ bool ArcSeekBar::onTouchEvent(MotionEvent &evt) {
                 rc.left   = x - rc.width / 2;
                 rc.top    = y - rc.height / 2;
                 if (rc.contains(evt.getX(), evt.getY())) {
-                    int progress = mMin + getWidthProgress() * (angle - mStartAngle) / (mEndAngle - mStartAngle);
-                    if (mIsReverse) progress = mMax - progress;
+                    float progress = (float)(angle - mStartAngle) / (mEndAngle - mStartAngle);
+                    if (mIsReverse) progress = 1 - progress;
                     mFromUser = true;
                     setProgress(progress);
                     mFromUser = false;
+                    mSliderDown = true;
                 }
             }
-        }
+        // }
+    }
+        
         break;
-    case MotionEvent::ACTION_UP: mSliderDown = false; break;
+    case MotionEvent::ACTION_UP: 
+        mSliderDown = false; 
+        setProgress((int)(mProgress * (mMax - mMin) + mMin),true);
+        break;
     case MotionEvent::ACTION_MOVE:
         if (mSliderDown) {
             calcTouchState(evt.getX(), evt.getY());
             int angle = getRelativeDegrees(evt.getX(), evt.getY());
             if (angle >= mStartAngle - ARC_EXTEND_ANGLE) {
-                int lastProgress = mProgress;
-                int progress     = mMin + getWidthProgress() * (angle - mStartAngle) / (mEndAngle - mStartAngle);
-                if (mIsReverse) {
-                    progress     = mMax - progress;
+                float lastProgress = mProgress;
+                float progress     = (float)(angle - mStartAngle) / (mEndAngle - mStartAngle);            
+                if (mIsReverse) {                    
+                    progress     = 1 - progress;
                     mAngleAdd    = !mAngleAdd;
                 }
                 /* 防止循环滑 */
                 if (mAngleAdd) {
-                    if (progress < lastProgress && lastProgress - mMin > (mMax - mMin) * 7 / 8) {
-                        progress = mMax; // 已经滑到最大[边缘抖动]
-                    } else if (lastProgress == mMin) {
-                        if (progress - mMin > (mMax - mMin) / 8) {
+                    if (progress < lastProgress && lastProgress  > 7.f / 8.f) {
+                        progress = 1.f; // 已经滑到最大[边缘抖动]
+                    } else if (lastProgress == 0.f) {
+                        if (progress > 1.f / 8) {
                             break; // 需要逐渐增加
                         }
                     }
                 } else {
-                    if (progress > lastProgress && lastProgress - mMin < (mMax - mMin) / 8) {
-                        progress = mMin; // 已经滑到最小
-                    } else if (lastProgress == mMax) {
-                        if (progress - mMin < (mMax - mMin) * 7 / 8) {
+                    if (progress > lastProgress && lastProgress< 1.f/ 8.f) {
+                        progress = 0.f; // 已经滑到最小
+                    } else if (lastProgress == 1.f) {
+                        if (progress < 7.f / 8.f) {
                             break; // 需要逐渐减少
                         }
                     }
                 }
-                LOGV("angle=%d progress=%d", angle, progress);
+                LOG(VERBOSE) << "angle=" << angle << " progress=" << progress;
                 mFromUser = true;
                 setProgress(progress);
                 mFromUser = false;
@@ -362,7 +390,7 @@ float ArcSeekBar::getTouchDegrees(float x, float y) {
     double arcNum   = atan2(y1, x1);
     double angleNum = arcNum * 180 / M_PI;
 
-    LOGV("y=%.f x=%.f arcNum=%.f angle=%.f", y1, x1, arcNum, angleNum);
+    LOG(VERBOSE) << "y=" << y1 << " x=" << x1 << " arc=" << arcNum << " angle=" << angleNum;
 
     return angleNum;
 }
@@ -373,7 +401,7 @@ float ArcSeekBar::getRelativeDegrees(float x, float y) {
     if (angleNum < 0 || angleNum < mStartAngle) { angleNum += 360; }
     if (angleNum < mStartAngle) { angleNum += 360; }
 
-    LOGV("relative angle=%.f", angleNum);
+    LOG(VERBOSE) << "relative angle=" << angleNum;
 
     return angleNum;
 }
@@ -381,8 +409,11 @@ float ArcSeekBar::getRelativeDegrees(float x, float y) {
 void ArcSeekBar::setMin(int min) {
     if (mMin != min) {
         mMin = min;
-        if (mProgress < mMin) {
-            mProgress = mMin;
+
+        if (mValue < mMin) {
+            mProgress = 0.f;
+            doRefreshProgress(mProgress,false,false);
+            mValue = mMin;
             onChangeProgress();
         }
         invalidate();
@@ -396,8 +427,10 @@ int ArcSeekBar::getMin() {
 void ArcSeekBar::setMax(int max) {
     if (mMax != max) {
         mMax = max;
-        if (mProgress > mMax) {
-            mProgress = mMax;
+        if (mValue > mMax) {
+            mProgress = 1.f;
+            doRefreshProgress(mProgress,false,false);
+            mValue = mMax;
             onChangeProgress();
         }
         invalidate();
@@ -408,30 +441,77 @@ int ArcSeekBar::getMax() {
     return mMax;
 }
 
-void ArcSeekBar::setProgress(int progress) {
-
+void ArcSeekBar::setProgressInternal(float progress, bool fromUser,bool animate){
     if (mOnChangeCheckListener && !mOnChangeCheckListener(*this, progress)) return;
 
-    int newProgress = progress;
-    if (newProgress > mMax)
-        newProgress = mMax;
-    else if (newProgress < mMin)
-        newProgress = mMin;
+    if (progress > 1.f){
+        progress = 1.f;
+    } else if (progress < 0.f){
+        progress = 0.f;
+    }
 
-    checkRange(newProgress);
+    checkRange(progress);
+    int newValue = progress * (mMax - mMin) + mMin;
 
-    if (newProgress == mProgress) return;
+    if (progress == mProgress) return;
 
-    LOGV("%d set progress. old=%d new=%d", getId(), mProgress, newProgress);
+    mProgress = progress;
+    if(mValue != newValue){
+        mValue    = newValue;
+        onChangeProgress();
+    }
 
-    mProgress = newProgress;
-    onChangeProgress();
-
-    invalidate();
+    doRefreshProgress(mProgress,fromUser,animate);
 }
 
-int ArcSeekBar::getProgress() {
-    return mProgress;
+void ArcSeekBar::doRefreshProgress(float progress, bool fromUser, bool animate){
+    if (animate) {
+        Animator::AnimatorListener animListener;
+        ObjectAnimator* animator = ObjectAnimator::ofFloat(this,"visual_arc_progress",{progress});
+        animator->setAutoCancel(true);
+        animator->setDuration(PROGRESS_ANIM_DURATION);
+        animator->setInterpolator(DecelerateInterpolator::gDecelerateInterpolator.get());
+        AnimatorListenerAdapter animtorListener;
+        animtorListener.onAnimationEnd=[this](Animator&anim,bool){
+            delete mLastProgressAnimator;
+            mLastProgressAnimator = nullptr;
+        };
+        animator->addListener(animtorListener);
+        animator->start();
+        mLastProgressAnimator = animator;
+    } else {
+        if(mLastProgressAnimator){
+            mLastProgressAnimator->cancel();
+            delete mLastProgressAnimator;
+            mLastProgressAnimator = nullptr;
+        }
+        setVisualProgress(progress);
+    }
+}
+
+void ArcSeekBar::setProgress(float progress){
+    setProgressInternal(progress,false,false);
+}
+
+void ArcSeekBar::setProgress(int progress) {
+    if(progress>=mMax) setProgress(1.f);
+    else if(progress <= mMin) setProgress(0.f);
+    else    setProgressInternal((float)(progress - mMin)/(mMax - mMin),false,false);
+}
+
+void ArcSeekBar::setProgress(int progress, bool animate){
+    if(progress>=mMax) setProgress(1.f);
+    else if(progress <= mMin) setProgress(0.f);
+    else    setProgressInternal((float)(progress - mMin)/(mMax - mMin),false,animate);
+}
+
+int ArcSeekBar::getProgress() {    
+    return mValue;
+}
+
+void ArcSeekBar::setVisualProgress(float progress){
+    mVisualProgress = progress;
+    invalidate(true);
 }
 
 void ArcSeekBar::setOnChangeListener(OnArcSeekBarChangeListener l) {
@@ -445,19 +525,22 @@ void ArcSeekBar::setOnChangeListener2(OnArcSeekBarChangeListener2 l) {
 void ArcSeekBar::setOnChangeCheckListener(OnArcSeekBarChangeCheckListener l) {
     mOnChangeCheckListener = l;
 }
-
-void ArcSeekBar::setBackgroundColor(int color) {
-    mBackgroundColor = color;
+void ArcSeekBar::setShowSlider(bool Show) {mShowSlider = Show; }
+void ArcSeekBar::setForegroundColor(int color){ 
+    if(mForegroundColor != color){
+        mForegroundColor = color; 
+        mForegroundColor2 = color;
+        invalidate();
+    }
+    
 }
-
-void ArcSeekBar::setForegroundColor(int color) {
-    mForegroundColor = color;
+void ArcSeekBar::setForegroundColor2(int color){ 
+    if(mForegroundColor2 != color){
+        mForegroundColor2 = color;
+        invalidate();
+    }
+    
 }
-
-void ArcSeekBar::setForegroundColor2(int color) {
-    mForegroundColor2 = color;
-}
-
 int ArcSeekBar::getWidthProgress() {
     return std::max(1, mMax - mMin);
 }
@@ -503,21 +586,22 @@ void ArcSeekBar::setRange(int r0, int r2) {
     }
 }
 
-void ArcSeekBar::checkRange(int &progress) {
+void ArcSeekBar::checkRange(float &progress) {
+    int value = progress*(mMax - mMin) + mMin;
     if (mRange[0] >= mMin && mRange[1] <= mMax && mRange[0] < mRange[1]) {
-        if (progress > mRange[1]) {
-            LOGV("[%d,%d]change to up %d=>%d", mRange[0], mRange[1], progress, mRange[1]);
-            progress = mRange[1];
-        } else if (progress < mRange[0]) {
-            LOGV("[%d,%d]change to down %d=>%d", mRange[0], mRange[1], progress, mRange[0]);
-            progress = mRange[0];
+        if (value > mRange[1]) {
+            LOGV("[%d,%d]change to up %f=>%d", mRange[0], mRange[1], progress, mRange[1]);
+            progress = (mRange[1] - mMin)/(mMax - mMin);
+        } else if (value < mRange[0]) {
+            LOGV("[%d,%d]change to down %f=>%d", mRange[0], mRange[1], progress, mRange[0]);
+            progress = (mRange[0] - mMin)/(mMax - mMin);
         }
     }
 }
 
-void ArcSeekBar::onChangeProgress() {
-    if (mOnChangeListener) { mOnChangeListener(*this, mProgress); }
-    if (mOnChangeListener2) { mOnChangeListener2(*this, mProgress, mFromUser); }
+void ArcSeekBar::onChangeProgress() {    
+    if (mOnChangeListener) { mOnChangeListener(*this, mValue); }
+    if (mOnChangeListener2) { mOnChangeListener2(*this, mValue, mFromUser); }
 }
 
 void ArcSeekBar::onDrawStroke(Canvas &ctx) {
@@ -563,3 +647,4 @@ void ArcSeekBar::onDrawStroke(Canvas &ctx) {
     // 绘制边框
     cairo_stroke(cr);
 }
+
