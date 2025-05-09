@@ -1,3 +1,12 @@
+/*
+ * @Author: hanakami
+ * @Date: 2025-05-08 17:08:00
+ * @email: hanakami@163.com
+ * @LastEditTime: 2025-05-08 17:47:05
+ * @FilePath: /hana_frame/src/common/comm_func.cc
+ * @Description: 全局共工函数
+ * Copyright (c) 2025 by hanakami, All Rights Reserved. 
+ */
 
 #include <arpa/inet.h>
 #include <ctime>

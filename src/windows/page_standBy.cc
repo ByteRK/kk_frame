@@ -1,14 +1,11 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
- * @Date: 2024-05-23 00:04:17
- * @LastEditTime: 2025-02-20 02:08:48
- * @FilePath: /kk_frame/src/windows/page_standBy.cc
- * @Description:
- * @BugList:
- *
- * Copyright (c) 2025 by Ricken, All Rights Reserved.
- *
+ * @Author: hanakami
+ * @Date: 2025-05-08 17:08:00
+ * @email: hanakami@163.com
+ * @LastEditTime: 2025-05-08 17:12:25
+ * @FilePath: /hana_frame/src/windows/page_standBy.cc
+ * @Description: 
+ * Copyright (c) 2025 by hanakami, All Rights Reserved. 
  */
 
 

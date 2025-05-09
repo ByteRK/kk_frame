@@ -1,15 +1,13 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
- * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2025-02-20 01:54:43
- * @FilePath: /kk_frame/src/windows/wind_base.cc
- * @Description: 窗口类
- * @BugList:
- *
- * Copyright (c) 2025 by Ricken, All Rights Reserved.
- *
+ * @Author: hanakami
+ * @Date: 2025-05-08 17:08:00
+ * @email: hanakami@163.com
+ * @LastEditTime: 2025-05-08 18:50:01
+ * @FilePath: /hana_frame/src/windows/wind_base.cc
+ * @Description: 
+ * Copyright (c) 2025 by hanakami, All Rights Reserved. 
  */
+
 
 #include <core/app.h>
 #include "manage.h"
@@ -84,11 +82,11 @@ void BaseWindow::init() {
     mRootView = (ViewGroup*)(
         LayoutInflater::from(mContext)->inflate("@layout/wind_base", this)
         );
-    mPageBox = __getgv(mRootView, ViewGroup, kk_frame::R::id::mainBox);
-    mPopBox = __getgv(mRootView, ViewGroup, kk_frame::R::id::popBox);
-    mLogo = __getg(mRootView, kk_frame::R::id::logo);
-    mToast = __getgv(mRootView, TextView, kk_frame::R::id::toast);
-    mBlackView = __getgv(mRootView, View, kk_frame::R::id::cover);
+    mPageBox = __getgv(mRootView, ViewGroup, hana_frame::R::id::mainBox);
+    mPopBox = __getgv(mRootView, ViewGroup, hana_frame::R::id::popBox);
+    mLogo = __getg(mRootView, hana_frame::R::id::logo);
+    mToast = __getgv(mRootView, TextView, hana_frame::R::id::toast);
+    mBlackView = __getgv(mRootView, View, hana_frame::R::id::cover);
 
     if (!(mPageBox && mPopBox && mToast))
         throw std::runtime_error("BaseWindow Error");
@@ -97,7 +95,7 @@ void BaseWindow::init() {
     mPop = nullptr;
     mIsShowLogo = false;
     mCloseLogo = [this] { mLogo->setVisibility(GONE);mIsShowLogo = false; };
-    mPopBox->setOnTouchListener([ ](View& view, MotionEvent& evt) { return true; });
+    mPopBox->setOnTouchListener([](View& view, MotionEvent& evt) { return true; });
 
     mIsBlackView = false;
     mBlackView->setOnClickListener([this](View& view) { hideBlack(); });
@@ -109,7 +107,7 @@ void BaseWindow::init() {
         mToastLevel = -1;
         mToastRunning = false;
         mToast->animate().translationY(POPTEXT_TRANSLATIONY).setDuration(POPTEXT_ANIMATETIME).start();
-        };
+    };
 
     showLogo();
 }

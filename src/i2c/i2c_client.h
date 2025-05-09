@@ -1,3 +1,12 @@
+/*
+ * @Author: hanakami
+ * @Date: 2025-05-08 17:08:00
+ * @email: hanakami@163.com
+ * @LastEditTime: 2025-05-08 17:34:23
+ * @FilePath: /hana_frame/src/i2c/i2c_client.h
+ * @Description: 
+ * Copyright (c) 2025 by hanakami, All Rights Reserved. 
+ */
 
 #ifndef __iic_client_h__
 #define __iic_client_h__

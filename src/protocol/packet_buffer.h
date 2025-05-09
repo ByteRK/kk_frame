@@ -1,14 +1,11 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
- * @Date: 2025-01-18 11:31:51
- * @LastEditTime: 2025-02-06 14:18:08
- * @FilePath: /kk_frame/src/protocol/packet_buffer.h
- * @Description: 数据包缓存
- * @BugList: 
- * 
- * Copyright (c) 2025 by Ricken, All Rights Reserved. 
- * 
+ * @Author: hanakami
+ * @Date: 2025-05-08 17:08:00
+ * @email: hanakami@163.com
+ * @LastEditTime: 2025-05-08 18:50:42
+ * @FilePath: /hana_frame/src/protocol/packet_buffer.h
+ * @Description: 
+ * Copyright (c) 2025 by hanakami, All Rights Reserved. 
  */
 
 #ifndef __packet_buffer_h__

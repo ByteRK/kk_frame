@@ -1,8 +1,8 @@
 ## 项目名
-kk_frame
+hana_frame
 
 ## 信息
-Ricken 的 cdroid 项目模板
+Hanakami 的 cdroid 项目模板
 
 ## 使用
 1. 拉取仓库
@@ -16,4 +16,4 @@ Ricken 的 cdroid 项目模板
 ## 声明
 **Base  On [Cdroid](https://gitee.com/houstudio/cdroid)**
 
-**Power By [Ricken](https://ricken.cn)**
+**Power By [hanakami](https://github.com/hana-kami)**

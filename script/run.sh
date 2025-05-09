@@ -1,18 +1,16 @@
 #!/bin/sh
 ###
- # @Author: Ricken
- # @Email: me@ricken.cn
- # @Date: 2024-11-23 02:05:28
- # @LastEditTime: 2025-01-15 23:45:36
- # @FilePath: /kk_frame/script/run.sh
- # @Description: Startup Script
- # @BugList: 
- # 
- # Copyright (c) 2024 by Ricken, All Rights Reserved. 
- # 
+ # @Author: hanakami
+ # @Date: 2025-05-08 17:08:00
+ # @email: hanakami@163.com
+ # @LastEditTime: 2025-05-08 18:51:39
+ # @FilePath: /hana_frame/script/run.sh
+ # @Description: 
+ # Copyright (c) 2025 by hanakami, All Rights Reserved. 
 ### 
 
-NAME=kk_frame
+
+NAME=hana_frame
 RUN_DIR=/customer/app
 
 cd $RUN_DIR

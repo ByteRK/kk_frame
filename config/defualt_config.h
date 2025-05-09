@@ -1,14 +1,11 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
- * @Date: 2025-01-18 11:33:02
- * @LastEditTime: 2025-02-20 01:45:18
- * @FilePath: /kk_frame/config/defualt_config.h
- * @Description: 项目信息
- * @BugList: 
- * 
- * Copyright (c) 2025 by Ricken, All Rights Reserved. 
- * 
+ * @Author: hanakami
+ * @Date: 2025-05-08 17:08:00
+ * @email: hanakami@163.com
+ * @LastEditTime: 2025-05-09 09:37:24
+ * @FilePath: /hana_frame/config/defualt_config.h
+ * @Description: 
+ * Copyright (c) 2025 by hanakami, All Rights Reserved. 
  */
 
 #ifndef __DEFUALT_CONFIG_H__
@@ -20,7 +17,7 @@
 #ifndef CDROID_X64 // 本地文件保存路径
 #define LOCAL_DATA_DIR "/appconfigs/"
 #else
-#define LOCAL_DATA_DIR "./apps/kk_frame/"
+#define LOCAL_DATA_DIR "./apps/hana_frame/"
 #endif
 
 #define CONFIG_SECTION       "conf" // 配置文件节点

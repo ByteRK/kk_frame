@@ -16,7 +16,7 @@ def replace_project_name_in_cmake(new_project_name):
         content = file.read()
 
     # 替换指定文本
-    updated_content = content.replace('kk_frame', new_project_name)
+    updated_content = content.replace('hana_frame', new_project_name)
 
     # 将修改后的内容写回文件
     with open(cmake_file_path, 'w', encoding='utf-8') as file:

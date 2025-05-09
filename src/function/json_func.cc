@@ -1,14 +1,11 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
- * @Date: 2024-05-22 15:39:39
- * @LastEditTime: 2024-06-06 02:57:53
- * @FilePath: /kk_frame/src/common/json_func.cc
- * @Description: Json数据处理
- * @BugList: 
- * 
- * Copyright (c) 2024 by Ricken, All Rights Reserved. 
- * 
+ * @Author: hanakami
+ * @Date: 2025-05-08 17:08:00
+ * @email: hanakami@163.com
+ * @LastEditTime: 2025-05-08 17:34:53
+ * @FilePath: /hana_frame/src/function/json_func.cc
+ * @Description: 
+ * Copyright (c) 2025 by hanakami, All Rights Reserved. 
  */
 
 #include "json_func.h"
@@ -17,6 +14,13 @@
 #include <iostream>
 #include <fstream>
 #include <ghc/filesystem.hpp>
+
+template<>
+std::string jsonSafeGet<std::string>(const Json::Value& json, 
+                                const std::string& key, 
+                                std::string defaultValue) {
+    return json.isMember(key) ? json[key].asString() : defaultValue;
+}
 
 bool convertStringToJson(const std::string& str, Json::Value& root) {
     Json::Reader reader(Json::Features::strictMode());

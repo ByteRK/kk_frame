@@ -1,15 +1,13 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
- * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2025-02-20 22:26:29
- * @FilePath: /kk_frame/src/project/global_data.cc
- * @Description:
- * @BugList:
- *
- * Copyright (c) 2024 by Ricken, All Rights Reserved.
- *
+ * @Author: hanakami
+ * @Date: 2025-05-08 17:08:00
+ * @email: hanakami@163.com
+ * @LastEditTime: 2025-05-08 17:50:15
+ * @FilePath: /hana_frame/src/project/global_data.cc
+ * @Description: 全局数据
+ * Copyright (c) 2025 by hanakami, All Rights Reserved. 
  */
+
 
 #include "global_data.h"
 #include "this_func.h"

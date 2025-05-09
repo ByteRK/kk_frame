@@ -1,14 +1,11 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
- * @Date: 2024-05-22 15:47:17
- * @LastEditTime: 2025-04-25 14:33:34
- * @FilePath: /kk_frame/src/function/this_func.cc
- * @Description: 此项目的一些功能函数
- * @BugList:
- *
- * Copyright (c) 2024 by Ricken, All Rights Reserved.
- *
+ * @Author: hanakami
+ * @Date: 2025-05-08 17:08:00
+ * @email: hanakami@163.com
+ * @LastEditTime: 2025-05-08 18:40:36
+ * @FilePath: /hana_frame/src/function/this_func.cc
+ * @Description: 
+ * Copyright (c) 2025 by hanakami, All Rights Reserved. 
  */
 
 
@@ -41,38 +38,14 @@ void printProjectInfo(const char* name) {
     char szTmp[128];
     int id = syscall(SYS_gettid);
 
-    fprintf(stderr, "\033[1;35m\n");
-
-    // 猫咪
-    fprintf(stderr, "\033[1;35m             __                 \n\033[0m");
-    fprintf(stderr, "\033[1;35m            ` \\\\              \n\033[0m");
-    fprintf(stderr, "\033[1;35m    /\\=/\\-\"\"-.//            \n\033[0m");
-    fprintf(stderr, "\033[1;35m   = 'Y' =  ,  \\               \n\033[0m");
-    fprintf(stderr, "\033[1;35m    '-^-'  /(  /                \n\033[0m");
-    fprintf(stderr, "\033[1;35m     /;_,) |\\ \\ \\            \n\033[0m");
-    fprintf(stderr, "\033[1;35m    (_/ (_/ (_(_/    神兽在此   #\n\033[0m");
-    fprintf(stderr, "\033[1;35m    \"\"  \"\"  \"\" \"     漏洞退让   #\n\033[0m");
-
-    fprintf(stderr, "\033[1;35m#################################\n");
-    // 版本
-    fprintf(stderr, "\033[1;35m#   ");
-#ifdef CDROID_SIGMA
-    fprintf(stderr, "\033[1;33m SIGMA ");
-#else
-    fprintf(stderr, "\033[1;33m  X64  ");
-#endif
-#ifdef DEBUG
-    fprintf(stderr, "\033[1;31m DEBUG\n");
-#else
-    fprintf(stderr, "\033[1;32m REALSE\n");
-#endif
+    print_cartoon_cat();
     // 信息
     fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", APP_ID);
     fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", name);
     fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", APP_VER_INFO);
     fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", BUILD_DATE);
     fprintf(stderr, "\033[1;35m# Git:%s\033[m\n", GIT_VERSION);
-    fprintf(stderr, "\033[1;35m############ Ricken #############\n\n\033[0m");
+    fprintf(stderr, "\033[1;35m############ HANAKAMi #############\n\n\033[0m");
 }
 
 void printKeyMap() {
@@ -162,4 +135,40 @@ void defaultReboot() {
     writeCurrentDateTimeToFile("./nowTimeCache");
     exit(0);
 #endif
+}
+
+void print_cartoon_cat() {
+    // 颜色定义
+    const char* COLOR_FACE   = "\033[38;5;230m";  // 米白色脸部
+    const char* COLOR_EARS   = "\033[38;5;179m";  // 浅棕色耳朵
+    const char* COLOR_EYES   = "\033[38;5;97m";   // 紫色眼睛
+    const char* COLOR_NOSE   = "\033[38;5;219m";  // 粉色鼻子
+    const char* COLOR_WHISKERS= "\033[38;5;250m"; // 灰色胡须
+    const char* COLOR_TEXT   = "\033[38;5;225m";  // 浅粉色文字
+    const char* RESET        = "\033[0m";
+
+    // 动态生成不同表情（随机切换）
+    const char* eyes[] = { "◕ ‿ ◕", "◕ ᴥ ◕", "◕ ω ◕", "◕ ﻌ ◕" };
+    const char* mouth[] = { " ▽ ", " ︶ ", " ω ", " × " };
+    
+    fprintf(stderr, "%s", COLOR_EARS);
+    fprintf(stderr, "    /\\_____/\\    \n");
+    fprintf(stderr, "   /         \\   \n");
+    
+    fprintf(stderr, "%s", COLOR_FACE);
+    fprintf(stderr, "  (   %s%s%-5s%s  )  \n", COLOR_EYES, eyes[1], "", COLOR_FACE);
+    fprintf(stderr, "   \\   %s%s%-3s%s   /   \n", COLOR_NOSE, mouth[0], "", COLOR_FACE);
+    
+    fprintf(stderr, "%s", COLOR_WHISKERS);
+    fprintf(stderr, "   /  |   |  \\  \n");
+    
+    fprintf(stderr, "%s", COLOR_FACE);
+    fprintf(stderr, "  (   %s%s%s   )  \n", COLOR_TEXT, "≧◡≦", COLOR_FACE);
+    
+    fprintf(stderr, "%s", COLOR_EARS);
+    fprintf(stderr, "   \\_________/   \n");
+    
+    fprintf(stderr, "%s", COLOR_TEXT);
+    fprintf(stderr, "    %sฅ^•ﻌ•^ฅ%s\n", COLOR_NOSE, RESET);
+    fprintf(stderr, "   %s喵喵出击！%s\n\n", COLOR_TEXT, RESET);
 }

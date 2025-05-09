@@ -1,14 +1,11 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
- * @Date: 2024-12-16 09:51:02
- * @LastEditTime: 2024-12-16 10:17:14
- * @FilePath: /kk_frame/src/function/tuya_func.cc
+ * @Author: hanakami
+ * @Date: 2025-05-08 17:08:00
+ * @email: hanakami@163.com
+ * @LastEditTime: 2025-05-08 18:51:46
+ * @FilePath: /hana_frame/src/function/tuya_func.cc
  * @Description:
- * @BugList:
- *
- * Copyright (c) 2024 by Ricken, All Rights Reserved.
- *
+ * Copyright (c) 2025 by hanakami, All Rights Reserved.
  */
 
 #include "tuya_func.h"

@@ -1,16 +1,14 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
- * @Date: 2024-05-22 15:55:07
- * @LastEditTime: 2024-05-31 16:58:41
- * @FilePath: /kk_frame/src/viewlibs/baseItemAnimator.cc
- * @Description: 基础的ItemAnimator,实现一些基础的动画效果
- * @BugList: 当前为空操作
- * 
- * Copyright (c) 2024 by Ricken, All Rights Reserved. 
- * 
+ * @Author: hanakami
+ * @Date: 2025-05-08 17:08:00
+ * @email: hanakami@163.com
+ * @LastEditTime: 2025-05-08 18:54:18
+ * @FilePath: /hana_frame/src/viewlibs/baseItemAnimator.cc
+ * @Description: 
+ * Copyright (c) 2025 by hanakami, All Rights Reserved. 
  */
 
+ 
 #include "baseItemAnimator.h"
 #include <cdlog.h>
 

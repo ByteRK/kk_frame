@@ -2,20 +2,17 @@
 #set -x
 
 ###
- # @Author: Ricken
- # @Email: me@ricken.cn
- # @Date: 2024-05-22 15:42:58
- # @LastEditTime: 2025-01-15 23:35:48
- # @FilePath: /kk_frame/script/build.sh
+ # @Author: hanakami
+ # @Date: 2025-05-08 17:08:00
+ # @email: hanakami@163.com
+ # @LastEditTime: 2025-05-08 18:47:36
+ # @FilePath: /hana_frame/script/build.sh
  # @Description: 
- # @BugList: 
- # 
- # Copyright (c) 2024 by Ricken, All Rights Reserved. 
- # 
+ # Copyright (c) 2025 by hanakami, All Rights Reserved. 
 ### 
 
 # 项目参数
-NAME=kk_frame
+NAME=hana_frame
 SRC_DIR=$NAME
 CDROID_DIR=~/cdroid
 PRODUCT=sigma

@@ -1,6 +1,6 @@
 # cmake最低版本以及项目名设置
 cmake_minimum_required(VERSION 3.8)
-project(kk_frame)
+project(hana_frame)
 message("PROJECT_NAME=${PROJECT_NAME}")
 
 # 版本生成命令

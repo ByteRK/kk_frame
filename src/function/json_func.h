@@ -1,20 +1,29 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
- * @Date: 2024-05-22 15:39:39
- * @LastEditTime: 2024-06-06 02:57:18
- * @FilePath: /kk_frame/src/common/json_func.h
- * @Description: Json数据处理
- * @BugList: 
- * 
- * Copyright (c) 2024 by Ricken, All Rights Reserved. 
- * 
+ * @Author: hanakami
+ * @Date: 2025-05-08 17:08:00
+ * @email: hanakami@163.com
+ * @LastEditTime: 2025-05-08 17:34:58
+ * @FilePath: /hana_frame/src/function/json_func.h
+ * @Description: 
+ * Copyright (c) 2025 by hanakami, All Rights Reserved. 
  */
 
 #ifndef __json_func_h__
 #define __json_func_h__
 
 #include "json/json.h"
+
+
+/// @brief json读值
+/// @tparam T 
+/// @param json 
+/// @param key 
+/// @param defaultValue 
+/// @return 
+template<typename T>
+T jsonSafeGet(const Json::Value& json, const std::string& key, T defaultValue) {
+    return json.isMember(key) ? json[key].as<T>() : defaultValue;
+}
 
 /// @brief string转json
 /// @brief 完整结构

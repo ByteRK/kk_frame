@@ -1,14 +1,11 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
- * @Date: 2025-01-18 11:33:02
- * @LastEditTime: 2025-01-18 17:57:15
- * @FilePath: /kk_frame/config/series_config.h
- * @Description: 项目硬件参数
- * @BugList: 
- * 
- * Copyright (c) 2025 by Ricken, All Rights Reserved. 
- * 
+ * @Author: hanakami
+ * @Date: 2025-05-08 17:08:00
+ * @email: hanakami@163.com
+ * @LastEditTime: 2025-05-08 18:35:40
+ * @FilePath: /hana_frame/config/series_config.h
+ * @Description:
+ * Copyright (c) 2025 by hanakami, All Rights Reserved.
  */
 
 #ifndef __SERIES_CONFIG_H__
@@ -19,15 +16,15 @@
 #define FLASH_SIZE	"128NR"
 #define FLASH_16NR	1
 
-//cpu config
+ //cpu config
 #define CPU_NAME     "SSD212"
 #define CPU_BRAND    "Sigmstar"
 
 #define FUNCTION_WIRE    1
 #ifdef DEBUG
-    #define FUNCTION_WIFI    0
+#define FUNCTION_WIFI    0
 #else
-    #define FUNCTION_WIFI    1
+#define FUNCTION_WIFI    1
 #endif
 
 /***********************************************/

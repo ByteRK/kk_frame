@@ -1,3 +1,12 @@
+/*
+ * @Author: hanakami
+ * @Date: 2025-05-08 17:08:00
+ * @email: hanakami@163.com
+ * @LastEditTime: 2025-05-08 17:48:48
+ * @FilePath: /hana_frame/src/common/comm_func.h
+ * @Description: 
+ * Copyright (c) 2025 by hanakami, All Rights Reserved. 
+ */
 
 #ifndef __comm_func_h__
 #define __comm_func_h__

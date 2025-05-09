@@ -19,7 +19,7 @@
 #define USERDICT_FILE "userdict"
 #endif
 
-using namespace kk_frame;
+using namespace hana_frame;
 using namespace cdroid;
 
 #define ENTERTEXT_COLOR 0xFFFFFFFF

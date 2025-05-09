@@ -1,14 +1,11 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
- * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2025-02-20 22:25:48
- * @FilePath: /kk_frame/src/project/config_mgr.cc
- * @Description:
- * @BugList:
- *
- * Copyright (c) 2024 by Ricken, All Rights Reserved.
- *
+ * @Author: hanakami
+ * @Date: 2025-05-08 17:08:00
+ * @email: hanakami@163.com
+ * @LastEditTime: 2025-05-08 18:49:40
+ * @FilePath: /hana_frame/src/project/config_mgr.cc
+ * @Description: 
+ * Copyright (c) 2025 by hanakami, All Rights Reserved. 
  */
 
 #include "config_mgr.h"

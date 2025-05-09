@@ -1,14 +1,11 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
- * @Date: 2024-05-22 15:54:27
- * @LastEditTime: 2025-02-18 19:19:58
- * @FilePath: /kk_frame/src/protocol/conn_mgr.h
+ * @Author: hanakami
+ * @Date: 2025-05-08 17:08:00
+ * @email: hanakami@163.com
+ * @LastEditTime: 2025-05-08 17:55:30
+ * @FilePath: /hana_frame/src/protocol/conn_mgr.h
  * @Description: 
- * @BugList: 
- * 
- * Copyright (c) 2024 by Ricken, All Rights Reserved. 
- * 
+ * Copyright (c) 2025 by hanakami, All Rights Reserved. 
  */
 
 #ifndef __conn_mgr_h__

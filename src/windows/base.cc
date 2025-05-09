@@ -1,15 +1,13 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
- * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2025-04-25 14:07:46
- * @FilePath: /kk_frame/src/windows/base.cc
+ * @Author: hanakami
+ * @Date: 2025-05-08 17:08:00
+ * @email: hanakami@163.com
+ * @LastEditTime: 2025-05-08 17:12:04
+ * @FilePath: /hana_frame/src/windows/base.cc
  * @Description: 页面基类
- * @BugList:
- *
- * Copyright (c) 2024 by Ricken, All Rights Reserved.
- *
+ * Copyright (c) 2025 by hanakami, All Rights Reserved. 
  */
+
 #include <core/app.h>
 
 #include "base.h"

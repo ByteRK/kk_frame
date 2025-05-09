@@ -1,14 +1,11 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
- * @Date: 2024-06-20 15:14:05
- * @LastEditTime: 2025-01-19 16:43:53
- * @FilePath: /kaidu_tr_pro/src/protocol/tuya_mgr.h
- * @Description:
- * @BugList:
- *
- * Copyright (c) 2024 by Ricken, All Rights Reserved.
- *
+ * @Author: hanakami
+ * @Date: 2025-05-08 17:08:00
+ * @email: hanakami@163.com
+ * @LastEditTime: 2025-05-08 17:57:31
+ * @FilePath: /hana_frame/src/protocol/tuya_mgr.h
+ * @Description: 
+ * Copyright (c) 2025 by hanakami, All Rights Reserved. 
  */
 
 #ifndef __tuya_mgr_h__

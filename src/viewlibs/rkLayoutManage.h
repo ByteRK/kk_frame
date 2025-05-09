@@ -1,16 +1,12 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
- * @Date: 2024-05-22 15:55:07
- * @LastEditTime: 2024-05-31 16:56:29
- * @FilePath: /kk_frame/src/viewlibs/rkLayoutManage.h
+ * @Author: hanakami
+ * @Date: 2025-05-08 17:08:00
+ * @email: hanakami@163.com
+ * @LastEditTime: 2025-05-08 18:54:33
+ * @FilePath: /hana_frame/src/viewlibs/rkLayoutManage.h
  * @Description: 
- * @BugList: 
- * 
- * Copyright (c) 2024 by Ricken, All Rights Reserved. 
- * 
+ * Copyright (c) 2025 by hanakami, All Rights Reserved. 
  */
-
 
 #ifndef __RK_LAYOUTMANAGER_H__
 #define __RK_LAYOUTMANAGER_H__

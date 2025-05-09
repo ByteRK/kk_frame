@@ -1,14 +1,11 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
- * @Date: 2024-06-12 14:49:06
- * @LastEditTime: 2025-01-19 16:43:44
- * @FilePath: /kk_frame/src/protocol/btn_mgr.h
- * @Description:
- * @BugList:
- *
- * Copyright (c) 2024 by Ricken, All Rights Reserved.
- *
+ * @Author: hanakami
+ * @Date: 2025-05-08 17:08:00
+ * @email: hanakami@163.com
+ * @LastEditTime: 2025-05-08 17:50:29
+ * @FilePath: /hana_frame/src/protocol/btn_mgr.h
+ * @Description: 按键管理
+ * Copyright (c) 2025 by hanakami, All Rights Reserved. 
  */
 
 #ifndef __btn_mgr_h__

@@ -1,3 +1,12 @@
+/*
+ * @Author: hanakami
+ * @Date: 2025-05-08 17:08:00
+ * @email: hanakami@163.com
+ * @LastEditTime: 2025-05-08 17:55:59
+ * @FilePath: /hana_frame/src/protocol/packet_base.h
+ * @Description: 串口数据包基类
+ * Copyright (c) 2025 by hanakami, All Rights Reserved. 
+ */
 
 #ifndef __packet_base_h__
 #define __packet_base_h__

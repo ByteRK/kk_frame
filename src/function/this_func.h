@@ -1,14 +1,11 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
- * @Date: 2024-05-22 15:47:17
- * @LastEditTime: 2025-01-17 01:19:15
- * @FilePath: /kk_frame/src/function/this_func.h
- * @Description: 此项目的一些功能函数
- * @BugList: 
- * 
- * Copyright (c) 2024 by Ricken, All Rights Reserved. 
- * 
+ * @Author: hanakami
+ * @Date: 2025-05-08 17:08:00
+ * @email: hanakami@163.com
+ * @LastEditTime: 2025-05-08 18:37:56
+ * @FilePath: /hana_frame/src/function/this_func.h
+ * @Description: 
+ * Copyright (c) 2025 by hanakami, All Rights Reserved. 
  */
 
 #ifndef _THIS_FUNC_H_
@@ -51,5 +48,8 @@ void setDateTimeFromFile(const std::string& filename);
 
 /// @brief 默认重启（保存当前时间）
 void defaultReboot();
+
+///  @brief 开机表情
+void print_cartoon_cat();
 
 #endif

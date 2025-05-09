@@ -1,14 +1,11 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
- * @Date: 2024-05-23 00:04:23
- * @LastEditTime: 2025-02-18 19:55:07
- * @FilePath: /kk_frame/src/windows/pop_lock.h
- * @Description:
- * @BugList:
- *
- * Copyright (c) 2025 by Ricken, All Rights Reserved.
- *
+ * @Author: hanakami
+ * @Date: 2025-05-08 17:08:00
+ * @email: hanakami@163.com
+ * @LastEditTime: 2025-05-08 17:13:19
+ * @FilePath: /hana_frame/src/windows/pop_lock.h
+ * @Description: 童锁弹窗
+ * Copyright (c) 2025 by hanakami, All Rights Reserved. 
  */
 
 #ifndef _POP_LOCK_H_

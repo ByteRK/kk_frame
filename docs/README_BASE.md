@@ -40,4 +40,4 @@ CommitID:{{commit_id}}
 ## 声明
 **Base  On [Cdroid](https://gitee.com/houstudio/cdroid)**
 
-**Power By [Ricken](https://ricken.cn)**
+**Power By [hanakami](https://github.com/hana-kami)**

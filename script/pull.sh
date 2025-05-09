@@ -1,17 +1,14 @@
 ###
- # @Author: Ricken
- # @Email: me@ricken.cn
- # @Date: 2024-07-11 14:18:06
- # @LastEditTime: 2025-03-10 10:58:41
- # @FilePath: /kk_frame/script/pull.sh
- # @Description: 更新脚本 - 调试用
- # @BugList: 
- # 
- # Copyright (c) 2024 by Ricken, All Rights Reserved. 
- # 
+ # @Author: hanakami
+ # @Date: 2025-05-08 17:08:00
+ # @email: hanakami@163.com
+ # @LastEditTime: 2025-05-08 18:48:51
+ # @FilePath: /hana_frame/script/pull.sh
+ # @Description: 
+ # Copyright (c) 2025 by hanakami, All Rights Reserved. 
 ### 
 
-NAME=kk_frame
+NAME=hana_frame
 SPEED=38400
 APP_DIR=/customer/app
 LIB_DIR=/customer/lib

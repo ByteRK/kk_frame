@@ -1,15 +1,12 @@
 #!/bin/sh
 ###
- # @Author: Ricken
- # @Email: me@ricken.cn
- # @Date: 2024-12-03 00:21:57
- # @LastEditTime: 2025-01-15 23:52:39
- # @FilePath: /kk_frame/script/upgrade.sh
- # @Description: 升级脚本
- # @BugList: 
- # 
- # Copyright (c) 2024 by Ricken, All Rights Reserved. 
- # 
+ # @Author: hanakami
+ # @Date: 2025-05-08 17:08:00
+ # @email: hanakami@163.com
+ # @LastEditTime: 2025-05-09 09:38:07
+ # @FilePath: /hana_frame/script/upgrade.sh
+ # @Description: 
+ # Copyright (c) 2025 by hanakami, All Rights Reserved. 
 ### 
 
 # 返回值 
@@ -43,7 +40,7 @@ if [ ! -z "$1" ]; then
     fi
 fi
 
-NAME=kk_frame
+NAME=hana_frame
 BASE_NAME=customer
 
 SRC_DIR=./                               # 更新资源路径（此变量无需手动更改）

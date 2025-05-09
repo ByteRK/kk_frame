@@ -1,14 +1,11 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
- * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2025-02-18 19:43:26
- * @FilePath: /kk_frame/src/windows/wind_base.h
+ * @Author: hanakami
+ * @Date: 2025-05-08 17:08:00
+ * @email: hanakami@163.com
+ * @LastEditTime: 2025-05-08 17:59:00
+ * @FilePath: /hana_frame/src/windows/wind_base.h
  * @Description: 窗口类
- * @BugList:
- *
- * Copyright (c) 2024 by Ricken, All Rights Reserved.
- *
+ * Copyright (c) 2025 by hanakami, All Rights Reserved. 
  */
 
 #ifndef _WIND_BASE_H_

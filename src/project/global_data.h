@@ -1,14 +1,11 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
- * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2025-02-20 22:24:01
- * @FilePath: /kk_frame/src/project/global_data.h
- * @Description:
- * @BugList:
- *
- * Copyright (c) 2024 by Ricken, All Rights Reserved.
- *
+ * @Author: hanakami
+ * @Date: 2025-05-08 17:08:00
+ * @email: hanakami@163.com
+ * @LastEditTime: 2025-05-08 17:49:30
+ * @FilePath: /hana_frame/src/project/global_data.h
+ * @Description: 全局数据
+ * Copyright (c) 2025 by hanakami, All Rights Reserved. 
  */
 
 #ifndef _GLOBAL_DATA_H_

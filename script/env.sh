@@ -1,15 +1,12 @@
 #!/bin/sh
 ###
- # @Author: Ricken
- # @Email: me@ricken.cn
- # @Date: 2024-06-05 02:05:58
- # @LastEditTime: 2025-03-11 14:06:56
- # @FilePath: /kk_frame/script/env.sh
- # @Description: 环境配置脚本
- # @BugList: 
- # 
- # Copyright (c) 2024 by Ricken, All Rights Reserved. 
- # 
+ # @Author: hanakami
+ # @Date: 2025-05-08 17:08:00
+ # @email: hanakami@163.com
+ # @LastEditTime: 2025-05-08 18:48:15
+ # @FilePath: /hana_frame/script/env.sh
+ # @Description: 
+ # Copyright (c) 2025 by hanakami, All Rights Reserved. 
 ### 
 
 export PATH=$PATH:/config/wifi/

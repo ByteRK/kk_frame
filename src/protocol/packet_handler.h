@@ -1,14 +1,11 @@
 /*
- * @Author: Ricken
- * @Email: me@ricken.cn
- * @Date: 2025-01-18 11:31:51
- * @LastEditTime: 2025-01-19 16:46:32
- * @FilePath: /kk_frame/src/protocol/packet_handler.h
+ * @Author: hanakami
+ * @Date: 2025-05-08 17:08:00
+ * @email: hanakami@163.com
+ * @LastEditTime: 2025-05-08 17:57:20
+ * @FilePath: /hana_frame/src/protocol/packet_handler.h
  * @Description: 消息处理器
- * @BugList:
- *
- * Copyright (c) 2025 by Ricken, All Rights Reserved.
- *
+ * Copyright (c) 2025 by hanakami, All Rights Reserved. 
  */
 
 #ifndef __cmd_handler_h__

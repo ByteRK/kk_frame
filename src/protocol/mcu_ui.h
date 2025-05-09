@@ -1,3 +1,12 @@
+/*
+ * @Author: hanakami
+ * @Date: 2025-05-08 17:08:00
+ * @email: hanakami@163.com
+ * @LastEditTime: 2025-05-08 17:55:37
+ * @FilePath: /hana_frame/src/protocol/mcu_ui.h
+ * @Description: 串口数据包处理逻辑
+ * Copyright (c) 2025 by hanakami, All Rights Reserved. 
+ */
 
 #ifndef __mcu_ui_h__
 #define __mcu_ui_h__
