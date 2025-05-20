@@ -3,7 +3,7 @@
  # @Author: hanakami
  # @Date: 2025-05-08 17:08:00
  # @email: hanakami@163.com
- # @LastEditTime: 2025-05-09 09:38:07
+ # @LastEditTime: 2025-05-20 10:21:26
  # @FilePath: /hana_frame/script/upgrade.sh
  # @Description: 
  # Copyright (c) 2025 by hanakami, All Rights Reserved. 
@@ -42,6 +42,7 @@ fi
 
 NAME=hana_frame
 BASE_NAME=customer
+BAK_DIR=/customer/app/bakFiles
 
 SRC_DIR=./                               # 更新资源路径（此变量无需手动更改）
 TAR_DIR=/tmp                             # 升级包解压路径
@@ -72,6 +73,32 @@ stopApp(){
     echo "start update..." >> $LOG_FILE
 }
 
+bakFiles(){
+    local PATH_FILE=$1
+
+    if [ ! -d $BAK_DIR ] ; then
+        mkdir -p $BAK_DIR
+    fi
+
+    local dst_dir=`dirname $BAK_DIR/$PATH_FILE`
+    if [ ! -d $dst_dir ] ; then
+        mkdir -p $dst_dir
+    fi
+
+    if [ -h "$BAK_DIR/$PATH_FILE" ]; then
+        echo "File $PATH_FILE is a link in $BAK_DIR. Skipping..."
+    elif [ -f "$BAK_DIR/$PATH_FILE" ]; then
+        echo "File $PATH_FILE already exists in $BAK_DIR. Skipping..."
+    elif [ -h "$DST_DIR/$PATH_FILE" ]; then
+        cp -af "$DST_DIR/$PATH_FILE" "$BAK_DIR/$PATH_FILE"
+        echo "Bak File is a link $PATH_FILE copy in $BAK_DIR."
+    else
+        mv "$DST_DIR/$PATH_FILE" "$BAK_DIR/$PATH_FILE"
+        echo "Bak File $PATH_FILE move in $BAK_DIR."
+    fi
+
+}
+
 # 更新文件
 copyCustomer(){
     if [ ! -d $SRC_DIR ];then
@@ -81,6 +108,12 @@ copyCustomer(){
 
     # 重新mount,获得写权限
     mount -o remount,rw /$BASE_NAME
+    
+    if [ -d "$BAK_DIR" ] ; then
+        rm -rf $BAK_DIR
+        sync
+        sleep 2
+    fi
 
     cd $SRC_DIR
     for PATH_FILE in `find .` ; do
@@ -98,6 +131,7 @@ copyCustomer(){
             if [ ! -d $dst_dir ] ; then
                 mkdir -p $dst_dir
             fi
+            bakFiles "$PATH_FILE"
             cp -af $PATH_FILE $dst_file
             UPD_COUNT=`expr $UPD_COUNT + 1`
             echo "$RUN_TIME add $SRC_DIR/$PATH_FILE" >> $LOG_FILE
@@ -112,6 +146,7 @@ copyCustomer(){
             if [ ! -d $dst_dir ] ; then
                 mkdir -p $dst_dir
             fi
+            bakFiles "$PATH_FILE"
             cp -af $PATH_FILE $dst_file
             UPD_COUNT=`expr $UPD_COUNT + 1`
             echo "$RUN_TIME add $SRC_DIR/$PATH_FILE" >> $LOG_FILE
@@ -120,6 +155,7 @@ copyCustomer(){
             if [ -h $dst_file ] ; then
                 stopApp
                 echo "check file. src=$SRC_DIR/$PATH_FILE dst=$dst_file, dst_file is a link, replace it."
+                bakFiles "$PATH_FILE"
                 rm -rf $dst_file
                 cp -af $PATH_FILE $dst_file
                 UPD_COUNT=`expr $UPD_COUNT + 1`
@@ -138,6 +174,7 @@ copyCustomer(){
             else
                 stopApp
                 echo "check file. src=$SRC_DIR/$PATH_FILE dst=$dst_file, file md5 not match, replace it."
+                bakFiles "$PATH_FILE"
                 rm -rf $dst_file
                 cp -af $PATH_FILE $dst_file
                 UPD_COUNT=`expr $UPD_COUNT + 1`
@@ -204,13 +241,6 @@ if [ "$FIND_PACK" -eq 0 ]; then
     echo "no updates found."
     echo "no updates found." >> "$LOG_FILE"
     exit 1
-fi
-
-# 备份原本程序
-if [ "$FROM_USB" -eq 0 ]; then
-    mount -o remount,rw /$BASE_NAME
-    cp -f /customer/app/$NAME /customer/app/$NAME.bak
-    sync
 fi
 
 # 同步文件
