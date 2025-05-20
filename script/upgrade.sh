@@ -3,7 +3,7 @@
  # @Author: hanakami
  # @Date: 2025-05-08 17:08:00
  # @email: hanakami@163.com
- # @LastEditTime: 2025-05-20 10:21:26
+ # @LastEditTime: 2025-05-20 10:55:14
  # @FilePath: /hana_frame/script/upgrade.sh
  # @Description: 
  # Copyright (c) 2025 by hanakami, All Rights Reserved. 
@@ -109,10 +109,28 @@ copyCustomer(){
     # 重新mount,获得写权限
     mount -o remount,rw /$BASE_NAME
     
-    if [ -d "$BAK_DIR" ] ; then
-        rm -rf $BAK_DIR
-        sync
-        sleep 2
+    # 计算当前更新包的 MD5（假设更新包在 $SRC_DIR 下）
+    CURRENT_MD5=$(find "$SRC_DIR" -type f -exec md5sum {} + | sort | md5sum | cut -d' ' -f1)
+    
+    # 读取上次保存的 MD5（如果存在）
+    LAST_MD5_FILE="/customer/app/last_update_md5.txt"
+    if [ -f "$LAST_MD5_FILE" ]; then
+        LAST_MD5=$(cat "$LAST_MD5_FILE")
+    else
+        LAST_MD5=""
+    fi
+
+    # 如果 MD5 相同，跳过删除备份
+    if [ "$CURRENT_MD5" = "$LAST_MD5" ]; then
+        echo "Update package MD5 unchanged. Skipping backup deletion."
+    else
+        # MD5 不同，记录新 MD5 并删除旧备份
+        echo "$CURRENT_MD5" > "$LAST_MD5_FILE"
+        if [ -d "$BAK_DIR" ]; then
+            rm -rf "$BAK_DIR"
+            sync
+            sleep 2
+        fi
     fi
 
     cd $SRC_DIR
