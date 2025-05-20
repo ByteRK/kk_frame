@@ -2,7 +2,7 @@
  # @Author: hanakami
  # @Date: 2025-05-08 17:08:00
  # @email: hanakami@163.com
- # @LastEditTime: 2025-05-08 18:28:06
+ # @LastEditTime: 2025-05-20 16:37:57
  # @FilePath: /hana_frame/date2ver
  # @Description: 
  # Copyright (c) 2025 by hanakami, All Rights Reserved. 
@@ -13,7 +13,7 @@
 v1=1
 v2=0
 v3=0
-v4=0
+v4=1
 PROJECT_ID=001
 
 cd $(dirname $0) # 切换到当前脚本所在目录

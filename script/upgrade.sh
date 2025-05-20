@@ -3,7 +3,7 @@
  # @Author: hanakami
  # @Date: 2025-05-08 17:08:00
  # @email: hanakami@163.com
- # @LastEditTime: 2025-05-20 10:55:14
+ # @LastEditTime: 2025-05-20 16:18:56
  # @FilePath: /hana_frame/script/upgrade.sh
  # @Description: 
  # Copyright (c) 2025 by hanakami, All Rights Reserved. 
@@ -19,26 +19,8 @@ cd $(dirname $0)
 PACK_DIR=/tmp                            # tar包的路径，默认为/tmp
 FROM_USB=0                               # 是否从U盘升级，1表示从U盘升级，默认为0
 UPDATING_SH="./updating.sh"              # U盘更新时运行的脚本
-if [ ! -z "$1" ]; then
-    PACK_DIR=$1
-    # /vendor/udisk_sda1   U盘挂载目录
-    if [ "${PACK_DIR:0:7}" == "/vendor" ]; then
-        FROM_USB=1
-        echo "wait aync usb disk"
-        sleep 15
-    fi
-
-    if [ -d "$PACK_DIR" ]; then
-        echo "The USB disk has been inserted"
-        if [ -f "$UPDATING_SH" ]; then
-            echo "have $UPDATING_SH"
-            $UPDATING_SH &
-        fi
-    else
-        echo "No USB disk : $PACK_DIR"
-        exit 0
-    fi
-fi
+MAX_RETRIES=3                            # 最大重试次数
+USB_MOUNT_PREFIX="/vendor/udisk"         # U盘挂载目录前缀
 
 NAME=hana_frame
 BASE_NAME=customer
@@ -54,6 +36,66 @@ RUN_TIME=`date +'%Y-%m-%d %H:%M:%S'`     # 脚本运行时间
 FIND_PACK=0                              # 是否找到升级包
 UPD_COUNT=0                              # 更新的文件数量
 STOP_APP=0                               # 停止FLAG
+
+# 检测所有可能的U盘分区
+detect_usb_partitions() {
+    partitions=""
+    for dev in /sys/block/sd*; do
+        if [ -e "$dev/device" ]; then
+            for part in "$dev"/sd*[0-9]; do
+                part_name=$(basename "$part")
+                mount_point="${USB_MOUNT_PREFIX}_${part_name}"
+                partitions="$partitions $mount_point"
+            done
+        fi
+    done
+    echo "$partitions"
+}
+
+# 函数：验证tar.gz是否有效更新包
+validate_update_pkg() {
+    local tar_file="$1"
+    echo "[$(date)] Checking $tar_file" | tee -a "$LOG_FILE"
+    
+    # 检查是否包含BASE_NAME目录
+    if ! tar -tzf "$tar_file" | grep -q "^$BASE_NAME/"; then
+        echo "Invalid package: $tar_file (missing $BASE_NAME directory)" | tee -a "$LOG_FILE"
+        return 1
+    fi
+    
+    # 检查是否包含至少一个文件
+    if ! tar -tzf "$tar_file" | grep -q "^$BASE_NAME/.*"; then
+        echo "Invalid package: $tar_file (empty $BASE_NAME directory)" | tee -a "$LOG_FILE"
+        return 1
+    fi
+    
+    return 0
+}
+
+# 函数：解压更新包
+extract_package() {
+    local tar_file="$1"
+    local retry=0
+    
+    while [ $retry -lt $MAX_RETRIES ]; do
+        echo "Extracting $tar_file (attempt $((retry+1)))..." | tee -a "$LOG_FILE"
+        rm -rf "$TAR_DIR/$BASE_NAME"
+        
+        if tar -zxf "$tar_file" -C "$TAR_DIR"; then
+            # 二次验证解压结果
+            if [ -d "$TAR_DIR/$BASE_NAME" ]; then
+                echo "Extraction successful" | tee -a "$LOG_FILE"
+                return 0
+            fi
+        fi
+        
+        ((retry++))
+        sleep 1
+    done
+    
+    echo "Failed to extract $tar_file after $MAX_RETRIES attempts" | tee -a "$LOG_FILE"
+    return 1
+}
 
 # 停止一些东西...
 stopApp(){
@@ -209,51 +251,84 @@ copyCustomer(){
     return 0
 }
 
-# 判断当前运行目录下是否存在BASE_NAME路径
-if [ "$FROM_USB" -eq 0 &&  -d $BASE_NAME ]; then
-    # 使用当前路径下的BASE_NAME目录
-    SRC_DIR=`pwd`/$BASE_NAME
+# 主逻辑
+if [ "$FROM_USB" -eq 0 ] && [ -d "$BASE_NAME" ]; then
+    # 使用当前目录下的更新 
+    SRC_DIR=$(pwd)/"$BASE_NAME"
     FIND_PACK=1
 else
-    # 检查压缩包
-    echo "Find updates from $PACK_DIR ..."
-    for TAR_FILE in `find $PACK_DIR -name '*.tar.gz' | sort -r` ; do
-        echo "[$TAR_FILE]checking necessary dir[$BASE_NAME] ..."
+    # 检查U盘分区
+    usb_partitions=$(detect_usb_partitions)
 
-        #压缩包需包含customer文件
-        FLAG=`tar -tvf $TAR_FILE | head -1 | grep -a "$BASE_NAME/"`
-        if [ -z "$FLAG" ]; then
-            echo "[$TAR_FILE] not find [$BASE_NAME], check next."
-            continue
-        fi
+    # 指定一个变量来跟踪是否找到更新包
+    found_update_package=0
 
-        # 解压到tmp目录
-        echo "decompression $TAR_FILE"
-        rm -rf $TAR_DIR/$BASE_NAME
-        tar -zxf $TAR_FILE -C $TAR_DIR
-
-        # 判断解压是否成功
-        TAR_EXIT_CODE=$?
-        if [ $TAR_EXIT_CODE -eq 0 ]; then
-            echo "Tar extraction successful."
-        else
-            echo "Tar failed, Msy be $TAR_DIR not enough storage space. Exit code: $TAR_EXIT_CODE"
-            echo "Tar failed, Msy be $TAR_DIR not enough storage space. Exit code: $TAR_EXIT_CODE" >> $LOG_FILE
-            rm -rf $TAR_DIR/$BASE_NAME
-            exit 2
-        fi
+    for mount_point in $usb_partitions; do
+        FROM_USB=1
+        echo "Searching for update packages in $mount_point..." | tee -a "$LOG_FILE"
         
-        # 非U盘更新需将OTA文件删除
-        if [ "$FROM_USB" -eq 0 ]; then
-            rm -rf "$TAR_FILE"
+       # 使用简单的 find 查找 tar.gz 文件
+        TAR_FILE=$(find "$mount_point" -name '*.tar.gz' | sort | tail -n 1)
+        
+        if [ -n "$TAR_FILE" ]; then
+            echo "Found package: $TAR_FILE" | tee -a "$LOG_FILE"
+            
+            # 验证包有效性
+            if ! validate_update_pkg "$TAR_FILE"; then
+                continue
+            fi
+            
+            # 解压包
+            if extract_package "$TAR_FILE"; then
+                SRC_DIR="$TAR_DIR/$BASE_NAME"
+                FIND_PACK=1
+                found_update_package=1
+                break  # 退出循环
+            fi
+        else
+            echo "No .tar.gz files found in $mount_point." | tee -a "$LOG_FILE"
         fi
+        # 如果在U盘未找到更新包，尝试查找压缩包
+        if [ "$found_update_package" -eq 0 ]; then
+            echo "Finding updates from $PACK_DIR ..." | tee -a "$LOG_FILE"
+            for TAR_FILE in $(find "$PACK_DIR" -name '*.tar.gz' | sort -r); do
+                echo "[$TAR_FILE] checking necessary dir [$BASE_NAME] ..."
 
-        # 将更新的路径指向到解压路径
-        SRC_DIR="$TAR_DIR/$BASE_NAME"
-        FIND_PACK=1
-        break
+                # 压缩包需包含BASE_NAME目录
+                if ! tar -tvf "$TAR_FILE" | grep -q "$BASE_NAME/"; then
+                    echo "[$TAR_FILE] not find [$BASE_NAME], check next." | tee -a "$LOG_FILE"
+                    continue
+                fi
+
+                # 解压到tmp目录
+                echo "Decompressing $TAR_FILE..." | tee -a "$LOG_FILE"
+                rm -rf "$TAR_DIR/$BASE_NAME"
+                tar -zxf "$TAR_FILE" -C "$TAR_DIR"
+
+                # 判断解压是否成功
+                if [ $? -eq 0 ]; then
+                    echo "Tar extraction successful." | tee -a "$LOG_FILE"
+                    SRC_DIR="$TAR_DIR/$BASE_NAME"
+                    FIND_PACK=1
+                    break  # 找到并解压后退出循环
+                else
+                    echo "Tar failed, maybe $TAR_DIR not enough storage space." | tee -a "$LOG_FILE"
+                    exit 2
+                fi
+
+                # 非U盘更新需将OTA文件删除
+                [ "$FROM_USB" -eq 0 ] && rm -rf "$TAR_FILE"
+            done
+        fi
     done
+
+    # 如果未找到更新包，则输出相应信息
+    if [ "$found_update_package" -eq 0 ]; then
+        echo "No updates found in any USB partitions." | tee -a "$LOG_FILE"
+        exit 1
+    fi
 fi
+    
 
 if [ "$FIND_PACK" -eq 0 ]; then
     echo "no updates found."
