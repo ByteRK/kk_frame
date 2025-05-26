@@ -2,13 +2,13 @@
  * @Author: hanakami
  * @Date: 2025-05-08 17:08:00
  * @email: hanakami@163.com
- * @LastEditTime: 2025-05-08 17:33:49
+ * @LastEditTime: 2025-05-26 11:25:55
  * @FilePath: /hana_frame/src/windows/manage.h
- * @Description: 
- * Copyright (c) 2025 by hanakami, All Rights Reserved. 
+ * @Description:
+ * Copyright (c) 2025 by hanakami, All Rights Reserved.
  */
 
- 
+
 #ifndef _MANAGE_H_
 #define _MANAGE_H_
 
@@ -32,13 +32,15 @@ protected:
     };
 
     Message  mAutoCloseMsg;
-    Looper*  mLooper;
+    Looper* mLooper;
     uint64_t mInitTime;      // 初始化时间
+    bool    isBackPage;
 
-    std::unordered_map<int, PageBase*> mPageList;  // 页面列表
+    std::unordered_map<int, PageBase*> mPageMap;  // 页面数组
+    std::vector<int> mPageList;                   // 页面列表
 private:
-    std::unordered_map<int, std::function<PopBase*()>>  mPopFactory;  // 弹窗工厂
-    std::unordered_map<int, std::function<PageBase*()>> mPageFactory; // 页面工厂
+    std::unordered_map<int, std::function<PopBase* ()>>  mPopFactory;  // 弹窗工厂
+    std::unordered_map<int, std::function<PageBase* ()>> mPageFactory; // 页面工厂
 public:
     static CWindMgr* ins() {
         static CWindMgr* instance = new CWindMgr();
@@ -49,10 +51,11 @@ private:
     CWindMgr();
 public:
     ~CWindMgr();
-    
+
     void init();
     void close(PageBase* page);
     void close(int page);
+    void backPage();
     void closeAll(bool withPop = false);
     void goTo(int page, bool showBlack = false);
     void sendMsg(int page, int type, void* data);

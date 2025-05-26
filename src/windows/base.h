@@ -2,7 +2,7 @@
  * @Author: hanakami
  * @Date: 2025-05-08 17:08:00
  * @email: hanakami@163.com
- * @LastEditTime: 2025-05-08 18:41:51
+ * @LastEditTime: 2025-05-26 10:07:10
  * @FilePath: /hana_frame/src/windows/base.h
  * @Description: 页面基类
  * Copyright (c) 2025 by hanakami, All Rights Reserved. 
@@ -45,7 +45,7 @@ enum {
 // 页面定义
 enum {
     PAGE_NULL,       // 空状态
-    PAGE_STANDBY,    // 待机
+    PAGE_HOME,    // 待机
     PAGE_OTA,        // OTA
 };
 

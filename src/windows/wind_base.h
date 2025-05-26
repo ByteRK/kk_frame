@@ -2,7 +2,7 @@
  * @Author: hanakami
  * @Date: 2025-05-08 17:08:00
  * @email: hanakami@163.com
- * @LastEditTime: 2025-05-08 17:59:00
+ * @LastEditTime: 2025-05-26 13:53:48
  * @FilePath: /hana_frame/src/windows/wind_base.h
  * @Description: 窗口类
  * Copyright (c) 2025 by hanakami, All Rights Reserved. 
@@ -77,8 +77,9 @@ public:
     void      hideAll();
 private:
     bool      selfKey(uint16_t keyCode, uint8_t status);
+    void      checkToScreenSave();
+    void      tabBarTick();
     
-    void      btnLightTick();
 };
 
 #endif

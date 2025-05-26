@@ -2,7 +2,7 @@
  * @Author: hanakami
  * @Date: 2025-05-08 17:08:00
  * @email: hanakami@163.com
- * @LastEditTime: 2025-05-08 18:50:01
+ * @LastEditTime: 2025-05-26 14:03:45
  * @FilePath: /hana_frame/src/windows/wind_base.cc
  * @Description: 
  * Copyright (c) 2025 by hanakami, All Rights Reserved. 
@@ -71,9 +71,10 @@ int BaseWindow::handleEvents() {
     if (tick >= mPopTickTime) {
         mPopTickTime = tick + POP_TICK_INTERVAL;
         if (mPop)mPop->callTick();
+
+        checkToScreenSave();
     }
 
-    btnLightTick();
     return 1;
 }
 
@@ -201,7 +202,7 @@ bool BaseWindow::showBlack(bool upload) {
 /// @brief 
 void BaseWindow::hideBlack() {
     if (!mIsBlackView)return;
-    g_windMgr->goTo(PAGE_STANDBY);
+    g_windMgr->goTo(PAGE_HOME);
     mPage->callKey(KEY_WINDOW, VIRT_EVENT_UP);
     mBlackView->setVisibility(GONE);
     mIsBlackView = false;
@@ -293,15 +294,21 @@ void BaseWindow::hideAll() {
 }
 
 bool BaseWindow::selfKey(uint16_t keyCode, uint8_t status) {
+    static uint64_t s_keyPowerDownTime = 0;
+    uint64_t nowTime = SystemClock::uptimeMillis();
+    switch (keyCode) {
+    default:
+        break;
+    }
     return false;
 }
 
-/// @brief 按键灯更新
-void BaseWindow::btnLightTick() {
-    // uint8_t btnLight[ALL_BTN_COUNT] = { 0 };
+void BaseWindow::checkToScreenSave() {
+    uint64_t now = SystemClock::uptimeMillis();    // 当前时间
+    uint8_t  nowPage = getPageType();              // 当前页面类型
 
-    // if (mPop)mPop->callCheckLight(btnLight, btnLight + LEFT_BTN_COUNT);
-    // else if (mPage)mPage->callCheckLight(btnLight, btnLight + LEFT_BTN_COUNT);
-
-    // g_btnMgr->setLight(btnLight);
+}
+/// @brief wind_base中控件更新
+void BaseWindow::tabBarTick() {
+    
 }
