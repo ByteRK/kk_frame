@@ -48,16 +48,21 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #define HV_STRING(arg...) #arg
 
-// 是否全数字
+/// @brief 是否全数字
+/// @param str_nums 
+/// @return 
 bool isNumric(const char* str_nums);
 
-// 时间字符串
+/// @brief 时间字符串 [MM:SS]
+/// @return 
 std::string getTimeStr();
 
-// 获取秒级时间戳
+/// @brief 获取秒级时间戳
+/// @return 
 int64_t getTimeSec();
 
-// 获取毫秒级时间戳
+/// @brief 获取毫秒级时间戳
+/// @return 
 int64_t getTimeMSec();
 
 /// @brief 获取当前格式化时间
@@ -69,7 +74,7 @@ int64_t getTimeMSec();
 std::string getDateTime(const char* fmt);
 
 /// @brief 获取指定格式化时间
-/// @param time_sec 时间戳
+/// @param time_sec 时间戳 s
 /// @param fmt 格式化参数(具体搜索strftime格式说明符)
 /// @brief %Y-%m-%d->2025-03-21
 /// @brief %H:%M:%S->12:00:00
@@ -85,15 +90,19 @@ std::string getDateTime(long int time_sec, const char* fmt);
 std::string getDateTimeAP(const char* fmt_am, const char* fmt_pm);
 
 /// @brief 获取指定格式化时间(区分上下午采用不同的格式化参数)
-/// @param time_sec 时间戳
+/// @param time_sec 时间戳 s
 /// @param fmt_am 上午格式化参数 (小时位请使用%I以格式化为12小时制)
 /// @param fmt_pm 下午格式化参数 (小时位请使用%I以格式化为12小时制）
 /// @brief 使用方式类似于getDateTime,具体上午跟下午返回值的区别取决于fmt_am和fmt_pm的格式
 /// @return
 std::string getDateTimeAP(long int time_sec, const char* fmt_am, const char* fmt_pm);
 
-//通过年 月，来设置 最大的日期（如 2月份只有29或28天）
-int getMaxDay(int year,int mon);
+/// @brief 通过年月，来获取最大的日期（如 2月份只有29或28天）
+/// @param year 
+/// @param mon 
+/// @return 
+/// @note 月份无需-1，直接传入真实月份
+int getMaxDay(int year, int month);
 
 // 获取0点时间戳
 int64_t getZeroTime();
@@ -124,13 +133,15 @@ void timeSet(const int64_t& time_sec);
 std::string getDayOnWeek(int day);
 
 // 获取字的长度
-int         wordLen(const char* buffer);
+int         wordLen(const char* buffer, bool en2cn = false);
 std::string getWord(const char* buffer, int count);
-std::string decLastWord(const char *buffer);    // 删除以后一个字符（可自适应 各种长度的符号）
-std::string keepSpecifiedWord(const char *buffer, int count, bool en2cn, std::string spec = "");    // 保留指定长度的字符
+std::string decLastWord(const char* buffer);    // 删除以后一个字符（可自适应 各种长度的符号）
+std::string keepSpecifiedWord(const char* buffer, int count, bool en2cn, std::string spec = "");    // 保留指定长度的字符
 
 // system结果
 std::string sysCommand(const std::string& cmd);
+
+std::string removeBackslashes(const std::string& input);
 
 // host -> ip
 std::string getHostIp(const std::string& host);
@@ -148,6 +159,7 @@ std::string& replace_all(std::string& src, const std::string& old_value, const s
 
 // 计算 wifi 信号的大小
 int calculation_signal(float Quality, int SignalLevel);
+int calculation_signal(int SignalLevel);
 
 /// @brief 设置屏幕亮度
 /// @param value 亮度值 [0-100]
@@ -172,6 +184,39 @@ int compareVersionNumbers(const std::string& version1, const std::string& versio
 std::vector<int> splitVersion(const std::string& version);
 
 // 检查网络版本号 是否大于 当前的版本号
-int checkVersion(const std::string &version,const std::string &localVersion);
+int checkVersion(const std::string& version, const std::string& localVersion);
+
+/// @brief 字符串编码转换
+/// @param input 
+/// @param from_encoding 
+/// @param to_encoding 
+/// @return 
+std::string ConvertEncoding(const std::string& input, const char* from_encoding, const char* to_encoding);
+
+/// @brief GBK编码转UTF8编码
+/// @param gbk_str 
+/// @return     
+std::string GBKToUTF8_Iconv(const char* gbk_str);
+
+/// @brief 将 "\xHH" 格式的字符串转换为实际字节流
+/// @brief 场景：当看到文本显示为类似 "\xe4\xbd\xa0\xe5\xa5\xbd" 时，可以调用此函数将其转换为实际的字节流
+/// @param input 
+/// @return 
+std::string ParseHexEscapes(const std::string& input);
+
+/// @brief 将带冒号的mac地址转换为字符串
+/// @param mac 
+/// @param mac_char 
+/// @return 
+bool macToChar(const std::string& mac, uint8_t* mac_char);
+
+/// @brief 检查mac地址是否合法
+/// @param mac 
+/// @return 
+bool isValidMacAddress(const std::string& mac);
+
+/// @brief 获取德明力(?)Tp版本号
+/// @return x0x0x0x
+int getTpVersion();
 
 #endif
