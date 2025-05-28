@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:39:39
- * @LastEditTime: 2025-05-28 18:30:58
+ * @LastEditTime: 2025-05-28 18:32:49
  * @FilePath: /kk_frame/src/function/json_func.h
  * @Description: Json数据处理
  * @BugList:
@@ -14,7 +14,7 @@
 #ifndef __json_func_h__
 #define __json_func_h__
 
-#include "json/json.h"
+#include <json/json.h>
 #include <string>
 
 // 将Json::Value转换为指定类型 | use -> jsonToType<T>(const Json::Value&, const T&)
