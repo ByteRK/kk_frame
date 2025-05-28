@@ -2,7 +2,7 @@
  * @Author: hanakami
  * @Date: 2025-05-08 17:08:00
  * @email: hanakami@163.com
- * @LastEditTime: 2025-05-08 17:34:53
+ * @LastEditTime: 2025-05-28 15:26:22
  * @FilePath: /hana_frame/src/function/json_func.cc
  * @Description: 
  * Copyright (c) 2025 by hanakami, All Rights Reserved. 
@@ -15,12 +15,6 @@
 #include <fstream>
 #include <ghc/filesystem.hpp>
 
-template<>
-std::string jsonSafeGet<std::string>(const Json::Value& json, 
-                                const std::string& key, 
-                                std::string defaultValue) {
-    return json.isMember(key) ? json[key].asString() : defaultValue;
-}
 
 bool convertStringToJson(const std::string& str, Json::Value& root) {
     Json::Reader reader(Json::Features::strictMode());

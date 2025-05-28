@@ -2,7 +2,7 @@
  * @Author: hanakami
  * @Date: 2025-05-08 17:08:00
  * @email: hanakami@163.com
- * @LastEditTime: 2025-05-08 17:34:58
+ * @LastEditTime: 2025-05-28 15:21:29
  * @FilePath: /hana_frame/src/function/json_func.h
  * @Description: 
  * Copyright (c) 2025 by hanakami, All Rights Reserved. 
@@ -24,6 +24,22 @@ template<typename T>
 T jsonSafeGet(const Json::Value& json, const std::string& key, T defaultValue) {
     return json.isMember(key) ? json[key].as<T>() : defaultValue;
 }
+
+/// @brief 处理数组
+/// @tparam T 返回值的类型
+/// @param json JSON 数组
+/// @param index 数组索引
+/// @param defaultValue 默认值
+/// @return 获取到的值或默认值
+template<typename T>
+T jsonSafeGet(const Json::Value& json, size_t index, T defaultValue) {
+    if (json.isArray() && json.isValidIndex(index)) {
+        return json[index].as<T>();
+    }
+    return defaultValue;
+}
+
+
 
 /// @brief string转json
 /// @brief 完整结构
