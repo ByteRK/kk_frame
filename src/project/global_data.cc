@@ -2,7 +2,7 @@
  * @Author: hanakami
  * @Date: 2025-05-08 17:08:00
  * @email: hanakami@163.com
- * @LastEditTime: 2025-05-08 17:50:15
+ * @LastEditTime: 2025-05-28 17:22:33
  * @FilePath: /hana_frame/src/project/global_data.cc
  * @Description: 全局数据
  * Copyright (c) 2025 by hanakami, All Rights Reserved. 
@@ -21,10 +21,6 @@
 
  // 备份时间间隔
 constexpr uint32_t TIME_INTERVAL = 1000 * 10;
-
-/// @brief 
-globalData::globalData() {
-}
 
 /// @brief 保存数据文件
 void globalData::update() {

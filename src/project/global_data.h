@@ -2,10 +2,10 @@
  * @Author: hanakami
  * @Date: 2025-05-08 17:08:00
  * @email: hanakami@163.com
- * @LastEditTime: 2025-05-08 17:49:30
+ * @LastEditTime: 2025-05-28 17:22:11
  * @FilePath: /hana_frame/src/project/global_data.h
  * @Description: 全局数据
- * Copyright (c) 2025 by hanakami, All Rights Reserved. 
+ * Copyright (c) 2025 by hanakami, All Rights Reserved.
  */
 
 #ifndef _GLOBAL_DATA_H_
@@ -39,7 +39,7 @@ private:
         MSG_SAVE,
     };
 
-    Looper*          mLooper;
+    Looper* mLooper;
     bool             mHaveChange;
     uint64_t         mNextBakTime;
 
@@ -47,7 +47,7 @@ private:
     uint64_t         mPowerOnTime;  // 启动时间
 
 private:
-    globalData();
+    globalData() = default;
     void update();
 public:
     ~globalData();
@@ -55,6 +55,11 @@ public:
         static globalData s_globalData;
         return &s_globalData;
     }
+    // 防止拷贝和移动
+    globalData(globalData&) = delete; //拷贝构造
+    globalData& operator=(globalData&) = delete;   //拷贝赋值
+    globalData(globalData&&) = delete;  //移动构造
+    globalData& operator=(globalData&&) = delete;  //移动赋值
     void handleMessage(Message& message)override;
 
     void init();
