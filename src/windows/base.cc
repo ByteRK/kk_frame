@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2025-04-25 14:07:46
+ * @LastEditTime: 2025-05-28 18:16:20
  * @FilePath: /kk_frame/src/windows/base.cc
  * @Description: 页面基类
  * @BugList:
@@ -128,7 +128,7 @@ void PBase::setAutoBackToStandby(uint32_t time, bool withBlack) {
 
 void PBase::setLangText(TextView* v, const Json::Value& value) {
     if (v == nullptr) LOGE("TextView is nullptr");
-    else v->setText(jsonToString(value, "null"));
+    else v->setText(jsonToType<std::string>(value, "null"));
 }
 
 /*
