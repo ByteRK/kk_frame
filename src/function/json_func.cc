@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-05-28 09:07:45
- * @LastEditTime: 2025-05-28 10:30:26
+ * @LastEditTime: 2025-05-28 18:28:10
  * @FilePath: /kk_frame/src/function/json_func.cc
  * @Description: Json数据处理
  * @BugList:
@@ -16,58 +16,6 @@
 #include <fstream>
 #include <ghc/filesystem.hpp>
 #include <sstream>
-
-template<typename T>
-T jsonToType(const Json::Value& value, const T& defaultValue) {
-    if (value.isNull()) return defaultValue;
-    return value.as<T>();
-}
-
-template<typename T>
-T getJsonValue(const Json::Value& root, const std::string& key, const T& defaultValue) {
-    if (!root.isMember(key)) return defaultValue;
-    return jsonToType<T>(root[key], defaultValue);
-}
-
-template<>
-int jsonToType<int>(const Json::Value& value, const int& defaultValue) {
-    if (value.isNull()) {
-        LOGD("value is null");
-        return defaultValue;
-    }
-    if (value.isInt()) {
-        return value.asInt();
-    }
-    if (value.isString()) {
-        const char* str = value.asCString();
-        char* end;
-        long num = strtol(str, &end, 10); // 非异常方法
-        // 检查是否整个字符串被成功转换
-        if (end != str && *end == '\0') {
-            return static_cast<int>(num);
-        }
-        LOGD("Invalid numeric string: %s", str);
-    }
-    return defaultValue;
-}
-
-template<>
-std::string jsonToType<std::string>(const Json::Value& value, const std::string& defaultValue) {
-    if (value.isNull() || !value.isString()) return defaultValue;
-    return value.asString();
-}
-
-template<>
-bool jsonToType<bool>(const Json::Value& value, const bool& defaultValue) {
-    if (value.isNull()) return defaultValue;
-    if (value.isBool()) return value.asBool();
-    if (value.isInt()) return value.asInt() != 0;
-    if (value.isString()) {
-        const std::string str = value.asString();
-        return (str == "true" || str == "1");
-    }
-    return defaultValue;
-}
 
 bool convertStringToJson(const std::string& str, Json::Value& root) {
 #if 0 // 旧接口，但简单

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:39:39
- * @LastEditTime: 2025-05-28 10:29:30
+ * @LastEditTime: 2025-05-28 18:27:39
  * @FilePath: /kk_frame/src/function/json_func.h
  * @Description: Json数据处理
  * @BugList:
@@ -19,19 +19,17 @@
 
 // 将Json::Value转换为指定类型
 template<typename T>
-T jsonToType(const Json::Value& value, const T& defaultValue);
+T jsonToType(const Json::Value& value, const T& defaultValue) {
+    if (value.isNull()) return defaultValue;
+    return value.as<T>();
+}
 
 // 获取Json::Value中的值，如果不存在则返回默认值
 template<typename T>
-T getJsonValue(const Json::Value& root, const std::string& key, const T& defaultValue);
-
-// 特殊类型转换函数[数值,字符串,布尔]
-template<>
-int jsonToType<int>(const Json::Value& value, const int& defaultValue);
-template<>
-std::string jsonToType<std::string>(const Json::Value& value, const std::string& defaultValue);
-template<>
-bool jsonToType<bool>(const Json::Value& value, const bool& defaultValue);
+T getJsonValue(const Json::Value& root, const std::string& key, const T& defaultValue) {
+    if (!root.isMember(key)) return defaultValue;
+    return jsonToType<T>(root[key], defaultValue);
+}
 
 /// @brief 将字符串转换为Json::Value
 /// @param str 
@@ -58,5 +56,46 @@ bool loadLocalJson(const std::string& filePath, Json::Value& root);
 /// @param indentation 传空为紧凑风格
 /// @return 
 bool saveLocalJson(const std::string& filePath, const Json::Value& root, const std::string& indentation = "    ");
+
+
+/************************************ START 特殊类型转换函数[数值,字符串,布尔] ****************************************/
+
+template<>
+inline int jsonToType<int>(const Json::Value& value, const int& defaultValue) {
+    if (value.isNull()) return defaultValue;
+    if (value.isInt()) {
+        return value.asInt();
+    }
+    if (value.isString()) {
+        const char* str = value.asCString();
+        char* end;
+        long num = strtol(str, &end, 10); // 非异常方法
+        // 检查是否整个字符串被成功转换
+        if (end != str && *end == '\0') {
+            return static_cast<int>(num);
+        }
+    }
+    return defaultValue;
+}
+
+template<>
+inline std::string jsonToType<std::string>(const Json::Value& value, const std::string& defaultValue) {
+    if (value.isNull() || !value.isString()) return defaultValue;
+    return value.asString();
+}
+
+template<>
+inline bool jsonToType<bool>(const Json::Value& value, const bool& defaultValue) {
+    if (value.isNull()) return defaultValue;
+    if (value.isBool()) return value.asBool();
+    if (value.isInt()) return value.asInt() != 0;
+    if (value.isString()) {
+        const std::string str = value.asString();
+        return (str == "true" || str == "1");
+    }
+    return defaultValue;
+}
+
+/************************************  END  特殊类型转换函数[数值,字符串,布尔] ****************************************/
 
 #endif // __json_func_h__
