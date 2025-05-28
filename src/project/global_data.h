@@ -2,9 +2,9 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2025-02-20 22:24:01
+ * @LastEditTime: 2025-05-28 17:16:18
  * @FilePath: /kk_frame/src/project/global_data.h
- * @Description:
+ * @Description: 全局应用数据
  * @BugList:
  *
  * Copyright (c) 2024 by Ricken, All Rights Reserved.
@@ -22,52 +22,57 @@
 #define g_data globalData::ins()
 
 class globalData :public MessageHandler {
-public:
-    uint8_t     mNetWork = 0;             // 网络状态
-    uint8_t     mNetWorkDetail = 0;       // 网络详细状态
+public: // 网络状态
+    uint8_t     mNetWork = 0;                     // 网络状态
+    uint8_t     mNetWorkDetail = 0;               // 网络详细状态
 
 public: // 涂鸦部分
-    bool        mTUYAPower = true;        // 电源状态
-    int8_t      mTUYATem = 0;             // 涂鸦温度
-    int8_t      mTUYATemMin = 0;          // 涂鸦温度最小值
-    int8_t      mTUYATemMax = 0;          // 涂鸦温度最大值
-    std::string mTUYAWeather = "146";     // 涂鸦天气代码
-    uint16_t    mWifiTestRes = 0xFFFF;    // wifi测试结果
+    bool        mTUYAPower = true;                // 电源状态
+    int8_t      mTUYATem = 0;                     // 涂鸦温度
+    int8_t      mTUYATemMin = 0;                  // 涂鸦温度最小值
+    int8_t      mTUYATemMax = 0;                  // 涂鸦温度最大值
+    std::string mTUYAWeather = "146";             // 涂鸦天气代码
+    uint16_t    mTUYAWifiTestRes = 0xFFFF;        // wifi测试结果
 
 public: // 设备信息
-    bool        mPower = false;           // 开关机
-    bool        mLock = false;            // 童锁
+    bool        mPower = false;                   // 开关机
+    bool        mLock = false;                    // 童锁
+
 private:
     enum {
-        MSG_SAVE,
+        MSG_SAVE,  // 备份检查消息
     };
 
-    Looper*          mLooper;
-    bool             mHaveChange;
-    uint64_t         mNextBakTime;
-
-    Message          mSaveMsg;
-    uint64_t         mPowerOnTime;  // 启动时间
+    bool             mCoffee = false;             // 咖啡机[🎐演示保存逻辑的数据]
+    Looper*          mLooper;                     // 消息循环
+    bool             mHaveChange;                 // 是否需要保存
+    uint64_t         mNextBakTime;                // 下次备份时间
+    Message          mCheckSaveMsg;               // 备份检查消息
+    uint64_t         mPowerOnTime;                // 启动时间[用于粗略计算运行时间]
 
 private:
-    globalData();
-    void update();
+    globalData() = default;
 public:
     ~globalData();
     static globalData* ins() {
-        static globalData s_globalData;
-        return &s_globalData;
+        static globalData instance;
+        return &instance;
     }
-    void handleMessage(Message& message)override;
+    globalData(const globalData&) = delete;       // 禁止拷贝构造
+    globalData& operator=(globalData&) = delete;  // 禁止赋值构造
+    globalData(globalData&&) = delete;            // 禁止移动构造
+    globalData& operator=(globalData&&) = delete; // 禁止移动赋值构造
 
     void init();
+    void handleMessage(Message& message)override;
 
-    uint64_t getPowerOnTime();
 private:
-    /*本地信息*/
     bool loadFromFile();
     bool saveToFile(bool isBak = false);
+    void checkToSave();
 public:
+    uint64_t getPowerOnTime();
+    
 };
 
 #endif // _GLOBAL_DATA_H_

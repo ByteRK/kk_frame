@@ -167,7 +167,7 @@ void TuyaMgr::onCommDeal(IAck* ack) {
         sendDp();
         break;
     case TYCOMM_WIFITEST:
-        g_data->mWifiTestRes = ack->getData2(TUYA_DATA_START, true);
+        g_data->mTUYAWifiTestRes = ack->getData2(TUYA_DATA_START, true);
         break;
 
     case TYCOMM_GET_TIME:
@@ -214,7 +214,7 @@ void TuyaMgr::sendHeartBeat() {
 
 void TuyaMgr::sendWifiTest() {
     LOG(VERBOSE) << "WIFI测试";
-    g_data->mWifiTestRes = 0xFFFF; // 复位
+    g_data->mTUYAWifiTestRes = 0xFFFF; // 复位
     send2MCU(TYCOMM_WIFITEST);
 }
 

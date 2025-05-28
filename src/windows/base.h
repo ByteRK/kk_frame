@@ -2,14 +2,14 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2025-04-25 14:07:35
+ * @LastEditTime: 2025-05-28 17:09:37
  * @FilePath: /kk_frame/src/windows/base.h
  * @Description: 页面基类
  * @BugList:
  *
  * Copyright (c) 2024 by Ricken, All Rights Reserved.
  *
- */
+**/
 
 
 #ifndef _BASE_H_
@@ -148,11 +148,11 @@ public:
     virtual ~PageBase();            // 析构函数
 protected:
     void initUI() override;
-    virtual void initBase(){ };     // 初始化基础内容
-    virtual void getView(){ };      // 获取页面指针
-    virtual void setAnim(){ };      // 设置动画属性
-    virtual void setView(){ };      // 设置页面属性
-    virtual void loadData(){ };     // 加载页面数据
+    virtual void initBase() { };     // 初始化基础内容
+    virtual void getView() { };      // 获取页面指针
+    virtual void setAnim() { };      // 设置动画属性
+    virtual void setView() { };      // 设置页面属性
+    virtual void loadData() { };     // 加载页面数据
 };
 
 #endif
