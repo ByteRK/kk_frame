@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2025-05-28 18:09:00
+ * @LastEditTime: 2025-05-28 12:59:09
  * @FilePath: /kk_frame/src/project/global_data.cc
  * @Description:
  * @BugList:
@@ -31,12 +31,22 @@ globalData::~globalData() {
 void globalData::init() {
     mPowerOnTime = SystemClock::uptimeMillis();
 
+    checkenv();
     loadFromFile();
 
     mNextBakTime = UINT64_MAX;
     mCheckSaveMsg.what = MSG_SAVE;
     mLooper = Looper::getMainLooper();
     mLooper->sendMessageDelayed(GD_SAVE_CHECK_INITERVAL, this, mCheckSaveMsg);
+}
+
+/// @brief 重置
+void globalData::reset() {
+    std::string command = std::string("rm")\
+        + " " + APP_FILE_FULL_PATH + " " + APP_FILE_BAK_PATH;
+    std::system(command.c_str());
+    init();
+    LOGE("global_data factory reset.");
 }
 
 /// @brief 定时任务，用于保存修改后的配置
@@ -49,6 +59,18 @@ void globalData::handleMessage(Message& message) {
     default:
         break;
     }
+}
+
+/// @brief 检查环境变量
+void globalData::checkenv() {
+    // 设备模式
+    if (getenv("DEV_MODE")) {
+        uint8_t devMode = atoi(getenv("DEV_MODE"));
+        if (devMode < DEVICE_MODE_MAX) {
+            mDeviceMode = devMode;
+        }
+    }
+    LOGW_IF(mDeviceMode, "DEVICE_MODE: %d", mDeviceMode);
 }
 
 /// @brief 载入本地文件

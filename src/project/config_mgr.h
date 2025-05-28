@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2025-05-28 18:12:09
+ * @LastEditTime: 2025-05-28 13:02:12
  * @FilePath: /kk_frame/src/project/config_mgr.h
  * @Description:
  * @BugList:
@@ -47,6 +47,7 @@ public:
     configMgr& operator=(configMgr&&) = delete; // 禁止移动赋值构造
 
     void init();
+    void reset();
     void handleMessage(Message& message)override;
 private:
     bool loadFromFile();

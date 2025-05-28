@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2025-05-28 18:13:45
+ * @LastEditTime: 2025-05-28 12:58:52
  * @FilePath: /kk_frame/src/project/global_data.h
  * @Description: 全局应用数据
  * @BugList:
@@ -19,9 +19,21 @@
 #include <core/uieventsource.h>
 #include <core/preferences.h>
 
+enum {
+    DEVICE_MODE_SAMPLE = 0,    // 常规模式
+    DEVICE_MODE_TEST,          // 测试模式
+    DEVICE_MODE_DEV,           // 开发模式
+    DEVICE_MODE_DISPLAY,       // 演示模式
+
+    DEVICE_MODE_MAX,
+};
+
 #define g_data globalData::ins()
 
 class globalData :public MessageHandler {
+public: // 特殊信息
+    uint8_t     mDeviceMode = 0;                  // 设备模式
+
 public: // 网络状态
     uint8_t     mNetWork = 0;                     // 网络状态
     uint8_t     mNetWorkDetail = 0;               // 网络详细状态
@@ -64,8 +76,10 @@ public:
     globalData& operator=(globalData&&) = delete; // 禁止移动赋值构造
 
     void init();
+    void reset();
     void handleMessage(Message& message)override;
 private:
+    void checkenv();
     bool loadFromFile();
     bool saveToFile(bool isBak = false);
     void checkToSave();

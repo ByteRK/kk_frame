@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2025-05-28 18:12:30
+ * @LastEditTime: 2025-05-28 13:05:16
  * @FilePath: /kk_frame/src/project/config_mgr.cc
  * @Description:
  * @BugList:
@@ -34,6 +34,15 @@ void configMgr::init() {
     mLooper->sendMessageDelayed(CM_SAVE_CHECK_INITERVAL, this, mCheckSaveMsg);
 }
 
+/// @brief 重置
+void configMgr::reset() {
+    std::string command = std::string("rm")\
+        + " " + CONFIG_FILE_PATH + " " + CONFIG_FILE_BAK_PATH;
+    std::system(command.c_str());
+    init();
+    LOGE("config_mgr factory reset.");
+}
+
 /// @brief 定时任务，用于保存修改后的配置
 /// @param message 
 void configMgr::handleMessage(Message& message) {
@@ -49,6 +58,8 @@ void configMgr::handleMessage(Message& message) {
 /// @brief 从文件中加载配置
 /// @return 
 bool configMgr::loadFromFile() {
+    mConfig = cdroid::Preferences(); // 清空原配置
+    
     std::string loadingPath = "";
     if (access(CONFIG_FILE_PATH, F_OK) == 0) {
         loadingPath = CONFIG_FILE_PATH;
