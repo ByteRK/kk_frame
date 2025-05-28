@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:39:39
- * @LastEditTime: 2025-05-28 18:27:39
+ * @LastEditTime: 2025-05-28 18:30:58
  * @FilePath: /kk_frame/src/function/json_func.h
  * @Description: Json数据处理
  * @BugList:
@@ -17,7 +17,7 @@
 #include "json/json.h"
 #include <string>
 
-// 将Json::Value转换为指定类型
+// 将Json::Value转换为指定类型 | use -> jsonToType<T>(const Json::Value&, const T&)
 template<typename T>
 T jsonToType(const Json::Value& value, const T& defaultValue) {
     if (value.isNull()) return defaultValue;
