@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2025-02-20 01:53:49
+ * @LastEditTime: 2025-05-28 11:40:08
  * @FilePath: /kk_frame/main.cc
  * @Description: 
  * @BugList: 
@@ -34,6 +34,7 @@ int main(int argc, const char* argv[]) {
     // g_connMgr->init();
     // g_btnMgr->init();
     // g_tuyaMgr->init();
+    
     return app.exec();
 }
 

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2025-05-28 17:16:18
+ * @LastEditTime: 2025-05-28 18:13:45
  * @FilePath: /kk_frame/src/project/global_data.h
  * @Description: 全局应用数据
  * @BugList:
@@ -65,11 +65,11 @@ public:
 
     void init();
     void handleMessage(Message& message)override;
-
 private:
     bool loadFromFile();
     bool saveToFile(bool isBak = false);
     void checkToSave();
+    
 public:
     uint64_t getPowerOnTime();
     

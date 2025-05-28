@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2025-02-20 22:20:46
+ * @LastEditTime: 2025-05-28 18:12:09
  * @FilePath: /kk_frame/src/project/config_mgr.h
  * @Description:
  * @BugList:
@@ -24,31 +24,46 @@
 class configMgr :public MessageHandler {
 private:
     enum {
-        MSG_SAVE,
+        MSG_SAVE,  // 备份检查消息
     };
 
-    Message  mMsg;
-    Looper*  mLooper;
-    uint64_t mNextBakTime;
-
-    cdroid::Preferences mConfig; // 配置文件读写
+    Looper*          mLooper;                  // 消息循环
+    uint64_t         mNextBakTime;             // 下次备份时间
+    Message          mCheckSaveMsg;            // 备份检查消息
+    uint64_t         mPowerOnTime;             // 启动时间[用于粗略计算运行时间]
+    cdroid::Preferences mConfig;               // 配置文件
 
 private:
-    configMgr();
-    void update();
+    configMgr() = default;
 public:
     ~configMgr();
     static configMgr* ins() {
-        static configMgr stIns;
-        return &stIns;
+        static configMgr instance;
+        return &instance;
     }
-    void handleMessage(Message& message)override;
+    configMgr(const configMgr&) = delete;       // 禁止拷贝构造
+    configMgr& operator=(configMgr&) = delete;  // 禁止赋值构造
+    configMgr(configMgr&&) = delete;            // 禁止移动构造
+    configMgr& operator=(configMgr&&) = delete; // 禁止移动赋值构造
 
     void init();
+    void handleMessage(Message& message)override;
+private:
+    bool loadFromFile();
+    void checkToSave();
 
+public:
     // 亮度
     int  getBrightness();
     void setBrightness(int value);
+
+    // 音量
+    int  getVolume();
+    void setVolume(int value);
+
+    // 自动锁屏
+    bool getAutoLock();
+    void setAutoLock(bool value);
 };
 
 

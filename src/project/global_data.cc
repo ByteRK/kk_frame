@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2025-05-28 16:52:57
+ * @LastEditTime: 2025-05-28 18:09:00
  * @FilePath: /kk_frame/src/project/global_data.cc
  * @Description:
  * @BugList:
@@ -19,8 +19,8 @@
 #include "defualt_config.h"
 #include <unistd.h>
 
-static constexpr uint32_t SAVE_CHECK_INITERVAL = 2000;       // 检查保存间隔[2s]
-static constexpr uint32_t SAVE_BACKUP_INTERVAL = 1000 * 10;  // 备份间隔[10s]
+static constexpr uint32_t GD_SAVE_CHECK_INITERVAL = 2000;       // 检查保存间隔[2s]
+static constexpr uint32_t GD_SAVE_BACKUP_INTERVAL = 1000 * 10;  // 备份间隔[10s]
 
 /// @brief 析构
 globalData::~globalData() {
@@ -31,17 +31,12 @@ globalData::~globalData() {
 void globalData::init() {
     mPowerOnTime = SystemClock::uptimeMillis();
 
-    if (!loadFromFile()) {
-        LOG(INFO) << "Load local data failed, use default config.";
-        mHaveChange = true;
-    } else {
-        mHaveChange = false;
-    }
+    loadFromFile();
 
     mNextBakTime = UINT64_MAX;
     mCheckSaveMsg.what = MSG_SAVE;
     mLooper = Looper::getMainLooper();
-    mLooper->sendMessageDelayed(SAVE_CHECK_INITERVAL, this, mCheckSaveMsg);
+    mLooper->sendMessageDelayed(GD_SAVE_CHECK_INITERVAL, this, mCheckSaveMsg);
 }
 
 /// @brief 定时任务，用于保存修改后的配置
@@ -66,9 +61,14 @@ bool globalData::loadFromFile() {
     } else if (access(APP_FILE_BAK_PATH, F_OK) == 0) {
         loadingPath = APP_FILE_BAK_PATH;
     }
-    LOG(INFO) << "Loading local data, file=" << loadingPath;
-    if (!loadLocalJson(loadingPath, appJson))
+
+    if (loadingPath.empty() || !loadLocalJson(loadingPath, appJson)) {
+        LOG(ERROR) << "[app] no local data file found. use default data";
+        mHaveChange = true;
         return false;
+    }
+    LOG(INFO) << "[app] load local data. file=" << loadingPath;
+
     /**** 开始读取数据 ****/
     mCoffee = getJsonValue(appJson, "coffee", true);
     /**** 结束读取数据 ****/
@@ -97,7 +97,7 @@ void globalData::checkToSave() {
         sync();
 #endif
         mHaveChange = false;
-        mNextBakTime = now + SAVE_BACKUP_INTERVAL;
+        mNextBakTime = now + GD_SAVE_BACKUP_INTERVAL;
         LOG(INFO) << "[app] save globalData. file=" << APP_FILE_FULL_PATH;
     }
     if (now >= mNextBakTime) {
@@ -108,7 +108,7 @@ void globalData::checkToSave() {
         mNextBakTime = UINT64_MAX;
         LOG(INFO) << "[app] save globalData bak. file=" << APP_FILE_BAK_PATH;
     }
-    mLooper->sendMessageDelayed(SAVE_CHECK_INITERVAL, this, mCheckSaveMsg);
+    mLooper->sendMessageDelayed(GD_SAVE_CHECK_INITERVAL, this, mCheckSaveMsg);
 }
 
 /// @brief 获取程序启动时间[可粗略计算程序运行时间]
