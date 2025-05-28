@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2025-02-20 01:54:43
+ * @LastEditTime: 2025-05-03 20:52:13
  * @FilePath: /kk_frame/src/windows/wind_base.cc
  * @Description: 窗口类
  * @BugList:
@@ -68,6 +68,8 @@ int BaseWindow::handleEvents() {
     if (tick >= mPageTickTime) {
         mPageTickTime = tick + PAGE_TICK_INTERVAL;
         if (mPage)mPage->callTick();
+
+        toastTick();
     }
 
     if (tick >= mPopTickTime) {
@@ -86,30 +88,70 @@ void BaseWindow::init() {
         );
     mPageBox = __getgv(mRootView, ViewGroup, kk_frame::R::id::mainBox);
     mPopBox = __getgv(mRootView, ViewGroup, kk_frame::R::id::popBox);
-    mLogo = __getg(mRootView, kk_frame::R::id::logo);
+    mLogoForImage = __getgv(mRootView, ImageView, kk_frame::R::id::logo);
+    mLogoForVideo = __getgv(mRootView, VideoView, kk_frame::R::id::logo_video);
     mToast = __getgv(mRootView, TextView, kk_frame::R::id::toast);
     mBlackView = __getgv(mRootView, View, kk_frame::R::id::cover);
 
-    if (!(mPageBox && mPopBox && mToast))
+    if (!(mPageBox && mPopBox && mLogoForImage && mLogoForVideo && mToast && mBlackView))
         throw std::runtime_error("BaseWindow Error");
 
+    // 初始化页面指针
     mPage = nullptr;
+
+    // 初始化弹窗指针
     mPop = nullptr;
-    mIsShowLogo = false;
-    mCloseLogo = [this] { mLogo->setVisibility(GONE);mIsShowLogo = false; };
     mPopBox->setOnTouchListener([ ](View& view, MotionEvent& evt) { return true; });
 
+    // 初始化黑屏
     mIsBlackView = false;
-    mBlackView->setOnClickListener([this](View& view) { hideBlack(); });
+    __clickv(mBlackView, [this](View& view) { hideBlack(); });
+    mBlackView->setEnabled(false);
+    setBrightness(g_config->getBrightness(), true);
 
     // 增加点击反馈
     mAttachInfo->mPlaySoundEffect = playSound;
 
+    // 初始化Toast
     mToastRun = [this] {
         mToastLevel = -1;
         mToastRunning = false;
-        mToast->animate().translationY(POPTEXT_TRANSLATIONY).setDuration(POPTEXT_ANIMATETIME).start();
+        mToast->animate().alpha(0.f).setDuration(POPTEXT_ANIMATETIME).start();
         };
+
+    // Toast动画结束回调
+    Animator::AnimatorListener toastAnimtorListener;
+    toastAnimtorListener.onAnimationEnd = [this](Animator& animator, bool isReverse) {
+        if (mToast->getAlpha() == 0.f) mToast->setVisibility(View::GONE);
+        };
+    mToast->setVisibility(View::GONE);
+    mToast->animate().setListener(toastAnimtorListener);
+
+    // 初始化LOGO
+    mIsShowLogo = false;
+    // 静态图LOGO回调
+    mCloseLogo = [this] {
+        mLogoForImage->setVisibility(GONE);
+        AnimatedImageDrawable* drawable = __dc(AnimatedImageDrawable, mLogoForImage->getDrawable());
+        if (drawable) drawable->stop();
+        mIsShowLogo = false;
+        };
+    // 动图LOGO回调
+    mLogoForImageCallback.onAnimationStart = nullptr;
+    mLogoForImageCallback.onAnimationEnd = [this](Drawable&) {
+        mLogoForImage->setVisibility(GONE);
+        mIsShowLogo = false;
+        };
+    // 视频LOGO回调
+    mLogoForVideo->setOnTouchListener([this](View& v, MotionEvent& evt) { return true; });
+    mLogoForVideo->setOnPlayStatusChange([this](View& v, int dutation, int progress, int status) {
+        LOGE("video play status = %d", status);
+        if (status == VideoView::VS_OVER) {
+            mLogoForVideo->setVisibility(View::GONE);
+            mLogoForVideo->over();
+            mIsShowLogo = false;
+        }
+        });
 
     showLogo();
 }
@@ -117,11 +159,60 @@ void BaseWindow::init() {
 /// @brief 显示 LOGO
 /// @param time 
 void BaseWindow::showLogo(uint32_t time) {
-    setBrightness(g_config->getBrightness());
+    // 清除状态
     removeCallbacks(mCloseLogo);
+    mCloseLogo();
+    mLogoForVideo->over();
+    // 隐藏原有页面
+    mLogoForImage->setVisibility(View::GONE);
+    mLogoForVideo->setVisibility(View::GONE);
+    // 获取LOGO类型以及地址
+    std::string path;
+    LOGO_TYPE type = getLogo(path);
+
+    // 根据类型显示LOGO
     mIsShowLogo = true;
-    mLogo->setVisibility(VISIBLE);
-    postDelayed(mCloseLogo, time);
+    AnimatedImageDrawable* drawable = nullptr;
+    switch (type) {
+    case LOGO_TYPE_IMG:
+        mLogoForImage->setVisibility(VISIBLE);
+        mLogoForImage->setImageResource(path);
+        postDelayed(mCloseLogo, time);
+        break;
+    case LOGO_TYPE_ANI:
+        mLogoForImage->setVisibility(VISIBLE);
+        mLogoForImage->setImageResource(path);
+        drawable = __dc(AnimatedImageDrawable, mLogoForImage->getDrawable());
+        if (drawable) { // 若为动画则调用动画结束回调
+            drawable->registerAnimationCallback(mLogoForImageCallback);
+            drawable->setRepeatCount(1);
+            drawable->start();
+        } else { // 若为静态图则延迟关闭
+            postDelayed(mCloseLogo, time);
+        }
+        break;
+    case LOGO_TYPE_VIDEO:
+        mLogoForVideo->setVisibility(VISIBLE);
+        mLogoForVideo->setURL(path);
+        mLogoForVideo->play();
+        break;
+    default:
+        LOGE("unknow logo type");
+        mIsShowLogo = false;
+        break;
+    }
+}
+
+/// @brief 获取logo
+/// @param path 
+/// @return 
+BaseWindow::LOGO_TYPE BaseWindow::getLogo(std::string& path) {
+    BaseWindow::LOGO_TYPE type = LOGO_TYPE_IMG;
+
+    path = "@mipmap/logo";
+    type = LOGO_TYPE_IMG;
+
+    return type;
 }
 
 /// @brief 键盘抬起事件
@@ -240,22 +331,23 @@ void BaseWindow::showPop(PopBase* pop) {
 /// @brief 显示弹幕
 /// @param text 
 /// @param time 
-void BaseWindow::showToast(std::string text, int8_t level, bool animate, bool lock) {
-    if (mToastRunning && level <= mToastLevel)return;
+void BaseWindow::showToast(std::string text, int8_t level, bool keepNow, bool animate, bool lock) {
+    // if (mToastRunning && level <= mToastLevel)return;
 
-    removeCallbacks(mToastRun);
-    mToastRunning = true;
-    mToastLevel = level;
-    mToast->setText(text);
-    mToast->animate().cancel();
-    if (animate) {
-        mToast->setTranslationY(POPTEXT_TRANSLATIONY);
-        mToast->animate().translationY(0).setDuration(POPTEXT_ANIMATETIME / 3 * 2).start();
-    } else {
-        mToast->setTranslationY(0);
+    if (!keepNow) {
+        if (mToastList.size())
+            std::queue<TOAST_TYPE>().swap(mToastList);
+        if (mToastRunning)
+            mToastRunning = false;
     }
-    if (!lock)
-        postDelayed(mToastRun, 3000);
+
+    TOAST_TYPE toast;
+    toast.text = text;
+    toast.level = level;
+    toast.animate = animate;
+    toast.lock = lock;
+    mToastList.push(toast);
+    LOGI("toast list add %s", text.c_str());
 }
 
 /// @brief 移除页面
@@ -283,19 +375,46 @@ void BaseWindow::hideToast() {
     mToastLevel = -1;
     mToastRunning = false;
     mToast->animate().cancel();
-    mToast->setTranslationY(POPTEXT_TRANSLATIONY);
+    mToast->setAlpha(0.f);
+    mToast->setVisibility(View::GONE);
     removeCallbacks(mToastRun);
+    std::queue<TOAST_TYPE>().swap(mToastList);
 }
 
 /// @brief 隐藏全部元素
 void BaseWindow::hideAll() {
     mPopBox->setVisibility(GONE);
-    mToast->setVisibility(GONE);
+    hideToast();
     mBlackView->setVisibility(GONE);
 }
 
 bool BaseWindow::selfKey(uint16_t keyCode, uint8_t status) {
     return false;
+}
+
+/// @brief Toast刷新器
+void BaseWindow::toastTick() {
+    if (!mToastRunning && mToastList.size()) {
+        TOAST_TYPE item = mToastList.front();
+        mToastList.pop();
+
+        LOGI("showToast[over:%d]: %s", mToastList.size(), item.text.c_str());
+        removeCallbacks(mToastRun);
+
+        mToastRunning = true;
+        mToastLevel = item.level;
+        mToast->setText(item.text);
+        mToast->setVisibility(View::VISIBLE);
+        mToast->animate().cancel();
+
+        if (item.animate) {
+            mToast->setAlpha(0.f);
+            mToast->animate().alpha(0.9f).setDuration(POPTEXT_ANIMATETIME).start();
+        } else {
+            mToast->setAlpha(0.9f);
+        }
+        if (!item.lock)postDelayed(mToastRun, 5000);
+    }
 }
 
 /// @brief 按键灯更新
