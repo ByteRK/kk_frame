@@ -36,6 +36,16 @@ UartClient::~UartClient() {
 
     for (BuffData* ask : mSendQueue) { mPacketBuff->recycle(ask); }
     mSendQueue.clear();
+
+#if CONN_TCP
+    App::getInstance().removeEventHandler(this);
+#else
+    if (mRecvSpace < RECV_PACKET_TIME_SPACE) {
+        closeFd();
+    } else {
+        App::getInstance().removeEventHandler(this);
+    }
+#endif
 }
 
 int UartClient::init() {
