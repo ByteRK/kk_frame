@@ -2,7 +2,7 @@
 Author: Ricken
 Email: me@ricken.cn
 Date: 2025-04-25 12:52:59
-LastEditTime: 2025-05-28 18:14:47
+LastEditTime: 2025-05-29 11:26:38
 FilePath: /kk_frame/build.py
 Description: 项目构建脚本
 BugList: 
@@ -17,6 +17,28 @@ import shutil
 import re
 import sys
 from datetime import datetime
+
+# 获取Cdroid的Git提交ID
+def get_template_parent_commit_id():
+    # 获取当前脚本所在目录（模板目录）
+    current_script_dir = os.path.dirname(os.path.abspath(__file__))
+    # 获取模板的父目录
+    template_parent_dir = os.path.dirname(current_script_dir)
+    
+    try:
+        # 在模板的父目录中执行git命令
+        commit_id = subprocess.check_output(
+            ['git', 'rev-parse', 'HEAD'],
+            cwd=template_parent_dir
+        ).strip().decode('utf-8')
+        print(f"\n获取到Cdroid的Git提交ID: {commit_id[:10]}...")
+        return commit_id
+    except subprocess.CalledProcessError:
+        print("\n警告: 无法获取模板父目录的Git提交ID")
+        return '未知'
+    except Exception as e:
+        print(f"\n获取Git提交ID时出错: {str(e)}")
+        return '未知'
 
 # 替换源文件中所有文件的 'kk_frame' ID为项目名称
 def replace_id_in_source_files(new_project_name, directories):
@@ -89,14 +111,8 @@ def replace_placeholders_in_readme(new_project_name):
     # 获取当前时间
     create_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-    # 获取上一层目录的 Git 提交 ID
-    try:
-        commit_id = subprocess.check_output(
-            ['git', 'rev-parse', 'HEAD'],
-            cwd=os.path.dirname(os.path.abspath(readme_base_path)) + '/..'
-        ).strip().decode('utf-8')
-    except subprocess.CalledProcessError:
-        commit_id = '未知'
+    # 获取Cdroid的 Git 提交 ID
+    commit_id = get_template_parent_commit_id()
 
     # 读取 README_BASE.md 文件内容
     with open(readme_base_path, 'r', encoding='utf-8') as file:
