@@ -1,3 +1,25 @@
+# @Author: Ricken
+# @Email: me@ricken.cn
+# @Date: 2025-05-29 09:18:36
+# @FilePath: /kk_frame/script/kk_frame.ps1
+# @Description: 
+# @BugList: 
+#
+# 脚本描述：
+# 用于快速创建Cdroid资源映射到Android Studio项目中的脚本，减少来回拷贝的烦恼
+# 1、在Windows下正常创建Android Studio项目
+# 2、将服务器上的文件通过SMB映射到Windows本地
+# 2、在Android Studio项目下的SRC目录运行本脚本
+# 3、在Android Studio中刷新资源文件
+#
+# 常见问题以及处理方式
+# Q:显示在此系统上禁止运行脚本：
+# A:以管理员身份运行PowerShell，并执行：Set-ExecutionPolicy RemoteSigned
+#
+# Q:显示路径不存在，但是资源管理器中实际能访问到
+# A:管理员身份运行PowerShell时，未使用到正确的网络凭证
+# A:net use \\10.0.0.88\ricken /user:username password
+
 # 固定配置区域 ################################################
 # 目标路径
 $targetPath = "\\10.0.0.88\ricken\cdroid\apps\kk_frame"
