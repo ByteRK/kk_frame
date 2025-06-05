@@ -3,7 +3,7 @@
  # @Author: hanakami
  # @Date: 2025-05-08 17:08:00
  # @email: hanakami@163.com
- # @LastEditTime: 2025-05-20 14:47:07
+ # @LastEditTime: 2025-06-05 15:34:20
  # @FilePath: /hana_frame/script/run.sh
  # @Description: 
  # Copyright (c) 2025 by hanakami, All Rights Reserved. 
@@ -76,7 +76,7 @@ fi
 # Enter the process guard
 while true; do
    if [ ! -d "/tmp/customer" ] && ! pgrep -f "./$NAME" > /dev/null; then
-       top
+       start_process
    else 
        pid=$(pgrep -f "./$NAME")
        start_time=$(stat -c %Y /proc/$pid/)
