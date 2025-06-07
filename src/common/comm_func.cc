@@ -817,3 +817,11 @@ int getTpVersion() {
     return 0;
 #endif
 }
+
+std::string clearWhiteSpace(std::string& str) {
+    auto it = std::find_if(str.rbegin(), str.rend(), [](unsigned char ch) {
+        return !std::isspace(ch);
+    });
+    str.erase(it.base(), str.end());
+    return str;
+}

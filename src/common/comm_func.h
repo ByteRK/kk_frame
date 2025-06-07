@@ -219,4 +219,9 @@ bool isValidMacAddress(const std::string& mac);
 /// @return x0x0x0x
 int getTpVersion();
 
+/// @brief 清除字符串中的空格
+/// @param str 
+/// @return 
+std::string clearWhiteSpace(std::string& str);
+
 #endif
