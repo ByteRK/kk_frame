@@ -21,11 +21,11 @@
 #
 # Q:显示路径不存在，但是资源管理器中实际能访问到
 # A:管理员身份运行PowerShell时，未使用到正确的网络凭证
-# A:net use \\10.0.0.88\ricken /user:username password
+# A:net use \\10.0.0.88\wzt /user:username password
 
 # 固定配置区域 ################################################
 # 目标路径
-$targetPath = "\\10.0.0.88\ricken\cdroid\apps\kk_frame"
+$targetPath = "\\10.0.0.88\wzt\cdroid\apps\kk_frame"
 # 定义映射关系：原文件夹名 → 自定义链接名
 $folderMap = @{  # $null为保留原文件名，若源文件夹为嵌套文件夹，必须指定自定义链接名
     "assets\color"     = "color"
