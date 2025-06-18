@@ -39,8 +39,18 @@ T jsonSafeGet(const Json::Value& json, size_t index, T defaultValue) {
     return defaultValue;
 }
 
-
-
+/// @brief 直接获取 JSON 单值
+/// @tparam T 返回值的类型
+/// @param json JSON 单值
+/// @param defaultValue 默认值
+/// @return 获取到的值或默认值
+template<typename T>
+T jsonSafeGet(const Json::Value& json, T defaultValue) {
+    if (!json.isNull()) {
+        return json.as<T>();
+    }
+    return defaultValue;
+}
 /// @brief string转json
 /// @brief 完整结构
 /// @param str 
@@ -67,44 +77,5 @@ bool loadLocalJson(const std::string& filePath, Json::Value& root);
 /// @return 
 bool saveLocalJson(const std::string& filePath, const Json::Value& root);
 
-/// @brief 获取Int数据
-/// @param root 
-/// @param key 
-/// @param defaultValue 
-/// @return 
-int getJsonInt(const Json::Value& root, const std::string& key, int defaultValue = 0);
-
-/// @brief 获取Strig数据
-/// @brief 使用返回值时建议使用std::move()
-/// @param root 
-/// @param key 
-/// @param defaultValue 
-/// @return 
-std::string getJsonString(const Json::Value& root, const std::string& key, const std::string& defaultValue = "");
-
-/// @brief 获取Bool数据
-/// @param root 
-/// @param key 
-/// @param defaultValue 
-/// @return 
-bool getJsonBool(const Json::Value& root, const std::string& key, bool defaultValue = false);
-
-/// @brief Json Value转Int
-/// @param value 
-/// @param defaultValue 
-/// @return 
-int jsonToInt(const Json::Value& value, int defaultValue);
-
-/// @brief Json Value转String
-/// @param value 
-/// @param defaultValue 
-/// @return 
-std::string jsonToString(const Json::Value& value, const std::string& defaultValue);
-
-/// @brief Json Value转Bool
-/// @param value 
-/// @param defaultValue 
-/// @return 
-bool jsonToBool(const Json::Value& value, bool defaultValue);
 
 #endif // __json_func_h__
