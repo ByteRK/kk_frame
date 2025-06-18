@@ -1,13 +1,3 @@
-/*
- * @Author: hanakami
- * @Date: 2025-05-08 17:08:00
- * @email: hanakami@163.com
- * @LastEditTime: 2025-05-26 13:53:48
- * @FilePath: 
- * @Description: 构建脚本
- * Copyright (c) 2025 by hanakami, All Rights Reserved. 
- */
-
 import os
 import subprocess
 import shutil

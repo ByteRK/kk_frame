@@ -2,7 +2,7 @@
  * @Author: hanakami
  * @Date: 2025-05-08 17:08:00
  * @email: hanakami@163.com
- * @LastEditTime: 2025-05-08 17:12:04
+ * @LastEditTime: 2025-06-18 07:58:58
  * @FilePath: /hana_frame/src/windows/base.cc
  * @Description: 页面基类
  * Copyright (c) 2025 by hanakami, All Rights Reserved. 
@@ -126,7 +126,7 @@ void PBase::setAutoBackToStandby(uint32_t time, bool withBlack) {
 
 void PBase::setLangText(TextView* v, const Json::Value& value) {
     if (v == nullptr) LOGE("TextView is nullptr");
-    else v->setText(jsonToString(value, "null"));
+    else v->setText(jsonSafeGet(value, "null"));
 }
 
 /*

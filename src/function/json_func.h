@@ -2,7 +2,7 @@
  * @Author: hanakami
  * @Date: 2025-05-08 17:08:00
  * @email: hanakami@163.com
- * @LastEditTime: 2025-05-28 15:21:29
+ * @LastEditTime: 2025-06-18 07:58:01
  * @FilePath: /hana_frame/src/function/json_func.h
  * @Description: 
  * Copyright (c) 2025 by hanakami, All Rights Reserved. 
@@ -33,8 +33,8 @@ T jsonSafeGet(const Json::Value& json, const std::string& key, T defaultValue) {
 /// @return 获取到的值或默认值
 template<typename T>
 T jsonSafeGet(const Json::Value& json, size_t index, T defaultValue) {
-    if (json.isArray() && json.isValidIndex(index)) {
-        return json[index].as<T>();
+    if (json.isArray() && json.isValidIndex(static_cast<Json::ArrayIndex>(index))) {
+        return json[static_cast<Json::ArrayIndex>(index)].as<T>();
     }
     return defaultValue;
 }
