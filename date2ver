@@ -13,7 +13,7 @@
 v1=1
 v2=0
 v3=0
-v4=1
+v4=0
 PROJECT_ID=001
 
 cd $(dirname $0) # 切换到当前脚本所在目录
@@ -31,24 +31,25 @@ if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
     GIT_VER=`git log -1 | head -1 | awk -F ' ' '{print $2}'`
     GIT_VER_SHORT=$(echo "$GIT_VER" | rev | cut -c 1-6 | rev)
     VERSION_INFO="${NAME}_Build_V${v1}.${v2}.${v3}.${v4}_${GIT_VER_SHORT}_${CUR_DATE}"
+fi
 
-    if [ -f ${VERSION_FILE} ]; then
-        o_v1=`grep -a 'MAJOR_VERSION' ${VERSION_FILE} | awk 'NR{print $3}'`
-        o_v2=`grep -a 'MINOR_VERSION' ${VERSION_FILE} | awk 'NR{print $3}'`
-        o_v3=`grep -a 'REVISE_VERSION' ${VERSION_FILE} | awk 'NR{print $3}'`
-        o_v4=`grep -a 'BUILD_VERSION' ${VERSION_FILE} | awk 'NR{print $3}'`
-        o_GIT_VER=`grep -a 'GIT_VERSION' ${VERSION_FILE} | awk 'NR{print $3}' | sed 's/"//g'`
-        o_CUR_DATE=$(grep -a 'BUILD_DATE' ${VERSION_FILE} | sed 's/^.*"\(.*\)".*$/\1/')
-        o_VERSION_INFO=`grep -a 'APP_VER_INFO' ${VERSION_FILE} | awk 'NR{print $3}'`
-        
-        # 检查版本号和 Git 哈希值是否相同
-        if [ "$o_v1" = "$v1" -a "$o_v2" = "$v2" -a "$o_v3" = "$v3" -a "$o_v4" = "$v4" -a "$o_GIT_VER" = "$GIT_VER" ]; then
-            # 检查是否有本地修改
-            if ! git diff --quiet; then
-                echo $PROJECT_ID "->" $o_VERSION_INFO "->" $o_CUR_DATE
-                exit
-            fi 
-        fi
+# 检查已生成的版本文件
+if [ -f ${VERSION_FILE} ]; then
+    o_v1=`grep -a 'MAJOR_VERSION' ${VERSION_FILE} | awk 'NR{print $3}'`
+    o_v2=`grep -a 'MINOR_VERSION' ${VERSION_FILE} | awk 'NR{print $3}'`
+    o_v3=`grep -a 'REVISE_VERSION' ${VERSION_FILE} | awk 'NR{print $3}'`
+    o_v4=`grep -a 'BUILD_VERSION' ${VERSION_FILE} | awk 'NR{print $3}'`
+    o_GIT_VER=`grep -a 'GIT_VERSION' ${VERSION_FILE} | awk 'NR{print $3}' | sed 's/"//g'`
+    o_CUR_DATE=$(grep -a 'BUILD_DATE' ${VERSION_FILE} | sed 's/^.*"\(.*\)".*$/\1/')
+    o_VERSION_INFO=`grep -a 'APP_VER_INFO' ${VERSION_FILE} | awk 'NR{print $3}'`
+    
+    # 检查版本号和 Git 哈希值是否相同
+    if [ "$o_v1" = "$v1" -a "$o_v2" = "$v2" -a "$o_v3" = "$v3" -a "$o_v4" = "$v4" -a "$o_GIT_VER" = "$GIT_VER" ]; then
+        # 检查是否有本地修改
+        if ! git diff --quiet; then
+            echo $PROJECT_ID "->" $o_VERSION_INFO "->" $o_CUR_DATE
+            exit
+        fi 
     fi
 fi
 
@@ -76,9 +77,9 @@ echo "#define APP_VERSION     \"$v1.$v2.$v3\"" >> $VERSION_FILE
 echo "#define APP_VERSION_D   \"$v1.$v2.$v3.$v4\"" >> $VERSION_FILE
 echo "" >> $VERSION_FILE
 
-echo "#define BUILD_DATE       \"${CUR_DATE_FULL}\"" >> $VERSION_FILE
-echo "#define APP_VER_INFO     \"${VERSION_INFO}\"" >> $VERSION_FILE
-echo "#define GIT_VERSION      \"${GIT_VER}\"" >> $VERSION_FILE
+echo "#define BUILD_DATE      \"${CUR_DATE_FULL}\"" >> $VERSION_FILE
+echo "#define APP_VER_INFO    \"${VERSION_INFO}\"" >> $VERSION_FILE
+echo "#define GIT_VERSION     \"${GIT_VER}\"" >> $VERSION_FILE
 echo "" >> $VERSION_FILE
 
 echo "#endif" >> $VERSION_FILE
