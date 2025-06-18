@@ -41,7 +41,14 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@mipmap/logo"
+        android:scaleType="centerInside"
         android:visibility="invisible"/>
+    <VideoView
+        android:id="@+id/logo_video"
+        android:layout_width="1280dp"
+        android:layout_height="480dp"
+        android:videoOnly="true"
+        android:oneShot="true"/>
 
     <View
         android:id="@+id/cover"
