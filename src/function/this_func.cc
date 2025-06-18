@@ -2,7 +2,7 @@
  * @Author: hanakami
  * @Date: 2025-05-08 17:08:00
  * @email: hanakami@163.com
- * @LastEditTime: 2025-05-08 18:40:36
+ * @LastEditTime: 2025-06-18 08:10:52
  * @FilePath: /hana_frame/src/function/this_func.cc
  * @Description: 
  * Copyright (c) 2025 by hanakami, All Rights Reserved. 
@@ -33,12 +33,13 @@
 #include <cdlog.h>
 #include <cdinput.h>
 #include <core/inputeventsource.h>
+#include <random> 
 
 void printProjectInfo(const char* name) {
     char szTmp[128];
     int id = syscall(SYS_gettid);
 
-    print_cartoon_cat();
+    // print_cartoon_cat();
     // 信息
     fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", APP_ID);
     fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", name);
