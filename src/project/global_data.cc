@@ -89,7 +89,7 @@
      LOG(INFO) << "[app] load local data. file=" << loadingPath;
  
      /**** 开始读取数据 ****/
-     mCoffee = getJsonValue(appJson, "coffee", true);
+     mCoffee = jsonSafeGet<bool>(appJson, "coffee", true);
      /**** 结束读取数据 ****/
      return true;
  }

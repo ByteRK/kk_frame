@@ -2,7 +2,7 @@
  * @Author: hanakami
  * @Date: 2025-05-08 17:08:00
  * @email: hanakami@163.com
- * @LastEditTime: 2025-06-18 08:37:21
+ * @LastEditTime: 2025-06-25 08:28:20
  * @FilePath: /hana_frame/src/project/global_data.h
  * @Description: 全局数据
  * Copyright (c) 2025 by hanakami, All Rights Reserved.
@@ -41,7 +41,7 @@
      int8_t      mTUYATemMin = 0;                  // 涂鸦温度最小值
      int8_t      mTUYATemMax = 0;                  // 涂鸦温度最大值
      std::string mTUYAWeather = "146";             // 涂鸦天气代码
-     uint16_t    mTUYAWifiTestRes = 0xFFFF;        // wifi测试结果
+     uint16_t    mWifiTestRes = 0xFFFF;    // wifi测试结果
  
  public: // 设备信息
      bool        mPower = false;                   // 开关机

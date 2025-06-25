@@ -2,7 +2,7 @@
  * @Author: hanakami
  * @Date: 2025-05-08 17:08:00
  * @email: hanakami@163.com
- * @LastEditTime: 2025-06-18 08:44:32
+ * @LastEditTime: 2025-06-25 08:30:46
  * @FilePath: /hana_frame/src/windows/wind_base.cc
  * @Description: 
  * Copyright (c) 2025 by hanakami, All Rights Reserved. 
@@ -291,7 +291,7 @@
  /// @brief 
  void BaseWindow::hideBlack() {
      if (!mIsBlackView)return;
-     g_windMgr->goTo(PAGE_STANDBY);
+     g_windMgr->goTo(PAGE_HOME);
      mPage->callKey(KEY_WINDOW, VIRT_EVENT_UP);
      mBlackView->setVisibility(GONE);
      mIsBlackView = false;

@@ -2,7 +2,7 @@
  * @Author: hanakami
  * @Date: 2025-05-08 17:08:00
  * @email: hanakami@163.com
- * @LastEditTime: 2025-05-09 09:37:24
+ * @LastEditTime: 2025-06-25 08:28:57
  * @FilePath: /hana_frame/config/defualt_config.h
  * @Description: 
  * Copyright (c) 2025 by hanakami, All Rights Reserved. 
@@ -36,5 +36,13 @@
 // 屏幕亮度
 #define CONFIG_BRIGHTNESS 50    // 默认亮度
 #define CONFIG_BRIGHTNESS_MIN 0 // 最小亮度
+
+#define CONFIG_STANDBYSTYLE   0        // 待机类型
+#define CONFIG_AUTOTIMESET    true     // 自动设置时间
+#define CONFIG_WATERHARD      2        // 水硬度
+#define CONFIG_SOUND          true     // 按键音
+#define CONFIG_VOLUME         80       // 音量
+#define CONFIG_AUTOLOCK       false    // 自动锁屏
+#define CONFIG_VOLUME_MIN 0 // 最小音量
 
 #endif
