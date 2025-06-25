@@ -25,7 +25,7 @@
 
 # 固定配置区域 ################################################
 # 目标路径
-$targetPath = "\\10.0.0.88\wzt\cdroid\apps\kk_frame"
+$targetPath = "\\10.0.0.88\wzt\cdroid\apps\hana_frame"
 # 定义映射关系：原文件夹名 → 自定义链接名
 $folderMap = @{  # $null为保留原文件名，若源文件夹为嵌套文件夹，必须指定自定义链接名
     "assets\color"     = "color"

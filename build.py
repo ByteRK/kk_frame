@@ -55,15 +55,15 @@ def replace_id_in_source_files(new_project_name, directories):
                             content = f.read()
                         
                         # 检查是否需要替换（排除顶部注释）
-                        if 'kk_frame' in content:
-                            # 第一步：将 "kk_frame/" 替换为临时标记 "hana_frame/"
-                            temp_content = content.replace('hana_frame/', 'hana_frame/')
+                        if 'hana_frame' in content:
+                            # 第一步：将 "hana_frame/" 替换为临时标记 "hana__frame/"
+                            temp_content = content.replace('hana_frame/', 'hana__frame/')
                             
-                            # 第二步：将剩余的 "kk_frame" 替换为新项目名称
+                            # 第二步：将剩余的 "hana_frame" 替换为新项目名称
                             new_content = temp_content.replace('hana_frame', new_project_name)
                             
-                            # 第三步：将临时标记 "hana_frame" 恢复为 "kk_frame"
-                            final_content = new_content.replace('hana_frame', 'kk_frame')
+                            # 第三步：将临时标记 "hana_frame" 恢复为 "hana_frame"
+                            final_content = new_content.replace('hana__frame', 'hana_frame')
                             
                             # 只有在内容发生变化时才写回文件
                             if final_content != content:
@@ -131,7 +131,7 @@ def replace_project_name_in_cmake(new_project_name):
         content = file.read()
 
     # 替换指定文本
-    updated_content = content.replace('kk_frame', new_project_name)
+    updated_content = content.replace('hana_frame', new_project_name)
 
     # 将修改后的内容写回文件
     with open(cmake_file_path, 'w', encoding='utf-8') as file:

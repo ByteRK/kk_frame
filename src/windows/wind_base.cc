@@ -83,12 +83,12 @@
      mRootView = (ViewGroup*)(
          LayoutInflater::from(mContext)->inflate("@layout/wind_base", this)
          );
-     mPageBox = __getgv(mRootView, ViewGroup, kk_frame::R::id::mainBox);
-     mPopBox = __getgv(mRootView, ViewGroup, kk_frame::R::id::popBox);
-     mLogoForImage = __getgv(mRootView, ImageView, kk_frame::R::id::logo);
-     mLogoForVideo = __getgv(mRootView, VideoView, kk_frame::R::id::logo_video);
-     mToast = __getgv(mRootView, TextView, kk_frame::R::id::toast);
-     mBlackView = __getgv(mRootView, View, kk_frame::R::id::cover);
+     mPageBox = __getgv(mRootView, ViewGroup, hana_frame::R::id::mainBox);
+     mPopBox = __getgv(mRootView, ViewGroup, hana_frame::R::id::popBox);
+     mLogoForImage = __getgv(mRootView, ImageView, hana_frame::R::id::logo);
+     mLogoForVideo = __getgv(mRootView, VideoView, hana_frame::R::id::logo_video);
+     mToast = __getgv(mRootView, TextView, hana_frame::R::id::toast);
+     mBlackView = __getgv(mRootView, View, hana_frame::R::id::cover);
  
      if (!(mPageBox && mPopBox && mLogoForImage && mLogoForVideo && mToast && mBlackView))
          throw std::runtime_error("BaseWindow Error");
