@@ -2,7 +2,7 @@
  * @Author: hanakami
  * @Date: 2025-05-08 17:08:00
  * @email: hanakami@163.com
- * @LastEditTime: 2025-05-08 18:35:40
+ * @LastEditTime: 2025-06-26 08:34:17
  * @FilePath: /hana_frame/config/series_config.h
  * @Description:
  * Copyright (c) 2025 by hanakami, All Rights Reserved.
@@ -34,6 +34,10 @@
 
 #define SYS_SCREEN_BEIGHTNESS_PWM "pwm2"   // 屏幕亮度控制PWM
 #define SYS_SCREEN_BRIGHTNESS_MIN 0        // 屏幕亮度最小可设置值
-#define SYS_SCREEN_BRIGHTNESS_MAX 100000   // 屏幕亮度最大可设置值
+#define SYS_SCREEN_BRIGHTNESS_MAX 100      // 屏幕亮度最大可设置值
+
+#define SYS_SCREEN_VOLUME_PWM "pwm3"   // 屏幕蜂鸣器控制PWM
+#define SYS_SCREEN_VOLUME_MIN 10        // 屏幕蜂鸣器音量最小可设置值
+#define SYS_SCREEN_VOLUME_MAX 90      // 屏幕蜂鸣器音量最大可设置值
 
 #endif /*__SERIES_CONFIG_H__*/

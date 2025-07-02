@@ -2,7 +2,7 @@
  * @Author: hanakami
  * @Date: 2025-05-08 17:08:00
  * @email: hanakami@163.com
- * @LastEditTime: 2025-05-08 17:47:05
+ * @LastEditTime: 2025-06-26 08:31:24
  * @FilePath: /hana_frame/src/common/comm_func.cc
  * @Description: 全局共工函数
  * Copyright (c) 2025 by hanakami, All Rights Reserved. 
@@ -528,35 +528,124 @@ int calculation_signal(float Quality, int SignalLevel) {
         return 1;
 }
 
-void setBrightness(uint8_t value, bool swap) {
-#ifndef CDROID_X64
-    value = value % 101; // 限制在0-100之间
-    char pwm_path[128];
-    snprintf(pwm_path, 128, "%s%s", "/sys/class/pwm/pwmchip0/", SYS_SCREEN_BEIGHTNESS_PWM);
-    if (access(pwm_path, F_OK)) { return; }
+/// @brief fork + execl 代理执行非阻塞命令
+/// @param cmd 要执行的命令
+/// @return 成功返回 true，失败返回 false
+bool executeNonBlocking(const char* cmd) {
+    pid_t pid = fork();
 
-    if (value) {
-        if (swap)value = 100 - value; // 反转亮度值
-        if (value == 0) value = 1;    // 亮度值不能为0
-
-        char setEnable[128];
-        snprintf(setEnable, 128, "echo 1 > %s%s", pwm_path, "/enable");
-        system(setEnable);
-        LOG(VERBOSE) << setEnable;
-
-        char setDutyCycle[128];
-        int pwm = (value * (SYS_SCREEN_BRIGHTNESS_MAX - SYS_SCREEN_BRIGHTNESS_MIN)) / 100; // 转换pwm值
-        snprintf(setDutyCycle, 128, "echo %d > %s%s", pwm, pwm_path, "/duty_cycle");
-        system(setDutyCycle);
-        LOG(VERBOSE) << setDutyCycle;
-    } else {
-        char shell[128];
-        snprintf(shell, sizeof(shell), "echo 0 > %s%s", pwm_path, "/enable");
-        system(shell);
-        LOG(VERBOSE) << shell;
+    if (pid < 0) {
+        // fork() 失败
+        return false;
+    } else if (pid == 0) {
+        // 子进程
+        execl("/bin/sh", "sh", "-c", cmd, (char*)NULL);
+        _exit(127); // 如果 execl 失败
     }
+
+    // 父进程，fork() 成功
+    return true;
+}
+// PWM路径构造辅助函数
+void makePwmPath(char* buf, size_t size, const char* attribute) {
+    snprintf(buf, size, "/sys/class/pwm/pwmchip0/pwm3/%s", attribute);
+}
+
+/// @brief 写入文件操作,代替echo
+/// @param path 
+/// @param value 
+bool writeSysfs(const char* path, const char* value) {
+    FILE* fp = fopen(path, "w");
+    if (!fp) {
+        LOGE("Failed to open %s", path);
+        return false;
+    }
+    bool success = (fprintf(fp, "%s", value) > 0);
+    fclose(fp);
+    
+    if (!success) {
+        LOGE("Write failed: %s -> %s", path, value);
+    } else {
+        LOGV("Write %s to %s", value, path);
+    }
+    return success;
+}
+
+#ifndef CDROID_X64
+void setBrightness(uint8_t value, bool swap) {
+    value = value % 101; // 限制在0-100之间
+    
+    // 构造完整路径
+    char path[128];
+    snprintf(path, sizeof(path), "/sys/class/pwm/pwmchip0/%s", SYS_SCREEN_BEIGHTNESS_PWM);
+
+    // 检查路径是否存在
+    if (access(path, F_OK)) {
+        LOG(ERROR) << "PWM path not found: " << path;
+        return;
+    }
+
+    if (value != 0) {
+        // 处理亮度值
+        if (swap) value = 100 - value;
+        value = (value == 0) ? 1 : value; // 确保最小值为1
+
+        // 启用PWM
+        char enablePath[128];
+        snprintf(enablePath, sizeof(enablePath), "%s/enable", path);
+        writeSysfs(enablePath, "1");
+
+        // 设置占空比
+        char dutyPath[128];
+        snprintf(dutyPath, sizeof(dutyPath), "%s/duty_cycle", path);
+        int pwm = (value * (SYS_SCREEN_BRIGHTNESS_MAX - SYS_SCREEN_BRIGHTNESS_MIN)) / 100;
+        
+        char pwmStr[16];
+        snprintf(pwmStr, sizeof(pwmStr), "%d", pwm);
+        writeSysfs(dutyPath, pwmStr);
+    } else {
+        // 关闭PWM
+        char enablePath[128];
+        snprintf(enablePath, sizeof(enablePath), "%s/enable", path);
+        writeSysfs(enablePath, "0");
+    }
+}
 #else
-    LOGI("设置屏幕亮度 %d", value);
+/// @brief x64模拟版本
+/// @param  value 0-100
+void setBrightness(uint8_t value, bool swap) {
+    LOGI("设置亮度 %d", value);
+}
+#endif
+
+void setVolume(int value) {
+#ifndef CDROID_X64
+    // 参数校验（0-100）
+    if (value < 0 || value > 100) {
+        LOGE("Invalid volume value: %d", value);
+        return;
+    }
+
+    char path[128];
+    snprintf(path, sizeof(path), "/sys/class/pwm/pwmchip0/%s/duty_cycle", SYS_SCREEN_VOLUME_PWM);
+
+    // 检查PWM路径
+    if (access(path, F_OK) != 0) {
+        LOGE("PWM path not accessible: %s", path);
+        return;
+    }
+
+    // 计算占空比（线性映射）
+    int duty_cycle = SYS_SCREEN_VOLUME_MIN + 
+                   (value * (SYS_SCREEN_VOLUME_MAX - SYS_SCREEN_VOLUME_MIN)) / 100;
+
+    char valueStr[16];
+    snprintf(valueStr, sizeof(valueStr), "%d", duty_cycle);
+    writeSysfs(path, valueStr);
+
+    LOGV("Set volume: %d%% -> duty_cycle=%d", value, duty_cycle);
+#else
+    LOGI("模拟器: 设置音量 %d", value);
 #endif
 }
 

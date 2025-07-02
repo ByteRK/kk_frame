@@ -2,7 +2,7 @@
  * @Author: hanakami
  * @Date: 2025-05-08 17:08:00
  * @email: hanakami@163.com
- * @LastEditTime: 2025-05-08 17:48:48
+ * @LastEditTime: 2025-06-26 08:35:42
  * @FilePath: /hana_frame/src/common/comm_func.h
  * @Description: 
  * Copyright (c) 2025 by hanakami, All Rights Reserved. 
@@ -158,10 +158,18 @@ std::string& replace_all(std::string& src, const std::string& old_value, const s
 // 计算 wifi 信号的大小
 int calculation_signal(float Quality, int SignalLevel);
 
+bool executeNonBlocking(const char* cmd);
+
+void makePwmPath(char* buf, size_t size, const char* attribute);
+bool writeSysfs(const char* path, const char* value);
+
+void setVolume(int value);
+
 /// @brief 设置屏幕亮度
-/// @param value 亮度值 [0-100]
-/// @param swap 是否反转亮度值 默认false
+/// @param value 亮度值 [1-99]
 void setBrightness(uint8_t value, bool swap = false);
+
+
 
 /// @brief 读取本地文件
 /// @param filename 
