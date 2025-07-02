@@ -3,7 +3,7 @@
  # @Author: hanakami
  # @Date: 2025-05-08 17:08:00
  # @email: hanakami@163.com
- # @LastEditTime: 2025-05-20 16:18:56
+ # @LastEditTime: 2025-07-02 17:11:30
  # @FilePath: /hana_frame/script/upgrade.sh
  # @Description: 
  # Copyright (c) 2025 by hanakami, All Rights Reserved. 
@@ -257,6 +257,7 @@ if [ "$FROM_USB" -eq 0 ] && [ -d "$BASE_NAME" ]; then
     SRC_DIR=$(pwd)/"$BASE_NAME"
     FIND_PACK=1
 else
+    sleep 10
     # 检查U盘分区
     usb_partitions=$(detect_usb_partitions)
 
