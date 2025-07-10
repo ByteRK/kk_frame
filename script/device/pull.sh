@@ -2,9 +2,9 @@
  # @Author: Ricken
  # @Email: me@ricken.cn
  # @Date: 2024-07-11 14:18:06
- # @LastEditTime: 2025-03-10 10:58:41
- # @FilePath: /kk_frame/script/pull.sh
- # @Description: 更新脚本 - 调试用
+ # @LastEditTime: 2025-07-10 23:12:12
+ # @FilePath: /kk_frame/script/device/pull.sh
+ # @Description: 更新脚本 - TFTP下载
  # @BugList: 
  # 
  # Copyright (c) 2024 by Ricken, All Rights Reserved. 
@@ -13,8 +13,10 @@
 
 NAME=kk_frame
 SPEED=38400
+
 APP_DIR=/customer/app
 LIB_DIR=/customer/lib
+
 IPADDR=192.168.31.3
 SERVEIP=192.168.31.2
 
@@ -40,8 +42,13 @@ for arg in "$@"; do
             cd $LIB_DIR
             tftp -g -r libcdroid.so  $SERVEIP -b $SPEED
             ;;
+        -tvhal)
+            cd $LIB_DIR
+            tftp -g -r libtvhal.so  $SERVEIP -b $SPEED
+            ;;
         *)
-            echo "未知参数: $arg"
+            echo "Unknown arg: $arg"
+            echo "Support args: -app -app -pak -cdroid -tvhal"
             ;;
     esac
 done

@@ -1,3 +1,5 @@
 config/app_version.h
 assets/values/ID.xml
 R.h
+
+package

@@ -2,9 +2,9 @@
 Author: Ricken
 Email: me@ricken.cn
 Date: 2025-05-03 21:13:27
-LastEditTime: 2025-05-03 21:15:11
+LastEditTime: 2025-07-10 23:07:53
 FilePath: /kk_frame/script/ota.py
-Description: OTA包封装脚本，用于往常规的升级包的头部添加32位MD5校验码，并生成.bin文件
+Description: OTA包封装脚本，用于往常规的升级包的头部添加32位MD5校验码，并生成.bin文件，适用无法从其他路径获取MD5的项目
 BugList: 
 
 Copyright (c) 2025 by Ricken, All Rights Reserved. 
