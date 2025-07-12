@@ -11,6 +11,7 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <ghc/filesystem.hpp>
 #include <iconv.h>
@@ -824,4 +825,45 @@ std::string clearWhiteSpace(std::string& str) {
     });
     str.erase(it.base(), str.end());
     return str;
+}
+
+bool checkFileEmpty(const std::string& filename) {
+    // 使用 std::ifstream 打开文件
+    std::ifstream file(filename);
+
+    // 检查文件是否成功打开
+    if (!file) {
+        LOGE("File not found or cannot be opened.");
+        return false; // 或者抛出异常
+    }
+
+    // 移动到文件末尾
+    file.seekg(0, std::ios::end);
+    // 检查文件大小
+    return file.tellg() == 0;
+}
+
+bool checkFileExitAndNoEmpty(const char* filename) {
+    // 检查文件能否成功打开
+    std::ifstream file(filename);
+    if (!file) {
+        LOGE("File [%s] not found or cannot be opened.");
+        return false;
+    }
+
+    // 检查文件大小
+    file.seekg(0, std::ios::end);
+    if (file.tellg() == 0) {
+        LOGE("File [%s] is empty.", filename);
+        return false;
+    }
+
+    // 检查文件权限
+    // struct stat buffer;
+    // if (stat(filename, &buffer) != 0 || !(buffer.st_mode & S_IRUSR) || !(buffer.st_mode & S_IWUSR)) {
+    //     LOGE("File [%s] does not have required permissions.", filename);
+    //     return false;
+    // }
+
+    return true;
 }

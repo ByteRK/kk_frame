@@ -224,4 +224,15 @@ int getTpVersion();
 /// @return 
 std::string clearWhiteSpace(std::string& str);
 
+/// @brief 判断文件是否为空
+/// @param filename 
+/// @return true 文件为空
+bool checkFileEmpty(const std::string& filename);
+
+/// @brief 判断文件是否存在且不为空
+/// @param filename 
+/// @return false 文件不存在或为空
+/// @note 通用于配置文件的载入
+bool checkFileExitAndNoEmpty(const char* filename);
+
 #endif

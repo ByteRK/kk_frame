@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2025-05-28 13:05:16
+ * @LastEditTime: 2025-07-12 23:26:37
  * @FilePath: /kk_frame/src/project/config_mgr.cc
  * @Description:
  * @BugList:
@@ -13,6 +13,7 @@
 
 #include "config_mgr.h"
 #include "defualt_config.h"
+#include "comm_func.h"
 
 #include <cdlog.h>
 #include <unistd.h>
@@ -59,15 +60,13 @@ void configMgr::handleMessage(Message& message) {
 /// @return 
 bool configMgr::loadFromFile() {
     mConfig = cdroid::Preferences(); // 清空原配置
-    
-    std::string loadingPath = "";
-    if (access(CONFIG_FILE_PATH, F_OK) == 0) {
-        loadingPath = CONFIG_FILE_PATH;
-    } else if (access(CONFIG_FILE_BAK_PATH, F_OK) == 0) {
-        loadingPath = CONFIG_FILE_BAK_PATH;
-    }
 
-    if (loadingPath.empty()) {
+    std::string loadingPath = "";
+    if (checkFileExitAndNoEmpty(CONFIG_FILE_PATH)) {
+        loadingPath = CONFIG_FILE_PATH;
+    } else if (checkFileExitAndNoEmpty(CONFIG_FILE_BAK_PATH)) {
+        loadingPath = CONFIG_FILE_BAK_PATH;
+    } else {
         LOG(ERROR) << "[config] no config file found. create new config file.";
         return false;
     }

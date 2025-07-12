@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2025-05-28 12:59:09
+ * @LastEditTime: 2025-07-12 23:27:07
  * @FilePath: /kk_frame/src/project/global_data.cc
  * @Description:
  * @BugList:
@@ -78,9 +78,9 @@ void globalData::checkenv() {
 bool globalData::loadFromFile() {
     Json::Value appJson;
     std::string loadingPath = "";
-    if (access(APP_FILE_FULL_PATH, F_OK) == 0) {
+    if (checkFileExitAndNoEmpty(APP_FILE_FULL_PATH)) {
         loadingPath = APP_FILE_FULL_PATH;
-    } else if (access(APP_FILE_BAK_PATH, F_OK) == 0) {
+    } else if (checkFileExitAndNoEmpty(APP_FILE_BAK_PATH)) {
         loadingPath = APP_FILE_BAK_PATH;
     }
 
