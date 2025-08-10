@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2025-08-10 17:31:28
+ * @LastEditTime: 2025-08-10 18:24:13
  * @FilePath: /kk_frame/src/windows/wind_base.cc
  * @Description: 窗口类
  * @BugList:
@@ -106,7 +106,6 @@ void BaseWindow::init() {
     // 初始化黑屏
     mIsBlackView = false;
     __clickv(mBlackView, [this](View& view) { hideBlack(); });
-    mBlackView->setEnabled(false);
     setBrightness(g_config->getBrightness(), true);
 
     // 增加点击反馈
