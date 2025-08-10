@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2025-08-10 16:46:09
+ * @LastEditTime: 2025-08-10 17:34:48
  * @FilePath: /kk_frame/src/windows/manage.cc
  * @Description: 页面管理类
  * @BugList:
@@ -85,7 +85,7 @@ int CWindMgr::handleEvents() {
 /// @param message 
 void CWindMgr::handleMessage(Message& message) {
     switch (message.what) {
-    case MSG_AUTO_CLOSE: {
+    case MSG_AUTO_CLOSE_PAGE: {
         int8_t nowPage = mWindow->getPageType();
         size_t originalSize = mPageList.size(); // 存储原始大小
         for (auto it = mPageList.begin(); it != mPageList.end(); ) {
@@ -93,6 +93,19 @@ void CWindMgr::handleMessage(Message& message) {
                 LOGW("close page: %d <- %p | page count=%d", it->first, it->second, --originalSize);
                 __delete(it->second); // 手动删除
                 it = mPageList.erase(it); // 删除并移动迭代器
+            } else {
+                ++it; // 仅在未删除时移动迭代器
+            }
+        }
+    }   break;
+    case MSG_AUTO_CLOSE_POP: {
+        int8_t nowPop = mWindow->getPopType();
+        size_t originalSize = mPopList.size(); // 存储原始大小
+        for (auto it = mPopList.begin(); it != mPopList.end(); ) {
+            if (it->second->getType() != nowPop) {
+                LOGW("close pop: %d <- %p | pop count=%d", it->first, it->second, --originalSize);
+                __delete(it->second); // 手动删除
+                it = mPopList.erase(it); // 删除并移动迭代器
             } else {
                 ++it; // 仅在未删除时移动迭代器
             }
@@ -107,7 +120,8 @@ void CWindMgr::init() {
     mWindow = BaseWindow::ins();
     mWindow->init();
 
-    mAutoCloseMsg.what = MSG_AUTO_CLOSE;
+    mAutoClosePageMsg.what = MSG_AUTO_CLOSE_PAGE;
+    mAutoClosePopMsg.what = MSG_AUTO_CLOSE_POP;
     mInitTime = SystemClock::uptimeMillis();
 
 #if ENABLE_THREAD_SAFE_MSG
@@ -187,8 +201,8 @@ void CWindMgr::goTo(int page, bool showBlack) {
         return;
     }
 #if AUTO_CLOSE
-    mLooper->removeMessages(this);
-    mLooper->sendMessageDelayed(1000, this, mAutoCloseMsg);
+    mLooper->removeMessages(this, MSG_AUTO_CLOSE_PAGE);
+    mLooper->sendMessageDelayed(1000, this, mAutoClosePageMsg);
 #endif
     auto it = mPageList.find(page);
     if (it == mPageList.end() && !createPage(page)) {
@@ -230,15 +244,33 @@ void CWindMgr::sendMsg(int page, const Json::Value& data, bool fromOtherThread) 
 /// @brief 显示弹窗
 /// @param type 弹窗ID
 /// @return 是否显示成功
-bool CWindMgr::showPop(int8_t type) {
-    if (type == mWindow->getPopType())return true;
-    if (type < mWindow->getPopType())return false;
-    PopBase* pop = nullptr;
-    auto it = mPopFactory.find(type);
-    if (it != mPopFactory.end())
-        pop = it->second(); // 调用工厂函数创建页面
-    if (pop)mWindow->showPop(pop);
-    return pop != nullptr;
+bool CWindMgr::showPop(int8_t pop) {
+    uint8_t nowPop = mWindow->getPopType();
+    if (pop < nowPop)return false;
+    if (pop == nowPop) {
+        mWindow->getPop()->callReload();
+        return true;
+    }
+#if AUTO_CLOSE
+    mLooper->removeMessages(this, MSG_AUTO_CLOSE_POP);
+    mLooper->sendMessageDelayed(1000, this, mAutoClosePopMsg);
+#endif
+    auto it = mPopList.find(pop);
+    if (it == mPopList.end() && !createPop(pop)) {
+        return false;
+    }
+    mWindow->showPop(mPopList[pop]);
+    LOGI("show pop: %d <- %p", pop, mPopList[pop]);
+    return true;
+}
+
+/// @brief 隐藏弹窗
+void CWindMgr::hidePop() {
+    mWindow->removePop();
+#if AUTO_CLOSE
+    mLooper->removeMessages(this, MSG_AUTO_CLOSE_POP);
+    mLooper->sendMessageDelayed(1000, this, mAutoClosePopMsg);
+#endif
 }
 
 /// @brief 向指定弹窗发送消息
@@ -285,6 +317,28 @@ bool CWindMgr::createPage(int page) {
         return true;
     }
     LOGE("can not create page: %d", page);
+    return false;
+}
+
+/// @brief 新建弹窗
+/// @param pop 弹窗ID
+/// @return 是否创建成功
+bool CWindMgr::createPop(int pop) {
+    auto it = mPopFactory.find(pop);
+    if (it != mPopFactory.end()) {
+        PopBase* pb = it->second(); // 调用构造函数创建页面
+        if (pop != pb->getType()) { // 防呆
+            std::string msg = "pop[" + std::to_string(pop) + "] type error";
+            throw std::runtime_error(msg.c_str());
+        }
+#if OPEN_SCREENSAVER
+        refreshScreenSaver();
+#endif
+        mPopList[pop] = pb;
+        LOGW("add new pop: %d <- %p | pop count=%d ", pop, pb, mPopList.size());
+        return true;
+    }
+    LOGE("can not create pop: %d", pop);
     return false;
 }
 

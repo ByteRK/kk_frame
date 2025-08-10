@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2025-05-03 20:52:13
+ * @LastEditTime: 2025-08-10 17:31:28
  * @FilePath: /kk_frame/src/windows/wind_base.cc
  * @Description: 窗口类
  * @BugList:
@@ -365,7 +365,6 @@ void BaseWindow::removePop() {
         mPopBox->setVisibility(GONE);
         mPop->callDetach();
         mPopBox->removeAllViews();
-        __delete(mPop);
         mPop = nullptr;
     }
 }

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2025-08-10 16:46:33
+ * @LastEditTime: 2025-08-10 17:14:24
  * @FilePath: /kk_frame/src/windows/manage.h
  * @Description: 页面管理类
  * @BugList:
@@ -45,10 +45,12 @@ public:
     BaseWindow* mWindow;
 protected:
     enum {
-        MSG_AUTO_CLOSE, // 自动关闭无用窗口
+        MSG_AUTO_CLOSE_PAGE,  // 自动回收无用窗口
+        MSG_AUTO_CLOSE_POP,   // 自动回收无用弹窗
     };
 
-    Message  mAutoCloseMsg;
+    Message  mAutoClosePageMsg;
+    Message  mAutoClosePopMsg;
     Looper*  mLooper;
     uint64_t mInitTime;      // 初始化时间
 
@@ -87,10 +89,12 @@ public:
     void goTo(int page, bool showBlack = false);
     void sendMsg(int page, const Json::Value& data, bool fromOtherThread = false);
 
-    bool showPop(int8_t type);
+    bool showPop(int8_t pop);
+    void hidePop();
     void sendPopMsg(int pop, const Json::Value& data, bool fromOtherThread = false);
 private:
     bool createPage(int page);
+    bool createPop(int pop);
     void screenSaver(bool lock);
 };
 
