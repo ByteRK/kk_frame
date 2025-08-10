@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2025-08-10 16:18:48
+ * @LastEditTime: 2025-08-10 18:12:46
  * @FilePath: /kk_frame/src/windows/base.h
  * @Description: 页面基类
  * @BugList:
@@ -48,7 +48,7 @@ enum {
 // 页面定义
 enum {
     PAGE_NULL,       // 空状态
-    PAGE_STANDBY,    // 待机
+    PAGE_HOME,       // 主页面
     PAGE_OTA,        // OTA
 };
 

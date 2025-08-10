@@ -21,7 +21,7 @@
 #include <core/inputeventsource.h>
 
  /******* 页面头文件列表开始 *******/
-#include "page_standBy.h"
+#include "page_home.h"
 /******* 页面头文件列表结束 *******/
 
 /******* 弹窗头文件列表开始 *******/
@@ -31,7 +31,7 @@
 
 CWindMgr::CWindMgr() {
     // 初始化页面创建映射
-    mPageFactory[PAGE_STANDBY] = []() { return new StandByPage(); };
+    mPageFactory[PAGE_HOME] = []() { return new HomePage(); };
     // 初始化弹窗创建映射
     mPopFactory[POP_LOCK] = []() { return new LockPop(); };
     mPopFactory[POP_TIP] = []() { return new TipPop(); };
@@ -135,7 +135,7 @@ void CWindMgr::init() {
         20
     );
 #endif
-    goTo(PAGE_STANDBY);
+    goTo(PAGE_HOME);
 }
 
 /// @brief 关闭指定页面

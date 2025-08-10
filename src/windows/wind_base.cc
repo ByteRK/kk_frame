@@ -294,7 +294,7 @@ bool BaseWindow::showBlack(bool upload) {
 /// @brief 
 void BaseWindow::hideBlack() {
     if (!mIsBlackView)return;
-    g_windMgr->goTo(PAGE_STANDBY);
+    g_windMgr->goTo(PAGE_HOME);
     mPage->callKey(KEY_WINDOW, VIRT_EVENT_UP);
     mBlackView->setVisibility(GONE);
     mIsBlackView = false;

@@ -2,9 +2,9 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-23 00:04:17
- * @LastEditTime: 2025-02-20 02:08:48
- * @FilePath: /kk_frame/src/windows/page_standBy.cc
- * @Description:
+ * @LastEditTime: 2025-08-10 18:13:34
+ * @FilePath: /kk_frame/src/windows/page_home.cc
+ * @Description: 主页面
  * @BugList:
  *
  * Copyright (c) 2025 by Ricken, All Rights Reserved.
@@ -12,17 +12,17 @@
  */
 
 
-#include "page_standBy.h"
+#include "page_home.h"
 #include "manage.h"
 
-StandByPage::StandByPage() :PageBase("@layout/page_standby") {
+HomePage::HomePage() :PageBase("@layout/page_home") {
     initUI();
 }
 
-StandByPage::~StandByPage() {
+HomePage::~HomePage() {
 }
 
-void StandByPage::onTick() {
+void HomePage::onTick() {
     int64_t tick = SystemClock::uptimeMillis();
     if (tick - g_window->mLastAction >= 120000) {
         if (tick - g_window->mLastAction <= 123000)
@@ -31,10 +31,10 @@ void StandByPage::onTick() {
     }
 }
 
-uint8_t StandByPage::getType() const {
-    return PAGE_STANDBY;
+uint8_t HomePage::getType() const {
+    return PAGE_HOME;
 }
 
-void StandByPage::setView() {
+void HomePage::setView() {
     mRootView->setOnClickListener([](View&){LOGE("HELLO WORLD!!!");});
 }

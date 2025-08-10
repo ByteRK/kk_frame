@@ -46,7 +46,7 @@ View* PBase::getRootView() {
 void PBase::callTick() {
     if (mAutoExit && SystemClock::uptimeMillis() - g_window->mLastAction > mAutoExit) {
         LOGI("auto exit");
-        g_windMgr->goTo(PAGE_STANDBY, mAutoExitWithBlack);
+        g_windMgr->goTo(PAGE_HOME, mAutoExitWithBlack);
     } else {
         onTick();
     }

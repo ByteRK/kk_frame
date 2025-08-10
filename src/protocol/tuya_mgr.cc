@@ -378,7 +378,7 @@ void TuyaMgr::acceptDP(uint8_t* data, uint16_t len) {
             if (data[TUYADP_DATA]) {
                 g_windMgr->mWindow->hideBlack();
             } else {
-                g_windMgr->goTo(PAGE_STANDBY, true);
+                g_windMgr->goTo(PAGE_HOME, true);
             }
             g_data->mTUYAPower = data[TUYADP_DATA];
         }   break;
