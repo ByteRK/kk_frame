@@ -847,7 +847,7 @@ bool checkFileExitAndNoEmpty(const char* filename) {
     // 检查文件能否成功打开
     std::ifstream file(filename);
     if (!file) {
-        LOGE("File [%s] not found or cannot be opened.");
+        LOGE("File [%s] not found or cannot be opened.", filename);
         return false;
     }
 
