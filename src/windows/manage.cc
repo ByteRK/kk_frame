@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2025-02-20 02:14:52
+ * @LastEditTime: 2025-08-10 16:46:09
  * @FilePath: /kk_frame/src/windows/manage.cc
  * @Description: 页面管理类
  * @BugList:
@@ -15,6 +15,9 @@
 #define OPEN_SCREENSAVER false
 
 #include "manage.h"
+#if ENABLE_THREAD_SAFE_MSG
+#include <core/app.h>
+#endif
 #include <core/inputeventsource.h>
 
  /******* 页面头文件列表开始 *******/
@@ -28,10 +31,10 @@
 
 CWindMgr::CWindMgr() {
     // 初始化页面创建映射
-    mPageFactory[PAGE_STANDBY] = [ ]() { return new StandByPage(); };
+    mPageFactory[PAGE_STANDBY] = []() { return new StandByPage(); };
     // 初始化弹窗创建映射
-    mPopFactory[POP_LOCK] = [ ]() { return new LockPop(); };
-    mPopFactory[POP_TIP] = [ ]() { return new TipPop(); };
+    mPopFactory[POP_LOCK] = []() { return new LockPop(); };
+    mPopFactory[POP_TIP] = []() { return new TipPop(); };
 }
 
 CWindMgr::~CWindMgr() {
@@ -39,6 +42,44 @@ CWindMgr::~CWindMgr() {
     closeAll(true);
     __delete(mWindow);
 }
+
+#if ENABLE_THREAD_SAFE_MSG
+int CWindMgr::checkEvents() {
+    uint64_t now = SystemClock::uptimeMillis();
+    if (now - mLastCheckMsgTime > CHECK_THREAD_SAFE_MSG_INTERVAL) {
+        mLastCheckMsgTime = now;
+        return 1;
+    }
+    return 0;
+}
+
+int CWindMgr::handleEvents() {
+    std::queue<std::pair<uint8_t, Json::Value>> msgCache;
+    // 检查页面消息
+    {
+        std::lock_guard<std::mutex> lock(mPageMsgCacheMutex);
+        if (!mPageMsgCache.empty()) msgCache.swap(mPageMsgCache);
+    }
+    // 处理页面消息
+    while (!msgCache.empty()) {
+        auto& msg = msgCache.front();
+        sendMsg(msg.first, msg.second, false);
+        msgCache.pop();
+    }
+    // 检查弹窗消息
+    {
+        std::lock_guard<std::mutex> lock(mPopMsgCacheMutex);
+        if (!mPopMsgCache.empty()) msgCache.swap(mPopMsgCache);
+    }
+    // 处理弹窗消息
+    while (!msgCache.empty()) {
+        auto& msg = msgCache.front();
+        sendPopMsg(msg.first, msg.second, false);
+        msgCache.pop();
+    }
+    return 0;
+}
+#endif
 
 /// @brief 消息处理
 /// @param message 
@@ -68,6 +109,11 @@ void CWindMgr::init() {
 
     mAutoCloseMsg.what = MSG_AUTO_CLOSE;
     mInitTime = SystemClock::uptimeMillis();
+
+#if ENABLE_THREAD_SAFE_MSG
+    mLastCheckMsgTime = 0;
+    App::getInstance().addEventHandler(this);
+#endif
 
 #if OPEN_SCREENSAVER
     InputEventSource::getInstance().setScreenSaver(
@@ -158,11 +204,27 @@ void CWindMgr::goTo(int page, bool showBlack) {
 /// @param page 页面ID
 /// @param type 消息类型
 /// @param data 消息数据
-void CWindMgr::sendMsg(int page, int type, void* data) {
+void CWindMgr::sendMsg(int page, const Json::Value& data, bool fromOtherThread) {
+#if ENABLE_THREAD_SAFE_MSG
+    if (fromOtherThread) {
+        std::lock_guard<std::mutex> lock(mPageMsgCacheMutex);
+        mPageMsgCache.push(std::make_pair(page, std::move(Json::Value(data))));
+    } else {
+        auto it = mPageList.find(page);
+        if (it != mPageList.end()) {
+            it->second->callMsg(data);
+        }
+    }
+#else
+    if (fromOtherThread) {
+        LOGE("sendMsg from other thread, but not support");
+        return;
+    }
     auto it = mPageList.find(page);
     if (it != mPageList.end()) {
-        it->second->callMsg(type, data);
+        it->second->callMsg(data);
     }
+#endif
 }
 
 /// @brief 显示弹窗
@@ -183,10 +245,25 @@ bool CWindMgr::showPop(int8_t type) {
 /// @param pop 弹窗ID
 /// @param type 消息类型
 /// @param data 消息数据
-void CWindMgr::sendPopMsg(int pop, int8_t type, void* data) {
-    if (pop && pop == mWindow->getPopType()) {
-        mWindow->getPop()->callMsg(type, data);
+void CWindMgr::sendPopMsg(int pop, const Json::Value& data, bool fromOtherThread) {
+#if ENABLE_THREAD_SAFE_MSG
+    if (fromOtherThread) {
+        std::lock_guard<std::mutex> lock(mPopMsgCacheMutex);
+        mPopMsgCache.push(std::make_pair(pop, std::move(Json::Value(data))));
+    } else {
+        if (pop && pop == mWindow->getPopType()) {
+            mWindow->getPop()->callMsg(data);
+        }
     }
+#else
+    if (fromOtherThread) {
+        LOGE("sendPopMsg from other thread, but not support");
+        return;
+    }
+    if (pop && pop == mWindow->getPopType()) {
+        mWindow->getPop()->callMsg(data);
+    }
+#endif
 }
 
 /// @brief 新建页面

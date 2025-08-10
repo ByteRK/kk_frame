@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2025-05-28 17:09:37
+ * @LastEditTime: 2025-08-10 16:18:48
  * @FilePath: /kk_frame/src/windows/base.h
  * @Description: 页面基类
  * @BugList:
@@ -101,7 +101,7 @@ public:
     void callAttach();                                         // 通知页面挂载
     void callDetach();                                         // 通知页面剥离
     void callReload();                                         // 调用重加载
-    void callMsg(int type, void* data);                        // 接受消息
+    void callMsg(const Json::Value& data);                     // 接受消息
     void callMcu(uint8_t* data, uint8_t len);                  // 接受电控数据
     bool callKey(uint16_t keyCode, uint8_t evt);               // 接受按键事件
     void callLangChange(uint8_t lang);                         // 调用语言切换
@@ -114,7 +114,7 @@ protected:
     virtual void onAttach();                                   // 挂载页面回调
     virtual void onDetach();                                   // 剥离页面回调
     virtual void onReload();                                   // 重新加载回调
-    virtual void onMsg(int type, void* data);                  // 消息回调
+    virtual void onMsg(const Json::Value& data);               // 消息回调
     virtual void onMcu(uint8_t* data, uint8_t len);            // 电控数据回调
     virtual bool onKey(uint16_t keyCode, uint8_t evt);         // 按键事件回调
     virtual void onLangChange();                               // 语言切换通知回调

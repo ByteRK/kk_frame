@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2025-05-28 18:16:20
+ * @LastEditTime: 2025-08-10 16:19:07
  * @FilePath: /kk_frame/src/windows/base.cc
  * @Description: 页面基类
  * @BugList:
@@ -66,8 +66,8 @@ void PBase::callReload() {
     onReload();
 }
 
-void PBase::callMsg(int type, void* data) {
-    onMsg(type, data);
+void PBase::callMsg(const Json::Value& data) {
+    onMsg(data);
 }
 
 void PBase::callMcu(uint8_t* data, uint8_t len) {
@@ -105,7 +105,7 @@ void PBase::onDetach() {
 void PBase::onReload() {
 }
 
-void PBase::onMsg(int type, void* data) {
+void PBase::onMsg(const Json::Value& data) {
 }
 
 void PBase::onMcu(uint8_t* data, uint8_t len) {
