@@ -65,7 +65,7 @@ echo $PROJECT_ID "->" $VERSION_INFO "->" $CUR_DATE_FULL
 echo "// Automatically built by script" > $VERSION_FILE
 echo "" >> $VERSION_FILE
 
-echo "#include \"series_config.h\"" >> $VERSION_FILE
+echo "#include \"series_info.h\"" >> $VERSION_FILE
 echo "" >> $VERSION_FILE
 
 echo "#ifndef __APP_VERSION_H__" >> $VERSION_FILE

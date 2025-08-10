@@ -19,7 +19,7 @@
 
 #include "btn_mgr.h"
 #include "config_mgr.h"
-#include "defualt_config.h"
+#include "config_info.h"
 
 constexpr int POP_TICK_INTERVAL = 1000;  // 弹窗刷新间隔
 constexpr int PAGE_TICK_INTERVAL = 200;  // 页面刷新间隔

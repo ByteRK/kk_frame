@@ -3,6 +3,9 @@ cmake_minimum_required(VERSION 3.8)
 project(kk_frame)
 message("PROJECT_NAME=${PROJECT_NAME}")
 
+# 生成X64下的字体文件位置
+execute_process(COMMAND bash script/fonts.sh  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
 # 目标属性设置
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

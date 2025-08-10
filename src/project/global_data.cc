@@ -16,7 +16,7 @@
 #include "comm_func.h"
 #include "json_func.h"
 #include "base_data.h"
-#include "defualt_config.h"
+#include "config_info.h"
 #include <unistd.h>
 
 static constexpr uint32_t GD_SAVE_CHECK_INITERVAL = 2000;       // 检查保存间隔[2s]

@@ -12,7 +12,7 @@
  */
 
 #include "config_mgr.h"
-#include "defualt_config.h"
+#include "config_info.h"
 #include "comm_func.h"
 
 #include <cdlog.h>

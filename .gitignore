@@ -1,5 +1,8 @@
-config/app_version.h
-assets/values/ID.xml
 R.h
+assets/values/ID.xml
+
+config/fonts_info.h
+config/app_version.h
+fonts/fonts.conf
 
 package

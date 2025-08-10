@@ -2,8 +2,8 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-01-18 11:33:02
- * @LastEditTime: 2025-05-28 17:07:34
- * @FilePath: /kk_frame/config/defualt_config.h
+ * @LastEditTime: 2025-08-09 18:37:13
+ * @FilePath: /kk_frame/config/config_info.h
  * @Description: 项目信息
  * @BugList:
  *
@@ -11,8 +11,8 @@
  *
 **/
 
-#ifndef __DEFUALT_CONFIG_H__
-#define __DEFUALT_CONFIG_H__
+#ifndef __CONFIG_INFO_H__
+#define __CONFIG_INFO_H__
 
 /*********************** 文件信息 ***********************/
 

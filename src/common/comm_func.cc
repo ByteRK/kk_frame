@@ -20,7 +20,7 @@
 #include <cdlog.h>
 #include "comm_func.h"
 
-#include "series_config.h"
+#include "series_info.h"
 
 #include <sys/ioctl.h>
 

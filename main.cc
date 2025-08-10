@@ -2,27 +2,36 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2025-05-28 11:40:08
+ * @LastEditTime: 2025-08-10 15:23:43
  * @FilePath: /kk_frame/main.cc
- * @Description: 
- * @BugList: 
- * 
- * Copyright (c) 2024 by Ricken, All Rights Reserved. 
- * 
+ * @Description:
+ * @BugList:
+ *
+ * Copyright (c) 2025 by Ricken, All Rights Reserved.
+ *
  */
 
 #include <cdlog.h>
 #include <core/app.h>
+#include "fonts_info.h"
 
 #include "this_func.h"
 #include "global_data.h"
 #include "config_mgr.h"
 #include "manage.h"
+
 #include "conn_mgr.h"
 #include "btn_mgr.h"
 #include "tuya_mgr.h"
 
+void setAppEnv() {
+#ifdef CDROID_X64
+    setenv("FONTCONFIG_PATH", FONTCONFIG_PATH, 1);
+#endif
+}
+
 int main(int argc, const char* argv[]) {
+    setAppEnv();
     printProjectInfo(argv[0]);
     // printKeyMap();
 
@@ -34,7 +43,7 @@ int main(int argc, const char* argv[]) {
     // g_connMgr->init();
     // g_btnMgr->init();
     // g_tuyaMgr->init();
-    
+
     return app.exec();
 }
 
