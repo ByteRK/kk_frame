@@ -40,7 +40,8 @@
         android:id="@+id/logo"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@mipmap/logo"
+        android:background="#000000"
+        android:src="@mipmap/ricken"
         android:scaleType="centerInside"
         android:visibility="invisible"/>
     <VideoView
