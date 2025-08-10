@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2025-08-10 18:24:13
+ * @LastEditTime: 2025-08-10 18:31:26
  * @FilePath: /kk_frame/src/windows/wind_base.cc
  * @Description: 窗口类
  * @BugList:
@@ -208,7 +208,7 @@ void BaseWindow::showLogo(uint32_t time) {
 BaseWindow::LOGO_TYPE BaseWindow::getLogo(std::string& path) {
     BaseWindow::LOGO_TYPE type = LOGO_TYPE_IMG;
 
-    path = "@mipmap/logo";
+    path = "@mipmap/ricken";
     type = LOGO_TYPE_IMG;
 
     return type;
