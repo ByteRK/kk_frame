@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-01-18 11:33:02
- * @LastEditTime: 2025-08-09 18:35:09
+ * @LastEditTime: 2025-08-10 17:45:51
  * @FilePath: /kk_frame/config/series_info.h
  * @Description: 项目硬件参数
  * @BugList: 
@@ -22,6 +22,11 @@
 //cpu config
 #define CPU_NAME     "SSD212"
 #define CPU_BRAND    "Sigmstar"
+
+//screen config
+#define SCREEN_WIDTH   800
+#define SCREEN_HEIGHT  480
+#define SCREEN_SIZE    "800*480"
 
 #define FUNCTION_WIRE    1
 #ifdef DEBUG

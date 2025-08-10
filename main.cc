@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2025-08-10 15:23:43
+ * @LastEditTime: 2025-08-10 17:46:48
  * @FilePath: /kk_frame/main.cc
  * @Description:
  * @BugList:
@@ -14,6 +14,7 @@
 #include <cdlog.h>
 #include <core/app.h>
 #include "fonts_info.h"
+#include "series_info.h"
 
 #include "this_func.h"
 #include "global_data.h"
@@ -27,6 +28,7 @@
 void setAppEnv() {
 #ifdef CDROID_X64
     setenv("FONTCONFIG_PATH", FONTCONFIG_PATH, 1);
+    setenv("SCREEN_SIZE", SCREEN_SIZE, 1);
 #endif
 }
 
