@@ -1,6 +1,6 @@
 ﻿# @Author: Ricken
 # @Email: me@ricken.cn
-# @Date: 2025-08-09 16:21:36
+# @Date: 2025-05-29 09:18:36
 # @FilePath: /kk_frame/script/kk_frame.ps1
 # @Description: 
 # @BugList: 
@@ -22,7 +22,7 @@
 #
 # Q:运行无任何提示，且未生成任何软链
 # A:莫名其妙问题
-# A:可以直接打开管理员终端运行脚本，不使用UAC自动提权
+# A:可以直接打开管理员终端运行此脚本，不使用UAC自动提权(推荐)
 # A:使用VSCode等编辑器打开脚本，检查右下角文件编码是否为<UTF-8 with BOM>
 # A:若不是，则可能导致脚本无法正确执行，需要重新保存为<UTF-8 with BOM>格式
 
@@ -52,7 +52,7 @@ $host.UI.RawUI.WindowTitle = "KK_Frame 符号链接工具"
 
 # 检测是否通过UAC提权启动
 $isElevatedByScript = $false
-$parentProcess = (Get-Process -Id (Get-CimInstance -ClassName Win32_Process -Filter "ProcessId = $PID").ParentProcessId).ProcessName
+# $parentProcess = (Get-Process -Id (Get-CimInstance -ClassName Win32_Process -Filter "ProcessId = $PID").ParentProcessId).ProcessName
 
 # 管理员权限检查
 if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
@@ -63,6 +63,7 @@ if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
         # 标记为通过脚本提权
         $isElevatedByScript = $true
         
+        $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`" -ElevatedByScript"
         Start-Process powershell.exe -Verb RunAs -ArgumentList $arguments -ErrorAction Stop
         exit
     } catch {
