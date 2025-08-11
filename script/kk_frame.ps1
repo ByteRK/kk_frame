@@ -1,4 +1,4 @@
-# @Author: Ricken
+﻿# @Author: Ricken
 # @Email: me@ricken.cn
 # @Date: 2025-08-09 16:21:36
 # @FilePath: /kk_frame/script/kk_frame.ps1
@@ -23,6 +23,8 @@
 # Q:运行无任何提示，且未生成任何软链
 # A:莫名其妙问题
 # A:可以直接打开管理员终端运行脚本，不使用UAC自动提权
+# A:使用VSCode等编辑器打开脚本，检查右下角文件编码是否为<UTF-8 with BOM>
+# A:若不是，则可能导致脚本无法正确执行，需要重新保存为<UTF-8 with BOM>格式
 
 # 固定配置区域 ################################################
 # 目标网络配置
