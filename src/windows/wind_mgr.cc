@@ -2,8 +2,8 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2025-08-10 17:34:48
- * @FilePath: /kk_frame/src/windows/manage.cc
+ * @LastEditTime: 2025-08-12 01:50:34
+ * @FilePath: /kk_frame/src/windows/wind_mgr.cc
  * @Description: 页面管理类
  * @BugList:
  *
@@ -218,9 +218,9 @@ void CWindMgr::goTo(int page, bool showBlack) {
 /// @param page 页面ID
 /// @param type 消息类型
 /// @param data 消息数据
-void CWindMgr::sendMsg(int page, const Json::Value& data, bool fromOtherThread) {
+void CWindMgr::sendMsg(int page, const Json::Value& data, bool fromUiThread) {
 #if ENABLE_THREAD_SAFE_MSG
-    if (fromOtherThread) {
+    if (!fromUiThread) {
         std::lock_guard<std::mutex> lock(mPageMsgCacheMutex);
         mPageMsgCache.push(std::make_pair(page, std::move(Json::Value(data))));
     } else {
@@ -230,7 +230,7 @@ void CWindMgr::sendMsg(int page, const Json::Value& data, bool fromOtherThread) 
         }
     }
 #else
-    if (fromOtherThread) {
+    if (!fromUiThread) {
         LOGE("sendMsg from other thread, but not support");
         return;
     }
@@ -277,9 +277,9 @@ void CWindMgr::hidePop() {
 /// @param pop 弹窗ID
 /// @param type 消息类型
 /// @param data 消息数据
-void CWindMgr::sendPopMsg(int pop, const Json::Value& data, bool fromOtherThread) {
+void CWindMgr::sendPopMsg(int pop, const Json::Value& data, bool fromUiThread) {
 #if ENABLE_THREAD_SAFE_MSG
-    if (fromOtherThread) {
+    if (!fromUiThread) {
         std::lock_guard<std::mutex> lock(mPopMsgCacheMutex);
         mPopMsgCache.push(std::make_pair(pop, std::move(Json::Value(data))));
     } else {
@@ -288,7 +288,7 @@ void CWindMgr::sendPopMsg(int pop, const Json::Value& data, bool fromOtherThread
         }
     }
 #else
-    if (fromOtherThread) {
+    if (!fromUiThread) {
         LOGE("sendPopMsg from other thread, but not support");
         return;
     }

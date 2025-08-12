@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2025-08-12 01:37:15
+ * @LastEditTime: 2025-08-12 01:50:13
  * @FilePath: /kk_frame/src/windows/wind_mgr.h
  * @Description: 页面管理类
  * @BugList:
@@ -87,11 +87,11 @@ public:
     void close(int page);
     void closeAll(bool withPop = false);
     void goTo(int page, bool showBlack = false);
-    void sendMsg(int page, const Json::Value& data, bool fromOtherThread = false);
+    void sendMsg(int page, const Json::Value& data, bool fromUiThread = true);
 
     bool showPop(int8_t pop);
     void hidePop();
-    void sendPopMsg(int pop, const Json::Value& data, bool fromOtherThread = false);
+    void sendPopMsg(int pop, const Json::Value& data, bool fromUiThread = true);
 private:
     bool createPage(int page);
     bool createPop(int pop);
