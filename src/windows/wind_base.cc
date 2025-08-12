@@ -88,8 +88,8 @@ void BaseWindow::init() {
     if (
         !(mRootView = (ViewGroup*)(LayoutInflater::from(mContext)->inflate("@layout/wind_base", this))) ||
 
-        !(mPageBox = __getgv(mRootView, ViewGroup, kk_frame::R::id::mainBox)) ||
-        !(mPopBox = __getgv(mRootView, ViewGroup, kk_frame::R::id::popBox)) ||
+        !(mPageBox = __getgv(mRootView, ViewGroup, kk_frame::R::id::main_box)) ||
+        !(mPopBox = __getgv(mRootView, ViewGroup, kk_frame::R::id::pop_box)) ||
         !(mLogoForImage = __getgv(mRootView, ImageView, kk_frame::R::id::logo)) ||
         !(mLogoForVideo = __getgv(mRootView, VideoView, kk_frame::R::id::logo_video)) ||
         !(mToast = __getgv(mRootView, TextView, kk_frame::R::id::toast)) ||
