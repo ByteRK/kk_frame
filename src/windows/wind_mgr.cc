@@ -2,14 +2,14 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2025-08-12 06:18:02
+ * @LastEditTime: 2025-08-13 00:44:11
  * @FilePath: /kk_frame/src/windows/wind_mgr.cc
  * @Description: 页面管理类
  * @BugList:
  *
  * Copyright (c) 2024 by Ricken, All Rights Reserved.
  *
- */
+**/
 
 #define AUTO_CLOSE true
 #define OPEN_SCREENSAVER false
@@ -20,7 +20,7 @@
 #endif
 #include <core/inputeventsource.h>
 
- /******* 页面头文件列表开始 *******/
+/******* 页面头文件列表开始 *******/
 #include "page_home.h"
 /******* 页面头文件列表结束 *******/
 
@@ -213,14 +213,16 @@ bool CWindMgr::goTo(int page, Json::Value* baseData) {
         PBase::StateBundle bundle;
         mWindow->getPage()->callSaveState(bundle);
         mPageHistory.push_back(std::make_pair(mWindow->getPageType(), bundle));
-        LOGI("push page history: %d <- %p", mWindow->getPageType(), mWindow->getPage());
+        LOGI("push page[%d] to history, new history size: %d ", mWindow->getPageType(), mPageHistory.size());
     }
 
     // 重新调整页面历史记录
     auto pageIt = std::find_if(mPageHistory.begin(), mPageHistory.end(),
         [page](const std::pair<int, PBase::StateBundle>& pair) { return pair.first == page; });
-    if (pageIt != mPageHistory.end())
+    if (pageIt != mPageHistory.end()) {
         mPageHistory.erase(pageIt, mPageHistory.end()); // 删除该元素及后面的所有元素
+        LOGI("Adjust page history, new history size: %d", mPageHistory.size());
+    }
 
     // 显示新页面
     mWindow->showPage(mPageCache[page]);
@@ -295,14 +297,16 @@ bool CWindMgr::showPop(int8_t pop, Json::Value* baseData) {
         PBase::StateBundle bundle;
         mWindow->getPop()->callSaveState(bundle);
         mPopHistory.push_back(std::make_pair(mWindow->getPopType(), bundle));
-        LOGI("push pop history: %d <- %p", mWindow->getPopType(), mWindow->getPop());
+        LOGI("push pop[%d] to history, new history size: %d ", mWindow->getPopType(), mPopHistory.size());
     }
 
     // 重新调整弹窗历史记录
     auto popIt = std::find_if(mPopHistory.begin(), mPopHistory.end(),
         [pop](const std::pair<int, PBase::StateBundle>& pair) { return pair.first == pop; });
-    if (popIt != mPopHistory.end())
+    if (popIt != mPopHistory.end()) {
         mPopHistory.erase(popIt, mPopHistory.end()); // 删除该元素及后面的所有元素
+        LOGI("Adjust pop history, new history size: %d", mPopHistory.size());
+    }
 
     // 显示新弹窗
     mWindow->showPop(mPopCache[pop]);
@@ -357,6 +361,7 @@ void CWindMgr::sendPopMsg(int pop, const Json::Value& data, bool fromUiThread) {
 /// @param withBundle 是否携带状态包 
 void CWindMgr::goToHome(bool withBundle) {
     if (mWindow->getPageType() == PAGE_HOME)return; // 防呆
+    LOGI("Go to home, clear page history");
 
     PBase::StateBundle bundle;
     if (withBundle && getBundle(true, PAGE_HOME, bundle)) {
