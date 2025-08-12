@@ -19,7 +19,7 @@
 #include "this_func.h"
 #include "global_data.h"
 #include "config_mgr.h"
-#include "manage.h"
+#include "wind_mgr.h"
 
 #include "conn_mgr.h"
 #include "btn_mgr.h"

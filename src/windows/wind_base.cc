@@ -12,7 +12,7 @@
  */
 
 #include <core/app.h>
-#include "manage.h"
+#include "wind_mgr.h"
 #include "wind_base.h"
 #include "comm_func.h"
 #include "global_data.h"

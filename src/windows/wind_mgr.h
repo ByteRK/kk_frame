@@ -2,8 +2,8 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2025-08-10 17:14:24
- * @FilePath: /kk_frame/src/windows/manage.h
+ * @LastEditTime: 2025-08-12 01:37:15
+ * @FilePath: /kk_frame/src/windows/wind_mgr.h
  * @Description: 页面管理类
  * @BugList:
  *
@@ -12,8 +12,8 @@
  */
 
 
-#ifndef _MANAGE_H_
-#define _MANAGE_H_
+#ifndef _WIND_MGR_H_
+#define _WIND_MGR_H_
 
 // 是否启用线程安全消息机制(对性能存在影响，默认关闭)
 #define ENABLE_THREAD_SAFE_MSG false
@@ -98,4 +98,4 @@ private:
     void screenSaver(bool lock);
 };
 
-#endif
+#endif // _WIND_MGR_H_

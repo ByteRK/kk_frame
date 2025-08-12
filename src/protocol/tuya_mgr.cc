@@ -22,7 +22,7 @@
 #include "app_version.h"
 
 #include "conn_mgr.h"
-#include "manage.h"
+#include "wind_mgr.h"
 #include "this_func.h"
 #include "global_data.h"
 

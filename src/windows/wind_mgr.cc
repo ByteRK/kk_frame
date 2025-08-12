@@ -14,7 +14,7 @@
 #define AUTO_CLOSE true
 #define OPEN_SCREENSAVER false
 
-#include "manage.h"
+#include "wind_mgr.h"
 #if ENABLE_THREAD_SAFE_MSG
 #include <core/app.h>
 #endif

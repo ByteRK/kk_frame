@@ -13,7 +13,7 @@
 #include <core/app.h>
 
 #include "base.h"
-#include "manage.h"
+#include "wind_mgr.h"
 
 #include "this_func.h"
 #include "conn_mgr.h"

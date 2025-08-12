@@ -13,7 +13,7 @@
 
 
 #include "page_home.h"
-#include "manage.h"
+#include "wind_mgr.h"
 
 HomePage::HomePage() :PageBase("@layout/page_home") {
     initUI();
