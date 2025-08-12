@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2025-08-12 01:53:50
+ * @LastEditTime: 2025-08-12 05:46:11
  * @FilePath: /kk_frame/src/windows/wind_mgr.h
  * @Description: 页面管理类
  * @BugList:
@@ -18,6 +18,7 @@
 // 是否启用线程安全消息机制(对性能存在影响，默认关闭)
 #define ENABLE_THREAD_SAFE_MSG false
 #define CHECK_THREAD_SAFE_MSG_INTERVAL 100 // 检查消息间隔(毫秒)
+#define MAX_THREAD_SAFE_MSG_SIZE 50        // 最大线程安全消息数量
 
 #include "wind_base.h"
 #include "json_func.h"
@@ -61,9 +62,11 @@ protected:
     std::queue<std::pair<uint8_t, Json::Value>> mPopMsgCache;          // 弹窗消息栈
     std::queue<std::pair<uint8_t, Json::Value>> mPageMsgCache;         // 页面消息栈
 #endif
+    std::unordered_map<int, PopBase*>  mPopCache;   // 弹窗缓存
+    std::unordered_map<int, PageBase*> mPageCache;  // 页面缓存
 
-    std::unordered_map<int, PopBase*>  mPopList;   // 弹窗列表
-    std::unordered_map<int, PageBase*> mPageList;  // 页面列表
+    std::vector<std::pair<int,PBase::StateBundle>> mPopHistory;   // 弹窗历史
+    std::vector<std::pair<int,PBase::StateBundle>> mPageHistory;  // 页面历史
 private:
     std::unordered_map<int, std::function<PopBase*()>>  mPopFactory;  // 弹窗工厂
     std::unordered_map<int, std::function<PageBase*()>> mPageFactory; // 页面工厂
@@ -86,16 +89,24 @@ public:
     void close(PageBase* page);
     void close(int page);
     void closeAll(bool withPop = false);
-    void goTo(int page);
+    bool goTo(int page, Json::Value* baseData = nullptr);
+    void goTo(int page, PBase::StateBundle& bundle);
     void sendMsg(int page, const Json::Value& data, bool fromUiThread = true);
 
-    bool showPop(int8_t pop);
+    bool showPop(int8_t pop, Json::Value* baseData = nullptr);
     void hidePop();
     void sendPopMsg(int pop, const Json::Value& data, bool fromUiThread = true);
+
+    void goToHome(bool withBundle = false);
+    void goToPageBack();
+    void goToPopBack();
 private:
     bool createPage(int page);
     bool createPop(int pop);
     void screenSaver(bool lock);
+
+    bool getBundle(bool isPage, int id, PBase::StateBundle& bundle);
+    
 };
 
 #endif // _WIND_MGR_H_

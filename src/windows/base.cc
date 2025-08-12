@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2025-08-12 01:55:06
+ * @LastEditTime: 2025-08-12 03:15:26
  * @FilePath: /kk_frame/src/windows/base.cc
  * @Description: 页面基类
  * @BugList:
@@ -67,6 +67,14 @@ void PBase::callReload() {
     onReload();
 }
 
+void PBase::callSaveState(StateBundle& outState) {
+    onSaveState(outState);
+}
+
+void PBase::callRestoreState(const StateBundle& savedState) {
+    onRestoreState(savedState);
+}
+
 void PBase::callMsg(const Json::Value& data) {
     onMsg(data);
 }
@@ -104,6 +112,12 @@ void PBase::onDetach() {
 }
 
 void PBase::onReload() {
+}
+
+void PBase::onSaveState(StateBundle& outState) {
+}
+
+void PBase::onRestoreState(const StateBundle& savedState) {
 }
 
 void PBase::onMsg(const Json::Value& data) {

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2025-08-12 01:54:01
+ * @LastEditTime: 2025-08-12 06:18:02
  * @FilePath: /kk_frame/src/windows/wind_mgr.cc
  * @Description: 页面管理类
  * @BugList:
@@ -87,12 +87,12 @@ void CWindMgr::handleMessage(Message& message) {
     switch (message.what) {
     case MSG_AUTO_CLOSE_PAGE: {
         int8_t nowPage = mWindow->getPageType();
-        size_t originalSize = mPageList.size(); // 存储原始大小
-        for (auto it = mPageList.begin(); it != mPageList.end(); ) {
+        size_t originalSize = mPageCache.size(); // 存储原始大小
+        for (auto it = mPageCache.begin(); it != mPageCache.end(); ) {
             if (it->second->getType() != nowPage) {
                 LOGW("close page: %d <- %p | page count=%d", it->first, it->second, --originalSize);
                 __delete(it->second); // 手动删除
-                it = mPageList.erase(it); // 删除并移动迭代器
+                it = mPageCache.erase(it); // 删除并移动迭代器
             } else {
                 ++it; // 仅在未删除时移动迭代器
             }
@@ -100,12 +100,12 @@ void CWindMgr::handleMessage(Message& message) {
     }   break;
     case MSG_AUTO_CLOSE_POP: {
         int8_t nowPop = mWindow->getPopType();
-        size_t originalSize = mPopList.size(); // 存储原始大小
-        for (auto it = mPopList.begin(); it != mPopList.end(); ) {
+        size_t originalSize = mPopCache.size(); // 存储原始大小
+        for (auto it = mPopCache.begin(); it != mPopCache.end(); ) {
             if (it->second->getType() != nowPop) {
                 LOGW("close pop: %d <- %p | pop count=%d", it->first, it->second, --originalSize);
                 __delete(it->second); // 手动删除
-                it = mPopList.erase(it); // 删除并移动迭代器
+                it = mPopCache.erase(it); // 删除并移动迭代器
             } else {
                 ++it; // 仅在未删除时移动迭代器
             }
@@ -141,34 +141,34 @@ void CWindMgr::init() {
 /// @brief 关闭指定页面
 /// @param page 页面指针
 void CWindMgr::close(PageBase* page) {
-    if (mPageList.size() == 0)return;
-    auto it = std::find_if(mPageList.begin(), mPageList.end(), \
+    if (mPageCache.size() == 0)return;
+    auto it = std::find_if(mPageCache.begin(), mPageCache.end(), \
         [page](const std::pair<int, PageBase*>& pair) { return pair.second == page; });
-    if (it != mPageList.end()) {
+    if (it != mPageCache.end()) {
         int type = it->first;
         if (type == mWindow->getPageType())mWindow->removePage();
-        mPageList.erase(it);
+        mPageCache.erase(it);
         __delete(page);
-        LOGW("close page: %d <- %p | page count=%d", type, page, mPageList.size());
+        LOGW("close page: %d <- %p | page count=%d", type, page, mPageCache.size());
         return;
     }
-    LOGE("close page but not found: %p | page count=%d", page, mPageList.size());
+    LOGE("close page but not found: %p | page count=%d", page, mPageCache.size());
 }
 
 /// @brief 关闭指定页面
 /// @param page 页面ID
 void CWindMgr::close(int page) {
-    if (mPageList.size() == 0)return;
-    auto it = mPageList.find(page);
-    if (it != mPageList.end()) {
+    if (mPageCache.size() == 0)return;
+    auto it = mPageCache.find(page);
+    if (it != mPageCache.end()) {
         PageBase* ptr = it->second;
         if (page == mWindow->getPageType())mWindow->removePage();
-        mPageList.erase(it);
+        mPageCache.erase(it);
         __delete(ptr);
-        LOGW("close page: %d <- %p | page count=%d ", page, ptr, mPageList.size());
+        LOGW("close page: %d <- %p | page count=%d ", page, ptr, mPageCache.size());
         return;
     }
-    LOGE("close page but not found: %d | page count=%d", page, mPageList.size());
+    LOGE("close page but not found: %d | page count=%d", page, mPageCache.size());
 }
 
 /// @brief 关闭所有页面
@@ -177,36 +177,67 @@ void CWindMgr::closeAll(bool withPop) {
     mWindow->removePage();
     if (withPop)mWindow->removePop();
     std::vector<PageBase*> vec;
-    for (const auto& pair : mPageList)vec.push_back(pair.second);
-    mPageList.clear();
+    for (const auto& pair : mPageCache)vec.push_back(pair.second);
+    mPageCache.clear();
     for (auto it : vec) {
-        LOGW("close page: %d <- %p | page count=%d ", it->getType(), it, mPageList.size());
+        LOGW("close page: %d <- %p | page count=%d ", it->getType(), it, mPageCache.size());
         __delete(it);
     }
 }
 
 /// @brief 前往指定页面 (新建页面必须从此处调用)
 /// @param page 页面ID
-void CWindMgr::goTo(int page) {
-    mWindow->removePop();
+/// @return 是否创建成功
+bool CWindMgr::goTo(int page, Json::Value* baseData) {
+    hidePop();
     if (page == PAGE_NULL) {
         mWindow->removePage();
-        return;
+        mPageHistory.clear();
+        return true;
     }
     if (page == mWindow->getPageType()) {
         mWindow->getPage()->callReload();
-        return;
+        return true;
     }
 #if AUTO_CLOSE
     mLooper->removeMessages(this, MSG_AUTO_CLOSE_PAGE);
     mLooper->sendMessageDelayed(1000, this, mAutoClosePageMsg);
 #endif
-    auto it = mPageList.find(page);
-    if (it == mPageList.end() && !createPage(page)) {
-        return;
+    auto it = mPageCache.find(page);
+    if (it == mPageCache.end() && !createPage(page)) {
+        return false;
     }
-    mWindow->showPage(mPageList[page]);
-    LOGI("show page: %d <- %p", page, mPageList[page]);
+
+    // 如果当前页面不是空页面，则保存当前页面状态并记录历史记录
+    if (mWindow->getPageType() != PAGE_NULL) {
+        PBase::StateBundle bundle;
+        mWindow->getPage()->callSaveState(bundle);
+        mPageHistory.push_back(std::make_pair(mWindow->getPageType(), bundle));
+        LOGI("push page history: %d <- %p", mWindow->getPageType(), mWindow->getPage());
+    }
+
+    // 重新调整页面历史记录
+    auto pageIt = std::find_if(mPageHistory.begin(), mPageHistory.end(),
+        [page](const std::pair<int, PBase::StateBundle>& pair) { return pair.first == page; });
+    if (pageIt != mPageHistory.end())
+        mPageHistory.erase(pageIt, mPageHistory.end()); // 删除该元素及后面的所有元素
+
+    // 显示新页面
+    mWindow->showPage(mPageCache[page]);
+    LOGI("show page: %d <- %p", page, mPageCache[page]);
+    return true;
+}
+
+/// @brief 返回指定页面，带状态恢复
+/// @param page 页面ID
+/// @param bundle 状态值
+void CWindMgr::goTo(int page, PBase::StateBundle& bundle) {
+    if (goTo(page) && mWindow->getPageType() == page) {
+        mWindow->getPage()->callRestoreState(bundle);
+        LOGI("restore state for page: %d <- %p", page, mWindow->getPage());
+    } else {
+        LOGE("goTo page failed: %d", page);
+    };
 }
 
 /// @brief 向指定页面发送消息
@@ -218,9 +249,13 @@ void CWindMgr::sendMsg(int page, const Json::Value& data, bool fromUiThread) {
     if (!fromUiThread) {
         std::lock_guard<std::mutex> lock(mPageMsgCacheMutex);
         mPageMsgCache.push(std::make_pair(page, std::move(Json::Value(data))));
+        if (mPageMsgCache.size() >= MAX_THREAD_SAFE_MSG_SIZE) {
+            mPageMsgCache.pop();
+            LOGE("Message cache full, discarded oldest message");
+        }
     } else {
-        auto it = mPageList.find(page);
-        if (it != mPageList.end()) {
+        auto it = mPageCache.find(page);
+        if (it != mPageCache.end()) {
             it->second->callMsg(data);
         }
     }
@@ -229,8 +264,8 @@ void CWindMgr::sendMsg(int page, const Json::Value& data, bool fromUiThread) {
         LOGE("sendMsg from other thread, but not support");
         return;
     }
-    auto it = mPageList.find(page);
-    if (it != mPageList.end()) {
+    auto it = mPageCache.find(page);
+    if (it != mPageCache.end()) {
         it->second->callMsg(data);
     }
 #endif
@@ -239,7 +274,7 @@ void CWindMgr::sendMsg(int page, const Json::Value& data, bool fromUiThread) {
 /// @brief 显示弹窗
 /// @param type 弹窗ID
 /// @return 是否显示成功
-bool CWindMgr::showPop(int8_t pop) {
+bool CWindMgr::showPop(int8_t pop, Json::Value* baseData) {
     uint8_t nowPop = mWindow->getPopType();
     if (pop < nowPop)return false;
     if (pop == nowPop) {
@@ -250,17 +285,38 @@ bool CWindMgr::showPop(int8_t pop) {
     mLooper->removeMessages(this, MSG_AUTO_CLOSE_POP);
     mLooper->sendMessageDelayed(1000, this, mAutoClosePopMsg);
 #endif
-    auto it = mPopList.find(pop);
-    if (it == mPopList.end() && !createPop(pop)) {
+    auto it = mPopCache.find(pop);
+    if (it == mPopCache.end() && !createPop(pop)) {
         return false;
     }
-    mWindow->showPop(mPopList[pop]);
-    LOGI("show pop: %d <- %p", pop, mPopList[pop]);
+
+    // 如果当前弹窗不是空弹窗，则保存当前弹窗状态并记录历史记录
+    if (mWindow->getPopType() != POP_NULL) {
+        PBase::StateBundle bundle;
+        mWindow->getPop()->callSaveState(bundle);
+        mPopHistory.push_back(std::make_pair(mWindow->getPopType(), bundle));
+        LOGI("push pop history: %d <- %p", mWindow->getPopType(), mWindow->getPop());
+    }
+
+    // 重新调整弹窗历史记录
+    auto popIt = std::find_if(mPopHistory.begin(), mPopHistory.end(),
+        [pop](const std::pair<int, PBase::StateBundle>& pair) { return pair.first == pop; });
+    if (popIt != mPopHistory.end())
+        mPopHistory.erase(popIt, mPopHistory.end()); // 删除该元素及后面的所有元素
+
+    // 显示新弹窗
+    mWindow->showPop(mPopCache[pop]);
+    LOGI("show pop: %d <- %p", pop, mPopCache[pop]);
     return true;
 }
 
 /// @brief 隐藏弹窗
 void CWindMgr::hidePop() {
+    if (mWindow->getPopType() != POP_NULL) {
+        PBase::StateBundle bundle;
+        mWindow->getPop()->callSaveState(bundle);
+        mPopHistory.push_back(std::make_pair(mWindow->getPopType(), bundle));
+    }
     mWindow->removePop();
 #if AUTO_CLOSE
     mLooper->removeMessages(this, MSG_AUTO_CLOSE_POP);
@@ -277,6 +333,10 @@ void CWindMgr::sendPopMsg(int pop, const Json::Value& data, bool fromUiThread) {
     if (!fromUiThread) {
         std::lock_guard<std::mutex> lock(mPopMsgCacheMutex);
         mPopMsgCache.push(std::make_pair(pop, std::move(Json::Value(data))));
+        if (mPopMsgCache.size() >= MAX_THREAD_SAFE_MSG_SIZE) {
+            mPopMsgCache.pop();
+            LOGE("Message cache full, discarded oldest message");
+        }
     } else {
         if (pop && pop == mWindow->getPopType()) {
             mWindow->getPop()->callMsg(data);
@@ -293,6 +353,52 @@ void CWindMgr::sendPopMsg(int pop, const Json::Value& data, bool fromUiThread) {
 #endif
 }
 
+/// @brief 返回到首页
+/// @param withBundle 是否携带状态包 
+void CWindMgr::goToHome(bool withBundle) {
+    if (mWindow->getPageType() == PAGE_HOME)return; // 防呆
+
+    PBase::StateBundle bundle;
+    if (withBundle && getBundle(true, PAGE_HOME, bundle)) {
+        mPageHistory.clear();
+        goTo(PAGE_HOME, bundle);
+        return;
+    }
+    mPageHistory.clear();
+    goTo(PAGE_HOME);
+}
+
+/// @brief 返回到上一个页面
+void CWindMgr::goToPageBack() {
+    if (mPageHistory.empty()) {
+        LOGW("no page history, go to home");
+        goToHome(true);
+        return;
+    }
+    auto last = mPageHistory.back();
+    mPageHistory.pop_back();
+    LOGI("go to page back: %d <- %p", last.first, mWindow->getPage());
+    goTo(last.first, last.second);
+}
+
+/// @brief 返回到上一个弹窗
+void CWindMgr::goToPopBack() {
+    if (mPopHistory.empty()) {
+        LOGW("no pop history, hide pop");
+        hidePop();
+        return;
+    }
+    auto last = mPopHistory.back();
+    mPopHistory.pop_back();
+    LOGI("go to pop back: %d <- %p", last.first, mWindow->getPop());
+    if (showPop(last.first) && mWindow->getPopType() == last.first) {
+        mWindow->getPop()->callRestoreState(last.second);
+        LOGI("restore state for pop: %d <- %p", last.first, mWindow->getPop());
+    } else {
+        LOGE("goTo pop failed: %d", last.first);
+    }
+}
+
 /// @brief 新建页面
 /// @param page 页面ID
 /// @return 是否创建成功
@@ -307,8 +413,8 @@ bool CWindMgr::createPage(int page) {
 #if OPEN_SCREENSAVER
         refreshScreenSaver();
 #endif
-        mPageList[page] = pb;
-        LOGW("add new page: %d <- %p | page count=%d ", page, pb, mPageList.size());
+        mPageCache[page] = pb;
+        LOGW("add new page: %d <- %p | page count=%d ", page, pb, mPageCache.size());
         return true;
     }
     LOGE("can not create page: %d", page);
@@ -329,8 +435,8 @@ bool CWindMgr::createPop(int pop) {
 #if OPEN_SCREENSAVER
         refreshScreenSaver();
 #endif
-        mPopList[pop] = pb;
-        LOGW("add new pop: %d <- %p | pop count=%d ", pop, pb, mPopList.size());
+        mPopCache[pop] = pb;
+        LOGW("add new pop: %d <- %p | pop count=%d ", pop, pb, mPopCache.size());
         return true;
     }
     LOGE("can not create pop: %d", pop);
@@ -345,4 +451,20 @@ void CWindMgr::screenSaver(bool lock) {
     } else {
     }
     InputEventSource::getInstance().closeScreenSaver();
+}
+
+/// @brief 获取状态包
+/// @param isPage 
+/// @param id 
+/// @param bundle 
+/// @return 
+bool CWindMgr::getBundle(bool isPage, int id, PBase::StateBundle& bundle) {
+    std::vector<std::pair<int, PBase::StateBundle>>* history = isPage ? &mPageHistory : &mPopHistory;
+    auto it = std::find_if(history->begin(), history->end(),
+        [id](const std::pair<int, PBase::StateBundle>& pair) { return pair.first == id; });
+    if (it != history->end()) {
+        bundle = it->second;
+        return true;
+    }
+    return false;
 }

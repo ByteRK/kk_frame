@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2025-08-10 18:31:26
+ * @LastEditTime: 2025-08-12 02:26:51
  * @FilePath: /kk_frame/src/windows/wind_base.cc
  * @Description: 窗口类
  * @BugList:
@@ -83,25 +83,27 @@ int BaseWindow::handleEvents() {
 
 void BaseWindow::init() {
     mContext = getContext();
-    mRootView = (ViewGroup*)(
-        LayoutInflater::from(mContext)->inflate("@layout/wind_base", this)
-        );
-    mPageBox = __getgv(mRootView, ViewGroup, kk_frame::R::id::mainBox);
-    mPopBox = __getgv(mRootView, ViewGroup, kk_frame::R::id::popBox);
-    mLogoForImage = __getgv(mRootView, ImageView, kk_frame::R::id::logo);
-    mLogoForVideo = __getgv(mRootView, VideoView, kk_frame::R::id::logo_video);
-    mToast = __getgv(mRootView, TextView, kk_frame::R::id::toast);
-    mBlackView = __getgv(mRootView, View, kk_frame::R::id::cover);
 
-    if (!(mPageBox && mPopBox && mLogoForImage && mLogoForVideo && mToast && mBlackView))
-        throw std::runtime_error("BaseWindow Error");
+    // 检查根容器并获取相关节点
+    if (
+        !(mRootView = (ViewGroup*)(LayoutInflater::from(mContext)->inflate("@layout/wind_base", this))) ||
+
+        !(mPageBox = __getgv(mRootView, ViewGroup, kk_frame::R::id::mainBox)) ||
+        !(mPopBox = __getgv(mRootView, ViewGroup, kk_frame::R::id::popBox)) ||
+        !(mLogoForImage = __getgv(mRootView, ImageView, kk_frame::R::id::logo)) ||
+        !(mLogoForVideo = __getgv(mRootView, VideoView, kk_frame::R::id::logo_video)) ||
+        !(mToast = __getgv(mRootView, TextView, kk_frame::R::id::toast)) ||
+        !(mBlackView = __getgv(mRootView, View, kk_frame::R::id::cover))
+        ) {
+        throw std::runtime_error("BaseWindow View Tree Error");
+    }
 
     // 初始化页面指针
     mPage = nullptr;
 
     // 初始化弹窗指针
     mPop = nullptr;
-    mPopBox->setOnTouchListener([ ](View& view, MotionEvent& evt) { return true; });
+    mPopBox->setOnTouchListener([](View& view, MotionEvent& evt) { return true; });
 
     // 初始化黑屏
     mIsBlackView = false;
@@ -116,13 +118,13 @@ void BaseWindow::init() {
         mToastLevel = -1;
         mToastRunning = false;
         mToast->animate().alpha(0.f).setDuration(POPTEXT_ANIMATETIME).start();
-        };
+    };
 
     // Toast动画结束回调
     Animator::AnimatorListener toastAnimtorListener;
     toastAnimtorListener.onAnimationEnd = [this](Animator& animator, bool isReverse) {
         if (mToast->getAlpha() == 0.f) mToast->setVisibility(View::GONE);
-        };
+    };
     mToast->setVisibility(View::GONE);
     mToast->animate().setListener(toastAnimtorListener);
 
@@ -134,13 +136,13 @@ void BaseWindow::init() {
         AnimatedImageDrawable* drawable = __dc(AnimatedImageDrawable, mLogoForImage->getDrawable());
         if (drawable) drawable->stop();
         mIsShowLogo = false;
-        };
+    };
     // 动图LOGO回调
     mLogoForImageCallback.onAnimationStart = nullptr;
     mLogoForImageCallback.onAnimationEnd = [this](Drawable&) {
         mLogoForImage->setVisibility(GONE);
         mIsShowLogo = false;
-        };
+    };
     // 视频LOGO回调
     mLogoForVideo->setOnTouchListener([this](View& v, MotionEvent& evt) { return true; });
     mLogoForVideo->setOnPlayStatusChange([this](View& v, int dutation, int progress, int status) {
@@ -150,7 +152,7 @@ void BaseWindow::init() {
             mLogoForVideo->over();
             mIsShowLogo = false;
         }
-        });
+    });
 
     showLogo();
 }
