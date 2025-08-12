@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2025-08-12 01:50:34
+ * @LastEditTime: 2025-08-12 01:54:01
  * @FilePath: /kk_frame/src/windows/wind_mgr.cc
  * @Description: 页面管理类
  * @BugList:
@@ -187,17 +187,14 @@ void CWindMgr::closeAll(bool withPop) {
 
 /// @brief 前往指定页面 (新建页面必须从此处调用)
 /// @param page 页面ID
-/// @param showBlack 跳转后是否息屏
-void CWindMgr::goTo(int page, bool showBlack) {
+void CWindMgr::goTo(int page) {
     mWindow->removePop();
     if (page == PAGE_NULL) {
         mWindow->removePage();
-        if (showBlack)mWindow->showBlack();
         return;
     }
     if (page == mWindow->getPageType()) {
         mWindow->getPage()->callReload();
-        if (showBlack)mWindow->showBlack();
         return;
     }
 #if AUTO_CLOSE
@@ -206,11 +203,9 @@ void CWindMgr::goTo(int page, bool showBlack) {
 #endif
     auto it = mPageList.find(page);
     if (it == mPageList.end() && !createPage(page)) {
-        if (showBlack)mWindow->showBlack();
         return;
     }
     mWindow->showPage(mPageList[page]);
-    if (showBlack)mWindow->showBlack();
     LOGI("show page: %d <- %p", page, mPageList[page]);
 }
 

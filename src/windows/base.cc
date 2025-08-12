@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2025-08-10 16:19:07
+ * @LastEditTime: 2025-08-12 01:55:06
  * @FilePath: /kk_frame/src/windows/base.cc
  * @Description: 页面基类
  * @BugList:
@@ -46,7 +46,8 @@ View* PBase::getRootView() {
 void PBase::callTick() {
     if (mAutoExit && SystemClock::uptimeMillis() - g_window->mLastAction > mAutoExit) {
         LOGI("auto exit");
-        g_windMgr->goTo(PAGE_HOME, mAutoExitWithBlack);
+        g_windMgr->goTo(PAGE_HOME);
+        if (mAutoExitWithBlack) g_window->showBlack();
     } else {
         onTick();
     }

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2025-08-12 01:50:13
+ * @LastEditTime: 2025-08-12 01:53:50
  * @FilePath: /kk_frame/src/windows/wind_mgr.h
  * @Description: 页面管理类
  * @BugList:
@@ -86,7 +86,7 @@ public:
     void close(PageBase* page);
     void close(int page);
     void closeAll(bool withPop = false);
-    void goTo(int page, bool showBlack = false);
+    void goTo(int page);
     void sendMsg(int page, const Json::Value& data, bool fromUiThread = true);
 
     bool showPop(int8_t pop);

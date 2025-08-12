@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-08-01 03:03:02
- * @LastEditTime: 2025-04-25 14:25:44
+ * @LastEditTime: 2025-08-12 01:56:07
  * @FilePath: /kk_frame/src/protocol/tuya_mgr.cc
  * @Description:
  * @BugList:
@@ -376,9 +376,10 @@ void TuyaMgr::acceptDP(uint8_t* data, uint16_t len) {
         switch (data[dealCount]) {
         case TYDPID_POWER: {
             if (data[TUYADP_DATA]) {
-                g_windMgr->mWindow->hideBlack();
+                g_window->hideBlack();
             } else {
-                g_windMgr->goTo(PAGE_HOME, true);
+                g_windMgr->goTo(PAGE_HOME);
+                g_window->showBlack();
             }
             g_data->mTUYAPower = data[TUYADP_DATA];
         }   break;
