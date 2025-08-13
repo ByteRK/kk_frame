@@ -62,9 +62,15 @@ if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
         
         # 标记为通过脚本提权
         $isElevatedByScript = $true
+
+        Write-Host "[信息] 正在通过UAC请求管理员权限..." -ForegroundColor Cyan
         
         $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`" -ElevatedByScript"
         Start-Process powershell.exe -Verb RunAs -ArgumentList $arguments -ErrorAction Stop
+        # Start-Process pwsh.exe -Verb RunAs -ArgumentList $arguments -ErrorAction Stop
+
+        Write-Host "请稍候，脚本将自动重新启动..." -ForegroundColor Cyan
+        Write-Host "若启动异常，可以将脚本的Start-Process powershell.exe 替换为 Start-Process pwsh.exe" -ForegroundColor Yellow
         exit
     } catch {
         Write-Host "[错误] 请求管理员权限失败: $($_.Exception.Message)" -ForegroundColor Red
