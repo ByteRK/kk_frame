@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2025-08-13 00:44:11
+ * @LastEditTime: 2025-08-14 09:51:24
  * @FilePath: /kk_frame/src/windows/wind_mgr.cc
  * @Description: 页面管理类
  * @BugList:
@@ -381,7 +381,7 @@ void CWindMgr::goToPageBack() {
         return;
     }
     auto last = mPageHistory.back();
-    mPageHistory.pop_back();
+    // mPageHistory.pop_back();
     LOGI("go to page back: %d <- %p", last.first, mWindow->getPage());
     goTo(last.first, last.second);
 }
@@ -394,7 +394,7 @@ void CWindMgr::goToPopBack() {
         return;
     }
     auto last = mPopHistory.back();
-    mPopHistory.pop_back();
+    // mPopHistory.pop_back();
     LOGI("go to pop back: %d <- %p", last.first, mWindow->getPop());
     if (showPop(last.first) && mWindow->getPopType() == last.first) {
         mWindow->getPop()->callRestoreState(last.second);
