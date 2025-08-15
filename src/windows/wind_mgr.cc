@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2025-08-16 00:44:16
+ * @LastEditTime: 2025-08-16 01:24:06
  * @FilePath: /kk_frame/src/windows/wind_mgr.cc
  * @Description: 页面管理类
  * @BugList:
@@ -230,18 +230,6 @@ bool CWindMgr::goTo(int page, Json::Value* baseData) {
     return true;
 }
 
-/// @brief 返回指定页面，带状态恢复
-/// @param page 页面ID
-/// @param bundle 状态值
-void CWindMgr::goTo(int page, PBase::StateBundle& bundle) {
-    if (goTo(page) && mWindow->getPageType() == page) {
-        mWindow->getPage()->callRestoreState(bundle);
-        LOGI("restore state for page: %d <- %p", page, mWindow->getPage());
-    } else {
-        LOGE("goTo page failed: %d", page);
-    };
-}
-
 /// @brief 向指定页面发送消息
 /// @param page 页面ID
 /// @param type 消息类型
@@ -365,12 +353,17 @@ void CWindMgr::goToHome(bool withBundle) {
 
     PBase::StateBundle bundle;
     if (withBundle && getBundle(true, PAGE_HOME, bundle)) {
+        if (goTo(PAGE_HOME) && mWindow->getPageType() == PAGE_HOME) {
+            mWindow->getPage()->callRestoreState(bundle);
+            LOGI("restore state for home page");
+        } else {
+            LOGE("goTo home page failed");
+        }
         mPageHistory.clear();
-        goTo(PAGE_HOME, bundle);
         return;
     }
-    mPageHistory.clear();
     goTo(PAGE_HOME);
+    mPageHistory.clear();
 }
 
 /// @brief 返回到上一个页面
@@ -381,9 +374,13 @@ void CWindMgr::goToPageBack() {
         return;
     }
     auto last = mPageHistory.back();
-    // mPageHistory.pop_back();
-    LOGI("go to page back: %d <- %p", last.first, mWindow->getPage());
-    goTo(last.first, last.second);
+    LOGI("go to page back: %d", last.first);
+    if (goTo(last.first) && mWindow->getPageType() == last.first) {
+        mWindow->getPage()->callRestoreState(last.second);
+        LOGI("restore state for page: %d", last.first);
+    } else {
+        LOGE("goTo page failed: %d", last.first);
+    }
 }
 
 /// @brief 返回到上一个弹窗
@@ -394,11 +391,10 @@ void CWindMgr::goToPopBack() {
         return;
     }
     auto last = mPopHistory.back();
-    // mPopHistory.pop_back();
-    LOGI("go to pop back: %d <- %p", last.first, mWindow->getPop());
+    LOGI("go to pop back: %d", last.first);
     if (showPop(last.first) && mWindow->getPopType() == last.first) {
         mWindow->getPop()->callRestoreState(last.second);
-        LOGI("restore state for pop: %d <- %p", last.first, mWindow->getPop());
+        LOGI("restore state for pop: %d", last.first);
     } else {
         LOGE("goTo pop failed: %d", last.first);
     }
