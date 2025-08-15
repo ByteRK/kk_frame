@@ -100,6 +100,9 @@ public:
     void goToHome(bool withBundle = false);
     void goToPageBack();
     void goToPopBack();
+
+    void removePageHistory(int page);
+    void removePopHistory(int pop);
 private:
     bool createPage(int page);
     bool createPop(int pop);

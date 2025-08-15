@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2025-08-14 09:51:24
+ * @LastEditTime: 2025-08-16 00:44:16
  * @FilePath: /kk_frame/src/windows/wind_mgr.cc
  * @Description: 页面管理类
  * @BugList:
@@ -401,6 +401,28 @@ void CWindMgr::goToPopBack() {
         LOGI("restore state for pop: %d <- %p", last.first, mWindow->getPop());
     } else {
         LOGE("goTo pop failed: %d", last.first);
+    }
+}
+
+/// @brief 从历史记录抹去指定页面
+/// @param page 
+void CWindMgr::removePageHistory(int page) {
+    auto it = std::find_if(mPageHistory.begin(), mPageHistory.end(),
+        [page](const std::pair<int, PBase::StateBundle>& pair) { return pair.first == page; });
+    if (it != mPageHistory.end()) {
+        mPageHistory.erase(it);
+        LOGI("remove page history: %d", page);
+    }
+}
+
+/// @brief 从历史记录抹去指定弹窗
+/// @param pop 
+void CWindMgr::removePopHistory(int pop) {
+    auto it = std::find_if(mPopHistory.begin(), mPopHistory.end(),
+        [pop](const std::pair<int, PBase::StateBundle>& pair) { return pair.first == pop; });
+    if (it != mPopHistory.end()) {
+        mPopHistory.erase(it);
+        LOGI("remove pop history: %d", pop);
     }
 }
 
