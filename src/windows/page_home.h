@@ -11,8 +11,8 @@
  *
  */
 
-#ifndef _PAGE_STANDBY_H_
-#define _PAGE_STANDBY_H_
+#ifndef _PAGE_HOME_H_
+#define _PAGE_HOME_H_
 
 #include "base.h"
 
@@ -28,4 +28,4 @@ protected:
     void onTick() override;
 };
 
-#endif // !_PAGE_STANDBY_H_
+#endif // !_PAGE_HOME_H_
