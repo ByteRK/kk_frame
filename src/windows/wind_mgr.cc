@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2025-08-16 01:24:06
+ * @LastEditTime: 2025-08-22 17:29:46
  * @FilePath: /kk_frame/src/windows/wind_mgr.cc
  * @Description: 页面管理类
  * @BugList:
@@ -197,6 +197,7 @@ bool CWindMgr::goTo(int page, Json::Value* baseData) {
     }
     if (page == mWindow->getPageType()) {
         mWindow->getPage()->callReload();
+        if (baseData)sendMsg(page, *baseData);
         return true;
     }
 #if AUTO_CLOSE
@@ -226,6 +227,7 @@ bool CWindMgr::goTo(int page, Json::Value* baseData) {
 
     // 显示新页面
     mWindow->showPage(mPageCache[page]);
+    if (baseData)sendMsg(page, *baseData);
     LOGI("show page: %d <- %p", page, mPageCache[page]);
     return true;
 }
