@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2025-08-22 17:29:46
+ * @LastEditTime: 2025-08-23 18:25:20
  * @FilePath: /kk_frame/src/windows/wind_mgr.cc
  * @Description: 页面管理类
  * @BugList:
@@ -227,9 +227,14 @@ bool CWindMgr::goTo(int page, Json::Value* baseData) {
 
     // 显示新页面
     mWindow->showPage(mPageCache[page]);
-    if (baseData)sendMsg(page, *baseData);
-    LOGI("show page: %d <- %p", page, mPageCache[page]);
-    return true;
+    if (mWindow->getPageType() == page) {
+        LOGI("show page: %d <- %p", page, mPageCache[page]);
+        if (baseData)sendMsg(page, *baseData);
+        return true;
+    } else {
+        LOGW("show page: %d x %p", page, mPageCache[page]);
+        return false;
+    }
 }
 
 /// @brief 向指定页面发送消息
@@ -271,6 +276,7 @@ bool CWindMgr::showPop(int8_t pop, Json::Value* baseData) {
     if (pop < nowPop)return false;
     if (pop == nowPop) {
         mWindow->getPop()->callReload();
+        if (baseData) sendMsg(pop, *baseData);
         return true;
     }
 #if AUTO_CLOSE
@@ -300,8 +306,14 @@ bool CWindMgr::showPop(int8_t pop, Json::Value* baseData) {
 
     // 显示新弹窗
     mWindow->showPop(mPopCache[pop]);
-    LOGI("show pop: %d <- %p", pop, mPopCache[pop]);
-    return true;
+    if (mWindow->getPopType() == pop) {
+        LOGI("show pop: %d <- %p", pop, mPopCache[pop]);
+        if (baseData) sendMsg(pop, *baseData);
+        return true;
+    } else {
+        LOGW("show page: %d x %p", pop, mPopCache[pop]);
+        return false;
+    }
 }
 
 /// @brief 隐藏弹窗
