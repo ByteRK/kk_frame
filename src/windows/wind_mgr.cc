@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2025-08-23 18:25:20
+ * @LastEditTime: 2025-08-25 10:40:43
  * @FilePath: /kk_frame/src/windows/wind_mgr.cc
  * @Description: 页面管理类
  * @BugList:
@@ -308,10 +308,10 @@ bool CWindMgr::showPop(int8_t pop, Json::Value* baseData) {
     mWindow->showPop(mPopCache[pop]);
     if (mWindow->getPopType() == pop) {
         LOGI("show pop: %d <- %p", pop, mPopCache[pop]);
-        if (baseData) sendMsg(pop, *baseData);
+        if (baseData) sendPopMsg(pop, *baseData);
         return true;
     } else {
-        LOGW("show page: %d x %p", pop, mPopCache[pop]);
+        LOGW("show pop: %d x %p", pop, mPopCache[pop]);
         return false;
     }
 }
