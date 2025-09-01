@@ -2,7 +2,7 @@
 Author: hanakami
 Date: 2025-06-18 08:20:25
 email: hanakami@163.com
-LastEditTime: 2025-06-18 08:20:38
+LastEditTime: 2025-09-01 16:39:39
 FilePath: /hana_frame/script/ota.py
 Description: OTA包封装脚本，用于往常规的升级包的头部添加32位MD5校验码，并生成.bin文件
 Copyright (c) 2025 by hanakami, All Rights Reserved. 

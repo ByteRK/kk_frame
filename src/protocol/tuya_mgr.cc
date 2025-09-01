@@ -20,7 +20,7 @@
 #include "app_version.h"
 
 #include "conn_mgr.h"
-#include "manage.h"
+#include "wind_mgr.h"
 #include "this_func.h"
 #include "global_data.h"
 
@@ -165,7 +165,7 @@ void TuyaMgr::onCommDeal(IAck* ack) {
         sendDp();
         break;
     case TYCOMM_WIFITEST:
-        g_data->mWifiTestRes = ack->getData2(TUYA_DATA_START, true);
+        g_data->mTUYAWifiTestRes = ack->getData2(TUYA_DATA_START, true);
         break;
 
     case TYCOMM_GET_TIME:
@@ -212,7 +212,7 @@ void TuyaMgr::sendHeartBeat() {
 
 void TuyaMgr::sendWifiTest() {
     LOG(VERBOSE) << "WIFI测试";
-    g_data->mWifiTestRes = 0xFFFF; // 复位
+    g_data->mTUYAWifiTestRes = 0xFFFF; // 复位
     send2MCU(TYCOMM_WIFITEST);
 }
 
@@ -374,9 +374,10 @@ void TuyaMgr::acceptDP(uint8_t* data, uint16_t len) {
         switch (data[dealCount]) {
         case TYDPID_POWER: {
             if (data[TUYADP_DATA]) {
-                g_windMgr->mWindow->hideBlack();
+                g_window->hideBlack();
             } else {
-                g_windMgr->goTo(PAGE_HOME, true);
+                g_windMgr->goTo(PAGE_HOME);
+                g_window->showBlack();
             }
             g_data->mTUYAPower = data[TUYADP_DATA];
         }   break;

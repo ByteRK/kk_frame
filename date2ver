@@ -2,7 +2,7 @@
  # @Author: hanakami
  # @Date: 2025-05-08 17:08:00
  # @email: hanakami@163.com
- # @LastEditTime: 2025-05-20 16:37:57
+ # @LastEditTime: 2025-09-01 16:37:13
  # @FilePath: /hana_frame/date2ver
  # @Description: 
  # Copyright (c) 2025 by hanakami, All Rights Reserved. 
@@ -59,7 +59,7 @@ echo $PROJECT_ID "->" $VERSION_INFO "->" $CUR_DATE_FULL
 echo "// Automatically built by script" > $VERSION_FILE
 echo "" >> $VERSION_FILE
 
-echo "#include \"series_config.h\"" >> $VERSION_FILE
+echo "#include \"series_info.h\"" >> $VERSION_FILE
 echo "" >> $VERSION_FILE
 
 echo "#ifndef __APP_VERSION_H__" >> $VERSION_FILE
@@ -73,8 +73,8 @@ echo "#define MAJOR_VERSION    ${v1}" >> $VERSION_FILE
 echo "#define MINOR_VERSION    ${v2}" >> $VERSION_FILE
 echo "#define REVISE_VERSION   ${v3}" >> $VERSION_FILE
 echo "#define BUILD_VERSION    ${v4}" >> $VERSION_FILE
-echo "#define APP_VERSION     \"$v1.$v2.$v3\"" >> $VERSION_FILE
-echo "#define APP_VERSION_D   \"$v1.$v2.$v3.$v4\"" >> $VERSION_FILE
+echo "#define APP_VERSION      \"$v1.$v2.$v3\"" >> $VERSION_FILE
+echo "#define APP_VERSION_D    \"$v1.$v2.$v3.$v4\"" >> $VERSION_FILE
 echo "" >> $VERSION_FILE
 
 echo "#define BUILD_DATE      \"${CUR_DATE_FULL}\"" >> $VERSION_FILE

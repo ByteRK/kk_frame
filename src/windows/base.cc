@@ -11,7 +11,7 @@
 #include <core/app.h>
 
 #include "base.h"
-#include "manage.h"
+#include "wind_mgr.h"
 
 #include "this_func.h"
 #include "conn_mgr.h"
@@ -44,7 +44,8 @@ View* PBase::getRootView() {
 void PBase::callTick() {
     if (mAutoExit && SystemClock::uptimeMillis() - g_window->mLastAction > mAutoExit) {
         LOGI("auto exit");
-        g_windMgr->goTo(PAGE_HOME, mAutoExitWithBlack);
+        g_windMgr->goTo(PAGE_HOME);
+        if (mAutoExitWithBlack) g_window->showBlack();
     } else {
         onTick();
     }
@@ -64,8 +65,16 @@ void PBase::callReload() {
     onReload();
 }
 
-void PBase::callMsg(int type, void* data) {
-    onMsg(type, data);
+void PBase::callSaveState(StateBundle& outState) {
+    onSaveState(outState);
+}
+
+void PBase::callRestoreState(const StateBundle& savedState) {
+    onRestoreState(savedState);
+}
+
+void PBase::callMsg(const Json::Value& data) {
+    onMsg(data);
 }
 
 void PBase::callMcu(uint8_t* data, uint8_t len) {
@@ -103,7 +112,13 @@ void PBase::onDetach() {
 void PBase::onReload() {
 }
 
-void PBase::onMsg(int type, void* data) {
+void PBase::onSaveState(StateBundle& outState) {
+}
+
+void PBase::onRestoreState(const StateBundle& savedState) {
+}
+
+void PBase::onMsg(const Json::Value& data) {
 }
 
 void PBase::onMcu(uint8_t* data, uint8_t len) {
@@ -126,7 +141,7 @@ void PBase::setAutoBackToStandby(uint32_t time, bool withBlack) {
 
 void PBase::setLangText(TextView* v, const Json::Value& value) {
     if (v == nullptr) LOGE("TextView is nullptr");
-    else v->setText(jsonSafeGet(value, "null"));
+    else v->setText(jsonSafeGet<std::string>(value, "null"));
 }
 
 /*

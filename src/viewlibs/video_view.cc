@@ -1,10 +1,7 @@
 #include "video_view.h"
 
 #include <cdplayer.h>
-#include <core/windowmanager.h>
-#include <shared_queue.h>
 #include <unistd.h>
-#include <sys/prctl.h>
 
 /*
 xml sample 1280*480
@@ -41,12 +38,7 @@ enum { AV_ROTATE_NONE, AV_ROTATE_90, AV_ROTATE_180, AV_ROTATE_270 };
 #define SUPPORT_FFMPEG_YUV 0
 #define SUPPORT_FFMPEG_RGB 0
 #else
-// #if ENABLE(VIDEO)
-#if 1
 #define SUPPORT_FFMPEG_YUV 1
-#else
-#define SUPPORT_FFMPEG_YUV 0
-#endif
 #define SUPPORT_FFMPEG_RGB 0
 #endif
 
@@ -71,16 +63,13 @@ extern "C" {
 
 // 视频信息
 class VideoInfo {
-    friend class VideoView;
-
 public:
     struct AVRgbData {
-        int   frameNum;
+        int   idx;
         short width;
         short height;
 #if SUPPORT_FFMPEG_RGB
         AVFrame *pFrameRGB;
-        uint8_t *buffer;
 #endif
     };
 
@@ -101,6 +90,8 @@ public:
         frameCount = 0;
         readCount  = 0;
         fps        = 0;
+        lastFrame  = 0;
+        bzero(showTimes, sizeof(showTimes));
     }
 
     ~VideoInfo() {
@@ -112,34 +103,16 @@ public:
             avformat_close_input(&pFormatCtx);
             avformat_free_context(pFormatCtx);
         }
-        AVRgbData *vd;
-        while (videoFrames.try_and_pop(vd)) {
-            av_free(vd->buffer);
-            av_frame_free(&vd->pFrameRGB);
+        for (AVRgbData *vd : videoFrames) {
+            if (vd->pFrameRGB) av_frame_free(&vd->pFrameRGB);
             free(vd);
         }
+        videoFrames.clear();
 #endif
     }
 
-protected:
-#if SUPPORT_FFMPEG_RGB
-    int decode_frame(AVCodecContext *codec_ctx, AVFrame *frame, AVPacket *packet) {
-        int response = avcodec_send_packet(codec_ctx, packet);
-        if (response < 0) {
-            fprintf(stderr, "Error sending a packet for decoding\n");
-            return response;
-        }
-        response = avcodec_receive_frame(codec_ctx, frame);
-        if (response == AVERROR(EAGAIN) || response == AVERROR_EOF) {
-            return response;
-        } else if (response < 0) {
-            fprintf(stderr, "Error during decoding\n");
-        }
-        return response;
-    }
-#endif
+private:
     void readFrame() {
-        if (readCount >= frameCount) return;
 #if SUPPORT_FFMPEG_RGB
         if (!pFrame) pFrame = av_frame_alloc();
 
@@ -148,38 +121,51 @@ protected:
         pPacket     = &packet;
         unrefPacket = false;
 
-        // Read packets from the video
         while (av_read_frame(pFormatCtx, pPacket) >= 0) {
+            // 视频帧
             if (pPacket->stream_index == videoStreamIdx) {
-                if (decode_frame(pCodecCtx, pFrame, pPacket) == 0) {
+                // 解码
+                int ret = avcodec_send_packet(pCodecCtx, pPacket);
+                if (ret < 0) {
+                    // 发送数据包失败
+                    // 错误处理
+                    break;
+                }
 
-                    readCount++;
-                    LOGV("read %d/%d %d", readCount, frameCount, playFrameNum);
-                    if (readCount >= playFrameNum) {
-                        AVFrame *pFrameRGB = av_frame_alloc();
-
-                        uint8_t *outBuffer = (uint8_t *)av_malloc(
-                            av_image_get_buffer_size(AV_PIX_FMT_RGB24, pCodecCtx->width, pCodecCtx->height, 1));
-
-                        av_image_fill_arrays(pFrameRGB->data, pFrameRGB->linesize, outBuffer, AV_PIX_FMT_RGB24,
-                                            pCodecCtx->width, pCodecCtx->height, 1);
-
-                        sws_scale(pSwsCtx, (const uint8_t *const *)pFrame->data, pFrame->linesize, 0, pFrame->height,
-                                pFrameRGB->data, pFrameRGB->linesize);
-
-                        AVRgbData *rgbData = (AVRgbData *)calloc(1, sizeof(AVRgbData));
-                        rgbData->width     = pCodecCtx->width;
-                        rgbData->height    = pCodecCtx->height;
-                        rgbData->pFrameRGB = pFrameRGB;
-                        rgbData->buffer    = outBuffer;
-                        rgbData->frameNum  = readCount;
-                        videoFrames.push(rgbData);
-                        LOGV("push at %d/%d", rgbData->frameNum, frameCount);
-                        unrefPacket = true;
+                while (ret >= 0) {
+                    ret = avcodec_receive_frame(pCodecCtx, pFrame);
+                    if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+                        // 需要更多数据或解码完成
+                        break;
+                    } else if (ret < 0) {
+                        // 解码失败
+                        // 错误处理
                         break;
                     }
 
+                    // 在这里处理解码后的视频帧 frame
+                    AVFrame *pFrameRGB = av_frame_alloc();
+
+                    // 设置输出缓冲区
+                    uint8_t *outBuffer = (uint8_t *)av_malloc(
+                        av_image_get_buffer_size(AV_PIX_FMT_RGB24, pCodecCtx->width, pCodecCtx->height, 1));
+                    av_image_fill_arrays(pFrameRGB->data, pFrameRGB->linesize, outBuffer, AV_PIX_FMT_RGB24,
+                                         pCodecCtx->width, pCodecCtx->height, 1);
+                    sws_scale(pSwsCtx, (const uint8_t *const *)pFrame->data, pFrame->linesize, 0, pFrame->height,
+                              pFrameRGB->data, pFrameRGB->linesize);
+                    // 将数据以二进制的形式写入文件中
+                    // fwrite(pframeRGB->data[0],pCodecCtx->height * pCodecCtx->width*3,1,fp);
+
+                    AVRgbData *rgbData = (AVRgbData *)calloc(1, sizeof(AVRgbData));
+                    rgbData->width     = pCodecCtx->width;
+                    rgbData->height    = pCodecCtx->height;
+                    rgbData->pFrameRGB = pFrameRGB;
+                    rgbData->idx       = ++readCount;
+                    videoFrames.push_back(rgbData);
                 }
+
+                unrefPacket = true;
+                break;
             }
             av_packet_unref(pPacket);
         }
@@ -188,22 +174,56 @@ protected:
     }
 
 public:
-    bool isEnd() { return readCount >= frameCount || playFrameNum > frameCount; }
+    int hasFrame() {
+        if (readCount >= frameCount) return 0;
+
+        if (videoFrames.empty()) {
+            return 1; // 读取下一帧
+        }
+
+        int64_t nowms    = SystemClock::uptimeMillis();
+        int     frame_ms = 1000 / fps;
+        if (nowms - lastFrame < frame_ms) {
+            // 两次显示时间间隔
+            if (showTimes[0] > 0 && showTimes[1] > 0) {
+                int d = showTimes[1] - showTimes[0];
+                if (d > frame_ms) {
+                    if (nowms - lastFrame >= frame_ms - (d - frame_ms)) { return 1; }
+                }
+            }
+
+            return 0;
+        }
+        return 1;
+    }
 
     AVRgbData *getData() {
-        if (videoFrames.empty()) return 0;
-        AVRgbData *dat;
-        if (!videoFrames.try_and_pop(dat)) return 0;
+        if (videoFrames.empty()) {
+            readFrame();
+            LOGV("read at %d/%d", readCount, frameCount);
+            return 0;
+        }
+        AVRgbData *dat = videoFrames.front();
+        videoFrames.pop_front();
         return dat;
     }
 
     void freeData(AVRgbData *dat) {
-        LOGV("free at %d/%d", dat->frameNum, frameCount);
+        LOGV("show at %d/%d", dat->idx, frameCount);
 #if SUPPORT_FFMPEG_RGB
-        av_free(dat->buffer);
-        av_frame_free(&dat->pFrameRGB);
+        if (dat->pFrameRGB) av_frame_free(&dat->pFrameRGB);
 #endif
         free(dat);
+        lastFrame = SystemClock::uptimeMillis();
+        if (showTimes[0] > 0 && showTimes[1] > 0) {
+            showTimes[0] = showTimes[1];
+            showTimes[1] = lastFrame;
+            // LOGW("%ld-%ld=%ld", showTimes[1], showTimes[0], showTimes[1] - showTimes[0]);
+        } else if (showTimes[0] > 0) {
+            showTimes[1] = lastFrame;
+        } else {
+            showTimes[0] = lastFrame;
+        }
     }
 
     int setFile(const char *filename) {
@@ -213,7 +233,7 @@ public:
         int          video_index;
         int64_t      baseDuration;
         AVRational   timeBase;
-        AVStream *   videoStream;
+        AVStream    *videoStream;
 
         int ret = avformat_open_input(&pFormatCtx, filename, nullptr, nullptr);
         if (ret < 0) {
@@ -274,12 +294,11 @@ public:
         // 获取视频帧数
         frameCount = videoStream->nb_frames;
         fps        = av_q2d(videoStream->r_frame_rate);
-        playFrameNum = 0;
 
     error_end:
         if (ret < 0) { return -1; }
 #else
-        GFXGetDisplaySize(0, (UINT *)&width, (UINT *)&height);
+        GFXGetDisplaySize(0, (UINT*)&width, (UINT*)&height);
         duration = 0;
 #endif
         return 0;
@@ -287,30 +306,25 @@ public:
 
 public:
 #if SUPPORT_FFMPEG_RGB
-    AVFormatContext *  pFormatCtx;
+    AVFormatContext   *pFormatCtx;
     AVCodecParameters *pCodecParams;
-    AVCodecContext *   pCodecCtx;
-    const AVCodec *    pCodec;
+    AVCodecContext    *pCodecCtx;
+    const AVCodec     *pCodec;
     int                videoStreamIdx;
     struct SwsContext *pSwsCtx;
-    AVFrame *          pFrame;
+    AVFrame           *pFrame;
 #endif
-    int                       width;        // 宽
-    int                       height;       // 高
-    int                       duration;     // 时长
-    int                       frameCount;   // 最大帧数
-    int                       readCount;    // 读取帧数
-    int                       playFrameNum; // 当前播放的帧数
-    int                       fps;          // 帧数
-    shared_queue<AVRgbData *> videoFrames;  // 缓存帧
+    int                    width;        // 宽
+    int                    height;       // 高
+    int                    duration;     // 时长
+    int                    frameCount;   // 最大帧数
+    int                    readCount;    // 读取帧数
+    int                    fps;          // 帧率
+    int64_t                lastFrame;    // 上一帧显示时间
+    int64_t                showTimes[2]; // 最后两帧时间
+    std::list<AVRgbData *> videoFrames;  // 缓存帧
 };
 
-static struct {
-    int left;
-    int top;
-    int right;
-    int bottom;
-} screenMargin = {-1,-1,-1,-1};
 //////////////////////////////////////////////////////////////////
 DECLARE_WIDGET(VideoView)
 VideoView::VideoView(int w, int h) : ImageView(w, h) {
@@ -324,11 +338,11 @@ VideoView::VideoView(Context *ctx, const AttributeSet &attrs) : ImageView(ctx, a
     mXMLHeight = attrs.getLayoutDimension("layout_height", -1);
     LOGE("INFO VIDEOVIEW GET SIZE FORM XML: %d %d", mXMLWidth, mXMLHeight);
 
-    mLoadPlay  = attrs.getBoolean("loadPlay", mLoadPlay);
-    mOneShot   = attrs.getBoolean("oneShot", mOneShot);
-    mCheckTime = attrs.getInt("checkTime", mCheckTime);
+    mURL      = attrs.getString("url");
+    mLoadPlay = attrs.getBoolean("loadPlay", mLoadPlay);
+    mOneShot  = attrs.getBoolean("oneShot", mOneShot);
+    mCheckTime= attrs.getInt("checkTime", mCheckTime);
     setPointsFile(attrs.getString("pointsFile"));
-    setURL(attrs.getString("url"));
 
 #if SUPPORT_FFMPEG_RGB
     setBackgroundColor(Color::GRAY);
@@ -346,59 +360,44 @@ VideoView::~VideoView() {
 #endif
 
 #if SUPPORT_FFMPEG_RGB
-    mTaskRun = false;
-    while (!mTaskExit) usleep(1000);
     __del(mVideoInfo);
     Looper::getForThread()->removeEventHandler(this);
 #endif
 }
 
 void VideoView::initViewData() {
-    mError              = 0;
-    mMaxTime            = 0;
-    mCurTime            = 0;
-    mHandle             = 0;
-    mStatus             = VS_NULL;
-    mLastCode           = AV_NOTHING;
-    mLoadPlay           = false;
-    mOneShot            = true;
-    mCheckTime          = 1000;
-    mTicker             = std::bind(&VideoView::onTick, this);
-    mOnPlayStatusChange = nullptr;
-    mDuration           = 0;
-    mProgress           = 0;
-    mVideoInfo          = 0;
-    mPlayTime           = 0;
-    mPlayFrameNum       = 0;
-    mTaskRun            = false;
-    mTaskExit           = true;
+    mError    = 0;
+    mMaxTime  = 0;
+    mCurTime  = 0;
+    mHandle   = 0;
+    mStatus   = VS_NULL;
+    mLastCode = AV_NOTHING;
+    mLoadPlay = false;
+    mOneShot  = true;
+    mCheckTime = 50;
 
-#if !defined(PRODUCT_X64)
-    if (screenMargin.left == -1) {
-        int margins[4] = {0};
-        char *strMargin = getenv("SCREEN_MARGINS");
-        if (!strMargin) strMargin = getenv("SCREENMARGIN");
-        if (strMargin) {
-            int n = 0;
-            const char *p = strMargin;
-            margins[n++] = atoi(p);
-            for (; *p && n < 4; p++) {
-                if ((*p == ',' || *p == ';') && *(p+1)) {
-                    margins[n++] = atoi(p+1);
-                }
-            }
-        }
-        screenMargin.left   = margins[0];
-        screenMargin.top    = margins[1];
-        screenMargin.right  = margins[2];
-        screenMargin.bottom = margins[3];
-    }
-#endif
+    mTicker         = std::bind(&VideoView::onTick, this);
+    mChangeCallback = nullptr;
+    mDuration       = 0;
+    mProgress       = 0;
+    mVideoInfo      = 0;
 
 #if SUPPORT_FFMPEG_RGB
-    mLastCode = mStatus;
+    mLastCode  = mStatus;
     Looper::getForThread()->addEventHandler(this);
 #endif
+}
+
+void VideoView::onLayout(bool change, int l, int t, int w, int h) {
+    if (mStatus != VS_NULL) {
+        LOGE("status not null. status=%d", mStatus);
+        return;
+    }
+
+    if (mLoadPlay && !mURL.empty()) {
+        LOGI("layout play video. url=%s", mURL.c_str());
+        play();
+    }
 }
 
 void VideoView::onDraw(Canvas &canvas) {
@@ -409,7 +408,7 @@ void VideoView::onDraw(Canvas &canvas) {
     } else {
         canvas.begin_new_path();
         canvas.move_to(mPoints[0].x, mPoints[0].y);
-#if 0
+#if 1
         for (int i = 1; i < mPoints.size(); i++) {
             double x0 = mPoints[i - 1].x;
             double y0 = mPoints[i - 1].y;
@@ -420,7 +419,9 @@ void VideoView::onDraw(Canvas &canvas) {
             canvas.curve_to(x0, y0, xc, yc, x1, y1);
         }
 #else
-        for (int i = 1; i < mPoints.size(); i++) { canvas.line_to(mPoints[i].x, mPoints[i].y); }
+        for (int i = 1; i < mPoints.size(); i++) {
+            canvas.line_to(mPoints[i].x, mPoints[i].y);
+        }
 #endif
         canvas.close_path();
     }
@@ -437,14 +438,14 @@ void VideoView::onTick() {
 
     if (mError) {
         LOGE("Play error, code=%d url=%s", mError, mURL.c_str());
-        if (mOnPlayStatusChange) mOnPlayStatusChange(*this, 0, 0, VS_OVER);
+        if (mChangeCallback) mChangeCallback(*this, 0, 0, VS_OVER);
         return;
     }
 
 #if SUPPORT_FFMPEG_YUV
     if (!mHandle) {
         LOGE("Handle is null, url=%s", mURL.c_str());
-        if (mOnPlayStatusChange) mOnPlayStatusChange(*this, 0, 0, VS_OVER);
+        if (mChangeCallback) mChangeCallback(*this, 0, 0, VS_OVER);
         return;
     }
     /* 获取状态 */
@@ -458,7 +459,7 @@ void VideoView::onTick() {
         } else if (status & AV_PLAY_PAUSE) {
             videoStatus = VS_PAUSE;
         } else if (status & AV_PLAY_COMPLETE) {
-            if(status&AV_VIDEO_COMPLETE) videoStatus = VS_OVER;
+            videoStatus = VS_OVER;
         } else {
             mError = status;
         }
@@ -470,40 +471,37 @@ void VideoView::onTick() {
 
 #elif SUPPORT_FFMPEG_RGB
     /* 获取状态 */
-    if (mVideoInfo->isEnd()) mStatus = VS_OVER;
     if (mStatus != mLastCode) {
         LOGI("status change. from=%d to=%d", mLastCode, mStatus);
         mLastCode = mStatus;
-        change = true;
+        change    = true;
     }
+
 #endif
 
     if (mDuration == 0) {
         mDuration = getDuration();
         change    = true;
     }
-
-    double progress = getProgress();
+    double progress;
+#if SUPPORT_FFMPEG_YUV
+    MPGetPosition(mHandle, &progress);
+#elif SUPPORT_FFMPEG_RGB
+    if (mVideoInfo->frameCount > 0) {
+        progress = mVideoInfo->readCount * mVideoInfo->duration / mVideoInfo->frameCount;
+    }
+#endif
     if (progress != mProgress) {
         mProgress = progress;
         change    = true;
     }
 
-    if (mOnPlayStatusChange && change) { mOnPlayStatusChange(*this, mDuration, mProgress, mStatus); }
-#if SUPPORT_FFMPEG_RGB
-    if (mStatus == VS_OVER && !mOneShot) {
-        over();
-        play();
-    } else {
-        View::postDelayed(mTicker, mCheckTime);
-    }
-#else
+    if (mChangeCallback && change) { mChangeCallback(*this, mDuration, mProgress, mStatus); }
     View::postDelayed(mTicker, mCheckTime);
-#endif
 }
 
 bool VideoView::play() {
-    if (mStatus != VS_NULL) {
+    if (mStatus != VS_NULL && mStatus != VS_OVER) {
         LOGW("status not null. status=%d", mStatus);
         return false;
     }
@@ -521,15 +519,12 @@ bool VideoView::play() {
 
 #if SUPPORT_FFMPEG_YUV
     MPPlay(mHandle);
-#elif SUPPORT_FFMPEG_RGB
+#else
     mStatus = VS_PLAY;
-    mPlayFrameNum = 1;
-    mVideoInfo->playFrameNum = mPlayFrameNum;
-    mPlayTime     = SystemClock::uptimeMillis();
 #endif
 
     invalidate(true);
-    postDelayed(mTicker);
+    View::postDelayed(mTicker, 1);
 
     return true;
 }
@@ -539,7 +534,7 @@ bool VideoView::isPlay() {
 }
 
 bool VideoView::pause() {
-    if (mStatus != VS_PLAY) {
+    if (mStatus != VS_INIT && mStatus != VS_PLAY) {
         LOGW("video not play. status=%d", mStatus);
         return false;
     }
@@ -548,7 +543,6 @@ bool VideoView::pause() {
     MPPause(mHandle);
 #else
     mStatus = VS_PAUSE;
-    mPlayFrameNum = getTimeFrameNum();
 #endif
     invalidate();
     return true;
@@ -563,9 +557,6 @@ bool VideoView::resume() {
     MPResume(mHandle);
 #else
     mStatus = VS_PLAY;
-    mPlayFrameNum++;
-    mVideoInfo->playFrameNum = mPlayFrameNum;
-    mPlayTime = SystemClock::uptimeMillis();
 #endif
     invalidate();
     return true;
@@ -581,41 +572,30 @@ void VideoView::over() {
         invalidate();
     }
 #elif SUPPORT_FFMPEG_RGB
-    mTaskRun = false;
-    while (!mTaskExit) usleep(1000);
     __del(mVideoInfo);
     mStatus = VS_NULL;
 #endif
     removeCallbacks(mTicker);
-
-    mError = 0;
 }
 
 void VideoView::setURL(const std::string &url) {
     mURL = url;
-    if (mLoadPlay) play();
 }
 
-void VideoView::setPointsFile(const std::string &fpath) {
+void VideoView::setPointsFile(const std::string &fpath){
     if (fpath.empty()) return;
     if (access(fpath.c_str(), F_OK)) {
         LOGE("point file not exists. fpath=%s", fpath.c_str());
         return;
     }
-
-    std::string pointConn;
-    char        buffer[1024];
-    FILE *      fp   = fopen(fpath.c_str(), "r");
-    int         rlen = fread(buffer, 1, sizeof(buffer), fp);
-    while (rlen > 0) {
-        pointConn.append(buffer, rlen);
-        fread(buffer, 1, sizeof(buffer), fp);
-    }
+    char buffer[4096];
+    FILE *fp = fopen(fpath.c_str(), "r");
+    int rlen = fread(buffer, 1, sizeof(buffer) - 1, fp);
     fclose(fp);
-
+    buffer[rlen - 1] = '\0';
+    if (rlen == sizeof(buffer) - 1) LOGW("buffer maybe not enough!!!");
     Point pt;
-    mPoints.clear();
-    for (const char *p = pointConn.c_str(); *p; p++) {
+    for (char *p = buffer; *p; p++) {
         if (*p == '{') {
             pt.x = atoi(p + 1);
         } else if (*p == ',' && *(p + 1) >= '0' && *(p + 1) <= '9') {
@@ -630,10 +610,6 @@ void VideoView::setPoints(std::vector<Point> &points) {
     mPoints = points;
 }
 
-void VideoView::setOnPlayStatusChange(OnPlayStatusChange l) {
-    mOnPlayStatusChange = l;
-}
-
 double VideoView::getDuration() {
 #if SUPPORT_FFMPEG_YUV
     MPGetDuration(mHandle, &mDuration);
@@ -644,13 +620,12 @@ double VideoView::getDuration() {
 }
 
 double VideoView::getProgress() {
-    double dp = 0;
-#if SUPPORT_FFMPEG_YUV
-    MPGetPosition(mHandle, &dp);
-#elif SUPPORT_FFMPEG_RGB
-    if (mVideoInfo->frameCount > 0) { dp = mVideoInfo->readCount * mVideoInfo->duration / mVideoInfo->frameCount; }
-#endif
-    return dp;
+    return mProgress;
+}
+
+void VideoView::setProgress(double dp)
+{
+    MPSeek(mHandle,dp);
 }
 
 int VideoView::getStatus() {
@@ -685,52 +660,41 @@ void VideoView::initVideo() {
         , mURL.c_str(), x, y, w, h, loc[0], loc[1], rotate, screenSize.x, screenSize.y);
 
 #if SUPPORT_FFMPEG_YUV
-    mHandle = MPOpen(mURL.c_str());
     UINT sw, sh;
     GFXGetDisplaySize(0, &sw, &sh);
     mHandle = MPOpen(mURL.c_str());
+    /* MPSetWindow(mHandle, loc[0], loc[1], h, w);// x y w h偏移可以改x y,例如：loc[0]+160 */
+    // MPSetWindow(mHandle, screenSize.y - loc[1] - h, loc[0], h, w);
+    MPSetWindow(mHandle, loc[0], loc[1], w, h);
+    /* 视频旋转 方向与UI相反 */
     switch (rotate) {
-    case Display::ROTATION_0:
-        MPSetWindow(mHandle, screenMargin.left + loc[0], screenMargin.top + loc[1], w, h);
-        break;
-    case Display::ROTATION_180:
-        MPSetWindow(mHandle, screenMargin.left + sw - w - loc[0], screenMargin.top + sh - h - loc[1], w, h);
-        break;
-    case Display::ROTATION_90:
-        MPSetWindow(mHandle, screenMargin.left + loc[1], screenMargin.top + sh - w - loc[0], h, w);
-        break;
-    case Display::ROTATION_270:
-        MPSetWindow(mHandle, screenMargin.left + sw - h - loc[1], screenMargin.top + loc[0], h, w);
-        break;
-    default:
-        break;
+        case Display::ROTATION_270:
+            MPRotate(mHandle, AV_ROTATE_90);
+            break;
+        case Display::ROTATION_90:
+            MPSetWindow(mHandle, loc[1], sh - w - loc[0], h, w);
+            MPRotate(mHandle, AV_ROTATE_270);
+            break;
+        case Display::ROTATION_180:
+            break;
     }
     // if (!mOneShot) MPLoop(mHandle, true);
     // MPVideoOnly(mHandle, true);
 #elif SUPPORT_FFMPEG_RGB
-    mTaskRun = false;
-    while (!mTaskExit) usleep(1000);
     __del(mVideoInfo);
     mVideoInfo = new VideoInfo();
     mError = mVideoInfo->setFile(mURL.c_str());
-    mTaskRun = true;
-    mTaskExit = false;
-    pthread_t tid;
-    pthread_create(&tid, NULL, threadReadFrame, this);
 #endif
     mStatus = VS_INIT;
 }
 
 int VideoView::checkEvents() {
 #if SUPPORT_FFMPEG_RGB
-    if (mStatus != VS_PLAY || mVideoInfo->isEnd()) return 0;
-    mVideoInfo->playFrameNum = getTimeFrameNum();
-    if (mVideoInfo->playFrameNum > mVideoInfo->frameCount) {
-        if (mVideoInfo->playFrameNum > mVideoInfo->frameCount + 5) return 0;
-        mVideoInfo->playFrameNum = mVideoInfo->frameCount;
+    if (mStatus == VS_PLAY) {
+        return mVideoInfo->hasFrame();
+    } else {
+        return 0;
     }
-    //LOGV("mVideoInfo->playFrameNum=%d",mVideoInfo->playFrameNum);
-    if (mVideoInfo->readCount <= mVideoInfo->playFrameNum) return 1;
 #endif
     return 0;
 }
@@ -740,64 +704,39 @@ int VideoView::handleEvents() {
     VideoInfo::AVRgbData *vd = mVideoInfo->getData();
     if (!vd) return 0;
 
-    /* 检查播放的帧数与时间帧 */
-    if (vd->frameNum < mVideoInfo->playFrameNum) {
-        mVideoInfo->freeData(vd);
-        return 0;
-    }
-    LOGV("play FrameNum=%04d", vd->frameNum);
-
     uint8_t *rgbData = vd->pFrameRGB->data[0]; // RGB数据
     int      width   = vd->width;              // 图像宽度
     int      height  = vd->height;             // 图像高度
 
-    static Cairo::RefPtr<Cairo::ImageSurface> img =
-        Cairo::ImageSurface::create(Cairo::Surface::Format::RGB24, width, height);
-    // 获取ImageSurface的数据 */
+    if (!rgbData) {
+        mVideoInfo->freeData(vd);
+        return 0;
+    }
+
+    Cairo::RefPtr<Cairo::ImageSurface> img = Cairo::ImageSurface::create(Cairo::Surface::Format::ARGB32, width, height);
+    // 获取ImageSurface的数据
     unsigned char *imageSurfaceData = img->get_data();
     int            stride           = img->get_stride();
-    // 将RGB数据写入ImageSurface */
+
+    LOGD("index=%d width=%d height=%d data=%p stride=%d", vd->idx, vd->width, vd->height, rgbData, stride);
+
+    // 将RGB数据写入ImageSurface
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
-            // 计算当前像素的偏移量 */
-            int offset  = y * stride + x * 4;
-            int offsetY = y * width * 3;
-            int offsetX = x * 3;
-            // 将RGB数据写入ImageSurface */
-            imageSurfaceData[offset + 2] = rgbData[offsetY + offsetX];     // 红色通道
-            imageSurfaceData[offset + 1] = rgbData[offsetY + offsetX + 1]; // 绿色通道
-            imageSurfaceData[offset + 0] = rgbData[offsetY + offsetX + 2]; // 蓝色通道
+            // 计算当前像素的偏移量
+            int offset = y * stride + x * 4;
+            // 将RGB数据写入ImageSurface
+            imageSurfaceData[offset + 3] = 0xFF;
+            imageSurfaceData[offset + 2] = rgbData[y * width * 3 + x * 3];     // 红色通道
+            imageSurfaceData[offset + 1] = rgbData[y * width * 3 + x * 3 + 1]; // 绿色通道
+            imageSurfaceData[offset + 0] = rgbData[y * width * 3 + x * 3 + 2]; // 蓝色通道
         }
     }
-    setImageBitmap(img);
 
+    setImageBitmap(img);
     mVideoInfo->freeData(vd);
 
     return 1;
 #endif
     return 0;
 }
-
-int VideoView::getTimeFrameNum(){
-    int timems   = SystemClock::uptimeMillis() - mPlayTime;
-    int frameNum = timems * mVideoInfo->fps / 1000;
-    return mPlayFrameNum + frameNum;
-}
-
-void *VideoView::threadReadFrame(void *param) {
-    prctl(PR_SET_NAME, "rgb_video");
-    VideoView *pthis = static_cast<VideoView *>(param);
-    pthis->onTask();
-    return 0;
-}
-
-void VideoView::onTask() {
-    while (mTaskRun) {
-        if (mVideoInfo->videoFrames.empty()) mVideoInfo->readFrame();
-        if (mVideoInfo->isEnd()) break;
-        usleep(1000);
-    }
-    mTaskRun  = false;
-    mTaskExit = true;
-}
-

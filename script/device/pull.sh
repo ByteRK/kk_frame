@@ -2,7 +2,7 @@
  # @Author: hanakami
  # @Date: 2025-05-08 17:08:00
  # @email: hanakami@163.com
- # @LastEditTime: 2025-05-08 18:48:51
+ # @LastEditTime: 2025-09-01 16:39:45
  # @FilePath: /hana_frame/script/pull.sh
  # @Description: 
  # Copyright (c) 2025 by hanakami, All Rights Reserved. 
@@ -10,8 +10,10 @@
 
 NAME=hana_frame
 SPEED=38400
+
 APP_DIR=/customer/app
 LIB_DIR=/customer/lib
+
 IPADDR=192.168.31.3
 SERVEIP=192.168.31.2
 
@@ -37,8 +39,13 @@ for arg in "$@"; do
             cd $LIB_DIR
             tftp -g -r libcdroid.so  $SERVEIP -b $SPEED
             ;;
+        -tvhal)
+            cd $LIB_DIR
+            tftp -g -r libtvhal.so  $SERVEIP -b $SPEED
+            ;;
         *)
-            echo "未知参数: $arg"
+            echo "Unknown arg: $arg"
+            echo "Support args: -app -app -pak -cdroid -tvhal"
             ;;
     esac
 done

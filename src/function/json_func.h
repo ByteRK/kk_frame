@@ -2,7 +2,7 @@
  * @Author: hanakami
  * @Date: 2025-05-08 17:08:00
  * @email: hanakami@163.com
- * @LastEditTime: 2025-06-24 03:44:08
+ * @LastEditTime: 2025-09-01 17:01:30
  * @FilePath: /hana_frame/src/function/json_func.h
  * @Description: 
  * Copyright (c) 2025 by hanakami, All Rights Reserved. 
@@ -11,7 +11,8 @@
 #ifndef __json_func_h__
 #define __json_func_h__
 
-#include "json/json.h"
+#include <json/json.h>
+#include <string>
 
 
 /// @brief json读值
@@ -58,24 +59,24 @@ T jsonSafeGet(const Json::Value& json, T defaultValue) {
 /// @return 
 bool convertStringToJson(const std::string& str, Json::Value& root);
 
-/// @brief json转string
-/// @brief 完整结构
+/// @brief 将Json::Value转换为字符串
 /// @param root 
 /// @param str 
+/// @param indentation 传空为紧凑风格
 /// @return 
-bool convertJsonToString(const Json::Value& root, std::string& str);
+bool convertJsonToString(const Json::Value& root, std::string& str, const std::string& indentation = "    ");
 
-/// @brief 加载本地Json文件
+/// @brief 从本地文件加载Json数据
 /// @param filePath 
 /// @param root 
 /// @return 
 bool loadLocalJson(const std::string& filePath, Json::Value& root);
 
-/// @brief 保存Json至本地文件
+/// @brief 将Json::Value保存到本地文件
 /// @param filePath 
 /// @param root 
+/// @param indentation 传空为紧凑风格
 /// @return 
-bool saveLocalJson(const std::string& filePath, const Json::Value& root);
-
+bool saveLocalJson(const std::string& filePath, const Json::Value& root, const std::string& indentation = "    ");
 
 #endif // __json_func_h__

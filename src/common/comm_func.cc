@@ -2,7 +2,7 @@
  * @Author: hanakami
  * @Date: 2025-05-08 17:08:00
  * @email: hanakami@163.com
- * @LastEditTime: 2025-06-26 08:31:24
+ * @LastEditTime: 2025-09-01 16:43:22
  * @FilePath: /hana_frame/src/common/comm_func.cc
  * @Description: 全局共工函数
  * Copyright (c) 2025 by hanakami, All Rights Reserved. 
@@ -10,6 +10,7 @@
 
 #include <arpa/inet.h>
 #include <ctime>
+#include <chrono>
 #include <iomanip>
 #include <iostream>
 #include <locale>
@@ -19,13 +20,18 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <ghc/filesystem.hpp>
+#include <iconv.h>
+#include <regex> // 正则表达式
 
 #include <cdlog.h>
 #include "comm_func.h"
 
-#include "series_config.h"
+#include "series_info.h"
+
+#include <sys/ioctl.h>
 
 bool isNumric(const char* str_nums) {
     for (const char* p = str_nums; *p; p++) {
@@ -91,14 +97,29 @@ std::string getDateTimeAP(long int time_sec, const char* fmt_am, const char* fmt
     return datetime;
 }
 
-int getMaxDay(int year, int mon) {
-    std::tm timeinfo = { 0 };
-    timeinfo.tm_year = year - 1900; // 年份从1900开始
-    timeinfo.tm_mon = mon;
-
-    std::time_t time = std::mktime(&timeinfo);
-
-    return std::localtime(&time)->tm_mday;
+int getMaxDay(int year, int month) {
+    if (month < 1 || month > 12) return 0;
+#if 0 // 标准库方式
+    tm tm_struct = {};                // 初始化 tm 结构体
+    tm_struct.tm_year = year - 1900;  // tm_year 是从 1900 开始的年份偏移
+    tm_struct.tm_mon = month;         // 设置为目标月份的下一个月（例如：3月 -> 4月）
+    tm_struct.tm_mday = 0;            // 设置为下个月的“第0天”，即上个月的最后一天
+    tm_struct.tm_hour = 0;            // 必须设置时间字段，避免未定义行为
+    mktime(&tm_struct);               // 标准化时间，自动调整日期
+    return tm_struct.tm_mday;         // 返回计算后的天数
+#else // 手动计算方式
+    static const int days[] = { 31,28,31,30,31,30,31,31,30,31,30,31 };
+    if (month == 2) {
+        // 判断闰年条件：能被4整除但不能被100整除，或能被400整除
+        if ((year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)) {
+            return 29; // 闰年2月有29天
+        } else {
+            return 28; // 平年2月有28天
+        }
+    } else {
+        return days[month - 1];       // 月份从1开始，数组索引从0开始
+    }
+#endif
 }
 
 int64_t getZeroTime() {
@@ -200,38 +221,47 @@ int stringSplit(const std::string& str, std::vector<std::string>& out, char ch /
 }
 
 void timeSet(int year, int month, int day, int hour, int min, int sec) {
-    struct timeval tv;
-    std::time_t    t;
-    struct std::tm cur;
+    // 数据有效性检查
+    if (year == 0 && month == 0 && day == 0 && hour == 0 && min == 0 && sec == 0) {
+        return;
+    }
 
-    if (year == 0 && month == 0 && day == 0 && hour == 0 && min == 0 && sec == 0) { return; }
+    // 使用 std::chrono::system_clock 获取当前时间
+    auto now = std::chrono::system_clock::now();
+    std::time_t currentTime = std::chrono::system_clock::to_time_t(now);
+    std::tm cur = *std::localtime(&currentTime);
 
-    t = std::time(NULL);
-    cur = *std::localtime(&t);
+    // 更新时间信息 (仅当参数有效时更新)
+    if (year > 0) cur.tm_year = year - 1900;              // Year - 1900.
+    if (month > 0 && month <= 12) cur.tm_mon = month - 1; // [0-11]
+    if (day > 0) cur.tm_mday = day;                       // [1-31]
+    if (hour >= 0) cur.tm_hour = hour;                    // [0-23]
+    if (min >= 0) cur.tm_min = min;                       // [0-59]
+    if (sec >= 0) cur.tm_sec = sec;                       // [0-60]
 
-    if (year > 0) cur.tm_year = year - 1900;
-    if (month > 0) cur.tm_mon = month - 1;
-    if (day > 0) cur.tm_mday = day;
-    if (hour > 0) cur.tm_hour = hour;
-    if (min > 0) cur.tm_min = min;
-    cur.tm_sec = sec;
+    // 处理日期溢出
+    std::time_t newTime = std::mktime(&cur);
+    if (newTime == -1) {
+        LOGE("Invalid date/time provided.");
+        return;
+    }
 
-    tv.tv_sec = mktime(&cur);
-    tv.tv_usec = 0;
-#ifndef PRODUCT_X64
-    settimeofday(&tv, NULL);
-#endif
+    // 设置系统时间
+    timeSet(newTime);
 }
 
 void timeSet(const int64_t& time_sec) {
+#ifndef CDROID_X64
     struct timeval set_tv;
     set_tv.tv_sec = time_sec;
     set_tv.tv_usec = 0;
-#ifndef PRODUCT_X64
     settimeofday(&set_tv, NULL);
+    LOGE("set time %s", getDateTime("%Y-%m-%d %H:%M:%S").c_str());
 #ifdef CDROID_SIGMA
     sysCommand("hwclock --systohc");
 #endif
+#else
+    LOGE("set time %s", getDateTime(time_sec, "%Y-%m-%d %H:%M:%S").c_str());
 #endif
 }
 
@@ -240,7 +270,7 @@ std::string getDayOnWeek(int day) {
     return weekList[day % 7];
 }
 
-int wordLen(const char* buffer) {
+int wordLen(const char* buffer, bool en2cn) {
     int word = 0;
     const char* pos = buffer;
 
@@ -248,20 +278,26 @@ int wordLen(const char* buffer) {
         if ((*pos & 0x80) == 0) {
             // ASCII字符 (1字节)
             pos++;
+            word++;
         } else if ((*pos & 0xE0) == 0xC0) {
             // 2字节字符
             pos += 2;
+            word++;
+            if (en2cn) word++;
         } else if ((*pos & 0xF0) == 0xE0) {
             // 3字节字符
             pos += 3;
+            word++;
+            if (en2cn) word++;
         } else if ((*pos & 0xF8) == 0xF0) {
             // 4字节字符
             pos += 4;
+            word++;
+            if (en2cn) word++;
         } else {
             // 无效字节，直接跳过
             pos++;
         }
-        word++;
     }
     return word;
 }
@@ -429,6 +465,19 @@ std::string sysCommand(const std::string& cmd) {
 
     return result;
 }
+/// @brief 去除反斜杠
+/// @param input 
+/// @return 
+std::string removeBackslashes(const std::string& input) {
+    std::string output;
+    for (char ch : input) {
+        if (ch != '\\') { // 只保留不是反斜杠的字符
+            output += ch;
+        }
+    }
+    return output;
+}
+
 
 std::string getHostIp(const std::string& host) {
     std::string     ip_addr;
@@ -524,6 +573,17 @@ int calculation_signal(float Quality, int SignalLevel) {
         return 2;
     else if (Quality < 0.25 || SignalLevel < -70)
         return 1;
+    else
+        return 1;
+}
+
+int calculation_signal(int SignalLevel) {
+    if (SignalLevel > -60)
+        return 4;
+    else if (SignalLevel > -75)
+        return 3;
+    else if (SignalLevel > -90)
+        return 2;
     else
         return 1;
 }
@@ -747,4 +807,161 @@ int checkVersion(const std::string& version, const std::string& localVersion) {
     }
 
     return 0;
+}
+
+std::string ConvertEncoding(const std::string& input, const char* from_encoding, const char* to_encoding) {
+    iconv_t cd = iconv_open(to_encoding, from_encoding);
+    if (cd == (iconv_t)-1) {
+        return "";
+    }
+
+    size_t in_bytes = input.size();
+    size_t out_bytes = in_bytes * 4; // 预估输出缓冲区大小
+    std::string output(out_bytes, 0);
+
+    char* in_ptr = const_cast<char*>(input.data());
+    char* out_ptr = &output[0];
+
+    if (iconv(cd, &in_ptr, &in_bytes, &out_ptr, &out_bytes) == (size_t)-1) {
+        iconv_close(cd);
+        return "";
+    }
+
+    iconv_close(cd);
+    output.resize(output.size() - out_bytes);
+    return output;
+}
+
+std::string GBKToUTF8_Iconv(const char* gbk_str) {
+    iconv_t cd = iconv_open("UTF-8", "GBK"); // 定义转换方向
+    if (cd == (iconv_t)-1) return "";
+
+    size_t in_len = strlen(gbk_str);
+    size_t out_len = in_len * 4; // UTF-8 最多占用 4 字节/字符
+    std::string utf8_str(out_len, 0);
+
+    char* in_ptr = const_cast<char*>(gbk_str);
+    char* out_ptr = &utf8_str[0];
+
+    if (iconv(cd, &in_ptr, &in_len, &out_ptr, &out_len) == (size_t)-1) {
+        iconv_close(cd);
+        return "";
+    }
+
+    iconv_close(cd);
+    utf8_str.resize(utf8_str.size() - out_len); // 调整实际长度
+    return utf8_str;
+}
+
+std::string ParseHexEscapes(const std::string& input) {
+    std::vector<char> bytes;
+    size_t i = 0;
+    while (i < input.size()) {
+        if (input[i] == '\\' && i + 3 < input.size() && input[i + 1] == 'x') {
+            // 提取十六进制值（如 "e4"）
+            std::string hex_str = input.substr(i + 2, 2);
+            std::istringstream hex_stream(hex_str);
+            int byte_value;
+            if (hex_stream >> std::hex >> byte_value) {
+                bytes.push_back(static_cast<char>(byte_value));
+                i += 4; // 跳过已处理的 "\xHH"
+            } else {
+                // 解析失败，保留原字符
+                bytes.push_back(input[i++]);
+            }
+        } else {
+            bytes.push_back(input[i++]);
+        }
+    }
+    return std::string(bytes.begin(), bytes.end());
+}
+
+
+bool macToChar(const std::string& mac, uint8_t* mac_char) {
+    std::istringstream ss(mac);
+    std::string item;
+    for (int i = 0; i < 6; ++i) {
+        if (std::getline(ss, item, ':')) {
+            // 将十六进制字符串转换为 uint8_t
+            mac_char[i] = static_cast<uint8_t>(std::stoi(item, nullptr, 16));
+        } else {
+            // 如果输入的 MAC 地址不够长，处理错误
+            LOGE("Invalid MAC address format.");
+            return false;
+        }
+    }
+    return true;
+}
+
+bool isValidMacAddress(const std::string& mac) {
+    // 使用正则表达式检查 MAC 地址格式
+    std::regex macRegex(R"((([0-9A-Fa-f]{2}[-:]){5}([0-9A-Fa-f]{2}))|(([0-9A-Fa-f]{2}){6}))");
+    return std::regex_match(mac, macRegex);
+}
+
+int getTpVersion() {
+#ifdef CDROID_SIGMA
+    int fd = open("/dev/techwin_ioctl", O_RDONLY);
+    if (fd < 0) {
+        perror("open failed");
+        return -1;
+    }
+
+    int ret = ioctl(fd, 0xff);
+    LOG(ERROR) << "getTpVersion: " << ret << std::endl;
+
+    ::close(fd);
+    return ret;
+#else
+    return 0;
+#endif
+}
+
+std::string clearWhiteSpace(std::string& str) {
+    auto it = std::find_if(str.rbegin(), str.rend(), [](unsigned char ch) {
+        return !std::isspace(ch);
+    });
+    str.erase(it.base(), str.end());
+    return str;
+}
+
+bool checkFileEmpty(const std::string& filename) {
+    // 使用 std::ifstream 打开文件
+    std::ifstream file(filename);
+
+    // 检查文件是否成功打开
+    if (!file) {
+        LOGE("File not found or cannot be opened.");
+        return false; // 或者抛出异常
+    }
+
+    // 移动到文件末尾
+    file.seekg(0, std::ios::end);
+    // 检查文件大小
+    return file.tellg() == 0;
+}
+
+bool checkFileExitAndNoEmpty(const char* filename) {
+    // 检查文件能否成功打开
+    std::ifstream file(filename);
+    if (!file) {
+        LOGE("File [%s] not found or cannot be opened.", filename);
+        return false;
+    }
+
+    // 检查文件大小
+    file.seekg(0, std::ios::end);
+    if (file.tellg() == 0) {
+        LOGE("File [%s] is empty.", filename);
+        return false;
+    }
+
+    // 检查文件权限
+    // struct stat buffer;
+    // if (stat(filename, &buffer) != 0 || !(buffer.st_mode & S_IRUSR) || !(buffer.st_mode & S_IWUSR)) {
+    //     LOGE("File [%s] does not have required permissions.", filename);
+    //     return false;
+    // }
+
+    return true;
 }

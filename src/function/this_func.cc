@@ -13,7 +13,7 @@
 #include "comm_func.h"
 
 #include "app_version.h"
-#include "series_config.h"
+#include "series_info.h"
 
 #include <sys/syscall.h>   // for SYS_xxx definitions
 #include <unistd.h>        // for syscall()

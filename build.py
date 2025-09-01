@@ -1,3 +1,16 @@
+'''
+Author: Ricken
+Email: me@ricken.cn
+Date: 2025-04-25 12:52:59
+LastEditTime: 2025-05-29 11:26:38
+FilePath: /hana_frame/build.py
+Description: 项目构建脚本
+BugList: 
+
+Copyright (c) 2025 by Ricken, All Rights Reserved. 
+
+'''
+
 import os
 import subprocess
 import shutil
@@ -62,7 +75,7 @@ def replace_id_in_source_files(new_project_name, directories):
                             # 第二步：将剩余的 "hana_frame" 替换为新项目名称
                             new_content = temp_content.replace('hana_frame', new_project_name)
                             
-                            # 第三步：将临时标记 "hana_frame" 恢复为 "hana_frame"
+                            # 第三步：将临时标记 "hana__frame" 恢复为 "hana_frame"
                             final_content = new_content.replace('hana__frame', 'hana_frame')
                             
                             # 只有在内容发生变化时才写回文件

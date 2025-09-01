@@ -2,7 +2,7 @@
  * @Author: hanakami
  * @Date: 2025-05-08 17:08:00
  * @email: hanakami@163.com
- * @LastEditTime: 2025-05-26 10:07:10
+ * @LastEditTime: 2025-09-01 16:31:05
  * @FilePath: /hana_frame/src/windows/base.h
  * @Description: 页面基类
  * Copyright (c) 2025 by hanakami, All Rights Reserved. 
@@ -32,7 +32,7 @@
 #define __visiblev(V,S)   (V)->setVisibility(S)
 #define __visibleg(G,I,S) __getg(G,I)->setVisibility(S)
 
-#define __delete(v)      if(v)delete v;
+#define __delete(v)       do { if(v) { delete v; v = nullptr; } } while(0)
 
 // 语言定义
 enum {
@@ -45,7 +45,7 @@ enum {
 // 页面定义
 enum {
     PAGE_NULL,       // 空状态
-    PAGE_HOME,    // 待机
+    PAGE_HOME,       // 主页面
     PAGE_OTA,        // OTA
 };
 
@@ -74,6 +74,11 @@ static std::string langToText(uint8_t lang) {
 
  /// @brief 基类
 class PBase {
+public:
+    typedef struct {
+        void*       vData = nullptr;  // 指针数据（暂时未想到比较好的办法处理内存释放问题，勿用）
+        Json::Value jData;            // 常规数据
+    } StateBundle;                    // 状态包
 protected:
     Looper*         mLooper = nullptr;                         // 事件循环
     Context*        mContext = nullptr;                        // 上下文
@@ -98,7 +103,9 @@ public:
     void callAttach();                                         // 通知页面挂载
     void callDetach();                                         // 通知页面剥离
     void callReload();                                         // 调用重加载
-    void callMsg(int type, void* data);                        // 接受消息
+    void callSaveState(StateBundle& outState);                 // 保存状态
+    void callRestoreState(const StateBundle& savedState);      // 恢复状态
+    void callMsg(const Json::Value& data);                     // 接受消息
     void callMcu(uint8_t* data, uint8_t len);                  // 接受电控数据
     bool callKey(uint16_t keyCode, uint8_t evt);               // 接受按键事件
     void callLangChange(uint8_t lang);                         // 调用语言切换
@@ -111,12 +118,13 @@ protected:
     virtual void onAttach();                                   // 挂载页面回调
     virtual void onDetach();                                   // 剥离页面回调
     virtual void onReload();                                   // 重新加载回调
-    virtual void onMsg(int type, void* data);                  // 消息回调
+    virtual void onSaveState(StateBundle& outState);           // 状态保存
+    virtual void onRestoreState(const StateBundle& savedState);// 状态恢复
+    virtual void onMsg(const Json::Value& data);               // 消息回调
     virtual void onMcu(uint8_t* data, uint8_t len);            // 电控数据回调
     virtual bool onKey(uint16_t keyCode, uint8_t evt);         // 按键事件回调
     virtual void onLangChange();                               // 语言切换通知回调
     virtual void onCheckLight(uint8_t* left, uint8_t* right);  // 检查按键灯回调
-
     void setAutoBackToStandby(uint32_t time, bool withBlack = false);  // 设置自动退出到待机
     void setLangText(TextView* v, const Json::Value& value);           // 设置语言文本
 };
@@ -145,11 +153,11 @@ public:
     virtual ~PageBase();            // 析构函数
 protected:
     void initUI() override;
-    virtual void initBase(){ };     // 初始化基础内容
-    virtual void getView(){ };      // 获取页面指针
-    virtual void setAnim(){ };      // 设置动画属性
-    virtual void setView(){ };      // 设置页面属性
-    virtual void loadData(){ };     // 加载页面数据
+    virtual void initBase() { };     // 初始化基础内容
+    virtual void getView() { };      // 获取页面指针
+    virtual void setAnim() { };      // 设置动画属性
+    virtual void setView() { };      // 设置页面属性
+    virtual void loadData() { };     // 加载页面数据
 };
 
 #endif
