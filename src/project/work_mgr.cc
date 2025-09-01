@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-08-29 16:08:49
- * @LastEditTime: 2025-09-01 16:50:13
+ * @LastEditTime: 2025-09-01 18:13:46
  * @FilePath: /kk_frame/src/project/work_mgr.cc
  * @Description:
  * @BugList:
@@ -12,19 +12,15 @@
  */
 
 #include "work_mgr.h"
-#include "global_data.h"
-#include "base.h"
-#include "proto.h"
-#include "wind_mgr.h"
+#include "work_timer.h"
+#include <core/systemclock.h>
 
 TimerMgr::TimerMgr() {
-
     mTimerId = 0;
     mIdOverflow = false;
-    Looper::getForThread()->addEventHandler(this);
+    cdroid::Looper::getForThread()->addEventHandler(this);
 
     mTimerIdMap.clear();
-
     mDefaultTimerFactory[TIMER_WORKING] = []() { return new CookingTimer(); };
 }
 
@@ -37,7 +33,7 @@ TimerMgr::~TimerMgr() {
     mBlocks.clear();
 }
 
-/// @brief 启动定时器
+/// @brief 启动内置定时器
 /// @param param  定时器类型
 /// @param timespace  定时器间隔
 /// @param repeat  定时次数
@@ -60,15 +56,16 @@ void TimerMgr::start(size_t param, uint32_t timespace, int16_t repeat) {
     }
 }
 
-/// @brief 停止定时器
+/// @brief 停止内置定时器
 /// @param param  定时器类型
+/// @note 回调类将被析构
 void TimerMgr::stop(size_t param) {
     // 找到该类型的定时器
     auto it = mTimerIdMap.find(param);
     if (it != mTimerIdMap.end()) {
         uint32_t id = it->second.first;
         delTimer(id);  // 取消定时器
-        // delete it->second.timer;
+        delete it->second.second;
         mTimerIdMap.erase(it);
         LOGE("TimerMgr stop id:%d param:%d", id, param);
     } else {
@@ -97,7 +94,7 @@ uint32_t TimerMgr::addTimer(uint32_t timespace, WorkTimer* timercb, size_t param
     timer->param = param;
     timer->repeat = repeat;
     timer->count = 0;
-    timer->begTime = SystemClock::uptimeMillis();
+    timer->begTime = cdroid::SystemClock::uptimeMillis();
     timer->delit = false;
 
     mWorking.insert(std::make_pair(timer->id, timer));
@@ -214,7 +211,7 @@ void TimerMgr::addWorked(TimerData* dat) {
     LOGV("add work. dat=%u nextTime=%ld count=%d", dat->id, dat->nextTime, mWorked.size());
 }
 
-/// @brief 删除计时器
+/// @brief 打印计时器
 void TimerMgr::dumpWork() {
     for (auto it = mWorked.begin(); it != mWorked.end(); it++) {
         TimerData* dat = *it;
@@ -226,7 +223,7 @@ void TimerMgr::dumpWork() {
 /// @return 
 int TimerMgr::checkEvents() {
     if (mWorked.empty()) return 0;
-    int64_t    nowms = SystemClock::uptimeMillis();
+    int64_t    nowms = cdroid::SystemClock::uptimeMillis();
     TimerData* headTimer = mWorked.front();
     if (headTimer->nextTime <= nowms) return 1;
     return 0;
@@ -236,7 +233,7 @@ int TimerMgr::checkEvents() {
 /// @return 
 int TimerMgr::handleEvents() {
     int     diffms, eventCount = 0;
-    int64_t nowms = SystemClock::uptimeMillis();
+    int64_t nowms = cdroid::SystemClock::uptimeMillis();
 
     do {
         TimerData* headTimer = mWorked.front();
@@ -256,128 +253,9 @@ int TimerMgr::handleEvents() {
 
     } while (eventCount < 5 && !mWorked.empty());
 
-    if ((diffms = SystemClock::uptimeMillis() - nowms) > 100) {
+    if ((diffms = cdroid::SystemClock::uptimeMillis() - nowms) > 100) {
         LOGW("handle timer events more than 100ms. use=%dms", diffms);
     }
 
     return eventCount;
-}
-
-/// @brief 烹饪定时器的构造函数
-CookingTimer::CookingTimer() {
-    // g_data->setLamp(true);
-}
-
-/// @brief 烹饪定时器的析构函数
-CookingTimer::~CookingTimer() {
-    // g_data->setLamp(true);
-}
-
-/// @brief 烹饪定时器
-/// @param id 定时器id
-/// @param param 定时器类型
-/// @param count 定时次数
-void CookingTimer::onTimer(uint32_t id, size_t param, uint32_t count) {
-    //     LOGV("CookingTimer::onTimer id:%d param:%d count:%d", id, param, count);
-    //     if (g_data->mStatus == ES_WORKING) {
-    //         // 因为该 timer 已有时间修正的作用，因此可以直接 - 1 秒
-    // #ifdef CDROID_X64
-    //         g_data->mOverTime -= 10;
-    // #else
-    //         g_data->mOverTime--;
-    // #endif
-    //         if (g_data->mDoor) {
-    //             if (g_window->getPageType() != PAGE_COOKING) {
-    //                 g_windMgr->goTo(PAGE_COOKING);
-    //             } else {
-    //                 // 通知工作页面更新
-    //                 g_windMgr->sendMsg(PAGE_COOKING, MSG_DOOR_CHANGE);
-    //             }
-    //         }
-
-    //         // 当前步骤烹饪已结束
-    //         if (g_data->mOverTime <= 0) {
-    //             // 有下一步
-    //             if (g_data->mRunStepIndex < g_data->mRunningModeData.modes.size() - 1) {
-    //                 // 自动下一步
-    //                 if (g_data->mRunningModeData.modes[g_data->mRunStepIndex].autoNext) {
-    //                     g_data->mRunStepIndex++;
-    //                     g_data->mAllTime = g_data->mRunningModeData.getStepWorkTime(g_data->mRunStepIndex);
-    //                     g_data->mOverTime = g_data->mAllTime;
-
-    //                 } else {
-    //                     // 需弹窗提示
-    //                     g_data->mStatus = ES_PAUSE;
-    //                     g_data->mRunStepIndex++;
-    //                     g_data->mAllTime = g_data->mRunningModeData.getStepWorkTime(g_data->mRunStepIndex);
-    //                     g_data->mOverTime = g_data->mAllTime + 1;
-    //                     g_TimerMgr->stop(TIMER_WORKING); // 停止工作的tick
-    //                     PopNormal::BaseDataStr baseData;
-    //                     baseData.title = "温馨提示";
-    //                     baseData.type = PopNormal::PT_NEXT_STEP;
-    //                     std::string nextInfo = g_data->mRunStepIndex == 1 ? "一" : "二";
-    //                     baseData.info = "第" + nextInfo + "段烹饪已完成，\n请取出食材加工后再放入烹饪";
-    //                     baseData.enterText = "下一步";
-    //                     baseData.cancelText = "";
-    //                     baseData.fromView = nullptr;
-    //                     baseData.enterListener = [this]() {
-    //                         g_data->mStatus = ES_WORKING;
-    //                         g_TimerMgr->start(TIMER_WORKING, 1000);// 启动工作tick
-    //                         g_windMgr->sendMsg(PAGE_COOKING, MSG_WORKING_UPDATE);
-    //                     };
-    //                     g_windMgr->showPop(POP_NORMAL, &baseData);
-    //                     if (g_data->mRunStepIndex == 1) g_aligenie->textToSpeech("首段烹饪已完成，请取出食材加工");
-    //                 }
-    //             } else {
-    //                 g_data->mStatus = ES_DOEN;
-    //                 g_TimerMgr->stop(TIMER_WORKING); // 停止工作的tick
-    //             }
-    //             // 若不是工作页面，则需先跳转到工作页面
-    //             if (g_window->getPageType() != PAGE_COOKING) {
-    //                 g_windMgr->goTo(PAGE_COOKING);
-    //             } else {
-    //                 // 通知工作页面更新
-    //                 g_windMgr->sendMsg(PAGE_COOKING, MSG_WORKING_UPDATE);
-    //             }
-    //             // if (g_window->getPopType() == POP_NORMAL){
-    //             //     g_windMgr->closePop(POP_NORMAL);
-    //             // }
-    //             // 若工作状态为暂停，则是有下一步，但需弹窗提示
-    //             if (g_data->mStatus == ES_WAIT) {
-    //                 PopNormal::BaseDataStr baseData;
-    //                 baseData.title = "温馨提示";
-    //                 baseData.type = PopNormal::PT_NEXT_STEP;
-    //                 baseData.info = g_data->mRunningModeData.modes[g_data->mRunStepIndex].toNextText;
-    //                 baseData.enterText = "下一步";
-    //                 baseData.cancelText = "";
-    //                 baseData.fromView = nullptr;
-    //                 baseData.enterListener = [this]() {
-    //                     g_data->mRunStepIndex++;
-    //                     g_data->mStatus = ES_WORKING;
-    //                     g_data->mAllTime = g_data->mRunningModeData.getStepWorkTime(g_data->mRunStepIndex);
-    //                     g_data->mOverTime = g_data->mAllTime;
-    //                     g_TimerMgr->start(TIMER_WORKING, 1000);// 启动工作tick
-    //                     g_windMgr->sendMsg(PAGE_COOKING, MSG_WORKING_UPDATE);
-    //                 };
-
-    //                 g_windMgr->showPop(POP_NORMAL, &baseData);
-    //             }
-    //         }
-    //         g_windMgr->sendMsg(PAGE_COOKING, MSG_WORKING_TICK);
-    // #ifndef TUYA_OS_DISABLE
-    //         // if((g_data->getWorkingData().mode == MODE_MICRO_DEFAULT) || (g_data->getWorkingData().mode == MODE_ADDFUNS_THAW)){
-    //         //     g_tuyaOsMgr->reportDpData(TYDPID_REMAIN_TIME, PROP_VALUE, &g_data->mOverTime);
-    //         // }else if (mOverTimeMinute != ((g_data->mOverTime + 59) / 60)) {
-    //         //     mOverTimeMinute = (g_data->mOverTime + 59) / 60;
-    //         //     int reportTime = mOverTimeMinute * 60;
-    //         //     g_tuyaOsMgr->reportDpData(TYDPID_REMAIN_TIME, PROP_VALUE, &reportTime);
-    //         //     LOGE("afkj;ldshf");
-    //         //     LOGE("mOverTimeMinute = %d g_data->mOverTime = %d",mOverTimeMinute,g_data->mOverTime);
-    //         // }
-    //         int reportTime = g_data->mOverTime - 1;
-    //         g_tuyaOsMgr->reportDpData(TYDPID_REMAIN_TIME, PROP_VALUE, &reportTime);
-    // #endif
-    //     } else {
-    //         g_TimerMgr->stop(TIMER_WORKING); // 停止工作的tick
-    //     }
 }

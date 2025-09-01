@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-08-29 16:08:44
- * @LastEditTime: 2025-09-01 16:58:17
+ * @LastEditTime: 2025-09-01 18:13:36
  * @FilePath: /kk_frame/src/project/work_mgr.h
  * @Description:
  * @BugList:
@@ -38,24 +38,24 @@ public:
 private:
 #pragma pack(1)
     struct TimerData {
-        uint32_t   id;
-        uint8_t    delit;
-        uint32_t   timespace;
-        WorkTimer* sink;
-        size_t     param;
-        int16_t    repeat;
-        uint32_t   count;
-        int64_t    begTime;
-        int64_t    nextTime;
+        uint32_t   id;         // ID编号
+        uint8_t    delit;      // 是否删除
+        uint32_t   timespace;  // 时间间隔
+        WorkTimer* sink;       // 回调对象
+        size_t     param;      // 参数
+        int16_t    repeat;     // 重复次数
+        uint32_t   count;      // 计时次数
+        int64_t    begTime;    // 开始时间
+        int64_t    nextTime;   // 下次时间
     };
 #pragma pack()
 
-    uint32_t                        mTimerId;
-    bool                            mIdOverflow;
-    std::vector<TimerData*>         mBlocks;
-    std::list<TimerData*>           mFreed;
-    std::list<TimerData*>           mWorked;
-    std::map<uint32_t, TimerData*>  mWorking;
+    uint32_t                        mTimerId;    // 计时器ID
+    bool                            mIdOverflow; // 计时器ID是否溢出
+    std::vector<TimerData*>         mBlocks;     // 计时器数据块
+    std::list<TimerData*>           mFreed;      // 空闲计时器
+    std::list<TimerData*>           mWorked;     // 已排序的待处理计时器列表
+    std::map<uint32_t, TimerData*>  mWorking;    // 当前活跃的计时器映射
 
 protected:
     std::map<
@@ -91,16 +91,6 @@ protected:
 
     virtual int checkEvents() override;
     virtual int handleEvents() override;
-};
-
-/// @brief 烹饪定时器
-class CookingTimer : public TimerMgr::WorkTimer {
-public:
-    CookingTimer();
-    ~CookingTimer();
-    void onTimer(uint32_t id, size_t param, uint32_t count) override;
-private:
-    int mOverTimeMinute = 0;
 };
 
 #endif // _TIMER_MGR_H_
