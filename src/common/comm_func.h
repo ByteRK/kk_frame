@@ -5,6 +5,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <vector>
+#include <stdint.h>
 
 #ifndef __rgba
 #define __rgba(r, g, b, a)                                                                                             \
