@@ -3,6 +3,8 @@
 #include <cdplayer.h>
 #include <unistd.h>
 
+#define DISABLE_VIDEO_VIEW
+
 /*
 xml sample 1280*480
 <VideoView
@@ -34,7 +36,7 @@ enum { AV_ROTATE_NONE, AV_ROTATE_90, AV_ROTATE_180, AV_ROTATE_270 };
 #define AV_PLAY_ERROR                                                                                                  \
     (AV_ACODEC_ERROR | AV_VCODEC_ERROR | AV_NOSYNC | AV_READ_TIMEOUT | AV_NO_NETWORK | AV_INVALID_FILE)
 
-#ifdef PRODUCT_X64
+#if defined(PRODUCT_X64) || defined(DISABLE_VIDEO_VIEW)
 #define SUPPORT_FFMPEG_YUV 0
 #define SUPPORT_FFMPEG_RGB 0
 #else
@@ -625,7 +627,9 @@ double VideoView::getProgress() {
 
 void VideoView::setProgress(double dp)
 {
+#if SUPPORT_FFMPEG_YUV
     MPSeek(mHandle,dp);
+#endif
 }
 
 int VideoView::getStatus() {
