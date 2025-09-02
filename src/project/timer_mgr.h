@@ -2,8 +2,8 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-08-29 16:08:44
- * @LastEditTime: 2025-09-01 18:13:36
- * @FilePath: /kk_frame/src/project/work_mgr.h
+ * @LastEditTime: 2025-09-02 20:25:29
+ * @FilePath: /kk_frame/src/project/timer_mgr.h
  * @Description:
  * @BugList:
  *
@@ -71,6 +71,8 @@ public:
         static TimerMgr s_TimerMgr;
         return &s_TimerMgr;
     }
+    void init();
+    
     // 内置计时任务
     void start(size_t param, uint32_t timespace, int16_t repeat = -1);
     void stop(size_t param);

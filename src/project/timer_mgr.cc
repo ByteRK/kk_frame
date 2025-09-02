@@ -2,8 +2,8 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-08-29 16:08:49
- * @LastEditTime: 2025-09-01 18:13:46
- * @FilePath: /kk_frame/src/project/work_mgr.cc
+ * @LastEditTime: 2025-09-02 20:26:50
+ * @FilePath: /kk_frame/src/project/timer_mgr.cc
  * @Description:
  * @BugList:
  *
@@ -11,17 +11,14 @@
  *
  */
 
-#include "work_mgr.h"
+#include "timer_mgr.h"
 #include "work_timer.h"
 #include <core/systemclock.h>
 
 TimerMgr::TimerMgr() {
     mTimerId = 0;
     mIdOverflow = false;
-    cdroid::Looper::getForThread()->addEventHandler(this);
-
     mTimerIdMap.clear();
-    mDefaultTimerFactory[TIMER_WORKING] = []() { return new CookingTimer(); };
 }
 
 TimerMgr::~TimerMgr() {
@@ -31,6 +28,11 @@ TimerMgr::~TimerMgr() {
 
     for (TimerData* newDat : mBlocks) { free(newDat); }
     mBlocks.clear();
+}
+
+void TimerMgr::init() {
+    cdroid::Looper::getForThread()->addEventHandler(this);
+    mDefaultTimerFactory[TIMER_WORKING] = []() { return new CookingTimer(); };
 }
 
 /// @brief 启动内置定时器

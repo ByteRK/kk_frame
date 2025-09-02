@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2025-08-10 17:46:48
+ * @LastEditTime: 2025-09-02 20:23:28
  * @FilePath: /kk_frame/main.cc
  * @Description:
  * @BugList:
@@ -19,6 +19,7 @@
 #include "this_func.h"
 #include "global_data.h"
 #include "config_mgr.h"
+#include "timer_mgr.h"
 #include "wind_mgr.h"
 
 #include "conn_mgr.h"
@@ -41,6 +42,7 @@ int main(int argc, const char* argv[]) {
     cdroid::Context* ctx = &app;
     g_data->init();
     g_config->init();
+    g_timerMgr->init();
     g_windMgr->init();
     // g_connMgr->init();
     // g_btnMgr->init();
