@@ -2,8 +2,8 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:07
- * @LastEditTime: 2025-01-18 15:52:07
- * @FilePath: /kaidu_tr_pro/src/viewlibs/rvNumberPicker.cc
+ * @LastEditTime: 2025-09-25 14:05:20
+ * @FilePath: /hana_frame/src/viewlibs/rvNumberPicker.cc
  * @Description: 使用RecycleView实现数字选择器
  * 
  * @BugList: 1、暂时不要使用SmoothscrolltoPosition
@@ -714,7 +714,6 @@ RVNumberPicker::RVNumberPicker(Context* context, const AttributeSet& attr)
 /// @brief 析构
 RVNumberPicker::~RVNumberPicker() {
     delete mAdapter;
-    delete mLayoutManage;
     delete mSnapHelper;
 }
 
