@@ -50,6 +50,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     src/i2c
     src/protocol
     src/viewlibs
+    src/wifi
     src/windows
 
     # Cdroid头文件
