@@ -35,7 +35,10 @@
 #define __visiblev(V,S)   (V)->setVisibility(S)
 #define __visibleg(G,I,S) __getg(G,I)->setVisibility(S)
 
-#define __delete(v)       do { if(v) { delete v; v = nullptr; } } while(0)
+template<typename T>
+inline void safeDelete(T*& p) {
+    if (p) { delete p; p = nullptr; }
+}
 
 // 语言定义
 enum {

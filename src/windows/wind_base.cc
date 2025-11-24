@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2025-08-12 02:26:51
+ * @LastEditTime: 2025-11-24 07:47:21
  * @FilePath: /kk_frame/src/windows/wind_base.cc
  * @Description: 窗口类
  * @BugList:
@@ -50,7 +50,7 @@ BaseWindow::BaseWindow() :Window(0, 0, -1, -1) {
 BaseWindow::~BaseWindow() {
     removeCallbacks(mToastRun);
     mToast->animate().cancel();
-    __delete(mPop);
+    safeDelete(mPop);
 }
 
 int BaseWindow::checkEvents() {

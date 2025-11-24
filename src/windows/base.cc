@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2025-08-12 03:15:26
+ * @LastEditTime: 2025-11-24 07:42:04
  * @FilePath: /kk_frame/src/windows/base.cc
  * @Description: 页面基类
  * @BugList:
@@ -32,7 +32,7 @@ PBase::PBase() {
 }
 
 PBase::~PBase() {
-    __delete(mRootView);
+    safeDelete(mRootView);
 }
 
 uint8_t PBase::getLang() const {

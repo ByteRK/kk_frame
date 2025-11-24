@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2025-08-25 10:40:43
+ * @LastEditTime: 2025-11-24 07:42:31
  * @FilePath: /kk_frame/src/windows/wind_mgr.cc
  * @Description: 页面管理类
  * @BugList:
@@ -40,7 +40,7 @@ CWindMgr::CWindMgr() {
 CWindMgr::~CWindMgr() {
     mLooper->removeMessages(this);
     closeAll(true);
-    __delete(mWindow);
+    safeDelete(mWindow);
 }
 
 #if ENABLE_THREAD_SAFE_MSG
@@ -91,7 +91,7 @@ void CWindMgr::handleMessage(Message& message) {
         for (auto it = mPageCache.begin(); it != mPageCache.end(); ) {
             if (it->second->getType() != nowPage) {
                 LOGW("close page: %d <- %p | page count=%d", it->first, it->second, --originalSize);
-                __delete(it->second); // 手动删除
+                safeDelete(it->second); // 手动删除
                 it = mPageCache.erase(it); // 删除并移动迭代器
             } else {
                 ++it; // 仅在未删除时移动迭代器
@@ -104,7 +104,7 @@ void CWindMgr::handleMessage(Message& message) {
         for (auto it = mPopCache.begin(); it != mPopCache.end(); ) {
             if (it->second->getType() != nowPop) {
                 LOGW("close pop: %d <- %p | pop count=%d", it->first, it->second, --originalSize);
-                __delete(it->second); // 手动删除
+                safeDelete(it->second); // 手动删除
                 it = mPopCache.erase(it); // 删除并移动迭代器
             } else {
                 ++it; // 仅在未删除时移动迭代器
@@ -148,7 +148,7 @@ void CWindMgr::close(PageBase* page) {
         int type = it->first;
         if (type == mWindow->getPageType())mWindow->removePage();
         mPageCache.erase(it);
-        __delete(page);
+        safeDelete(page);
         LOGW("close page: %d <- %p | page count=%d", type, page, mPageCache.size());
         return;
     }
@@ -164,7 +164,7 @@ void CWindMgr::close(int page) {
         PageBase* ptr = it->second;
         if (page == mWindow->getPageType())mWindow->removePage();
         mPageCache.erase(it);
-        __delete(ptr);
+        safeDelete(ptr);
         LOGW("close page: %d <- %p | page count=%d ", page, ptr, mPageCache.size());
         return;
     }
@@ -181,7 +181,7 @@ void CWindMgr::closeAll(bool withPop) {
     mPageCache.clear();
     for (auto it : vec) {
         LOGW("close page: %d <- %p | page count=%d ", it->getType(), it, mPageCache.size());
-        __delete(it);
+        safeDelete(it);
     }
 }
 
