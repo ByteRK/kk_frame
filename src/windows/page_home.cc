@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-23 00:04:17
- * @LastEditTime: 2025-08-10 18:13:34
+ * @LastEditTime: 2025-11-26 10:46:27
  * @FilePath: /kk_frame/src/windows/page_home.cc
  * @Description: 主页面
  * @BugList:
@@ -31,7 +31,7 @@ void HomePage::onTick() {
     }
 }
 
-uint8_t HomePage::getType() const {
+int8_t HomePage::getType() const {
     return PAGE_HOME;
 }
 

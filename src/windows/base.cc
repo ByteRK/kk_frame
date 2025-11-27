@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2025-11-24 07:42:04
+ * @LastEditTime: 2025-11-25 17:51:49
  * @FilePath: /kk_frame/src/windows/base.cc
  * @Description: 页面基类
  * @BugList:
@@ -24,11 +24,15 @@
   *************************************** 基类 ***************************************
   */
 
-PBase::PBase() {
+PBase::PBase(std::string resource) {
     mContext = &App::getInstance();;
     mLooper = Looper::getMainLooper();
     mInflater = LayoutInflater::from(mContext);
     mLastTick = 0;
+
+    int64_t startTime = SystemClock::uptimeMillis();
+    mRootView = (ViewGroup*)mInflater->inflate(resource, nullptr);
+    LOGI("Load UI[%s] cost:%lldms", resource.c_str(), SystemClock::uptimeMillis() - startTime);
 }
 
 PBase::~PBase() {
@@ -46,7 +50,7 @@ View* PBase::getRootView() {
 void PBase::callTick() {
     if (mAutoExit && SystemClock::uptimeMillis() - g_window->mLastAction > mAutoExit) {
         LOGI("auto exit");
-        g_windMgr->goTo(PAGE_HOME);
+        g_windMgr->showPage(PAGE_HOME);
         if (mAutoExitWithBlack) g_window->showBlack();
     } else {
         onTick();
@@ -63,20 +67,20 @@ void PBase::callDetach() {
     onDetach();
 }
 
-void PBase::callReload() {
-    onReload();
+void PBase::callLoad(LoadMsgBase* loadMsg) {
+    onLoad(loadMsg);
 }
 
-void PBase::callSaveState(StateBundle& outState) {
-    onSaveState(outState);
+SaveMsgBase* PBase::callSaveState() {
+    return onSaveState();
 }
 
-void PBase::callRestoreState(const StateBundle& savedState) {
-    onRestoreState(savedState);
+void PBase::callRestoreState(const SaveMsgBase* saveMsg) {
+    onRestoreState(saveMsg);
 }
 
-void PBase::callMsg(const Json::Value& data) {
-    onMsg(data);
+void PBase::callMsg(const RunMsgBase* runMsg) {
+    onMsg(runMsg);
 }
 
 void PBase::callMcu(uint8_t* data, uint8_t len) {
@@ -111,16 +115,17 @@ void PBase::onAttach() {
 void PBase::onDetach() {
 }
 
-void PBase::onReload() {
+void PBase::onLoad(LoadMsgBase* loadMsg) {
 }
 
-void PBase::onSaveState(StateBundle& outState) {
+SaveMsgBase* PBase::onSaveState() {
+    return nullptr;
 }
 
-void PBase::onRestoreState(const StateBundle& savedState) {
+void PBase::onRestoreState(const SaveMsgBase* saveMsg) {
 }
 
-void PBase::onMsg(const Json::Value& data) {
+void PBase::onMsg(const RunMsgBase* runMsg) {
 }
 
 void PBase::onMcu(uint8_t* data, uint8_t len) {
@@ -150,8 +155,7 @@ void PBase::setLangText(TextView* v, const Json::Value& value) {
  *************************************** 弹窗 ***************************************
  */
 
-PopBase::PopBase(std::string resource) :PBase() {
-    mRootView = (ViewGroup*)mInflater->inflate(resource, nullptr);
+PopBase::PopBase(std::string resource) :PBase(resource) {
 }
 
 PopBase::~PopBase() {
@@ -163,23 +167,24 @@ PopBase::~PopBase() {
 
  /// @brief 
  /// @param resource 
-PageBase::PageBase(std::string resource) :PBase() {
-    int64_t startTime = SystemClock::uptimeMillis();
-    mRootView = (ViewGroup*)mInflater->inflate(resource, nullptr);
-    LOGI("Load UI[%s] cost:%lldms", resource.c_str(), SystemClock::uptimeMillis() - startTime);
+PageBase::PageBase(std::string resource) :PBase(resource) {
 }
 
 /// @brief 析构
 PageBase::~PageBase() {
 }
 
+/// @brief 
+/// @return 
+bool PageBase::canAutoRecycle() const {
+    return false;
+}
+
 /// @brief 初始化UI
 void PageBase::initUI() {
     mInitUIFinish = false;
-    initBase();
     getView();
     setAnim();
     setView();
-    loadData();
     mInitUIFinish = true;
 }

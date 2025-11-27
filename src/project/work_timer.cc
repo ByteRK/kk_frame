@@ -47,7 +47,7 @@ void CookingTimer::onTimer(uint32_t id, size_t param, uint32_t count) {
     //                 g_windMgr->goTo(PAGE_COOKING);
     //             } else {
     //                 // 通知工作页面更新
-    //                 g_windMgr->sendMsg(PAGE_COOKING, MSG_DOOR_CHANGE);
+    //                 g_windMgr->sendPageMsg(PAGE_COOKING, MSG_DOOR_CHANGE);
     //             }
     //         }
 
@@ -79,7 +79,7 @@ void CookingTimer::onTimer(uint32_t id, size_t param, uint32_t count) {
     //                     baseData.enterListener = [this]() {
     //                         g_data->mStatus = ES_WORKING;
     //                         g_TimerMgr->start(TIMER_WORKING, 1000);// 启动工作tick
-    //                         g_windMgr->sendMsg(PAGE_COOKING, MSG_WORKING_UPDATE);
+    //                         g_windMgr->sendPageMsg(PAGE_COOKING, MSG_WORKING_UPDATE);
     //                     };
     //                     g_windMgr->showPop(POP_NORMAL, &baseData);
     //                     if (g_data->mRunStepIndex == 1) g_aligenie->textToSpeech("首段烹饪已完成，请取出食材加工");
@@ -93,7 +93,7 @@ void CookingTimer::onTimer(uint32_t id, size_t param, uint32_t count) {
     //                 g_windMgr->goTo(PAGE_COOKING);
     //             } else {
     //                 // 通知工作页面更新
-    //                 g_windMgr->sendMsg(PAGE_COOKING, MSG_WORKING_UPDATE);
+    //                 g_windMgr->sendPageMsg(PAGE_COOKING, MSG_WORKING_UPDATE);
     //             }
     //             // if (g_window->getPopType() == POP_NORMAL){
     //             //     g_windMgr->closePop(POP_NORMAL);
@@ -113,13 +113,13 @@ void CookingTimer::onTimer(uint32_t id, size_t param, uint32_t count) {
     //                     g_data->mAllTime = g_data->mRunningModeData.getStepWorkTime(g_data->mRunStepIndex);
     //                     g_data->mOverTime = g_data->mAllTime;
     //                     g_TimerMgr->start(TIMER_WORKING, 1000);// 启动工作tick
-    //                     g_windMgr->sendMsg(PAGE_COOKING, MSG_WORKING_UPDATE);
+    //                     g_windMgr->sendPageMsg(PAGE_COOKING, MSG_WORKING_UPDATE);
     //                 };
 
     //                 g_windMgr->showPop(POP_NORMAL, &baseData);
     //             }
     //         }
-    //         g_windMgr->sendMsg(PAGE_COOKING, MSG_WORKING_TICK);
+    //         g_windMgr->sendPageMsg(PAGE_COOKING, MSG_WORKING_TICK);
     // #ifndef TUYA_OS_DISABLE
     //         // if((g_data->getWorkingData().mode == MODE_MICRO_DEFAULT) || (g_data->getWorkingData().mode == MODE_ADDFUNS_THAW)){
     //         //     g_tuyaOsMgr->reportDpData(TYDPID_REMAIN_TIME, PROP_VALUE, &g_data->mOverTime);

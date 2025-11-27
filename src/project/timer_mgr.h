@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-08-29 16:08:44
- * @LastEditTime: 2025-09-02 20:25:29
+ * @LastEditTime: 2025-11-27 09:50:18
  * @FilePath: /kk_frame/src/project/timer_mgr.h
  * @Description:
  * @BugList:
@@ -16,7 +16,6 @@
 
 #include <core/looper.h>
 #include "common.h"
-// #include "comm_class.h"
 
 #define g_timerMgr TimerMgr::ins()
 
@@ -74,11 +73,11 @@ public:
     void init();
     
     // 内置计时任务
-    void start(size_t param, uint32_t timespace, int16_t repeat = -1);
-    void stop(size_t param);
+    void start(DEFAULT_TIMER_TYPE param, uint32_t timespace, int16_t repeat = -1);
+    void stop(DEFAULT_TIMER_TYPE param);
 
     // 自定义计时任务
-    uint32_t             addTimer(uint32_t timespace, WorkTimer* timercb, size_t param = 0, int16_t repeat = -1);
+    uint32_t             addTimer(uint32_t timespace, WorkTimer* timercb, size_t param, int16_t repeat = -1);
     bool                 delTimer(uint32_t id);
     int                  delTimer(WorkTimer* timercb);
     int                  delTimerFromParam(size_t param);

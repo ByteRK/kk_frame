@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2025-05-03 20:52:40
+ * @LastEditTime: 2025-11-25 17:46:15
  * @FilePath: /kk_frame/src/windows/wind_base.h
  * @Description: 窗口类
  * @BugList:
@@ -90,8 +90,8 @@ public:
     int8_t    getPopType();
     bool      showBlack(bool upload = true);
     void      hideBlack();
-    void      showPage(PageBase* page);
-    void      showPop(PopBase* pop);
+    int8_t    showPage(PageBase* page, LoadMsgBase* initData = nullptr);
+    int8_t    showPop(PopBase* pop, LoadMsgBase* initData = nullptr);
     void      showToast(std::string text, int8_t level, bool keepNow = false, bool animate = true, bool lock = false);
     void      removePage();
     void      removePop();

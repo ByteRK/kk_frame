@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2025-11-24 07:47:21
+ * @LastEditTime: 2025-11-26 18:48:36
  * @FilePath: /kk_frame/src/windows/wind_base.cc
  * @Description: 窗口类
  * @BugList:
@@ -295,7 +295,7 @@ bool BaseWindow::showBlack(bool upload) {
 /// @brief 
 void BaseWindow::hideBlack() {
     if (!mIsBlackView)return;
-    g_windMgr->goTo(PAGE_HOME);
+    g_windMgr->showPage(PAGE_HOME);
     mPage->callKey(KEY_WINDOW, VIRT_EVENT_UP);
     mBlackView->setVisibility(GONE);
     mIsBlackView = false;
@@ -303,30 +303,36 @@ void BaseWindow::hideBlack() {
 }
 
 /// @brief 显示页面
-/// @param page 
-void BaseWindow::showPage(PageBase* page) {
+/// @param page 页面指针
+/// @param initData 初始化数据
+/// @return 最新页面类型
+int8_t BaseWindow::showPage(PageBase* page, LoadMsgBase* initData) {
     removePage();
     mPage = page;
     if (mPage) {
         mPageBox->addView(mPage->getRootView());
         mPage->callAttach();
-        mPage->callReload();
+        mPage->callLoad(initData);
         mPage->callTick(); // 为了避免有些页面变化是通过tick更新的，导致页面刚载入时闪烁
     }
+    return getPageType();
 }
 
 /// @brief 显示弹窗
-/// @param pop 
-void BaseWindow::showPop(PopBase* pop) {
+/// @param pop 弹窗指针
+/// @param initData 初始化数据
+/// @return 最新页面类型
+int8_t BaseWindow::showPop(PopBase* pop, LoadMsgBase* initData) {
     removePop();
     mPop = pop;
     if (mPop) {
         mPopBox->setVisibility(VISIBLE);
         mPopBox->addView(mPop->getRootView());
         mPop->callAttach();
-        mPop->callReload();
+        mPop->callLoad(initData);
         mPop->callTick(); // 为了避免有些页面变化是通过tick更新的，导致页面刚载入时闪烁
     }
+    return getPopType();
 }
 
 /// @brief 显示弹幕

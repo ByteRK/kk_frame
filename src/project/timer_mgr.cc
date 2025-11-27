@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-08-29 16:08:49
- * @LastEditTime: 2025-09-02 20:26:50
+ * @LastEditTime: 2025-11-27 09:50:42
  * @FilePath: /kk_frame/src/project/timer_mgr.cc
  * @Description:
  * @BugList:
@@ -39,7 +39,7 @@ void TimerMgr::init() {
 /// @param param  定时器类型
 /// @param timespace  定时器间隔
 /// @param repeat  定时次数
-void TimerMgr::start(size_t param, uint32_t timespace, int16_t repeat) {
+void TimerMgr::start(DEFAULT_TIMER_TYPE param, uint32_t timespace, int16_t repeat) {
     // 判断是否已存在该类型的定时器
     auto it = mTimerIdMap.find(param);
     if (it == mTimerIdMap.end()) {
@@ -61,7 +61,7 @@ void TimerMgr::start(size_t param, uint32_t timespace, int16_t repeat) {
 /// @brief 停止内置定时器
 /// @param param  定时器类型
 /// @note 回调类将被析构
-void TimerMgr::stop(size_t param) {
+void TimerMgr::stop(DEFAULT_TIMER_TYPE param) {
     // 找到该类型的定时器
     auto it = mTimerIdMap.find(param);
     if (it != mTimerIdMap.end()) {

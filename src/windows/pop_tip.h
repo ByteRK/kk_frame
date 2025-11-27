@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-23 00:04:23
- * @LastEditTime: 2025-02-18 19:54:51
+ * @LastEditTime: 2025-11-26 10:46:39
  * @FilePath: /kk_frame/src/windows/pop_tip.h
  * @Description:
  * @BugList:
@@ -21,7 +21,7 @@ private:
 public:
     TipPop();
     ~TipPop();
-    uint8_t getType() const override;
+    int8_t getType() const override;
 protected:
     void initUI() override;
 };

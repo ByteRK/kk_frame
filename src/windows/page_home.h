@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-23 00:04:23
- * @LastEditTime: 2025-08-10 18:10:01
+ * @LastEditTime: 2025-11-26 10:46:21
  * @FilePath: /kk_frame/src/windows/page_home.h
  * @Description: 主页面
  * @BugList:
@@ -21,7 +21,7 @@ private:
 public:
     HomePage();
     ~HomePage();
-    uint8_t getType() const override;
+    int8_t getType() const override;
 protected:
     void setView() override;
 

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-08-01 03:03:02
- * @LastEditTime: 2025-08-12 01:56:07
+ * @LastEditTime: 2025-11-26 17:47:34
  * @FilePath: /kk_frame/src/protocol/tuya_mgr.cc
  * @Description:
  * @BugList:
@@ -378,7 +378,7 @@ void TuyaMgr::acceptDP(uint8_t* data, uint16_t len) {
             if (data[TUYADP_DATA]) {
                 g_window->hideBlack();
             } else {
-                g_windMgr->goTo(PAGE_HOME);
+                g_windMgr->showPage(PAGE_HOME);
                 g_window->showBlack();
             }
             g_data->mTUYAPower = data[TUYADP_DATA];
@@ -464,7 +464,7 @@ void TuyaMgr::dealOTAComm(uint8_t* data, uint16_t len) {
     send2MCU(send, 1, TYCOMM_OTA_START);
 
     LOGI("[OTA START] allLen=%d oneByte=%d", mOTALen, send[0]);
-    g_windMgr->goTo(PAGE_OTA);
+    g_windMgr->showPage(PAGE_OTA);
 }
 
 void TuyaMgr::dealOTAData(uint8_t* data, uint16_t len) {
