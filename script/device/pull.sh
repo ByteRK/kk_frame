@@ -2,8 +2,8 @@
  # @Author: cy
  # @Email: 964028708@qq.com
  # @Date: 2024-07-11 14:18:06
- # @LastEditTime: 2025-04-26 15:26:03
- # @FilePath: /cy_frame/script/pull.sh
+ # @LastEditTime: 2025-11-27 11:41:57
+ # @FilePath: /cy_frame/script/device/pull.sh
  # @Description: 更新脚本 - 调试用
  # @BugList: 
  # 
@@ -13,8 +13,10 @@
 
 NAME=kk_frame
 SPEED=38400
+
 APP_DIR=/customer/app
 LIB_DIR=/customer/lib
+
 IPADDR=192.168.31.3
 SERVEIP=192.168.31.2
 
@@ -40,8 +42,13 @@ for arg in "$@"; do
             cd $LIB_DIR
             tftp -g -r libcdroid.so  $SERVEIP -b $SPEED
             ;;
+        -tvhal)
+            cd $LIB_DIR
+            tftp -g -r libtvhal.so  $SERVEIP -b $SPEED
+            ;;
         *)
-            echo "未知参数: $arg"
+            echo "Unknown arg: $arg"
+            echo "Support args: -app -app -pak -cdroid -tvhal"
             ;;
     esac
 done

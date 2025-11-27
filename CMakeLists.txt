@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 3.8)
 project(kk_frame)
 message("PROJECT_NAME=${PROJECT_NAME}")
 
-# 版本生成命令
-execute_process(COMMAND bash date2ver WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+# 生成X64下的字体文件位置
+execute_process(COMMAND bash script/fonts.sh  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 # 目标属性设置
 set(CMAKE_CXX_STANDARD 11)
@@ -28,6 +28,12 @@ file(GLOB_RECURSE PROJECT_SOURCES
 
 # 可执行文件配置
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
+
+# 设置版本依赖，使每次构建前运行 date2ver 生成版本号
+add_custom_target(${PROJECT_NAME}_version 
+    COMMAND ${BASH} ${CMAKE_CURRENT_SOURCE_DIR}/date2ver > /dev/null
+    COMMENT "Running date2ver script for version generation")
+add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_version)
 
 # 包含目录配置
 target_include_directories(${PROJECT_NAME} PRIVATE

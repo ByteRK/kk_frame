@@ -2,7 +2,7 @@
  * @Author: cy
  * @Email: 964028708@qq.com
  * @Date: 2025-02-13 16:26:20
- * @LastEditTime: 2025-02-18 19:55:13
+ * @LastEditTime: 2025-11-27 11:45:28
  * @FilePath: /cy_frame/src/windows/pop_lock.cc
  * @Description:
  * @BugList:
@@ -20,7 +20,7 @@ LockPop::LockPop() :PopBase("@layout/pop_lock") {
 LockPop::~LockPop() {
 }
 
-uint8_t LockPop::getType() const {
+int8_t LockPop::getType() const {
     return POP_LOCK;
 }
 

@@ -2,7 +2,7 @@
  * @Author: cy
  * @Email: 964028708@qq.com
  * @Date: 2024-08-01 03:03:02
- * @LastEditTime: 2025-04-25 14:25:44
+ * @LastEditTime: 2025-11-27 11:44:16
  * @FilePath: /cy_frame/src/protocol/tuya_mgr.cc
  * @Description:
  * @BugList:
@@ -22,7 +22,7 @@
 #include "app_version.h"
 
 #include "conn_mgr.h"
-#include "manage.h"
+#include "wind_mgr.h"
 #include "this_func.h"
 #include "global_data.h"
 
@@ -167,7 +167,7 @@ void TuyaMgr::onCommDeal(IAck* ack) {
         sendDp();
         break;
     case TYCOMM_WIFITEST:
-        g_data->mWifiTestRes = ack->getData2(TUYA_DATA_START, true);
+        g_data->mTUYAWifiTestRes = ack->getData2(TUYA_DATA_START, true);
         break;
 
     case TYCOMM_GET_TIME:
@@ -214,7 +214,7 @@ void TuyaMgr::sendHeartBeat() {
 
 void TuyaMgr::sendWifiTest() {
     LOG(VERBOSE) << "WIFI测试";
-    g_data->mWifiTestRes = 0xFFFF; // 复位
+    g_data->mTUYAWifiTestRes = 0xFFFF; // 复位
     send2MCU(TYCOMM_WIFITEST);
 }
 
@@ -376,9 +376,10 @@ void TuyaMgr::acceptDP(uint8_t* data, uint16_t len) {
         switch (data[dealCount]) {
         case TYDPID_POWER: {
             if (data[TUYADP_DATA]) {
-                g_windMgr->mWindow->hideBlack();
+                g_window->hideBlack();
             } else {
-                g_windMgr->goTo(PAGE_STANDBY, true);
+                g_windMgr->showPage(PAGE_HOME);
+                g_window->showBlack();
             }
             g_data->mTUYAPower = data[TUYADP_DATA];
         }   break;
@@ -463,7 +464,7 @@ void TuyaMgr::dealOTAComm(uint8_t* data, uint16_t len) {
     send2MCU(send, 1, TYCOMM_OTA_START);
 
     LOGI("[OTA START] allLen=%d oneByte=%d", mOTALen, send[0]);
-    g_windMgr->goTo(PAGE_OTA);
+    g_windMgr->showPage(PAGE_OTA);
 }
 
 void TuyaMgr::dealOTAData(uint8_t* data, uint16_t len) {
