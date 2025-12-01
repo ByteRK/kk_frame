@@ -2,7 +2,7 @@
  # @Author: Ricken
  # @Email: me@ricken.cn
  # @Date: 2024-12-03 00:21:57
- # @LastEditTime: 2025-07-10 23:20:57
+ # @LastEditTime: 2025-11-27 11:27:35
  # @FilePath: /kk_frame/date2ver
  # @Description: 版本号生成脚本
  # @BugList: 
@@ -73,6 +73,7 @@ echo "#define __APP_VERSION_H__" >> $VERSION_FILE
 echo "" >> $VERSION_FILE
 
 echo "#define APP_ID           \"${PROJECT_ID}\"" >> $VERSION_FILE
+echo "#define APP_NAME         ${NAME}" >> $VERSION_FILE
 echo "" >> $VERSION_FILE
 
 echo "#define MAJOR_VERSION    ${v1}" >> $VERSION_FILE

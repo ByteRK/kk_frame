@@ -10,7 +10,9 @@
                 "~/vcpkg/packages/**",
                 "~/cdroid/outX64-Debug/src/gui/*"
             ],
-            "defines": [],
+            "defines": [
+                "__VSCODE__"
+            ],
             "compilerPath": "/usr/bin/gcc",
             "cStandard": "c17",
             "cppStandard": "gnu++17",
