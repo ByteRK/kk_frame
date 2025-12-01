@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-11-28 11:24:16
- * @LastEditTime: 2025-12-01 19:07:51
+ * @LastEditTime: 2025-12-01 19:30:47
  * @FilePath: /kk_frame/src/viewlibs/kk_keyboard.cc
  * @Description:
  * @BugList:
@@ -183,6 +183,24 @@ void KKKeyBoard::setText(const std::string& txt, TextView* txtView, int maxLen, 
     } else {
         txtView->setText(txt);
         txtView->requestLayout();
+    }
+}
+
+/// @brief 删除指定TextView的最后一个字符
+/// @param txtView 
+void KKKeyBoard::delLastCharacter(TextView* txtView) {
+    if (!txtView) return;
+    std::string txt = txtView == mEnterTextView
+        ? mEnterText
+        : txtView->getText();
+    if (txt.empty()) return;
+
+    if (txtView == mEnterTextView) {
+        std::string decText = decStr(txt);
+        if (mWord->getText().empty())  mLastTxt = decText;
+        setText(decText);
+    } else { 
+        setText(decStr(txt), txtView, 15, 16, 32);
     }
 }
 

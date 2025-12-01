@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-11-28 11:24:16
- * @LastEditTime: 2025-12-01 19:07:42
+ * @LastEditTime: 2025-12-01 19:24:16
  * @FilePath: /kk_frame/src/viewlibs/kk_keyboard.h
  * @Description: Ricken的自定义键盘
  * @BugList:
@@ -17,10 +17,9 @@
 #define _KK_KEYBOARD_H_
 
 #include "common.h"
-#include <set>
-#include <widget/relativelayout.h>
 #include <widget/button.h>
 #include <widget/edittext.h>
+#include <widget/relativelayout.h>
 
 class KKKeyBoard : public RelativeLayout {
 public:
@@ -119,7 +118,7 @@ private:
     void setText(const std::string& txt, TextView* txtView,
                 int maxLen = 40, int minSize = 16, int maxSize = 34);        // 修改指定控件文本
 
-    void decText(TextView* txtView);            // 删除最后一个文本
+    void delLastCharacter(TextView* txtView);                                // 删除最后一个字符
 
 
 
