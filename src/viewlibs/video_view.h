@@ -44,13 +44,14 @@ public:
     void   setOnPlayStatusChange(OnPlayStatusChange l){ mChangeCallback = l;}
 
 protected:
-    virtual void onLayout(bool change,int l,int t,int w,int h);
-    virtual void onDraw(Canvas& ctx);
-    virtual int  checkEvents();
-    virtual int  handleEvents();
+    virtual void onLayout(bool change,int l,int t,int w,int h)override;
+    virtual void onDraw(Canvas& ctx)override;
+    virtual int  checkEvents()override;
+    virtual int  handleEvents()override;
 
 protected:
     void initViewData();
+    void delayPlay();
     void onTick();
     void initVideo();
 
@@ -74,6 +75,8 @@ protected:
     OnPlayStatusChange mChangeCallback;
     bool               mOneShot;
     int                mCheckTime;
+
+    int                mDelayPlay;
 };
 
 #endif

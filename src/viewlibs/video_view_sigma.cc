@@ -1,4 +1,4 @@
-#if defined CDROID_X64 || defined __VSCODE__
+#if defined CDROID_SIGMA  || defined __VSCODE__
 
 #include "video_view.h"
 
@@ -528,7 +528,7 @@ bool VideoView::play() {
 #endif
 
     invalidate(true);
-    View::postDelayed(mTicker, 300);
+    View::postDelayed(mTicker, 1);
 
     return true;
 }
