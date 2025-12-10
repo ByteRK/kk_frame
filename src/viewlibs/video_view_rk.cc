@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-05 19:33:30
- * @LastEditTime: 2025-12-08 17:19:21
+ * @LastEditTime: 2025-12-10 19:24:24
  * @FilePath: /kk_frame/src/viewlibs/video_view_rk.cc
  * @Description: 视频播放组件 RK芯片版本
  * @BugList:
@@ -11,10 +11,9 @@
  *
 **/
 
-#if defined CDROID_RK3506 || defined __VSCODE__
+#if defined(CDROID_RK3506) || defined(__VSCODE__)
 
 #include "video_view.h"
-
 #include <cdplayer.h>
 #include <unistd.h>
 
@@ -25,7 +24,7 @@ enum {
     RKADK_ROTATE_270
 };
 
-typedef enum {
+enum {
     RKADK_PLAYER_STATE_IDLE = 0,    /**< The player state before init . */
     RKADK_PLAYER_STATE_INIT,        /**< The player is in the initial state. It changes
                                     to the initial state after being SetDataSource. */
@@ -36,15 +35,30 @@ typedef enum {
     RKADK_PLAYER_STATE_STOP,        /**< The player is in the stop state. */
     RKADK_PLAYER_STATE_ERR,         /**< The player is in the err state(reserved). */
     RKADK_PLAYER_STATE_BUTT
-} RKADK_PLAYER_STATE_E;
+};
+
+#define VVP(value) VideoViewPrivate *value = mPri.get();
 
 //////////////////////////////////////////////////////////////////
 
 // 视频信息
-class VideoInfo {
+class VideoViewPrivate {
 public:
-    VideoInfo() { }
-    ~VideoInfo() { }
+    HANDLE     mHandle;
+    int        mStatus;
+    double     mProgress;
+    VideoViewPrivate() {
+        mHandle = nullptr;
+        mStatus = -1;
+    }
+    ~VideoViewPrivate() {
+    }
+    void close() {
+        if (mHandle) MPClose(mHandle);
+        mHandle = nullptr;
+        mStatus = -1;
+        mProgress = 0;
+    }
 };
 
 //////////////////////////////////////////////////////////////////
@@ -62,244 +76,112 @@ VideoView::VideoView(int w, int h) : ImageView(w, h) {
 /// @param attrs 
 VideoView::VideoView(Context* ctx, const AttributeSet& attrs) : ImageView(ctx, attrs) {
     initViewData();
-
-    mURL = attrs.getString("url");
-    mLoadPlay = attrs.getBoolean("loadPlay", mLoadPlay);
-    mOneShot = attrs.getBoolean("oneShot", mOneShot);
-    mRunnerTime = attrs.getInt("checkTime", mRunnerTime);
+    setUrl(attrs.getString("url"));
+    setLoop(!attrs.getBoolean("oneShot", true));
     setPointsFile(attrs.getString("pointsFile"));
+    if (attrs.getBoolean("loadPlay")) postDelayed([this]() { start(); });
 }
 
 /// @brief 析构数据
 VideoView::~VideoView() {
-    if (mHandle) {
-        if (mStatus > VS_INIT && mStatus < VS_OVER) { MPStop(mHandle); }
-        MPClose(mHandle);
-        mHandle = 0;
-        mStatus = VS_NULL;
-    }
+    VVP(pri);
+    pri->close();
+    mStatus = VS_STOPPED;
 }
 
-/// @brief 初始化页面数据
-void VideoView::initViewData() {
-    mVideoInfo = nullptr;
-    mHandle = nullptr;
-    mLoadPlay = false;
-    mRunner = [this]() {
-        if (mDelayPlay)startPlay();
-        else onTick();
-    };
-    mRunnerTime = 50;
-    mDelayPlay = false;
-
-    mURL = "";
-
-    mError = 0;
-    mStatus = VS_NULL;
-    mLastCode = RKADK_PLAYER_STATE_IDLE;
-    mProgress = 0;
-    mDuration = 0;
-    mChangeCallback = nullptr;
-    mOneShot = true;
-}
-
-/// @brief 开始播放
-void VideoView::startPlay() {
-    // 停止上一个视频
-    if (mHandle) {
-        if (mStatus > VS_INIT && mStatus < VS_OVER) { MPStop(mHandle); }
-        MPClose(mHandle);
-        mHandle = 0;
-        mStatus = VS_NULL;
-    }
-
-    // 初始化、复位、播放
+/// @brief 开始
+void VideoView::start() {
+    stop();
+    LOGI("start cur-status: %d", mStatus);
+    mStatus = VS_STARTING;
+    removeCallbacks(mRunner);
+    postDelayed(mRunner, 1000);
     initVideo();
-    mDelayPlay = false;
-    MPPlay(mHandle);
+    invalidate();
+}
 
-    // 刷新正常页面
+/// @brief 播放
+/// @return 
+bool VideoView::play() {
+    if (mStatus == VS_PLAYING) return false;
+    LOG(INFO) << "play cur-status:" << mStatus;
+    mStatus = VS_PLAYING;
+    VVP(pri);
+    MPPlay(pri->mHandle);
     invalidate(true);
     removeCallbacks(mRunner);
     View::postDelayed(mRunner, 1);
-}
-
-/// @brief 测量完成，用于自动播放视频
-/// @param change 
-/// @param l 
-/// @param t 
-/// @param w 
-/// @param h 
-void VideoView::onLayout(bool change, int l, int t, int w, int h) {
-    if (mStatus != VS_NULL) {
-        LOGE("status not null. status=%d", mStatus);
-        return;
-    }
-
-    // 自动播放
-    if (mLoadPlay && !mURL.empty()) {
-        LOGI("layout play video. url=%s", mURL.c_str());
-        play();
-    }
-}
-
-/// @brief UI图层绘制
-/// @param canvas 
-void VideoView::onDraw(Canvas& canvas) {
-    if (mStatus == VS_NULL) return;
-
-    // 对UI层打孔
-    if (mPoints.empty()) { // 矩形孔
-        canvas.rectangle(0, 0, getWidth(), getHeight());
-    } else { // 异形孔
-        canvas.begin_new_path();
-        canvas.move_to(mPoints[0].x, mPoints[0].y);
-        for (int i = 1; i < mPoints.size(); i++) {
-            double x0 = mPoints[i - 1].x;
-            double y0 = mPoints[i - 1].y;
-            double x1 = mPoints[i].x;
-            double y1 = mPoints[i].y;
-            double xc = (x0 + x1) / 2.0;
-            double yc = (y0 + y1) / 2.0;
-            canvas.curve_to(x0, y0, xc, yc, x1, y1);
-        }
-        canvas.close_path();
-    }
-
-    // 剪切
-    canvas.clip();
-    canvas.set_operator(Cairo::Context::Operator::CLEAR);
-    canvas.paint();
-}
-
-/// @brief 
-void VideoView::onTick() {
-    bool change = false;
-
-    // 故障处理
-    if (mError) {
-        LOGE("Play error, code=%d url=%s", mError, mURL.c_str());
-        if (mChangeCallback) mChangeCallback(*this, 0, 0, VS_OVER);
-        return;
-    }
-
-    // 句柄异常
-    if (!mHandle) {
-        LOGE("Handle is null, url=%s", mURL.c_str());
-        if (mChangeCallback) mChangeCallback(*this, 0, 0, VS_OVER);
-        return;
-    }
-
-    /* 获取状态 */
-    int status = MPGetStatus(mHandle);
-    if (status != mLastCode) {
-        int videoStatus = mStatus;
-        switch (status) {
-        case RKADK_PLAYER_STATE_PLAY: {
-            videoStatus = VS_PLAY;
-        }   break;
-        case RKADK_PLAYER_STATE_PAUSE: {
-            videoStatus = VS_PAUSE;
-        }   break;
-        case RKADK_PLAYER_STATE_INIT:
-        case RKADK_PLAYER_STATE_PREPARED:
-        case RKADK_PLAYER_STATE_EOF:
-        case RKADK_PLAYER_STATE_STOP: {
-            videoStatus = VS_OVER;
-        }   break;
-        default:
-            mError = status;
-            break;
-        }
-
-        LOGI("MPGetStatus[%d-%d] VideoStatus[%d-%d]", mLastCode, status, mStatus, videoStatus);
-        change = true;
-        mStatus = videoStatus;
-        mLastCode = status;
-    }
-
-    // 获取视频时长
-    if (mDuration == 0) {
-        mDuration = getDuration();
-        change = true;
-    }
-
-    // 获取播放进度
-    double progress;
-    MPGetPosition(mHandle, &progress);
-    if (progress != mProgress) {
-        mProgress = progress;
-        change = true;
-    }
-
-    // 状态变更回调
-    if (mChangeCallback && change) { mChangeCallback(*this, mDuration, mProgress, mStatus); }
-    View::postDelayed(mRunner, mRunnerTime);
-}
-
-/// @brief 开始播放
-bool VideoView::play() {
-    if (mStatus != VS_NULL && mStatus != VS_OVER) {
-        LOGW("status not null. status=%d", mStatus);
-        return false;
-    }
-
-    // 延迟播放，使组件先行测量
-    mDelayPlay = true;
-    removeCallbacks(mRunner);
-    View::postDelayed(mRunner, 20);
-
     return true;
 }
 
-/// @brief 是否播放中
-/// @return 
-bool VideoView::isPlay() {
-    return mStatus >= VS_PLAY;
-}
-
-/// @brief 暂停播放
+/// @brief 暂停
 /// @return 
 bool VideoView::pause() {
-    if (mStatus != VS_INIT && mStatus != VS_PLAY) {
-        LOGW("video not play. status=%d", mStatus);
-        return false;
-    }
-
-    MPPause(mHandle);
-    invalidate();
+    if (mStatus != VS_PLAYING) return false;
+    LOG(INFO) << "pause cur-status:" << mStatus;
+    mStatus = VS_PAUSED;
+    VVP(pri);
+    MPPause(pri->mHandle);
     return true;
 }
 
-/// @brief 恢复播放
-/// @return 
-bool VideoView::resume() {
-    if (mStatus != VS_PAUSE) {
-        LOGW("video not pause. status=%d", mStatus);
-        return false;
-    }
-    MPResume(mHandle);
-    invalidate();
-    return true;
-}
-
-/// @brief 结束播放
-void VideoView::over() {
-    if (mHandle) {
-        if (mStatus > VS_INIT && mStatus < VS_OVER) { MPStop(mHandle); }
-        MPClose(mHandle);
-        mHandle = 0;
-        mStatus = VS_NULL;
-        mDuration = 0;
-        invalidate();
-    }
+/// @brief 结束
+void VideoView::stop() {
+    if (mStatus == VS_STOPPED) return;
+    LOG(INFO) << "stop cur-status:" << mStatus;
+    mStatus = VS_STOPPED;
     removeCallbacks(mRunner);
+    VVP(pri);
+    pri->close();
+    invalidate();
 }
 
-/// @brief 设置URL
+/// @brief 是否正在播放
+bool VideoView::isPlay() {
+    return mStatus > VS_STARTING && mStatus < VS_COMPLETED;
+}
+
+/// @brief 获取状态
+/// @return 
+int VideoView::getStatus() {
+    return mStatus;
+}
+
+/// @brief 获取当前播放进度
+/// @return 
+double VideoView::getProgress() {
+    VVP(pri);
+    return pri->mProgress;
+}
+
+/// @brief 获取视频时长
+/// @return 
+double VideoView::getDuration() {
+    return mDuration;
+}
+
+/// @brief 设置视频地址
 /// @param url 
-void VideoView::setURL(const std::string& url) {
-    mURL = url;
+void VideoView::setUrl(const std::string& url) {
+    mUrl = url;
+}
+
+/// @brief 设置是否循环播放
+/// @param flag 
+void VideoView::setLoop(bool flag) {
+    mLoopPlayBack = flag;
+}
+
+/// @brief 设置音量
+/// @param volume 
+void VideoView::setVolume(int volume) {
+    if (volume >= 0 && volume <= 100) { mVolume = volume; }
+}
+
+/// @brief 设置打孔范围
+/// @param points 
+void VideoView::setPoints(std::vector<Point>& points) {
+    mPoints = points;
 }
 
 /// @brief 设置打孔范围文件
@@ -328,57 +210,126 @@ void VideoView::setPointsFile(const std::string& fpath) {
     LOGI("Read point over. count=%d", mPoints.size());
 }
 
-/// @brief 设置打孔范围
-/// @param points 
-void VideoView::setPoints(std::vector<Point>& points) {
-    mPoints = points;
+/// @brief 设置播放状态回调
+/// @param l 
+void VideoView::setOnPlayStatusChange(OnPlayStatusChange l) {
+    mChangeCallback = l;
 }
 
-/// @brief 获取时长
+/// @brief 设置播放进度
+/// @param sec 
+void VideoView::seekTime(int sec) {
+    VVP(pri);
+    if (pri->mHandle && mDuration > 0 && sec >= 0) {
+        MPSeek(pri->mHandle, sec * 1000);
+    }
+}
+
+/// @brief 设置播放进度百分比
+/// @param percent 
+void VideoView::seekPercent(double percent) {
+    VVP(pri);
+    if (pri->mHandle && mDuration > 0 && percent > 0) {
+        MPSeek(pri->mHandle, mDuration * percent / 100);
+    }
+}
+
+/// @brief 发送消息(非视频线程使用)
+/// @param msg 
+void VideoView::pushMessage(int msg) {
+    mMsgQueue.push(msg);
+}
+
+/// @brief UI图层绘制
+/// @param canvas 
+void VideoView::onDraw(Canvas& canvas) {
+    if (mStatus == VS_STOPPED) {
+        ImageView::onDraw(canvas);
+        return;
+    }
+
+    if (mPoints.empty()) {
+        const int width = getWidth();
+        const int height = getHeight();
+        if (mRadii[0] || mRadii[1] || mRadii[2] || mRadii[3]) {
+            const double degrees = M_PI / 180.f;
+            canvas.begin_new_sub_path();
+            canvas.arc(width - mRadii[1], mRadii[1], mRadii[1], -90 * degrees, 0 * degrees);
+            canvas.arc(width - mRadii[2], height - mRadii[2], mRadii[2], 0 * degrees, 90 * degrees);
+            canvas.arc(mRadii[3], height - mRadii[3], mRadii[3], 90 * degrees, 180 * degrees);
+            canvas.arc(mRadii[0], mRadii[0], mRadii[0], 180 * degrees, 270 * degrees);
+            canvas.close_path();
+            canvas.clip();
+        }
+    } else {
+        canvas.begin_new_sub_path();
+        if (mPoints.size() > 0) {
+            canvas.move_to(mPoints[0].x, mPoints[0].y);
+            for (size_t i = 1; i < mPoints.size(); i++) { canvas.line_to(mPoints[i].x, mPoints[i].y); }
+            canvas.close_path();
+            canvas.clip();
+        }
+    }
+
+    canvas.set_operator(Cairo::Context::Operator::CLEAR);
+    canvas.paint();
+}
+
+/// @brief 检查事件
 /// @return 
-double VideoView::getDuration() {
-    MPGetDuration(mHandle, &mDuration);
-    return mDuration;
+int VideoView::checkEvents() {
+    if (mMsgQueue.empty()) return 0;
+    return 1;
 }
 
-/// @brief 获取进度
+/// @brief 处理事件
 /// @return 
-double VideoView::getProgress() {
-    return mProgress;
+int VideoView::handleEvents() {
+    int msg;
+    if (!mMsgQueue.try_and_pop(msg)) return 0;
+    handlePlayerNotify(msg);
+    return 1;
 }
 
-/// @brief 设置进度
-/// @param dp 
-void VideoView::setProgress(double dp) {
-    MPSeek(mHandle, dp);
+/// @brief 处理窗口移除
+void VideoView::onDetachedFromWindow() {
+    stop();
+    ImageView::onDetachedFromWindow();
 }
 
-/// @brief 获取当前状态
-/// @return 
-int VideoView::getStatus() {
-    return mStatus;
+/// @brief 消息处理
+/// @param msg 
+void VideoView::handlePlayerNotify(int msg) {
+    if (msg == mMsg) return;
+    mMsg = msg;
+    LOGI("player event msg. msg=%d", msg);
+}
+
+/// @brief 初始化页面数据
+void VideoView::initViewData() {
+    mStatus = VS_STOPPED;
+    mUrl = "";
+    mLoopPlayBack = false;
+    mVolume = 100;
+    mMsg = -1;
+    mDuration = 0;
+    mRunner = std::bind(&VideoView::onTick, this);
+    mChangeCallback = nullptr;
+    mPri = std::make_shared<VideoViewPrivate>();
+    Looper::getMainLooper()->addEventHandler(this);
 }
 
 /// @brief 初始化视频
 void VideoView::initVideo() {
-    if (mStatus != VS_NULL) {
-        LOGW("status not null. status=%d", mStatus);
+    if (mStatus != VS_STARTING) {
+        LOGW("status not VS_STARTING. status=%d", mStatus);
         return;
     }
 
-    int x, y, w, h;
-
-    x = getLeft();
-    y = getTop();
-    w = getWidth();
-    h = getHeight();
-
-    w = w <= 0 ? 480 : w;
-    h = h <= 0 ? 800 : h;
-
     /* 获取窗口位置 */
-    int loc[2] = { 0 };
-    getLocationInWindow(loc);
+    int xy[2] = { 0 };
+    getLocationInWindow(xy);
+    int w(getWidth()), h(getHeight());
 
     /* 获取旋转角度 */
     int rotate = WindowManager::getInstance().getDisplayRotation();
@@ -391,42 +342,42 @@ void VideoView::initVideo() {
     Point screenSize;
     WindowManager::getInstance().getDefaultDisplay().getSize(screenSize);
 
-    LOGV("url=%s x=%d y=%d w=%d h=%d loc[0]=%d loc[1]=%d rotate=%d sw=%d sh=%d"
-        , mURL.c_str(), x, y, w, h, loc[0], loc[1], rotate, screenSize.x, screenSize.y);
+    LOGW("url=%s w=%d h=%d xy[0]=%d xy[1]=%d rotate=%d sw=%d sh=%d"
+        , mUrl.c_str(), w, h, xy[0], xy[1], rotate, screenSize.x, screenSize.y);
 
     /* 获取显示大小 */
     UINT sw, sh;
     GFXGetDisplaySize(0, &sw, &sh);
 
     /* 开启视频 */
-    mHandle = MPOpen(mURL.c_str());
-
+    VVP(pri);
+    pri->mHandle = MPOpen(mUrl.c_str());
 
 #define SET_VEDIO_WINDOWS(x,y,w,h) \
-        MPSetWindow(mHandle, x, y, w, h); \
+        MPSetWindow(pri->mHandle, x, y, w, h); \
         LOGI("MPSetWindow(%d, %d, %d, %d)", x, y, w, h);
 
     /* 视频旋转 方向与UI相反 */
     switch (rotate) {
     case Display::ROTATION_0: {
-        LOGI("MPRotate(%d, RKADK_ROTATE_NONE)", mHandle);
-        MPRotate(mHandle, RKADK_ROTATE_NONE);
-        SET_VEDIO_WINDOWS(loc[0], loc[1], w, h);
+        LOGI("MPRotate(%d, RKADK_ROTATE_NONE)", pri->mHandle);
+        MPRotate(pri->mHandle, RKADK_ROTATE_NONE);
+        SET_VEDIO_WINDOWS(xy[0], xy[1], w, h);
     }   break;
     case Display::ROTATION_90: {
-        LOGI("MPRotate(%d, RKADK_ROTATE_270)", mHandle);
-        MPRotate(mHandle, RKADK_ROTATE_270);
-        SET_VEDIO_WINDOWS(loc[1], sh - w - loc[0], h, w);
+        LOGI("MPRotate(%d, RKADK_ROTATE_270)", pri->mHandle);
+        MPRotate(pri->mHandle, RKADK_ROTATE_270);
+        SET_VEDIO_WINDOWS(xy[1], sh - w - xy[0], h, w);
     }   break;
     case Display::ROTATION_180: {
-        LOGI("MPRotate(%d, RKADK_ROTATE_180)", mHandle);
-        MPRotate(mHandle, RKADK_ROTATE_180);
-        SET_VEDIO_WINDOWS(loc[0], loc[1], w, h);
+        LOGI("MPRotate(%d, RKADK_ROTATE_180)", pri->mHandle);
+        MPRotate(pri->mHandle, RKADK_ROTATE_180);
+        SET_VEDIO_WINDOWS(xy[0], xy[1], w, h);
     }   break;
     case Display::ROTATION_270: {
-        LOGI("MPRotate(%d, RKADK_ROTATE_90)", mHandle);
-        MPRotate(mHandle, RKADK_ROTATE_90);
-        SET_VEDIO_WINDOWS(sw - h - loc[1], loc[0], h, w);
+        LOGI("MPRotate(%d, RKADK_ROTATE_90)", pri->mHandle);
+        MPRotate(pri->mHandle, RKADK_ROTATE_90);
+        SET_VEDIO_WINDOWS(sw - h - xy[1], xy[0], h, w);
     }   break;
     default: {
         LOGE("unknow rotate=%d", rotate);
@@ -434,17 +385,77 @@ void VideoView::initVideo() {
     }
 
 #undef SET_VEDIO_WINDOWS
-
-    /* 记录状态 */
-    mStatus = VS_INIT;
 }
 
-int VideoView::checkEvents() {
-    return 0;
+/// @brief 主心跳
+void VideoView::onTick() {
+    VVP(pri);
+    bool change = false;
+
+    // 句柄异常
+    if (!pri->mHandle) {
+        LOGE("Handle is null, url=%s", mUrl.c_str());
+        if (mChangeCallback) mChangeCallback(*this, 0, 0, VS_STOPPED);
+        return;
+    }
+
+    /* 获取状态 */
+    int status = MPGetStatus(pri->mHandle);
+    if (status != pri->mStatus) {
+        VideoView::VideoStatus videoStatus = VS_STOPPED;
+        switch (status) {
+        case RKADK_PLAYER_STATE_PREPARED: {
+            videoStatus = VS_STARTING;
+            mDuration = getDuration();
+        }   break;
+        case RKADK_PLAYER_STATE_PLAY: {
+            play();
+            videoStatus = VS_PLAYING;
+        }   break;
+        case RKADK_PLAYER_STATE_PAUSE: {
+            videoStatus = VS_PAUSED;
+        }   break;
+        case RKADK_PLAYER_STATE_EOF: {
+            if (mLoopPlayBack) { start(); return; }
+            videoStatus = VS_COMPLETED;
+        }   break;
+        case RKADK_PLAYER_STATE_INIT:
+        case RKADK_PLAYER_STATE_STOP: {
+            videoStatus = VS_STOPPED;
+        }   break;
+        default: {
+            LOGE("unknow status=%d", status);
+        }   break;
+        }
+
+        LOGI("MPGetStatus[%d-%d] VideoStatus[%d-%d]", pri->mStatus, status, mStatus, videoStatus);
+        change = true;
+        mStatus = videoStatus;
+        pri->mStatus = status;
+    }
+
+    // 获取播放进度
+    double progress;
+    MPGetPosition(pri->mHandle, &progress);
+    if (progress != pri->mProgress) {
+        pri->mProgress = progress;
+        change = true;
+    }
+
+    // 状态变更回调
+    if (mChangeCallback && change) { mChangeCallback(*this, mDuration, progress, mStatus); }
+    if (mStatus != VS_COMPLETED) View::postDelayed(mRunner, 100);
 }
 
-int VideoView::handleEvents() {
-    return 0;
+/// @brief 异步线程
+void VideoView::onTask() {
+}
+
+/// @brief 读取帧
+/// @param param 
+/// @return 
+void* VideoView::threadReadFrame(void* param) {
+    return nullptr;
 }
 
 #endif /* CDROID_RK3506 */

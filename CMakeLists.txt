@@ -86,21 +86,31 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     # ${PIXMAN_LIBRARIES}
 )
 
-# 芯片特定配置 (以下例子为为sigma添加海信IOT库)
-# if(CDROID_CHIPSET STREQUAL sigma)
-#     target_include_directories(${PROJECT_NAME} PRIVATE
-#         ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/hisense_iot/include
-#         ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/hisense_iot/include/hal
-#     )
-#     target_link_libraries(${PROJECT_NAME} PRIVATE
-#         ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/hisense_iot/libsat_kit_ALL.a   # 海信IOT库
-#         ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/hisense_iot/libhs.so           # 海信IOT库必联适配层
-#         rt                                                                  # 海信IOT库引用的基本库
-#     )
-#     target_compile_definitions(${PROJECT_NAME} PRIVATE HISENSE_IOT_ENABLE)
-# else()
-#     target_compile_definitions(${PROJECT_NAME} PRIVATE HISENSE_IOT_DISABLE)
-# endif()
+# 平台特定配置 (以下例子为为x64增加视频支持)
+if(CDROID_CHIPSET STREQUAL "x64")
+
+    # 增加视频支持
+    find_package(FFMPEG REQUIRED)
+    find_library(AVSWSCALE_LIBRARIES
+        NAMES swscale
+        HINTS ${PC_FFMPEG_LIBDIR}
+        ${PC_FFMPEG_LIBRARY_DIRS}
+    )
+    find_library(AVSWRESAMPLE_LIBRARIES
+        NAMES swresample
+        HINTS ${PC_FFMPEG_LIBDIR}
+        ${PC_FFMPEG_LIBRARY_DIRS}
+    )
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+        ${FFMPEG_LIBRARIES} ${AVSWSCALE_LIBRARIES} ${AVSWRESAMPLE_LIBRARIES}
+    )
+elseif(CDROID_CHIPSET STREQUAL "sigma")
+elseif(CDROID_CHIPSET STREQUAL "t113")
+elseif(CDROID_CHIPSET STREQUAL "rk3506")
+else()
+    message("Unsupported chipset: ${CDROID_CHIPSET}")
+endif()
+
 
 # PAK打包
 CreatePAK(

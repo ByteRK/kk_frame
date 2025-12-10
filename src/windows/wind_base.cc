@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2025-11-26 18:48:36
+ * @LastEditTime: 2025-12-10 19:34:22
  * @FilePath: /kk_frame/src/windows/wind_base.cc
  * @Description: 窗口类
  * @BugList:
@@ -146,10 +146,10 @@ void BaseWindow::init() {
     // 视频LOGO回调
     mLogoForVideo->setOnTouchListener([this](View& v, MotionEvent& evt) { return true; });
     mLogoForVideo->setOnPlayStatusChange([this](View& v, int dutation, int progress, int status) {
-        LOGE("video play status = %d", status);
-        if (status == VideoView::VS_OVER) {
+        LOGV("video play status = %d", status);
+        if (status == VideoView::VS_COMPLETED || status == VideoView::VS_STOPPED) {
             mLogoForVideo->setVisibility(View::GONE);
-            mLogoForVideo->over();
+            mLogoForVideo->stop();
             mIsShowLogo = false;
         }
     });
@@ -163,7 +163,7 @@ void BaseWindow::showLogo(uint32_t time) {
     // 清除状态
     removeCallbacks(mCloseLogo);
     mCloseLogo();
-    mLogoForVideo->over();
+    mLogoForVideo->stop();
     // 隐藏原有页面
     mLogoForImage->setVisibility(View::GONE);
     mLogoForVideo->setVisibility(View::GONE);
@@ -194,7 +194,8 @@ void BaseWindow::showLogo(uint32_t time) {
         break;
     case LOGO_TYPE_VIDEO:
         mLogoForVideo->setVisibility(VISIBLE);
-        mLogoForVideo->setURL(path);
+        mLogoForVideo->setUrl(path);
+        mLogoForVideo->start();
         mLogoForVideo->play();
         break;
     default:
@@ -210,8 +211,8 @@ void BaseWindow::showLogo(uint32_t time) {
 BaseWindow::LOGO_TYPE BaseWindow::getLogo(std::string& path) {
     BaseWindow::LOGO_TYPE type = LOGO_TYPE_IMG;
 
-    path = "@mipmap/ricken";
-    type = LOGO_TYPE_IMG;
+    path = "./8.mp4";
+    type = LOGO_TYPE_VIDEO;
 
     return type;
 }
