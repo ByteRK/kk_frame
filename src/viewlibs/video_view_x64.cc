@@ -1,22 +1,29 @@
-#if defined CDROID_RK3506 || defined __VSCODE__
+/*
+ * @Author: xlc
+ * @Email:
+ * @Date: 2025-12-05 19:33:30
+ * @LastEditTime: 2025-12-08 17:49:29
+ * @FilePath: /kk_frame/src/viewlibs/video_view_x64.cc
+ * @Description: 视频播放组件 X64版本
+ * @BugList:
+ *
+ * Copyright (c) 2025 by xlc, All Rights Reserved.
+ *
+**/
+
+#if defined(PRODUCT_X64) || defined(__VSCODE__)
 
 #include "video_view.h"
 
 #include <cdplayer.h>
 #include <unistd.h>
 
-/*
-xml sample 1280*480
-<VideoView
-    android:layout_width="640dp"
-    android:layout_height="360dp"
-    android:layout_marginTop="120dp"
-    android:layout_marginLeft="320dp"
-    android:url="test.mp4"
-    android:loadPlay="true"/>
-    */
-
-enum { AV_ROTATE_NONE, AV_ROTATE_90, AV_ROTATE_180, AV_ROTATE_270 };
+enum {
+    AV_ROTATE_NONE,
+    AV_ROTATE_90,
+    AV_ROTATE_180,
+    AV_ROTATE_270
+};
 
 #define AV_NOTHING (0x0000)
 #define AV_AUDIO_COMPLETE (0x0001)
@@ -36,18 +43,114 @@ enum { AV_ROTATE_NONE, AV_ROTATE_90, AV_ROTATE_180, AV_ROTATE_270 };
 #define AV_PLAY_ERROR                                                                                                  \
     (AV_ACODEC_ERROR | AV_VCODEC_ERROR | AV_NOSYNC | AV_READ_TIMEOUT | AV_NO_NETWORK | AV_INVALID_FILE)
 
+#if defined(PRODUCT_X64) || defined(DISABLE_VIDEO_VIEW)
+#define SUPPORT_FFMPEG_YUV 0
+#define SUPPORT_FFMPEG_RGB 0
+#else
+#define SUPPORT_FFMPEG_YUV 0
+#define SUPPORT_FFMPEG_RGB 0
+#endif
+
 //////////////////////////////////////////////////////////////////
 
 // 视频信息
 class VideoInfo {
 public:
-    VideoInfo() { }
-    ~VideoInfo() { }
-};
+    struct AVRgbData {
+        int   idx;
+        short width;
+        short height;
+    };
+
+public:
+    VideoInfo() {
+        width = 0;
+        height = 0;
+        duration = 0;
+        frameCount = 0;
+        readCount = 0;
+        fps = 0;
+        lastFrame = 0;
+        bzero(showTimes, sizeof(showTimes));
+    }
+
+    ~VideoInfo() {
+    }
+
+private:
+    void readFrame() {
+    }
+
+public:
+    int hasFrame() {
+        if (readCount >= frameCount) return 0;
+
+        if (videoFrames.empty()) {
+            return 1; // 读取下一帧
+        }
+
+        int64_t nowms = SystemClock::uptimeMillis();
+        int     frame_ms = 1000 / fps;
+        if (nowms - lastFrame < frame_ms) {
+            // 两次显示时间间隔
+            if (showTimes[0] > 0 && showTimes[1] > 0) {
+                int d = showTimes[1] - showTimes[0];
+                if (d > frame_ms) {
+                    if (nowms - lastFrame >= frame_ms - (d - frame_ms)) { return 1; }
+                }
+            }
+
+            return 0;
+        }
+        return 1;
+    }
+
+    AVRgbData* getData() {
+        if (videoFrames.empty()) {
+            readFrame();
+            LOGV("read at %d/%d", readCount, frameCount);
+            return 0;
+        }
+        AVRgbData* dat = videoFrames.front();
+        videoFrames.pop_front();
+        return dat;
+    }
+
+    void freeData(AVRgbData* dat) {
+        LOGV("show at %d/%d", dat->idx, frameCount);
+        free(dat);
+        lastFrame = SystemClock::uptimeMillis();
+        if (showTimes[0] > 0 && showTimes[1] > 0) {
+            showTimes[0] = showTimes[1];
+            showTimes[1] = lastFrame;
+            // LOGW("%ld-%ld=%ld", showTimes[1], showTimes[0], showTimes[1] - showTimes[0]);
+        } else if (showTimes[0] > 0) {
+            showTimes[1] = lastFrame;
+        } else {
+            showTimes[0] = lastFrame;
+        }
+    }
+
+    int setFile(const char* filename) {
+        GFXGetDisplaySize(0, (UINT*)&width, (UINT*)&height);
+        duration = 0;
+        return 0;
+    }
+
+public:
+    int                    width;        // 宽
+    int                    height;       // 高
+    int                    duration;     // 时长
+    int                    frameCount;   // 最大帧数
+    int                    readCount;    // 读取帧数
+    int                    fps;          // 帧率
+    int64_t                lastFrame;    // 上一帧显示时间
+    int64_t                showTimes[2]; // 最后两帧时间
+    std::list<AVRgbData*> videoFrames;  // 缓存帧
+        };
 
 //////////////////////////////////////////////////////////////////
 DECLARE_WIDGET(VideoView)
-
 VideoView::VideoView(int w, int h) : ImageView(w, h) {
     initViewData();
 }
@@ -67,15 +170,16 @@ VideoView::VideoView(Context* ctx, const AttributeSet& attrs) : ImageView(ctx, a
 }
 
 VideoView::~VideoView() {
+#if SUPPORT_FFMPEG_YUV
     if (mHandle) {
         if (mStatus > VS_INIT && mStatus < VS_OVER) { MPStop(mHandle); }
         MPClose(mHandle);
         mHandle = 0;
         mStatus = VS_NULL;
     }
-}
+#endif
+    }
 
-/// @brief 初始化页面数据
 void VideoView::initViewData() {
     mError = 0;
     mMaxTime = 0;
@@ -87,30 +191,11 @@ void VideoView::initViewData() {
     mOneShot = true;
     mCheckTime = 50;
 
-    mTicker = [this]() {if (mDelayPlay == 1)delayPlay();else onTick();};
+    mTicker = std::bind(&VideoView::onTick, this);
     mChangeCallback = nullptr;
     mDuration = 0;
     mProgress = 0;
-    mVideoInfo = nullptr;
-
-    mDelayPlay = 0;
-}
-
-void VideoView::delayPlay() {
-    if (mHandle) {
-        if (mStatus > VS_INIT && mStatus < VS_OVER) { MPStop(mHandle); }
-        MPClose(mHandle);
-        mHandle = 0;
-        mStatus = VS_NULL;
-    }
-    initVideo();
-
-    MPPlay(mHandle);
-
-    invalidate(true);
-    mDelayPlay = 0;
-    removeCallbacks(mTicker);
-    View::postDelayed(mTicker, 1);
+    mVideoInfo = 0;
 }
 
 void VideoView::onLayout(bool change, int l, int t, int w, int h) {
@@ -127,11 +212,13 @@ void VideoView::onLayout(bool change, int l, int t, int w, int h) {
 
 void VideoView::onDraw(Canvas& canvas) {
     if (mStatus == VS_NULL) return;
+#if SUPPORT_FFMPEG_YUV
     if (mPoints.empty()) {
         canvas.rectangle(0, 0, getWidth(), getHeight());
     } else {
         canvas.begin_new_path();
         canvas.move_to(mPoints[0].x, mPoints[0].y);
+#if 1
         for (int i = 1; i < mPoints.size(); i++) {
             double x0 = mPoints[i - 1].x;
             double y0 = mPoints[i - 1].y;
@@ -141,12 +228,20 @@ void VideoView::onDraw(Canvas& canvas) {
             double yc = (y0 + y1) / 2.0;
             canvas.curve_to(x0, y0, xc, yc, x1, y1);
         }
+#else
+        for (int i = 1; i < mPoints.size(); i++) {
+            canvas.line_to(mPoints[i].x, mPoints[i].y);
+        }
+#endif
         canvas.close_path();
     }
     canvas.clip();
     canvas.set_operator(Cairo::Context::Operator::CLEAR);
     canvas.paint();
-}
+#else
+    ImageView::onDraw(canvas);
+#endif
+    }
 
 void VideoView::onTick() {
     bool change = false;
@@ -157,6 +252,7 @@ void VideoView::onTick() {
         return;
     }
 
+#if SUPPORT_FFMPEG_YUV
     if (!mHandle) {
         LOGE("Handle is null, url=%s", mURL.c_str());
         if (mChangeCallback) mChangeCallback(*this, 0, 0, VS_OVER);
@@ -166,36 +262,32 @@ void VideoView::onTick() {
     int status = MPGetStatus(mHandle);
     if (status != mLastCode) {
         int videoStatus = mStatus;
-        switch (status) {
-        case 3: {
-            videoStatus = VS_PLAY;
-        }   break;
-        case 5: {
-            videoStatus = VS_PAUSE;
-        }   break;
-        case 1:
-        case 2:
-        case 4:
-        case 6: {
-            videoStatus = VS_OVER;
-        }   break;
-        default:
+        if (status < 0) {
             mError = status;
-            break;
+        } else if (status == AV_NOTHING || status == AV_PLAY_LOOP) {
+            videoStatus = VS_PLAY;
+        } else if (status & AV_PLAY_PAUSE) {
+            videoStatus = VS_PAUSE;
+        } else if (status & AV_PLAY_COMPLETE) {
+            videoStatus = VS_OVER;
+        } else {
+            mError = status;
         }
-
         LOGI("MPGetStatus[%d-%d] VideoStatus[%d-%d]", mLastCode, status, mStatus, videoStatus);
         change = true;
         mStatus = videoStatus;
         mLastCode = status;
     }
+#endif
 
     if (mDuration == 0) {
         mDuration = getDuration();
         change = true;
     }
     double progress;
+#if SUPPORT_FFMPEG_YUV
     MPGetPosition(mHandle, &progress);
+#endif
     if (progress != mProgress) {
         mProgress = progress;
         change = true;
@@ -203,7 +295,7 @@ void VideoView::onTick() {
 
     if (mChangeCallback && change) { mChangeCallback(*this, mDuration, mProgress, mStatus); }
     View::postDelayed(mTicker, mCheckTime);
-}
+    }
 
 bool VideoView::play() {
     if (mStatus != VS_NULL && mStatus != VS_OVER) {
@@ -211,9 +303,25 @@ bool VideoView::play() {
         return false;
     }
 
-    mDelayPlay = 1;
-    removeCallbacks(mTicker);
-    View::postDelayed(mTicker, 20);
+#if SUPPORT_FFMPEG_YUV
+    if (mHandle) {
+        if (mStatus > VS_INIT && mStatus < VS_OVER) { MPStop(mHandle); }
+        MPClose(mHandle);
+        mHandle = 0;
+        mStatus = VS_NULL;
+    }
+#endif
+
+    initVideo();
+
+#if SUPPORT_FFMPEG_YUV
+    MPPlay(mHandle);
+#else
+    mStatus = VS_PLAY;
+#endif
+
+    invalidate(true);
+    View::postDelayed(mTicker, 300);
 
     return true;
 }
@@ -228,22 +336,31 @@ bool VideoView::pause() {
         return false;
     }
 
+#if SUPPORT_FFMPEG_YUV
     MPPause(mHandle);
+#else
+    mStatus = VS_PAUSE;
+#endif
     invalidate();
     return true;
-}
+    }
 
 bool VideoView::resume() {
     if (mStatus != VS_PAUSE) {
         LOGW("video not pause. status=%d", mStatus);
         return false;
     }
+#if SUPPORT_FFMPEG_YUV
     MPResume(mHandle);
+#else
+    mStatus = VS_PLAY;
+#endif
     invalidate();
     return true;
 }
 
 void VideoView::over() {
+#if SUPPORT_FFMPEG_YUV
     if (mHandle) {
         if (mStatus > VS_INIT && mStatus < VS_OVER) { MPStop(mHandle); }
         MPClose(mHandle);
@@ -251,6 +368,7 @@ void VideoView::over() {
         mStatus = VS_NULL;
         invalidate();
     }
+#endif
     removeCallbacks(mTicker);
 }
 
@@ -286,32 +404,27 @@ void VideoView::setPoints(std::vector<Point>& points) {
     mPoints = points;
 }
 
-/// @brief 获取时长
-/// @return 
 double VideoView::getDuration() {
+#if SUPPORT_FFMPEG_YUV
     MPGetDuration(mHandle, &mDuration);
+#endif
     return mDuration;
 }
 
-/// @brief 获取进度
-/// @return 
 double VideoView::getProgress() {
     return mProgress;
 }
 
-/// @brief 设置进度
-/// @param dp 
 void VideoView::setProgress(double dp) {
+#if SUPPORT_FFMPEG_YUV
     MPSeek(mHandle, dp);
+#endif
 }
 
-/// @brief 获取当前状态
-/// @return 
 int VideoView::getStatus() {
     return mStatus;
 }
 
-/// @brief 初始化视频
 void VideoView::initVideo() {
     if (mStatus != VS_NULL) {
         LOGW("status not null. status=%d", mStatus);
@@ -324,72 +437,43 @@ void VideoView::initVideo() {
     y = getTop();
     w = getWidth();
     h = getHeight();
-    LOGE("x=%d y=%d w=%d h=%d", x, y, w, h);
+    LOGV("x=%d y=%d w=%d h=%d", x, y, w, h);
 
     w = w <= 0 ? mXMLWidth : w;
     h = h <= 0 ? mXMLHeight : h;
-    LOGE("x=%d y=%d w=%d h=%d", x, y, w, h);
 
-    /* 获取窗口位置 */
     int loc[2] = { 0 };
     getLocationInWindow(loc);
 
-    /* 获取旋转角度 */
-    int rotate = WindowManager::getInstance().getDisplayRotation();
-    if (getenv("DISPLAY_ROTATE")) {
-        int hwRotate = atoi(getenv("DISPLAY_ROTATE")) % 360;
-        if (hwRotate % 90 == 0)  rotate -= hwRotate / 90;
-    }
-
-    /* 获取屏幕大小 */
+    const int rotate = WindowManager::getInstance().getDisplayRotation();
     Point screenSize;
     WindowManager::getInstance().getDefaultDisplay().getSize(screenSize);
 
     LOGI("url=%s x=%d y=%d w=%d h=%d loc[0]=%d loc[1]=%d rotate=%d sw=%d sh=%d"
         , mURL.c_str(), x, y, w, h, loc[0], loc[1], rotate, screenSize.x, screenSize.y);
 
-    /* 获取显示大小 */
+#if SUPPORT_FFMPEG_YUV
     UINT sw, sh;
     GFXGetDisplaySize(0, &sw, &sh);
-
-    /* 开启视频 */
     mHandle = MPOpen(mURL.c_str());
-
-
-#define SET_VEDIO_WINDOWS(x,y,w,h) \
-        MPSetWindow(mHandle, x, y, w, h); \
-        LOGI("MPSetWindow(%d, %d, %d, %d)", x, y, w, h);
-
+    /* MPSetWindow(mHandle, loc[0], loc[1], h, w);// x y w h偏移可以改x y,例如：loc[0]+160 */
+    // MPSetWindow(mHandle, screenSize.y - loc[1] - h, loc[0], h, w);
+    MPSetWindow(mHandle, loc[0], loc[1], w, h);
     /* 视频旋转 方向与UI相反 */
     switch (rotate) {
-    case Display::ROTATION_0: {
-        LOGI("MPRotate(%d, AV_ROTATE_NONE)", mHandle);
-        MPRotate(mHandle, AV_ROTATE_NONE);
-        SET_VEDIO_WINDOWS(loc[0], loc[1], w, h);
-    }   break;
-    case Display::ROTATION_90: {
-        LOGI("MPRotate(%d, AV_ROTATE_270)", mHandle);
-        MPRotate(mHandle, AV_ROTATE_270);
-        SET_VEDIO_WINDOWS(loc[1], sh - w - loc[0], h, w);
-    }   break;
-    case Display::ROTATION_180: {
-        LOGI("MPRotate(%d, AV_ROTATE_180)", mHandle);
-        MPRotate(mHandle, AV_ROTATE_180);
-        SET_VEDIO_WINDOWS(loc[0], loc[1], w, h);
-    }   break;
-    case Display::ROTATION_270: {
-        LOGI("MPRotate(%d, AV_ROTATE_90)", mHandle);
+    case Display::ROTATION_270:
         MPRotate(mHandle, AV_ROTATE_90);
-        SET_VEDIO_WINDOWS(sw - h - loc[1], loc[0], h, w);
-    }   break;
-    default: {
-        LOGE("unknow rotate=%d", rotate);
-    }   break;
+        break;
+    case Display::ROTATION_90:
+        MPSetWindow(mHandle, loc[1], sh - w - loc[0], h, w);
+        MPRotate(mHandle, AV_ROTATE_270);
+        break;
+    case Display::ROTATION_180:
+        break;
     }
-
-#undef SET_VEDIO_WINDOWS
-
-    /* 记录状态 */
+    // if (!mOneShot) MPLoop(mHandle, true);
+    // MPVideoOnly(mHandle, true);
+#endif
     mStatus = VS_INIT;
 }
 
@@ -401,4 +485,4 @@ int VideoView::handleEvents() {
     return 0;
 }
 
-#endif /* CDROID_RK3506 */
+#endif
