@@ -49,7 +49,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     src/uart
     src/i2c
     src/protocol
-    src/viewlibs
+    src/widgets
     src/windows
 
     # Cdroid头文件
