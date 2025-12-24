@@ -165,13 +165,6 @@ try {
             Write-Host "完整源路径     : $source"
             Write-Host "完整目标链接    : $destination"
 
-            # 检查源是否存在
-            if (-not (Test-Path $source -PathType Container)) {
-                Write-Host "[错误] 源文件夹不存在: $source" -ForegroundColor Red
-                $globalErrorOccurred = $true
-                continue
-            }
-
             # 处理目标冲突
             $existingItem = Get-Item $destination -ErrorAction SilentlyContinue
             if ($existingItem) {
@@ -189,6 +182,13 @@ try {
                     Write-Host "[跳过] 已存在且未启用覆盖" -ForegroundColor Yellow
                     continue
                 }
+            }
+
+            # 检查源是否存在
+            if (-not (Test-Path $source -PathType Container)) {
+                Write-Host "[错误] 源文件夹不存在: $source" -ForegroundColor Red
+                $globalErrorOccurred = $true
+                continue
             }
 
             # 创建符号链接
