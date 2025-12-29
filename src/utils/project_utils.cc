@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:47:17
- * @LastEditTime: 2025-12-29 13:56:12
+ * @LastEditTime: 2025-12-29 17:10:24
  * @FilePath: /kk_frame/src/utils/project_utils.cc
  * @Description: 项目相关的一些操作函数
  * @BugList:
@@ -13,13 +13,24 @@
 
 #include "project_utils.h"
 #include "time_utils.h"
+
+#include "fonts_info.h"
+#include "series_info.h"
 #include "app_version.h"
+
 #include <gui_features.h>
 #include <sys/syscall.h>
 #include <unistd.h>
 #include <fstream>
 #include <iostream>
 #include <cstring>
+
+void ProjectUtils::env() {
+#if defined(CDROID_X64) || defined(__VSCODE__)
+    setenv("FONTCONFIG_PATH", FONTCONFIG_PATH, 1);
+    setenv("SCREEN_SIZE", SCREEN_SIZE, 1);
+#endif
+}
 
 void ProjectUtils::pInfo(const char* name) {
     char szTmp[128];
@@ -49,7 +60,7 @@ void ProjectUtils::pInfo(const char* name) {
     fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", APP_VER_INFO);
     fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", BUILD_DATE);
     fprintf(stderr, "\033[1;35m# Git:%s\033[m\n", GIT_VERSION);
-    fprintf(stderr, "\033[1;35m# Cdroid:%s_%s_%s\033[m\n", CDROID_VERSION, CDROID_COMMITID, CDROID_BUILD_NUMBER);
+    fprintf(stderr, "\033[1;35m# Cdroid:V%s_%s_%s\033[m\n", CDROID_VERSION, CDROID_COMMITID, CDROID_BUILD_NUMBER);
     fprintf(stderr, "\033[1;35m############ Ricken #############\n\n\033[0m");
 }
 
@@ -109,7 +120,4 @@ void ProjectUtils::loadTime(const std::string& filename) {
     TimeUtils::setTime(mktime(&timeinfo));
     file.close();
 }
-
-
-
 

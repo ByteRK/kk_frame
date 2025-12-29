@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:47:17
- * @LastEditTime: 2025-12-29 11:21:17
+ * @LastEditTime: 2025-12-29 17:04:18
  * @FilePath: /kk_frame/src/utils/project_utils.h
  * @Description: 项目相关的一些操作函数
  * @BugList:
@@ -18,6 +18,9 @@
 #include <stdint.h>
 
 namespace ProjectUtils {
+
+    /// @brief 初始化环境
+    void env();
 
     /// @brief 输出项目信息
     /// @param name 
