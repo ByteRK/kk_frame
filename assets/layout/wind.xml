@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <RelativeLayout
+        android:id="@+id/page_box"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/pop_box"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#88EEEEEE"
+        android:gravity="center"
+        android:visibility="gone">
+    </RelativeLayout>
+
+    <TextView
+        android:id="@+id/toast"
+        android:layout_width="wrap_content"
+        android:layout_height="70dp"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="5dp"
+        android:paddingTop="20dp"
+        android:translationY="76dp"
+        android:gravity="center_horizontal"
+        android:textSize="20sp"
+        android:textColor="#A0000000"
+        tools:text="">
+    </TextView>
+    
+    <ImageView
+        android:id="@+id/logo"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#000000"
+        android:scaleType="centerInside"
+        android:visibility="gone"/>
+    <VideoView
+        android:id="@+id/logo_video"
+        android:layout_width="1280dp"
+        android:layout_height="480dp"
+        android:videoOnly="true"
+        android:oneShot="true"
+        android:visibility="gone"/>
+
+    <View
+        android:id="@+id/cover"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#000000"
+        android:visibility="gone"/>
+</RelativeLayout>

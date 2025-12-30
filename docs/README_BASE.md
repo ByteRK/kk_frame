@@ -1,7 +1,7 @@
 ## 项目名
 {{project_name}}
 
-## 项目信息
+## 项目描述
 
 
 ## 创建时间
@@ -9,29 +9,36 @@
 
 ## 目录结构
 ~~~
-- assets   静态资源
-- - anim      动画
-- - color     颜色
-- - drawable  样式
-- - layout    布局
-- - mipmap    图片
-- - strings   文本
-- - values    数据
-- config   配置文件
-- docs     项目文档
-- fonts    项目字体
-- lang     语言文件
-- script   脚本文件
-- src      功能代码
-- - common    常用函数
-- - data      数据存储
-- - function  功能函数
-- - i2c       I2C相关
-- - net       网络相关
-- - protocol  通信协议
-- - uart      串口相关
-- - viewlibs  自定义组件库
-- - windows   页面函数
+./
+├── assets                    # 资源文件
+│   ├── animator/
+│   ├── color/
+│   ├── layout/
+│   ├── mipmap/
+│   └── values/
+├── config/                   # 配置目录
+├── docs/                     # 文档目录
+├── fonts/                    # 字体目录
+├── lang/                     # 语言包目录
+├── script/                   # 脚本目录
+├── src
+│   ├── app                   # 主程序目录
+│   │   ├── managers/         # 管理目录
+│   │   ├── page/             # 页面目录
+│   │   ├── project/          # 数据目录
+│   │   ├── protocol/         # 通讯协议目录
+│   │   └── app_common.h      # 项目通用头文件
+│   ├── comm/                 # 通讯接口
+│   ├── template/             # 模板目录
+│   ├── utils/                # 工具集
+│   └── widgets/              # 自定义控件
+├── build.py                  # 项目构建脚本
+├── CMakeLists.txt            # CMake配置文件
+├── date2ver                  # 版本号生成脚本
+├── LICENSE                   # 开源协议
+├── main.cc                   # 主程序入口
+├── README.md                 # 项目说明
+└── R.h                       # 控件ID文件
 ~~~
 
 ## CDROID版本

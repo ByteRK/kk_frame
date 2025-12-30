@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-01-18 11:33:02
- * @LastEditTime: 2025-08-10 17:45:51
+ * @LastEditTime: 2025-12-24 16:34:50
  * @FilePath: /kk_frame/config/series_info.h
  * @Description: 项目硬件参数
  * @BugList: 
@@ -14,20 +14,16 @@
 #ifndef __SERIES_INFO_H__
 #define __SERIES_INFO_H__
 
-#define SERIES_NAME	"CDROID"
-
-#define FLASH_SIZE	"128NR"
-#define FLASH_16NR	1
-
-//cpu config
+// cpu config
 #define CPU_NAME     "SSD212"
 #define CPU_BRAND    "Sigmstar"
 
-//screen config
+// screen config
 #define SCREEN_WIDTH   800
 #define SCREEN_HEIGHT  480
 #define SCREEN_SIZE    "800*480"
 
+// net config
 #define FUNCTION_WIRE    1
 #ifdef DEBUG
     #define FUNCTION_WIFI    0

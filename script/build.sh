@@ -5,7 +5,7 @@
  # @Author: Ricken
  # @Email: me@ricken.cn
  # @Date: 2024-05-22 15:42:58
- # @LastEditTime: 2025-07-10 23:05:58
+ # @LastEditTime: 2025-12-24 17:22:58
  # @FilePath: /kk_frame/script/build.sh
  # @Description: 
  # @BugList: 
@@ -26,9 +26,9 @@ PRODUCT=sigma
 PRODUCT_DIR=outSIGMA-Release
 
 # 构建相关路径
-SRC_DIR=$(pwd)/..
-PACKAGE_DIR=$SRC_DIR/package
-CDROID_DIR=$SRC_DIR/../..
+SRC_DIR="$(realpath "$(pwd)/..")"
+PACKAGE_DIR=$SRC_DIR/dist
+CDROID_DIR="$(realpath "$SRC_DIR/../..")"
 OUT_DIR=$CDROID_DIR/$PRODUCT_DIR
 
 # 处理输入参数

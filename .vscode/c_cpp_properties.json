@@ -8,7 +8,8 @@
                 "~/cdroid/src/*",
                 "~/cdroid/src/**",
                 "~/vcpkg/packages/**",
-                "~/cdroid/outX64-Debug/src/gui/*"
+                "~/cdroid/outX64-Debug/src/gui/*",
+                "${workspaceFolder}/src/widgets"
             ],
             "defines": [
                 "__VSCODE__"

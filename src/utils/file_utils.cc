@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 14:06:52
- * @LastEditTime: 2025-12-26 14:37:18
+ * @LastEditTime: 2025-12-29 18:41:04
  * @FilePath: /kk_frame/src/utils/file_utils.cc
  * @Description: 文件相关的一些函数
  * @BugList:
@@ -64,10 +64,10 @@ bool FileUtils::write(const std::string& filePath, const std::string& content) {
     return true;
 }
 
-bool FileUtils::check(const std::string& filePath, size_t& size) {
+bool FileUtils::check(const std::string& filePath, size_t* size) {
     ghc::filesystem::path path(filePath);
     if (ghc::filesystem::exists(path) && ghc::filesystem::is_regular_file(path)) {
-        size = ghc::filesystem::file_size(path);
+        if (size) (*size) = ghc::filesystem::file_size(path);
         return true;
     }
     LOGE("File not found or is a directory: %s", filePath.c_str());

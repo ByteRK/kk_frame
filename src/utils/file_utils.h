@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 14:06:45
- * @LastEditTime: 2025-12-26 14:38:44
+ * @LastEditTime: 2025-12-29 18:40:49
  * @FilePath: /kk_frame/src/utils/file_utils.h
  * @Description: 文件相关的一些函数
  * @BugList:
@@ -37,7 +37,7 @@ namespace FileUtils {
     /// @param filePath 文件名/路径
     /// @param size 文件大小
     /// @return true 文件存在
-    bool check(const std::string& filePath, size_t& size);
+    bool check(const std::string& filePath, size_t* size = nullptr);
     
 } // FileUtils
 

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-01-18 11:33:02
- * @LastEditTime: 2025-08-09 18:37:13
+ * @LastEditTime: 2025-12-24 17:34:48
  * @FilePath: /kk_frame/config/config_info.h
  * @Description: 项目信息
  * @BugList:
@@ -16,7 +16,7 @@
 
 /*********************** 文件信息 ***********************/
 
-#ifndef CDROID_X64 // 本地文件保存路径
+#ifndef CDROID_X64 // 文件保存路径
 #define LOCAL_DATA_DIR "/appconfigs/"
 #else
 #define LOCAL_DATA_DIR "./apps/kk_frame/"
@@ -37,11 +37,8 @@
 
 /*********************** 默认设置 ***********************/
 
-// 屏幕亮度
-#define CONFIG_BRIGHTNESS     80       // 默认亮度
-#define CONFIG_BRIGHTNESS_MIN 0        // 最小亮度
-
+#define CONFIG_BRIGHTNESS     80       // 亮度
 #define CONFIG_VOLUME         80       // 音量
 #define CONFIG_AUTOLOCK       false    // 自动锁屏
 
-#endif
+#endif // __CONFIG_INFO_H__

@@ -2,48 +2,50 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2025-09-02 20:23:28
+ * @LastEditTime: 2025-12-29 17:56:41
  * @FilePath: /kk_frame/main.cc
- * @Description:
+ * @Description: 主程序入口
  * @BugList:
  *
  * Copyright (c) 2025 by Ricken, All Rights Reserved.
  *
- */
+**/
 
-#include <cdlog.h>
-#include <core/app.h>
-#include "fonts_info.h"
-#include "series_info.h"
+#include <cdlog.h>           // 日志
+#include <core/app.h>        // Cdroid应用
 
-#include "this_func.h"
-#include "global_data.h"
-#include "config_mgr.h"
-#include "timer_mgr.h"
-#include "wind_mgr.h"
+#include "project_utils.h"   // 项目工具集
+#include "global_data.h"     // 全局数据
 
-#include "conn_mgr.h"
-#include "btn_mgr.h"
-#include "tuya_mgr.h"
+#include "config_mgr.h"      // 配置管理器
+#include "thread_mgr.h"      // 线程管理器
+#include "timer_mgr.h"       // 定时器管理器
+#include "wind_mgr.h"        // 窗口管理器
 
-void setAppEnv() {
-#ifdef CDROID_X64
-    setenv("FONTCONFIG_PATH", FONTCONFIG_PATH, 1);
-    setenv("SCREEN_SIZE", SCREEN_SIZE, 1);
-#endif
-}
+#include "conn_mgr.h"        // 电控通讯
+#include "btn_mgr.h"         // 按键板通讯
+#include "tuya_mgr.h"        // 涂鸦模组通讯
 
+
+/// @brief 主函数
+/// @param argc 参数个数
+/// @param argv 参数列表
+/// @return 返回值
 int main(int argc, const char* argv[]) {
-    setAppEnv();
-    printProjectInfo(argv[0]);
-    // printKeyMap();
+    ProjectUtils::env();           // 设定环境变量（x64生效）
+    ProjectUtils::pInfo(argv[0]);  // 打印项目信息
+    ProjectUtils::pKeyMap();       // 打印项目按键映射
 
     App app(argc, argv);
     cdroid::Context* ctx = &app;
+
     g_data->init();
+    
     g_config->init();
-    g_timerMgr->init();
+    // g_threadMgr->init(3);
+    g_timer->init();
     g_windMgr->init();
+
     // g_connMgr->init();
     // g_btnMgr->init();
     // g_tuyaMgr->init();

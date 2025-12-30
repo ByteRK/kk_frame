@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:47:17
- * @LastEditTime: 2025-12-29 17:10:24
+ * @LastEditTime: 2025-12-30 17:39:09
  * @FilePath: /kk_frame/src/utils/project_utils.cc
  * @Description: 项目相关的一些操作函数
  * @BugList:
@@ -20,10 +20,13 @@
 
 #include <gui_features.h>
 #include <sys/syscall.h>
+#include <sys/ioctl.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <fstream>
 #include <iostream>
 #include <cstring>
+#include <cdlog.h>
 
 void ProjectUtils::env() {
 #if defined(CDROID_X64) || defined(__VSCODE__)
@@ -60,7 +63,7 @@ void ProjectUtils::pInfo(const char* name) {
     fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", APP_VER_INFO);
     fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", BUILD_DATE);
     fprintf(stderr, "\033[1;35m# Git:%s\033[m\n", GIT_VERSION);
-    fprintf(stderr, "\033[1;35m# Cdroid:V%s_%s_%s\033[m\n", CDROID_VERSION, CDROID_COMMITID, CDROID_BUILD_NUMBER);
+    fprintf(stderr, "\033[1;35m# Cdroid:V%s_%s_%s\033[m\n", CDROID_VERSION, CDROID_COMMITID, std::to_string(CDROID_BUILD_NUMBER).c_str());
     fprintf(stderr, "\033[1;35m############ Ricken #############\n\n\033[0m");
 }
 
