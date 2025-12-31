@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-01-18 11:33:02
- * @LastEditTime: 2025-12-24 17:34:48
+ * @LastEditTime: 2025-12-31 16:45:56
  * @FilePath: /kk_frame/config/config_info.h
  * @Description: 项目信息
  * @BugList:
@@ -19,7 +19,8 @@
 #ifndef CDROID_X64 // 文件保存路径
 #define LOCAL_DATA_DIR "/appconfigs/"
 #else
-#define LOCAL_DATA_DIR "./apps/kk_frame/"
+#include "app_version.h"
+#define LOCAL_DATA_DIR "./apps/" APP_NAME_STR "/"
 #endif
 
 #define CONFIG_SECTION       "conf"                         // 配置文件节点
