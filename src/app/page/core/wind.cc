@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2025-12-30 17:22:44
+ * @LastEditTime: 2025-12-31 10:44:47
  * @FilePath: /kk_frame/src/app/page/core/wind.cc
  * @Description: 窗口类
  * @BugList:
@@ -101,6 +101,10 @@ void MainWindow::init() {
     mBlackView->setOnClickListener([this](View& view) { hideBlack(); });
     SystemUtils::setBrightness(g_config->getBrightness());
 
+    // 模块初始化
+    WindLogo::init(mRootView);
+    WindToast::init(mRootView);
+
     // 增加点击反馈
     mAttachInfo->mPlaySoundEffect = playSound;
     showLogo();
@@ -110,7 +114,7 @@ void MainWindow::init() {
 /// @return LOGO信息
 WindLogo::LOGO_INFO MainWindow::getLogo() {
     WindLogo::LOGO_INFO info;
-    info.path = "@mipmap/logo";
+    info.path = "@mipmap/ricken";
     info.type = WindLogo::LOGO_TYPE_IMG;
     info.duration = 3000;
     return info;
