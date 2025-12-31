@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-23 00:04:17
- * @LastEditTime: 2025-12-29 14:23:20
+ * @LastEditTime: 2025-12-31 11:33:23
  * @FilePath: /kk_frame/src/app/page/view/page_home.cc
  * @Description: 主页面
  * @BugList:
@@ -37,5 +37,8 @@ int8_t HomePage::getType() const {
 }
 
 void HomePage::setView() {
-    mRootView->setOnClickListener([](View&) {LOGE("HELLO WORLD!!!");});
+    mRootView->setOnClickListener([](View& v) {
+        v.setActivated(!v.isActivated());
+        g_window->showToast("I'm a toast ~");
+    });
 }

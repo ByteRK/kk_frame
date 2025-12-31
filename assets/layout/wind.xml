@@ -21,20 +21,8 @@
         android:visibility="gone">
     </RelativeLayout>
 
-    <TextView
-        android:id="@+id/toast"
-        android:layout_width="wrap_content"
-        android:layout_height="70dp"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="5dp"
-        android:paddingTop="20dp"
-        android:translationY="76dp"
-        android:gravity="center_horizontal"
-        android:textSize="20sp"
-        android:textColor="#A0000000"
-        tools:text="">
-    </TextView>
+    <include layout="@layout/module_toast"
+        android:id="@+id/toast"/>
     
     <ImageView
         android:id="@+id/logo"

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-25 10:23:15
- * @LastEditTime: 2025-12-30 16:47:21
+ * @LastEditTime: 2025-12-31 11:17:44
  * @FilePath: /kk_frame/src/app/page/components/wind_toast.cc
  * @Description: Toast组件
  * @BugList:
@@ -19,11 +19,12 @@
 WindToast::WindToast() {
     mIsInit = false;
     mIsRunning = false;
+    mShowListener = nullptr;
 }
 
 WindToast::~WindToast() {
-    mToast->removeCallbacks(mRuner);
-    mToast->animate().cancel();
+    mToastBox->removeCallbacks(mRuner);
+    mToastBox->animate().cancel();
 }
 
 /// @brief 初始化Toast
@@ -31,10 +32,16 @@ WindToast::~WindToast() {
 void WindToast::init(ViewGroup* parent) {
     if (mIsInit) return;
 
+    mToastBox = dynamic_cast<ViewGroup*>(parent->findViewById(APP_NAME::R::id::toast));
+    if (!mToastBox) {
+        LOGE("Fail to get R::id::toast");
+        return;
+    }
+
     // 获取节点
-    mToast = dynamic_cast<TextView*>(parent->findViewById(APP_NAME::R::id::toast));
+    mToast = dynamic_cast<TextView*>(mToastBox->findViewById(APP_NAME::R::id::toast_text));
     if (!mToast) {
-        LOGE("Toast节点获取失败");
+        LOGE("Fail to get R::id::toast_text");
         return;
     }
 
@@ -42,16 +49,16 @@ void WindToast::init(ViewGroup* parent) {
     mRuner = [this] {
         mLevel = -1;
         mIsRunning = false;
-        mToast->animate().alpha(0.f).setDuration(ANIMATETIME).start();
+        mToastBox->animate().alpha(0.f).setDuration(mAnimatime).start();
     };
 
     // Toast动画结束回调
     Animator::AnimatorListener toastAnimtorListener;
     toastAnimtorListener.onAnimationEnd = [this](Animator& animator, bool isReverse) {
-        if (mToast->getAlpha() == 0.f) mToast->setVisibility(View::GONE);
+        if (mToastBox->getAlpha() == 0.f) mToastBox->setVisibility(View::GONE);
     };
-    mToast->setVisibility(View::GONE);
-    mToast->animate().setListener(toastAnimtorListener);
+    mToastBox->setVisibility(View::GONE);
+    mToastBox->animate().setListener(toastAnimtorListener);
 
     mIsInit = true;
 }
@@ -64,21 +71,27 @@ void WindToast::onTick() {
         TOAST_TYPE item = mList.front();
         mList.pop();
 
-        LOGI("showToast[over:%d]: %s", mList.size(), item.text.c_str());
-        mToast->removeCallbacks(mRuner);
+        LOGV("showToast[over:%d]: %s", mList.size(), item.text.c_str());
+        mToastBox->removeCallbacks(mRuner);
 
         mIsRunning = true;
         mLevel = item.level;
         mToast->setText(item.text);
-        mToast->setVisibility(View::VISIBLE);
+        mToastBox->setVisibility(View::VISIBLE);
 
         if (item.animate) {
-            mToast->animate().alpha(1.f).setDuration(ANIMATETIME).start();
+            mToastBox->animate().alpha(1.f).setDuration(mAnimatime).start();
         } else {
-            mToast->setAlpha(1.f);
+            mToastBox->setAlpha(1.f);
         }
-        if (!item.lock)mToast->postDelayed(mRuner, DURATION);
+        if (!item.lock)mToastBox->postDelayed(mRuner, mDuration);
     }
+}
+
+/// @brief 显示Toast
+/// @param text 文本内容
+void WindToast::showToast(std::string text) {
+    showToast(text, 0, false, true, false);
 }
 
 /// @brief 显示Toast
@@ -89,6 +102,7 @@ void WindToast::onTick() {
 /// @param lock 是否锁定
 void WindToast::showToast(std::string text, int8_t level, bool keepNow, bool animate, bool lock) {
     if (!checkInit()) return;
+    if (mShowListener) mShowListener();
 
     if (!keepNow) {
         if (mIsRunning && level < mLevel) {
@@ -114,10 +128,10 @@ void WindToast::hideToast() {
     if (!checkInit()) return;
     mLevel = -1;
     mIsRunning = false;
-    mToast->animate().cancel();
-    mToast->setAlpha(0.f);
-    mToast->setVisibility(View::GONE);
-    mToast->removeCallbacks(mRuner);
+    mToastBox->animate().cancel();
+    mToastBox->setAlpha(0.f);
+    mToastBox->setVisibility(View::GONE);
+    mToastBox->removeCallbacks(mRuner);
     std::queue<TOAST_TYPE>().swap(mList);
 }
 
@@ -127,10 +141,28 @@ bool WindToast::isToastShow() const {
     return mIsRunning;
 }
 
+/// @brief 设置Toast显示时间
+/// @param duration 时间 ms
+void WindToast::setToastDuration(int duration) {
+    mDuration = duration;
+}
+
+/// @brief 设置Toast动画时间
+/// @param animatime 时间 ms
+void WindToast::setToastAnimatime(int animatime) {
+    mAnimatime = animatime;
+}
+
+/// @brief 设置Toast显示监听
+/// @param listener 
+void WindToast::setOnShowToastListener(OnShowToastListener listener) {
+    mShowListener = listener;
+}
+
 /// @brief 判断当前Toast是否未初始化
 /// @return 
 inline bool WindToast::checkInit() {
     if (mIsInit) return true;
-    LOGE("Toast未初始化");
+    LOGE("Toast uninit");
     return false;
 }
