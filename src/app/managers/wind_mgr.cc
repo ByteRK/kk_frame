@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2025-12-30 12:00:41
+ * @LastEditTime: 2025-12-31 15:13:29
  * @FilePath: /kk_frame/src/app/managers/wind_mgr.cc
  * @Description: 页面管理类
  * @BugList:
@@ -15,6 +15,7 @@
 #define OPEN_SCREENSAVER false
 
 #include "wind_mgr.h"
+#include "global_data.h"
 #if ENABLE_THREAD_SAFE_MSG
 #include <core/app.h>
 #endif
@@ -79,7 +80,21 @@ void WindMgr::init() {
         20
     );
 #endif
-    showPage(PAGE_HOME);
+
+    // 根据模式跳转页面
+    switch (g_data->mDeviceMode) {
+    case DEVICE_MODE_DEMO: {
+        LOGI("[TIP] now in demo mode");
+        showPage(PAGE_DEMO);
+    }   break;
+    case DEVICE_MODE_TEST: {
+        LOGI("[TIP] now in test mode");
+        showPage(g_data->mTestPage);
+    }   break;
+    default: {
+        showPage(PAGE_HOME);
+    }   break;
+    }
 }
 
 /// @brief 注册页面

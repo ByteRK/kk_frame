@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2025-12-30 15:47:50
+ * @LastEditTime: 2025-12-31 15:18:04
  * @FilePath: /kk_frame/src/app/project/global_data.cc
  * @Description:
  * @BugList:
@@ -17,6 +17,8 @@
 #include "base_data.h"
 #include "config_info.h"
 #include <unistd.h>
+#include <core/cxxopts.h>
+#include <core/app.h>
 
 static constexpr uint32_t GD_SAVE_CHECK_INITERVAL = 2000;       // 检查保存间隔[2s]
 static constexpr uint32_t GD_SAVE_BACKUP_INTERVAL = 1000 * 10;  // 备份间隔[10s]
@@ -30,10 +32,15 @@ GlobalData::~GlobalData() {
 }
 
 /// @brief 初始化
-void GlobalData::init() {
+void GlobalData::init(int argc, const char* argv[]) {
+    mArgc = argc;
+    mArgv = argv;
     mPowerOnTime = SystemClock::uptimeMillis();
+    mDeviceMode = (App::getInstance().getName() == "kk_frame") ?
+        DEVICE_MODE_DEMO : DEVICE_MODE_SAMPLE;
 
     checkenv();
+    checkArgv();
     loadFromFile();
 
     mNextBakTime = UINT64_MAX;
@@ -47,7 +54,7 @@ void GlobalData::reset() {
     std::string command = std::string("rm")\
         + " " + APP_FILE_FULL_PATH + " " + APP_FILE_BAK_PATH;
     std::system(command.c_str());
-    init();
+    init(mArgc, mArgv);
     LOGE("global_data factory reset.");
 }
 
@@ -73,6 +80,24 @@ void GlobalData::checkenv() {
         }
     }
     LOGW_IF(mDeviceMode, "DEVICE_MODE: %d", mDeviceMode);
+}
+
+/// @brief 检查命令行参数
+void GlobalData::checkArgv() {
+    if (mArgc == 0 || mArgv == nullptr)return;
+    bool demo = false;
+
+    cxxopts::Options options("kk_frame", "");
+    options.add_options()
+        ("demo", "demo mode", cxxopts::value<bool>(demo))
+        ("p,page", "show any page", cxxopts::value<int>(mTestPage)->default_value("0"));
+    options.allow_unrecognised_options();
+    cxxopts::ParseResult result = options.parse(mArgc, mArgv);
+
+    // demo模式
+    if (demo) mDeviceMode = DEVICE_MODE_DEMO;
+    // 测试模式（进入随意页面）
+    if (mTestPage != 0) mDeviceMode = DEVICE_MODE_TEST;
 }
 
 /// @brief 载入本地文件

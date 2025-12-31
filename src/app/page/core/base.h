@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2025-12-30 11:32:17
+ * @LastEditTime: 2025-12-31 14:36:15
  * @FilePath: /kk_frame/src/app/page/core/base.h
  * @Description: 页面基类
  * @BugList:
@@ -36,6 +36,7 @@ enum {
 // 页面定义
 enum {
     PAGE_NULL,       // 空状态
+    PAGE_DEMO,       // 示例页面
     PAGE_HOME,       // 主页面
     PAGE_OTA,        // OTA
 };

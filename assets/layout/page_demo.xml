@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:tools="http://schemas.android.com/tools">
+    <TextView
+        android:id="@+id/hello"
+        style="@style/font_medium"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:textColor="@color/text_title"
+        android:textSize="50sp"
+        android:text="NOW IN DEMO MODE"
+        android:stateListAnimator="@animator/btn_click_scale_alpha"/>
+</RelativeLayout>

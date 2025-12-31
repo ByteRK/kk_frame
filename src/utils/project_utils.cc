@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:47:17
- * @LastEditTime: 2025-12-30 17:39:09
+ * @LastEditTime: 2025-12-31 14:07:42
  * @FilePath: /kk_frame/src/utils/project_utils.cc
  * @Description: 项目相关的一些操作函数
  * @BugList:
@@ -52,13 +52,13 @@ void ProjectUtils::pInfo(const char* name) {
     fprintf(stderr, "\033[1;35m    \"\"  \"\"  \"\" \"     漏洞退让   #\n\033[0m");
 
     fprintf(stderr, "\033[1;35m#################################\n");
-    fprintf(stderr, "\033[1;35m# %s_%s\033[0;39m\n", CDROID_BASE_OS, CDROID_PRODUCT);
+    fprintf(stderr, "\033[1;35m# %s_%s_\033[0;39m", CDROID_BASE_OS, CDROID_PRODUCT);
 #ifdef DEBUG
-    fprintf(stderr, "\033[1;31m DEBUG\n");
+    fprintf(stderr, "\033[1;31mDEBUG");
 #else
-    fprintf(stderr, "\033[1;32m REALSE\n");
+    fprintf(stderr, "\033[1;32mREALSE");
 #endif
-    fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", APP_ID);
+    fprintf(stderr, "\033[1;35m  [%s]\033[0;39m\n", APP_ID);
     fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", name);
     fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", APP_VER_INFO);
     fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", BUILD_DATE);

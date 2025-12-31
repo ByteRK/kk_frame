@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2025-12-29 17:56:41
+ * @LastEditTime: 2025-12-31 14:19:48
  * @FilePath: /kk_frame/main.cc
  * @Description: 主程序入口
  * @BugList:
@@ -39,8 +39,8 @@ int main(int argc, const char* argv[]) {
     App app(argc, argv);
     cdroid::Context* ctx = &app;
 
-    g_data->init();
-    
+    g_data->init(argc, argv);
+
     g_config->init();
     // g_threadMgr->init(3);
     g_timer->init();
