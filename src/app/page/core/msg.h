@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-11-24 05:46:03
- * @LastEditTime: 2025-12-29 11:57:22
+ * @LastEditTime: 2025-12-31 15:47:41
  * @FilePath: /kk_frame/src/app/page/core/msg.h
  * @Description: 消息类（初始化消息、运行时消息、）
  * @BugList:
@@ -31,7 +31,9 @@ struct RunMsgBase {
     MSG_TYPE msgType;                    // 消息类型
 
     virtual ~RunMsgBase() = default;
-    virtual RunMsgBase* clone() const = 0;
+    virtual RunMsgBase* clone() const {
+        return new RunMsgBase(*this);
+    };
 };
 
 /// @brief 初始化消息基类
