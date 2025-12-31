@@ -2,9 +2,9 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-08-29 16:08:49
- * @LastEditTime: 2025-12-30 11:30:32
+ * @LastEditTime: 2025-12-31 18:31:48
  * @FilePath: /kk_frame/src/app/managers/timer_mgr.cc
- * @Description:
+ * @Description: 定时器管理类
  * @BugList:
  *
  * Copyright (c) 2025 by Ricken, All Rights Reserved.
@@ -12,17 +12,18 @@
  */
 
 #include "timer_mgr.h"
-#include "work_timer.h"
 
 #include <core/systemclock.h>
 #include <cdlog.h>
 
+ /// @brief 构造
 TimerMgr::TimerMgr() {
+    mInited = false;
     mTimerId = 0;
     mIdOverflow = false;
-    mTimerIdMap.clear();
 }
 
+/// @brief 析构
 TimerMgr::~TimerMgr() {
     mFreed.clear();
     mWorked.clear();
@@ -32,64 +33,30 @@ TimerMgr::~TimerMgr() {
     mBlocks.clear();
 }
 
+/// @brief 初始化
 void TimerMgr::init() {
+#if 1 // 获取当前线程的Looper
     cdroid::Looper::getForThread()->addEventHandler(this);
-    mDefaultTimerFactory[TIMER_WORKING] = []() { return new CookingTimer(); };
+#else
+    cdroid::Looper::getMainLooper()->addEventHandler(this);
+#endif
+    mInited = true;
 }
 
-/// @brief 启动内置定时器
-/// @param param  定时器类型
-/// @param timespace  定时器间隔
-/// @param repeat  定时次数
-void TimerMgr::start(DEFAULT_TIMER_TYPE param, uint32_t timespace, int16_t repeat) {
-    // 判断是否已存在该类型的定时器
-    auto it = mTimerIdMap.find(param);
-    if (it == mTimerIdMap.end()) {
-        // 创建该类型的定时器WorkTimer
-        auto timerIt = mDefaultTimerFactory.find(param);
-        if (timerIt != mDefaultTimerFactory.end()) {
-            WorkTimer* tBase = timerIt->second(); // 调用构造函数创建页面
-            uint32_t id = addTimer(timespace, tBase, param, repeat); // 创建定时器
-            mTimerIdMap[param] = { id, tBase };
-            LOGE("TimerMgr start id:%d param:%d", id, param);
-        } else {
-            throw std::runtime_error("TimerMgr::start mDefaultTimerFactory id not find  param !!!!!");
-        }
-    } else {
-        LOGE("timer is running");
-    }
-}
-
-/// @brief 停止内置定时器
-/// @param param  定时器类型
-/// @note 回调类将被析构
-void TimerMgr::stop(DEFAULT_TIMER_TYPE param) {
-    // 找到该类型的定时器
-    auto it = mTimerIdMap.find(param);
-    if (it != mTimerIdMap.end()) {
-        uint32_t id = it->second.first;
-        delTimer(id);  // 取消定时器
-        delete it->second.second;
-        mTimerIdMap.erase(it);
-        LOGE("TimerMgr stop id:%d param:%d", id, param);
-    } else {
-        LOGE("timer is not running");
-    }
-}
-
-/// @brief 增加默认计时器
-/// @param timespace 
-/// @param timercb 
-/// @param param 
-/// @param repeat 
-/// @return 
-uint32_t TimerMgr::addTimer(uint32_t timespace, WorkTimer* timercb, size_t param, int16_t repeat) {
+/// @brief 启动定时器
+/// @param timespace 时间间隔
+/// @param timercb 回调对象
+/// @param param 回调参数(可为数值可为指针)
+/// @param repeat 重复次数(0为无限次)
+/// @return 定时器ID
+uint32_t TimerMgr::addTimer(uint32_t timespace, ITimer* timercb, size_t param, uint32_t repeat) {
+    if (!mInited) return 0;
     if (!timercb) return 0;
     if (timespace < 10) timespace = 10;
 
     TimerData* timer = newTimer();
     if (!timer) {
-        LOGE("new timer fail. space=%d", timespace);
+        LOGE("New timer fail. space=%d", timespace);
         return 0;
     }
 
@@ -104,14 +71,14 @@ uint32_t TimerMgr::addTimer(uint32_t timespace, WorkTimer* timercb, size_t param
     mWorking.insert(std::make_pair(timer->id, timer));
     addWorked(timer);
 
-    LOGD("[%p]dat=%u next=%ld count=%d timer->begTime = %lld", timer, timer->id, timer->nextTime, mWorking.size(), timer->begTime);
+    LOGD("Id=%u next=%ld count=%d", timer->id, timer->nextTime, mWorking.size());
 
     return timer->id;
 }
 
-/// @brief 根据ID删除计时器
-/// @param id 
-/// @return 
+/// @brief 根据ID删除定时器
+/// @param id 定时器ID
+/// @return 删除成功返回true
 bool TimerMgr::delTimer(uint32_t id) {
     auto it = mWorking.find(id);
     if (it == mWorking.end()) return false;
@@ -120,47 +87,28 @@ bool TimerMgr::delTimer(uint32_t id) {
     return true;
 }
 
-/// @brief 根据ID删除计时器
-/// @param id 
-/// @return 
-int TimerMgr::delTimer(WorkTimer* timercb) {
-    int count = 0;
-    if (!timercb) return count;
-free_timer:
+/// @brief 根据回调删除定时器
+/// @param timercb 定时器回调
+/// @return 删除的定时器数量
+int TimerMgr::delTimer(ITimer* timercb) {
+    int count;
+    if (!timercb) return 0;
+    count = 0;
     for (auto it = mWorking.begin(); it != mWorking.end();) {
         if (it->second->sink == timercb) {
+            auto itDel = it++;
             count++;
-            freeTimer(it->second);
-            goto free_timer;
+            freeTimer(itDel->second);
         } else {
             it++;
         }
     }
-    if (count > 0) LOGI("Free timer. timercb=%p count=%d", timercb, count);
+    if (count > 0) LOGD("Free timer. timercb=%p count=%d", timercb, count);
     return count;
 }
 
-/// @brief 根据参数删除计时器
-/// @param param 
-/// @return 
-int TimerMgr::delTimerFromParam(size_t param) {
-    int count = 0;
-free_timer:
-    for (auto it = mWorking.begin(); it != mWorking.end();) {
-        if (it->second->param == param) {
-            count++;
-            freeTimer(it->second);
-            goto free_timer;
-        } else {
-            it++;
-        }
-    }
-    if (count > 0) LOGV("Free timer. param=%p count=%d", param, count);
-    return count;
-}
-
-/// @brief 新建计时器
-/// @return 
+/// @brief 新建定时器实例
+/// @return 定时器指针
 TimerMgr::TimerData* TimerMgr::newTimer() {
     TimerData* dat;
     if (mFreed.empty()) {
@@ -187,53 +135,57 @@ TimerMgr::TimerData* TimerMgr::newTimer() {
     return dat;
 }
 
-/// @brief 释放计时器
-/// @param dat 
+/// @brief 释放定时器
+/// @param dat 定时器实例
 void TimerMgr::freeTimer(TimerData* dat) {
     auto it = mWorking.find(dat->id);
     if (it == mWorking.end()) return;
-    LOGV("[%p]dat=%u", dat, dat->id);
+    LOGD("Id=%u", dat->id);
     dat->delit = true;
     mWorked.remove(dat);
     mFreed.push_back(dat);
     mWorking.erase(it);
 }
 
-/// @brief 增加计时器
-/// @param dat 
+/// @brief 排序定时器
+/// @param dat 定时器实例
 void TimerMgr::addWorked(TimerData* dat) {
     dat->nextTime = dat->begTime + (int64_t)dat->timespace * (dat->count + 1);
 
-    for (auto it = mWorked.begin(); it != mWorked.end(); it++) {
-        if (dat->nextTime < (*it)->nextTime) {
-            mWorked.insert(it, dat);
-            return;
-        }
+    auto it = mWorked.begin(), itlast = it;
+    for (; it != mWorked.end(); it++) {
+        if (dat->nextTime >= (*it)->nextTime) { itlast = it; }
     }
-    mWorked.push_back(dat);
 
-    LOGV("add work. dat=%u nextTime=%ld count=%d", dat->id, dat->nextTime, mWorked.size());
+    itlast++;
+    if (itlast != mWorked.end()) {
+        mWorked.insert(itlast, dat);
+    } else {
+        mWorked.push_back(dat);
+    }
+
+    LOGV("Id=%u nextTime=%ld count=%d", dat->id, dat->nextTime, mWorked.size());
 }
 
-/// @brief 打印计时器
+/// @brief 打印工作中定时器
 void TimerMgr::dumpWork() {
     for (auto it = mWorked.begin(); it != mWorked.end(); it++) {
         TimerData* dat = *it;
-        LOGD("[%p]id=%d time=%ld", dat, dat->id, dat->nextTime);
+        LOGD("Id=%d time=%ld", dat->id, dat->nextTime);
     }
 }
 
-/// @brief 
-/// @return 
+/// @brief 检查首个定时器是否已达时间
+/// @return
 int TimerMgr::checkEvents() {
-    if (mWorked.empty()) return 0;
+    if (mWorked.empty() || !mInited) return 0;
     int64_t    nowms = cdroid::SystemClock::uptimeMillis();
     TimerData* headTimer = mWorked.front();
     if (headTimer->nextTime <= nowms) return 1;
     return 0;
 }
 
-/// @brief 
+/// @brief 处理定时器任务
 /// @return 
 int TimerMgr::handleEvents() {
     int     diffms, eventCount = 0;
@@ -246,7 +198,7 @@ int TimerMgr::handleEvents() {
         headTimer->count++;
         headTimer->sink->onTimer(headTimer->id, headTimer->param, headTimer->count);
 
-        if (!headTimer->delit && (headTimer->repeat == -1 || headTimer->count < headTimer->repeat)) {
+        if (!headTimer->delit && (headTimer->repeat == 0 || headTimer->count > headTimer->repeat)) {
             mWorked.pop_front();
             addWorked(headTimer);
         } else {
@@ -258,7 +210,7 @@ int TimerMgr::handleEvents() {
     } while (eventCount < 5 && !mWorked.empty());
 
     if ((diffms = cdroid::SystemClock::uptimeMillis() - nowms) > 100) {
-        LOGW("handle timer events more than 100ms. use=%dms", diffms);
+        LOGW("Handle timer events more than 100ms. use=%dms", diffms);
     }
 
     return eventCount;
