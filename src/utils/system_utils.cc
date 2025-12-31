@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 14:40:26
- * @LastEditTime: 2025-12-26 18:27:44
+ * @LastEditTime: 2025-12-31 10:39:39
  * @FilePath: /kk_frame/src/utils/system_utils.cc
  * @Description: 系统相关的一些函数
  * @BugList:
@@ -71,13 +71,13 @@ bool SystemUtils::sysfs(const std::string& path, const std::string& value) {
         LOGE("Failed to open %s", path);
         return false;
     }
-    bool success = (fprintf(fp, "%s", value) > 0);
+    bool success = (fprintf(fp, "%s", value.c_str()) > 0);
     fclose(fp);
 
     if (!success) {
-        LOGE("Write failed: %s -> %s", value, path);
+        LOGE("Write failed: %s -> %s", value.c_str(), path.c_str());
     } else {
-        LOGI("Write %s -> %s", value, path);
+        LOGI("Write %s -> %s", value.c_str(), path.c_str());
     }
     return success;
 }
