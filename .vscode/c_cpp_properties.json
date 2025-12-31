@@ -8,15 +8,14 @@
                 "~/cdroid/src/*",
                 "~/cdroid/src/**",
                 "~/vcpkg/packages/**",
-                "~/cdroid/outX64-Debug/src/gui/*",
-                "${workspaceFolder}/src/widgets"
+                "~/cdroid/outX64-Debug/src/gui/*"
             ],
             "defines": [
                 "__VSCODE__"
             ],
             "compilerPath": "/usr/bin/gcc",
-            "cStandard": "c17",
-            "cppStandard": "gnu++17",
+            "cStandard": "c11",
+            "cppStandard": "gnu++11",
             "intelliSenseMode": "linux-gcc-x64"
         }
     ],
