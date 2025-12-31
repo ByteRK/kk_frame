@@ -7,6 +7,7 @@
 ~~~
 ./script/
 ├── build.sh                构建升级文件
+├── prebuild.sh             构建前准备脚本
 ├── cdroid_patch.sh         打包当前cdroid框架修改内容
 ├── checkLang.py            检查多语言配置文件是否匹配
 ├── fill_bg.py              填充PNG图片背景色
