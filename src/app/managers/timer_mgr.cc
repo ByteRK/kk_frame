@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-08-29 16:08:49
- * @LastEditTime: 2025-12-31 18:31:48
+ * @LastEditTime: 2026-01-02 18:47:09
  * @FilePath: /kk_frame/src/app/managers/timer_mgr.cc
  * @Description: 定时器管理类
  * @BugList:
@@ -50,8 +50,7 @@ void TimerMgr::init() {
 /// @param repeat 重复次数(0为无限次)
 /// @return 定时器ID
 uint32_t TimerMgr::addTimer(uint32_t timespace, ITimer* timercb, size_t param, uint32_t repeat) {
-    if (!mInited) return 0;
-    if (!timercb) return 0;
+    if (!mInited || !timercb) return 0;
     if (timespace < 10) timespace = 10;
 
     TimerData* timer = newTimer();
@@ -178,7 +177,7 @@ void TimerMgr::dumpWork() {
 /// @brief 检查首个定时器是否已达时间
 /// @return
 int TimerMgr::checkEvents() {
-    if (mWorked.empty() || !mInited) return 0;
+    if (!mInited || mWorked.empty()) return 0;
     int64_t    nowms = cdroid::SystemClock::uptimeMillis();
     TimerData* headTimer = mWorked.front();
     if (headTimer->nextTime <= nowms) return 1;
