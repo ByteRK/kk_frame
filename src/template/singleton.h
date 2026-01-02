@@ -2,8 +2,8 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-29 11:59:20
- * @LastEditTime: 2025-12-29 11:59:41
- * @FilePath: /kk_frame/src/template/Singleton.h
+ * @LastEditTime: 2026-01-02 18:22:02
+ * @FilePath: /kk_frame/src/template/singleton.h
  * @Description: 单例模板
  * @BugList:
  *
@@ -14,11 +14,13 @@
 #ifndef __SINGLETON_H__
 #define __SINGLETON_H__
 
+/// @brief 单例模板
+/// @tparam T 单例类型
 template<typename T>
 class Singleton {
 protected:
     Singleton() = default;
-    ~Singleton() = default;
+    virtual ~Singleton() = default;
 public:
     Singleton(const Singleton&) = delete;
     Singleton& operator=(const Singleton&) = delete;
