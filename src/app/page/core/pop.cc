@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-04 13:52:55
- * @LastEditTime: 2026-01-04 14:58:51
+ * @LastEditTime: 2026-01-04 15:10:49
  * @FilePath: /kk_frame/src/app/page/core/pop.cc
  * @Description: 弹窗基类
  * @BugList:
@@ -22,6 +22,7 @@ PopBase::PopBase(std::string resource) :PBase(resource) {
     mPopRootView->setOnTouchListener([](View& v, MotionEvent& e) { return true; });
     mPopRootView->setBackgroundColor(0x99000000);
     mPopRootView->addView(mRootView);
+    setMargin(0, 0, 0, 0); // 默认全屏
 }
 
 /// @brief 析构
