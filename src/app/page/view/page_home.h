@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-23 00:04:23
- * @LastEditTime: 2025-12-29 11:35:51
+ * @LastEditTime: 2026-01-04 14:06:50
  * @FilePath: /kk_frame/src/app/page/view/page_home.h
  * @Description: 主页面
  * @BugList:
@@ -14,7 +14,7 @@
 #ifndef __PAGE_HOME_H__
 #define __PAGE_HOME_H__
 
-#include "base.h"
+#include "page.h"
 
 class HomePage :public PageBase {
 private:

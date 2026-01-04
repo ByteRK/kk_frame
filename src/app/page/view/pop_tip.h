@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-23 00:04:23
- * @LastEditTime: 2025-12-29 14:27:10
+ * @LastEditTime: 2026-01-04 14:06:58
  * @FilePath: /kk_frame/src/app/page/view/pop_tip.h
  * @Description:
  * @BugList:
@@ -14,7 +14,7 @@
 #ifndef __POP_TIP_H__
 #define __POP_TIP_H__
 
-#include "base.h"
+#include "pop.h"
 
 class TipPop :public PopBase {
 private:

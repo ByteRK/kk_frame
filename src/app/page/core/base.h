@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2026-01-04 11:15:16
+ * @LastEditTime: 2026-01-04 14:41:56
  * @FilePath: /kk_frame/src/app/page/core/base.h
  * @Description: 页面基类
  * @BugList:
@@ -75,15 +75,12 @@ protected:
     ViewGroup*      mRootView = nullptr;                       // 根节点
     uint64_t        mLastTick = 0;                             // 上次Tick时间
     bool            mIsAttach = false;                         // 是否已经Attach
-private:
-    uint32_t        mAutoExit = 0;                             // 自动退出到待机的时间
-    bool            mAutoExitWithBlack = false;                // 自动退出到待机时是否显示黑屏
 public:
     PBase(std::string resource);                               // 构造函数
     virtual ~PBase();                                          // 析构函数
 
     uint8_t getLang() const;                                   // 获取当前页面语言
-    View* getRootView();                                       // 获取根节点
+    virtual View* getRootView();                               // 获取根节点
     virtual int8_t getType() const = 0;                        // 获取页面类型
 
     void callTick();                                           // 调用定时器
@@ -110,8 +107,7 @@ protected:
     virtual bool onKey(uint16_t keyCode, uint8_t evt);         // 按键事件回调
     virtual void onLangChange();                               // 语言切换通知回调
     virtual void onCheckLight(uint8_t* left, uint8_t* right);  // 检查按键灯回调
-    void setAutoBackToStandby(uint32_t time, bool withBlack = false);  // 设置自动退出到待机
-    void setLangText(TextView* v, const Json::Value& value);           // 设置语言文本
+    void setLangText(TextView* v, const Json::Value& value);   // 设置语言文本
 protected:
     /// @brief 获取控件指针
     /// @tparam T 
@@ -129,74 +125,5 @@ protected:
         return dynamic_cast<T*>(vparent->findViewById(id));
     }
 };
-
-/*
- *************************************** 弹窗 ***************************************
-**/
-
-/// @brief 弹窗基类
-class PopBase :public PBase {
-public:
-    PopBase(std::string resource);
-    virtual ~PopBase();
-};
-
-/*
- *************************************** 页面 ***************************************
-**/
-
-/// @brief 页面基类
-class PageBase :public PBase {
-protected:
-    bool mInitUIFinish = false;     // UI是否初始化完成
-public:
-    PageBase(std::string resource); // 构造函数
-    virtual ~PageBase();            // 析构函数
-
-    virtual bool canAutoRecycle() const; // 是否允许自动回收
-protected:
-    void initUI() override;
-    virtual void getView() { };      // 获取页面指针
-    virtual void setAnim() { };      // 设置动画属性
-    virtual void setView() { };      // 设置页面属性
-    void setBackBtn(int id);         // 设置返回按钮
-};
-
-/*
- ************************************** 注册接口 **************************************
-**/
-
-/// @brief 弹窗注册（防止交叉include）
-/// @param pop 
-/// @param func 
-void registerPopToMgr(int8_t pop, std::function<PopBase* ()> func);
-
-/// @brief 页面注册（防止交叉include）
-/// @param page 
-/// @param func 
-void registerPageToMgr(int8_t page, std::function<PageBase* ()> func);
-
-// 弹窗注册模板
-template<typename T>
-class PopRegister {
-public:
-    PopRegister(int8_t pop) {
-        registerPopToMgr(pop, []() {return new T();});
-    }
-};
-
-// 页面注册模板
-template<typename T>
-class PageRegister {
-public:
-    PageRegister(int8_t page) {
-        registerPageToMgr(page, []() {return new T();});
-    }
-};
-
-// 注册弹窗至MGR
-#define POP_REGISTER(K,C) static PopRegister<C> pop_register_##C(K);
-// 注册页面至MGR
-#define PAGE_REGISTER(K,C) static PageRegister<C> page_register_##C(K);
 
 #endif // !__BASE_H__

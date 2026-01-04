@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2026-01-04 11:15:19
+ * @LastEditTime: 2026-01-04 14:42:28
  * @FilePath: /kk_frame/src/app/page/core/base.cc
  * @Description: 页面基类
  * @BugList:
@@ -12,9 +12,6 @@
 **/
 
 #include "base.h"
-#include "wind_mgr.h"
-#include "conn_mgr.h"
-#include "btn_mgr.h"
 
 #include <core/app.h>
 #include <widget/imageview.h>
@@ -47,13 +44,7 @@ View* PBase::getRootView() {
 }
 
 void PBase::callTick() {
-    if (mAutoExit && SystemClock::uptimeMillis() - g_window->mLastAction > mAutoExit) {
-        LOGI("auto exit");
-        g_windMgr->showPage(PAGE_HOME);
-        if (mAutoExitWithBlack) g_window->showBlack();
-    } else {
-        onTick();
-    }
+    onTick();
 }
 
 void PBase::callAttach() {
@@ -135,74 +126,7 @@ void PBase::onLangChange() {
 void PBase::onCheckLight(uint8_t* left, uint8_t* right) {
 }
 
-void PBase::setAutoBackToStandby(uint32_t time, bool withBlack) {
-    mAutoExit = time * 1000;
-    mAutoExitWithBlack = withBlack;
-}
-
 void PBase::setLangText(TextView* v, const Json::Value& value) {
     if (v == nullptr) LOGE("TextView is nullptr");
     else v->setText(JsonUtils::to<std::string>(value, "null"));
-}
-
-/*
- *************************************** 弹窗 ***************************************
-**/
-
-PopBase::PopBase(std::string resource) :PBase(resource) {
-}
-
-PopBase::~PopBase() {
-}
-
-/*
- *************************************** 页面 ***************************************
-**/
-
-/// @brief 
-/// @param resource 
-PageBase::PageBase(std::string resource) :PBase(resource) {
-}
-
-/// @brief 析构
-PageBase::~PageBase() {
-}
-
-/// @brief 
-/// @return 
-bool PageBase::canAutoRecycle() const {
-    return false;
-}
-
-/// @brief 初始化UI
-void PageBase::initUI() {
-    mInitUIFinish = false;
-    getView();
-    setAnim();
-    setView();
-    mInitUIFinish = true;
-}
-
-/// @brief 设置返回按钮
-/// @param id 返回按钮id
-void PageBase::setBackBtn(int id) {
-    View* v = get<View>(id);
-    if (v) {
-        v->setOnClickListener([](View&) {g_windMgr->goToPageBack();});
-        ImageView* iv = dynamic_cast<ImageView*>(v);
-        if (iv && iv->getDrawable())
-            iv->getDrawable()->setFilterBitmap(true);
-    }
-}
-
-/*
- *************************************** 页面 ***************************************
-**/
-
-void registerPopToMgr(int8_t pop, std::function<PopBase* ()> func) {
-    g_windMgr->registerPop(pop, func);
-}
-
-void registerPageToMgr(int8_t page, std::function<PageBase* ()> func) {
-    g_windMgr->registerPage(page, func);
 }

@@ -16,8 +16,6 @@
         android:id="@+id/pop_box"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#88EEEEEE"
-        android:gravity="center"
         android:visibility="gone">
     </RelativeLayout>
 

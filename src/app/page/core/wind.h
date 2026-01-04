@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2025-12-30 13:52:04
+ * @LastEditTime: 2026-01-04 14:03:02
  * @FilePath: /kk_frame/src/app/page/core/wind.h
  * @Description: 主窗口类
  * @BugList:
@@ -14,7 +14,8 @@
 #ifndef __WIND_H__
 #define __WIND_H__
 
-#include "base.h"
+#include "page.h"
+#include "pop.h"
 #include "template/singleton.h"
 #include "wind_logo.h"
 #include "wind_toast.h"

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-23 00:04:23
- * @LastEditTime: 2025-12-29 11:36:01
+ * @LastEditTime: 2026-01-04 14:06:53
  * @FilePath: /kk_frame/src/app/page/view/pop_lock.h
  * @Description:
  * @BugList:
@@ -14,7 +14,7 @@
 #ifndef __POP_LOCK_H__
 #define __POP_LOCK_H__
 
-#include "base.h"
+#include "pop.h"
 
 class LockPop :public PopBase {
 private:
