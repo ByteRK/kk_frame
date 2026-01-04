@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2025-12-31 10:44:47
+ * @LastEditTime: 2026-01-04 14:53:38
  * @FilePath: /kk_frame/src/app/page/core/wind.cc
  * @Description: 窗口类
  * @BugList:
@@ -94,7 +94,6 @@ void MainWindow::init() {
 
     // 初始化弹窗指针
     mPop = nullptr;
-    mPopBox->setOnTouchListener([](View& view, MotionEvent& evt) { return true; });
 
     // 初始化黑屏
     mIsBlackView = false;

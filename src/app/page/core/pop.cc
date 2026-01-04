@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-04 13:52:55
- * @LastEditTime: 2026-01-04 14:37:22
+ * @LastEditTime: 2026-01-04 14:58:51
  * @FilePath: /kk_frame/src/app/page/core/pop.cc
  * @Description: 弹窗基类
  * @BugList:
@@ -32,6 +32,19 @@ PopBase::~PopBase() {
 /// @return 根节点
 View* PopBase::getRootView() {
     return mPopRootView;
+}
+
+/// @brief 设置边距(适用于不需要完整覆盖屏幕的情况)
+/// @param start 左
+/// @param top 上
+/// @param end 右
+/// @param bottom 下 
+void PopBase::setMargin(int start, int top, int end, int bottom) {
+    cdroid::MarginLayoutParams* marginParams = dynamic_cast<cdroid::MarginLayoutParams*>(mPopRootView->getLayoutParams());
+    if (!marginParams)
+        marginParams = new cdroid::MarginLayoutParams(LayoutParams::MATCH_PARENT, LayoutParams::MATCH_PARENT);
+    marginParams->setMarginsRelative(start, top, end, bottom);
+    mPopRootView->setLayoutParams(marginParams);
 }
 
 /// @brief 设置模糊背景
