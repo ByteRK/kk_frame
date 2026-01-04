@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2025-12-30 11:32:58
+ * @LastEditTime: 2026-01-04 11:15:19
  * @FilePath: /kk_frame/src/app/page/core/base.cc
  * @Description: 页面基类
  * @BugList:
@@ -17,6 +17,7 @@
 #include "btn_mgr.h"
 
 #include <core/app.h>
+#include <widget/imageview.h>
 
 /*
  *************************************** 基类 ***************************************
@@ -180,6 +181,18 @@ void PageBase::initUI() {
     setAnim();
     setView();
     mInitUIFinish = true;
+}
+
+/// @brief 设置返回按钮
+/// @param id 返回按钮id
+void PageBase::setBackBtn(int id) {
+    View* v = get<View>(id);
+    if (v) {
+        v->setOnClickListener([](View&) {g_windMgr->goToPageBack();});
+        ImageView* iv = dynamic_cast<ImageView*>(v);
+        if (iv && iv->getDrawable())
+            iv->getDrawable()->setFilterBitmap(true);
+    }
 }
 
 /*

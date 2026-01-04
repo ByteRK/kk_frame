@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2025-12-31 14:36:15
+ * @LastEditTime: 2026-01-04 11:15:16
  * @FilePath: /kk_frame/src/app/page/core/base.h
  * @Description: 页面基类
  * @BugList:
@@ -159,6 +159,7 @@ protected:
     virtual void getView() { };      // 获取页面指针
     virtual void setAnim() { };      // 设置动画属性
     virtual void setView() { };      // 设置页面属性
+    void setBackBtn(int id);         // 设置返回按钮
 };
 
 /*
