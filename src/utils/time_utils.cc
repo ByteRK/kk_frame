@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-08-22 16:52:55
- * @LastEditTime: 2025-12-30 17:41:20
+ * @LastEditTime: 2026-01-04 09:18:24
  * @FilePath: /kk_frame/src/utils/time_utils.cc
  * @Description: 时间相关的一些函数
  * @BugList:
@@ -50,7 +50,7 @@ std::string TimeUtils::getTimeStr() {
     snprintf(buff, sizeof(buff), "%02d:%02d", cur.tm_hour, cur.tm_min);
     return std::string(buff);
 #else
-    return getTimeFmtStr("MM:SS");
+    return getTimeFmtStr("%H:%M");
 #endif
 }
 

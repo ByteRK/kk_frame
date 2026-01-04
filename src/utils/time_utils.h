@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-08-22 16:52:55
- * @LastEditTime: 2025-12-29 10:50:58
+ * @LastEditTime: 2026-01-04 09:18:30
  * @FilePath: /kk_frame/src/utils/time_utils.h
  * @Description: 时间相关的一些函数
  * @BugList:
@@ -39,7 +39,7 @@ namespace TimeUtils {
     /// @return 0点时间戳
     time_t getZeroTimeSec();
 
-    /// @brief 获取时间字符串 [MM:SS]
+    /// @brief 获取时间字符串 [%H:%M]
     /// @return 时间字符串
     std::string getTimeStr();
 
