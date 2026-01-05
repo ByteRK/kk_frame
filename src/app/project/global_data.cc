@@ -36,6 +36,8 @@ void GlobalData::init(int argc, const char* argv[]) {
     mArgc = argc;
     mArgv = argv;
     mPowerOnTime = SystemClock::uptimeMillis();
+
+    mIsFirstInit = FileUtils::check(APP_FIRST_INIT_TAG);
     mDeviceMode = (App::getInstance().getName() == "kk_frame") ?
         DEVICE_MODE_DEMO : DEVICE_MODE_SAMPLE;
 
@@ -51,11 +53,24 @@ void GlobalData::init(int argc, const char* argv[]) {
 
 /// @brief 重置
 void GlobalData::reset() {
-    std::string command = std::string("rm")\
+    std::string command = std::string("rm")  \
         + " " + APP_FILE_FULL_PATH + " " + APP_FILE_BAK_PATH;
     std::system(command.c_str());
+    setFirstInit(true);
+    // FileUtils::sync(); // 不需要Sync，上一步已Sync
     init(mArgc, mArgv);
     LOGE("global_data factory reset.");
+}
+
+/// @brief 设置首次初始化标记
+/// @param first true:首次初始化 false:非首次初始化
+void GlobalData::setFirstInit(bool first) {
+    std::string command;
+    command += first ? "touch " : "rm ";
+    command += APP_FIRST_INIT_TAG;
+    std::system(command.c_str());
+    mIsFirstInit = first;
+    FileUtils::sync();
 }
 
 /// @brief 定时任务，用于保存修改后的配置

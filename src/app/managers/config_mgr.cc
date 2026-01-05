@@ -40,6 +40,7 @@ void ConfigMgr::reset() {
     std::string command = std::string("rm")\
         + " " + CONFIG_FILE_PATH + " " + CONFIG_FILE_BAK_PATH;
     std::system(command.c_str());
+    FileUtils::sync();
     init();
     LOGE("config_mgr factory reset.");
 }

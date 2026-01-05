@@ -36,6 +36,7 @@ class GlobalData : public Singleton<GlobalData>,
     public MessageHandler {
     friend class Singleton<GlobalData>;
 public: // 特殊信息
+    bool           mIsFirstInit = true;               // 是否是首次初始化
     uint8_t        mDeviceMode = DEVICE_MODE_SAMPLE;  // 设备模式
     int            mTestPage = 0;                     // 测试页面
     const uint64_t mAppStart;                         // 应用启动时间
@@ -77,6 +78,7 @@ public:
     ~GlobalData();
     void init(int argc, const char* argv[]);
     void reset();
+    void setFirstInit(bool first = true);
     void handleMessage(Message& message)override;
 
 private:
