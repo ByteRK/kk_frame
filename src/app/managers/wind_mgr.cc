@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2026-01-05 13:45:22
+ * @LastEditTime: 2026-01-05 14:30:49
  * @FilePath: /kk_frame/src/app/managers/wind_mgr.cc
  * @Description: 页面管理类
  * @BugList:
@@ -291,10 +291,10 @@ void WindMgr::sendPopMsg(int8_t page, MSG_TYPE type, int value, bool fromUiThrea
 /// @param fromUiThread 是否来自UI线程
 void WindMgr::sendPopMsg(int8_t pop, const RunMsgBase* msg, bool fromUiThread) {
     if (fromUiThread) {
-        if (pop == POP_NULL) {
-            mWindow->getPop()->callMsg(msg);
-        } else if (pop == mWindow->getPopType()) {
-            mWindow->getPop()->callMsg(msg);
+        if (mWindow->getPopType() != POP_NULL) {
+            if (pop == POP_NULL || pop == mWindow->getPopType()) {
+                mWindow->getPop()->callMsg(msg);
+            }
         }
     } else {
 #if ENABLE_THREAD_SAFE_MSG
