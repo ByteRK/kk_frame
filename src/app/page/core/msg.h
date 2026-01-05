@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-11-24 05:46:03
- * @LastEditTime: 2025-12-31 15:47:41
+ * @LastEditTime: 2026-01-05 10:05:08
  * @FilePath: /kk_frame/src/app/page/core/msg.h
  * @Description: 消息类（初始化消息、运行时消息、）
  * @BugList:
@@ -34,6 +34,13 @@ struct RunMsgBase {
     virtual RunMsgBase* clone() const {
         return new RunMsgBase(*this);
     };
+};
+template <typename T> // 偷懒用的模板
+struct RunMsgBaseT :public RunMsgBase {
+    RunMsgBase* clone() const override {
+        const T* derived = static_cast<const T*>(this);
+        return new T(*derived);
+    }
 };
 
 /// @brief 初始化消息基类
