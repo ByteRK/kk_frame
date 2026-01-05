@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-04 13:52:49
- * @LastEditTime: 2026-01-04 14:58:40
+ * @LastEditTime: 2026-01-05 10:49:21
  * @FilePath: /kk_frame/src/app/page/core/pop.h
  * @Description: 弹窗基类
  * @BugList:
@@ -18,7 +18,9 @@
 
 /// @brief 弹窗基类
 class PopBase :public PBase {
+protected:
     ViewGroup* mPopRootView;         // 弹窗根节点
+    
 public:
     PopBase(std::string resource);   // 构造函数
     virtual ~PopBase();              // 析构函数
