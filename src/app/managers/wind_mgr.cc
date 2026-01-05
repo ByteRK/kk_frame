@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2025-12-31 15:52:04
+ * @LastEditTime: 2026-01-05 11:21:37
  * @FilePath: /kk_frame/src/app/managers/wind_mgr.cc
  * @Description: 页面管理类
  * @BugList:
@@ -165,9 +165,14 @@ void WindMgr::sendPageMsg(int8_t page, MSG_TYPE msg, bool fromUiThread) {
 /// @param fromUiThread 是否来自UI线程
 void WindMgr::sendPageMsg(int8_t page, const RunMsgBase* msg, bool fromUiThread) {
     if (fromUiThread) {
-        auto it = mPageCache.find(page);
-        if (it != mPageCache.end()) {
-            it->second->callMsg(msg);
+        if (page == PAGE_NULL) {
+            for (auto& it : mPageCache)
+                it.second->callMsg(msg);
+        } else {
+            auto it = mPageCache.find(page);
+            if (it != mPageCache.end()) {
+                it->second->callMsg(msg);
+            }
         }
     } else {
 #if ENABLE_THREAD_SAFE_MSG
@@ -282,7 +287,9 @@ void WindMgr::sendPopMsg(int8_t page, MSG_TYPE msg, bool fromUiThread) {
 /// @param fromUiThread 是否来自UI线程
 void WindMgr::sendPopMsg(int8_t pop, const RunMsgBase* msg, bool fromUiThread) {
     if (fromUiThread) {
-        if (pop && pop == mWindow->getPopType()) {
+        if (pop == POP_NULL) {
+            mWindow->getPop()->callMsg(msg);
+        } else if (pop == mWindow->getPopType()) {
             mWindow->getPop()->callMsg(msg);
         }
     } else {
