@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-11-24 05:46:03
- * @LastEditTime: 2026-01-05 10:05:08
+ * @LastEditTime: 2026-01-05 11:42:35
  * @FilePath: /kk_frame/src/app/page/core/msg.h
  * @Description: 消息类（初始化消息、运行时消息、）
  * @BugList:
@@ -29,6 +29,7 @@ typedef enum {
 /// @brief 消息基类
 struct RunMsgBase {
     MSG_TYPE msgType;                    // 消息类型
+    int64_t  msgValue;                   // 消息值
 
     virtual ~RunMsgBase() = default;
     virtual RunMsgBase* clone() const {

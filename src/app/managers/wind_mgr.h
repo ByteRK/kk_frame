@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2025-12-31 15:43:59
+ * @LastEditTime: 2026-01-05 11:48:40
  * @FilePath: /kk_frame/src/app/managers/wind_mgr.h
  * @Description: 页面管理类
  * @BugList:
@@ -90,13 +90,13 @@ public:
     void handleMessage(Message& message)override;
 
     bool showPage(int8_t page, LoadMsgBase* initData = nullptr, bool updateHistory = true);
-    void sendPageMsg(int8_t page, MSG_TYPE msg, bool fromUiThread = true);
+    void sendPageMsg(int8_t page, MSG_TYPE type, int64_t value = 0, bool fromUiThread = true);
     void sendPageMsg(int8_t page, const RunMsgBase* msg, bool fromUiThread = true);
     void recyclePage(PageBase* page);
     void recyclePage(int8_t page);
 
     bool showPop(int8_t pop, LoadMsgBase* initData = nullptr, bool updateHistory = true);
-    void sendPopMsg(int8_t page, MSG_TYPE msg, bool fromUiThread = true);
+    void sendPopMsg(int8_t page, MSG_TYPE type, int64_t value = 0, bool fromUiThread = true);
     void sendPopMsg(int8_t pop, const RunMsgBase* msg, bool fromUiThread = true);
     void hidePop();
 

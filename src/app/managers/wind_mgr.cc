@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2026-01-05 11:21:37
+ * @LastEditTime: 2026-01-05 11:48:46
  * @FilePath: /kk_frame/src/app/managers/wind_mgr.cc
  * @Description: 页面管理类
  * @BugList:
@@ -151,11 +151,12 @@ bool WindMgr::showPage(int8_t page, LoadMsgBase* initData, bool updateHistory) {
 
 /// @brief 向指定页面发送基础消息
 /// @param page 页面ID
-/// @param msg 消息类型
+/// @param type 消息类型
 /// @param fromUiThread 是否来自UI线程
-void WindMgr::sendPageMsg(int8_t page, MSG_TYPE msg, bool fromUiThread) {
+void WindMgr::sendPageMsg(int8_t page, MSG_TYPE type, int64_t value = 0, bool fromUiThread) {
     RunMsgBase msgBase;
-    msgBase.msgType = msg;
+    msgBase.msgType = type;
+    msgBase.msgValue = value;
     sendPageMsg(page, &msgBase, fromUiThread);
 }
 
@@ -273,11 +274,12 @@ bool WindMgr::showPop(int8_t pop, LoadMsgBase* initData, bool updateHistory) {
 
 /// @brief 向指定弹窗发送基础消息
 /// @param page 弹窗ID
-/// @param msg 消息类型
+/// @param type 消息类型
 /// @param fromUiThread 是否来自UI线程 
-void WindMgr::sendPopMsg(int8_t page, MSG_TYPE msg, bool fromUiThread) {
+void WindMgr::sendPopMsg(int8_t page, MSG_TYPE type, int64_t value = 0, bool fromUiThread) {
     RunMsgBase msgBase;
-    msgBase.msgType = msg;
+    msgBase.msgType = type;
+    msgBase.msgValue = value;
     sendPopMsg(page, &msgBase, fromUiThread);
 }
 
