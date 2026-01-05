@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-11-24 05:46:03
- * @LastEditTime: 2026-01-05 11:42:35
+ * @LastEditTime: 2026-01-05 15:35:12
  * @FilePath: /kk_frame/src/app/page/core/msg.h
  * @Description: 消息类（初始化消息、运行时消息、）
  * @BugList:
@@ -49,11 +49,25 @@ struct LoadMsgBase {
     virtual ~LoadMsgBase() = default;
     virtual LoadMsgBase* clone() const = 0;
 };
+template <typename T> // 偷懒用的模板
+struct LoadMsgBaseT :public LoadMsgBase {
+    LoadMsgBase* clone() const override {
+        const T* derived = static_cast<const T*>(this);
+        return new T(*derived);
+    }
+};
 
 /// @brief 状态保存消息基类
 struct SaveMsgBase {
     virtual ~SaveMsgBase() = default;
     virtual SaveMsgBase* clone() const = 0;
+};
+template <typename T> // 偷懒用的模板
+struct SaveMsgBaseT :public SaveMsgBase {
+    SaveMsgBase* clone() const override {
+        const T* derived = static_cast<const T*>(this);
+        return new T(*derived);
+    }
 };
 
 

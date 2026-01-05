@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-04 13:52:55
- * @LastEditTime: 2026-01-04 15:10:49
+ * @LastEditTime: 2026-01-05 16:29:26
  * @FilePath: /kk_frame/src/app/page/core/pop.cc
  * @Description: 弹窗基类
  * @BugList:
@@ -14,6 +14,8 @@
 #include "pop.h"
 #include "wind_mgr.h"
 #include <widget/relativelayout.h>
+
+#define POP_DISPLAY_ANIMATE 1
 
 /// @brief 构造
 /// @param resource 资源路径
@@ -33,6 +35,21 @@ PopBase::~PopBase() {
 /// @return 根节点
 View* PopBase::getRootView() {
     return mPopRootView;
+}
+
+/// @brief 挂载
+void PopBase::onAttach() {
+#if POP_DISPLAY_ANIMATE
+    mPopRootView->setAlpha(0.f);
+    mPopRootView->animate().alpha(1.f).setDuration(300).start();
+#endif
+}
+
+/// @brief 卸载
+void PopBase::onDetach() {
+#if POP_DISPLAY_ANIMATE
+    mPopRootView->animate().cancel();
+#endif
 }
 
 /// @brief 设置边距(适用于不需要完整覆盖屏幕的情况)

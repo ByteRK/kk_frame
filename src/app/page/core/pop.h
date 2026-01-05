@@ -28,6 +28,9 @@ public:
     View* getRootView() override;    // 获取根节点
 
 protected:
+    void onAttach() override;        // 挂载
+    void onDetach() override;        // 卸载
+
     void setMargin(int start, int top, int end, int bottom);   // 设置边距
     void setGlass(int radius = 10, uint color = 0x99000000);   // 设置模糊背景
     void setColor(int color = 0x99000000);                     // 设置背景色
