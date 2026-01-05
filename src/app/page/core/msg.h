@@ -29,7 +29,7 @@ typedef enum {
 /// @brief 消息基类
 struct RunMsgBase {
     MSG_TYPE msgType;                    // 消息类型
-    int64_t  msgValue;                   // 消息值
+    int      msgValue;                   // 消息值
 
     virtual ~RunMsgBase() = default;
     virtual RunMsgBase* clone() const {
