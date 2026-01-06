@@ -20,6 +20,7 @@
 #include "config_mgr.h"      // 配置管理器
 #include "thread_mgr.h"      // 线程管理器
 #include "timer_mgr.h"       // 定时器管理器
+#include "work_mgr.h"        // 工作管理器
 #include "wind_mgr.h"        // 窗口管理器
 
 #include "conn_mgr.h"        // 电控通讯
@@ -44,6 +45,7 @@ int main(int argc, const char* argv[]) {
     g_config->init();
     // g_threadMgr->init(3);
     g_timer->init();
+    g_work->init();
     g_windMgr->init();
 
     // g_connMgr->init();
