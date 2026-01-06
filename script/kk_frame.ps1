@@ -14,7 +14,9 @@
 #
 # 常见问题以及处理方式
 # Q:显示在此系统上禁止运行脚本：
-# A:以管理员身份运行PowerShell，并执行：Set-ExecutionPolicy RemoteSigned
+# A:以管理员身份运行PowerShell
+# A:设置执行策略，使本地脚本无需签名：Set-ExecutionPolicy RemoteSigned
+# A:解除文件锁定，由远程脚本变为本地脚本：Unblock-File -Path .\kk_frame.ps1
 #
 # Q:显示路径不存在，但是资源管理器中实际能访问到
 # A:管理员身份运行PowerShell时，未使用到正确的网络凭证
