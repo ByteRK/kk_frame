@@ -38,6 +38,7 @@ $targetPass = "pass"                    # 网络凭据密码
 
 # 定义映射关系：原文件夹名 → 自定义链接名
 $folderMap = @{  # $null为保留原文件名，若源文件夹为嵌套文件夹，必须指定自定义链接名
+    "assets\animator"  = "animator"
     "assets\color"     = "color"
     "assets\drawable"  = "drawable"
     "assets\layout"    = "layout"
