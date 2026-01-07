@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-25 10:23:15
- * @LastEditTime: 2025-12-31 11:17:44
+ * @LastEditTime: 2026-01-07 18:01:55
  * @FilePath: /kk_frame/src/app/page/components/wind_toast.cc
  * @Description: Toast组件
  * @BugList:
@@ -125,7 +125,7 @@ void WindToast::showToast(std::string text, int8_t level, bool keepNow, bool ani
 
 /// @brief 隐藏Toast
 void WindToast::hideToast() {
-    if (!checkInit()) return;
+    if (!checkInit() || !mIsRunning) return;
     mLevel = -1;
     mIsRunning = false;
     mToastBox->animate().cancel();
