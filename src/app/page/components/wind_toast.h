@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-25 10:22:41
- * @LastEditTime: 2025-12-31 11:18:48
+ * @LastEditTime: 2026-01-08 10:01:11
  * @FilePath: /kk_frame/src/app/page/components/wind_toast.h
  * @Description: Toast组件
  * @BugList:
@@ -18,9 +18,45 @@
 #include <view/viewgroup.h>
 #include <widget/textview.h>
 
+/**
+ * 默认为Alpha动画，可以通过setDiyToastAni设置自定义动画
+ * 另外如果自定义动画的时候，如果stop()依旧是动画的话，那么start必须调用cancel()取消动画
+ * 
+ * eg:
+ * 
+ * WindToast::TOAST_ANIMATE anim;
+ * anim.start = [](View& v, int duration) {
+ *     v.animate().cancel();
+ *     v.setTranslationY(118);
+ *     v.animate().translationY(0).setDuration(duration).start();
+ * };
+ * anim.finish = [](View& v, int duration) {
+ *     v.animate().translationY(118).setDuration(duration).start();
+ * };
+ * anim.stop = [](View& v, int duration) {
+ *     v.animate().cancel();
+ *     v.animate().translationY(118).setDuration(duration).start();
+ * };
+ * anim.aniEnd = [](View& v, int duration) {
+ *     // if (v.getTranslationY() == 118)v.setVisibility(View::GONE);
+ * };
+ * setDiyToastAni(anim);
+ * 
+**/
+
 class WindToast {
 public:
     DECLARE_UIEVENT(void, OnShowToastListener, void); // 弹幕显示回调
+
+    DECLARE_UIEVENT(void, ToastAniListener, View&, int);
+    struct TOAST_ANIMATE {
+        ToastAniListener start;   // 开始动画
+        ToastAniListener finish;  // 结束动画
+        ToastAniListener stop;    // 停止动画(手动Hide Toast)
+
+        ToastAniListener aniEnd;  // View回调，已注册到Toast.animate()
+    };
+    
 private:
     typedef struct {
         std::string text = "";            // 弹幕文本
@@ -41,6 +77,7 @@ private:
     
     int               mDuration = 2500;   // 弹幕显示时间(ms)
     int               mAnimatime = 600;   // 弹幕动画时间(ms)
+    TOAST_ANIMATE     mDiyToastAni;       // 自定义弹幕动画
 public:
     WindToast();
     ~WindToast();
@@ -54,9 +91,15 @@ public:
     void setToastDuration(int duration);
     void setToastAnimatime(int animatime);
     void setOnShowToastListener(OnShowToastListener listener);
+    void setDiyToastAni(TOAST_ANIMATE ani);
 
 private:
     inline bool checkInit();
+
+    void onStart(bool withAnim);
+    void onFinish();
+    void onStop();
+    void onAnimEnd();
 };
 
 #endif // __WIND_TOAST_H__
