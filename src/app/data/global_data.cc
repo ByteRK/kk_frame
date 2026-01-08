@@ -2,8 +2,8 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2025-12-31 15:18:04
- * @FilePath: /kk_frame/src/app/project/global_data.cc
+ * @LastEditTime: 2026-01-08 14:13:51
+ * @FilePath: /kk_frame/src/app/data/global_data.cc
  * @Description:
  * @BugList:
  *

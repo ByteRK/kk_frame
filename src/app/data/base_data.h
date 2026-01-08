@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-29 11:25:58
- * @LastEditTime: 2025-12-29 11:32:15
+ * @LastEditTime: 2026-01-08 14:13:45
  * @FilePath: /kk_frame/src/app/data/base_data.h
  * @Description: 默认初始数据
  * @BugList:
