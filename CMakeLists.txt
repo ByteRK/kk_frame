@@ -110,8 +110,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
     # 项目头
     src/app
+    src/app/data
     src/app/managers
-    src/app/project
     src/app/protocol
     src/app/page
     src/app/page/core
