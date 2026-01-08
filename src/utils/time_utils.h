@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-08-22 16:52:55
- * @LastEditTime: 2026-01-08 18:24:06
+ * @LastEditTime: 2026-01-08 18:26:57
  * @FilePath: /kk_frame/src/utils/time_utils.h
  * @Description: 时间相关的一些函数
  * @BugList:
@@ -18,13 +18,13 @@
 #include <string>
 
 namespace TimeUtils {
-    static constexpr uint64_t MINUTE_SECONDS = 60;                   // 分钟秒数
-    static constexpr uint64_t HOUR_SECONDS = 60 * MINUTE_SECONDS;    // 小时秒数
-    static constexpr uint64_t DAY_SECONDS = 24 * HOUR_SECONDS;       // 天秒数
+    static constexpr int64_t MINUTE_SECONDS = 60;                   // 分钟秒数
+    static constexpr int64_t HOUR_SECONDS = 60 * MINUTE_SECONDS;    // 小时秒数
+    static constexpr int64_t DAY_SECONDS = 24 * HOUR_SECONDS;       // 天秒数
 
-    static constexpr uint64_t MINUTE_MISEC = 1000 * MINUTE_SECONDS;  // 分钟毫秒数
-    static constexpr uint64_t HOUR_MSEC = 1000 * HOUR_SECONDS;       // 小时毫秒数
-    static constexpr uint64_t DAY_MSEC = 1000 * DAY_SECONDS;         // 天毫秒数
+    static constexpr int64_t MINUTE_MISEC = 1000 * MINUTE_SECONDS;  // 分钟毫秒数
+    static constexpr int64_t HOUR_MSEC = 1000 * HOUR_SECONDS;       // 小时毫秒数
+    static constexpr int64_t DAY_MSEC = 1000 * DAY_SECONDS;         // 天毫秒数
 
     /// @brief 判断是否是今天
     /// @param timestamp 时间戳
