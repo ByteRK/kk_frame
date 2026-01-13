@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2026-01-04 14:41:56
+ * @LastEditTime: 2026-01-13 09:22:40
  * @FilePath: /kk_frame/src/app/page/core/base.h
  * @Description: 页面基类
  * @BugList:
@@ -113,15 +113,18 @@ protected:
     /// @tparam T 
     /// @param id 
     /// @return 
-    template <typename T> T* get(int id) {
+    template <typename T>
+    T* get(int id) {
         return dynamic_cast<T*>(mRootView->findViewById(id));
     }
+
     /// @brief 获取控件指针
     /// @tparam T 
     /// @param vparent 
     /// @param id 
     /// @return 
-    template <typename T> T* get(View* vparent, int id) {
+    template <typename T>
+    static T* get(View* vparent, int id) {
         return dynamic_cast<T*>(vparent->findViewById(id));
     }
 };
