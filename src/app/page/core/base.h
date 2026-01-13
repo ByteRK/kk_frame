@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2026-01-13 09:22:40
+ * @LastEditTime: 2026-01-13 10:01:09
  * @FilePath: /kk_frame/src/app/page/core/base.h
  * @Description: 页面基类
  * @BugList:
@@ -14,6 +14,7 @@
 #ifndef __BASE_H__
 #define __BASE_H__
 
+#include "id.h"
 #include "R.h"
 #include "msg.h"
 #include "json_utils.h"
@@ -24,39 +25,6 @@
 #include <view/view.h>
 #include <view/viewgroup.h>
 #include <widget/textview.h>
-
-// 语言定义
-enum {
-    LANG_ZH_CN,      // 简体中文
-    LANG_ZH_TC,      // 繁体中文
-    LANG_EN_US,      // 英文
-    LANG_MAX,        // 语言数量
-};
-
-// 页面定义
-enum {
-    PAGE_NULL,       // 空状态
-    PAGE_DEMO,       // 示例页面
-    PAGE_HOME,       // 主页面
-    PAGE_OTA,        // OTA
-};
-
-// 弹窗定义
-enum {
-    POP_NULL,        // 空状态
-    POP_LOCK,        // 童锁
-    POP_TIP,         // 提示
-};
-
-/// @brief 语言转文本
-/// @param lang 语言
-/// @return 
-static std::string langToText(uint8_t lang) {
-    const static char* langText[] = {
-        "中文", "繁体", "English"
-    };
-    return langText[lang % LANG_MAX];
-};
 
 /*
  *************************************** 基类 ***************************************
