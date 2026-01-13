@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2026-01-08 14:13:51
+ * @LastEditTime: 2026-01-13 10:10:54
  * @FilePath: /kk_frame/src/app/data/global_data.cc
  * @Description:
  * @BugList:
@@ -38,7 +38,9 @@ void GlobalData::init(int argc, const char* argv[]) {
     mPowerOnTime = SystemClock::uptimeMillis();
 
     mIsFirstInit = FileUtils::check(APP_FIRST_INIT_TAG);
-    mDeviceMode = (App::getInstance().getName() == "kk_frame") ?
+    mDeviceMode = (
+        App::getInstance().getName() == (std::string("kk") + std::string("_frame"))
+        ) ?
         DEVICE_MODE_DEMO : DEVICE_MODE_SAMPLE;
 
     checkenv();
