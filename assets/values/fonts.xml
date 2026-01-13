@@ -9,9 +9,6 @@
     <style name="font_medium">
         <item name="android:fontFamily">@font/medium</item>
     </style>
-    <style name="font_bold">
-        <item name="android:fontFamily">@font/bold</item>
-    </style>
     <style name="font_bebas">
         <item name="android:fontFamily">@font/bebas</item>
     </style>

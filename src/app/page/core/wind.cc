@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-01-04 14:53:38
+ * @LastEditTime: 2026-01-13 11:47:35
  * @FilePath: /kk_frame/src/app/page/core/wind.cc
  * @Description: 窗口类
  * @BugList:
@@ -89,23 +89,29 @@ void MainWindow::init() {
         throw std::runtime_error("MainWindow View Tree Error");
     }
 
-    // 初始化页面指针
+    // 初始化页面
     mPage = nullptr;
+    mPageBox->setOnClickListener([](View&) { });
 
-    // 初始化弹窗指针
+    // 初始化弹窗
     mPop = nullptr;
+    mPopBox->setOnClickListener([](View&) { });
 
     // 初始化黑屏
     mIsBlackView = false;
     mBlackView->setOnClickListener([this](View& view) { hideBlack(); });
-    SystemUtils::setBrightness(g_config->getBrightness());
 
     // 模块初始化
     WindLogo::init(mRootView);
     WindToast::init(mRootView);
 
+    // 初始化亮度
+    SystemUtils::setBrightness(g_config->getBrightness());
+
     // 增加点击反馈
     mAttachInfo->mPlaySoundEffect = playSound;
+
+    // 显示LOGO
     showLogo();
 }
 
