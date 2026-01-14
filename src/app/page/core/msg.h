@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-11-24 05:46:03
- * @LastEditTime: 2026-01-05 15:35:12
+ * @LastEditTime: 2026-01-14 11:33:34
  * @FilePath: /kk_frame/src/app/page/core/msg.h
  * @Description: 消息类（初始化消息、运行时消息、）
  * @BugList:
@@ -13,11 +13,6 @@
 
 #ifndef __MSG_H__
 #define __MSG_H__
-
-/// @brief 消息类型
-typedef enum {
-    MSG_TYPE_GENERAL = 0, // 通用消息
-} MSG_TYPE;
 
 /*
  *************************************** 消息基类 ***************************************

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2026-01-13 10:01:09
+ * @LastEditTime: 2026-01-13 15:09:18
  * @FilePath: /kk_frame/src/app/page/core/base.h
  * @Description: 页面基类
  * @BugList:
@@ -85,7 +85,7 @@ protected:
     T* get(int id) {
         return dynamic_cast<T*>(mRootView->findViewById(id));
     }
-
+public:
     /// @brief 获取控件指针
     /// @tparam T 
     /// @param vparent 
