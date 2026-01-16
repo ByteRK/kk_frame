@@ -56,7 +56,7 @@ void GlobalData::init(int argc, const char* argv[]) {
 /// @brief 重置
 void GlobalData::reset() {
     std::string command = std::string("rm")  \
-        + " " + APP_FILE_FULL_PATH + " " + APP_FILE_BAK_PATH;
+        + " " + APP_FILE_PATH + " " + APP_FILE_BAK_PATH;
     std::system(command.c_str());
     setFirstInit(true);
     // FileUtils::sync(); // 不需要Sync，上一步已Sync
@@ -124,8 +124,8 @@ bool GlobalData::loadFromFile() {
     std::string loadingPath = "";
     size_t fileLen = 0;
 
-    if (FileUtils::check(APP_FILE_FULL_PATH, &fileLen) && fileLen > 0) {
-        loadingPath = APP_FILE_FULL_PATH;
+    if (FileUtils::check(APP_FILE_PATH, &fileLen) && fileLen > 0) {
+        loadingPath = APP_FILE_PATH;
     } else if (FileUtils::check(APP_FILE_BAK_PATH, &fileLen) && fileLen > 0) {
         loadingPath = APP_FILE_BAK_PATH;
     }
@@ -152,7 +152,7 @@ bool GlobalData::saveToFile(bool isBak) {
     appJson["coffee"] = mCoffee;
     /**** 结束写入数据 ****/
     return JsonUtils::save(
-        isBak ? APP_FILE_BAK_PATH : APP_FILE_FULL_PATH,
+        isBak ? APP_FILE_BAK_PATH : APP_FILE_PATH,
         appJson);
 }
 
@@ -164,7 +164,7 @@ void GlobalData::checkToSave() {
         FileUtils::sync();
         mHaveChange = false;
         mNextBakTime = now + GD_SAVE_BACKUP_INTERVAL;
-        LOG(INFO) << "[app] save GlobalData. file=" << APP_FILE_FULL_PATH;
+        LOG(INFO) << "[app] save GlobalData. file=" << APP_FILE_PATH;
     }
     if (now >= mNextBakTime) {
         saveToFile(true);

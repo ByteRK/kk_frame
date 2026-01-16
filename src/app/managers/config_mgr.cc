@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2025-12-30 09:07:56
+ * @LastEditTime: 2026-01-16 11:37:56
  * @FilePath: /kk_frame/src/app/managers/config_mgr.cc
  * @Description:
  * @BugList:
@@ -17,6 +17,8 @@
 
 #include <cdlog.h>
 #include <unistd.h>
+
+#define CONFIG_SECTION "conf" // 配置文件节点
 
 static constexpr uint32_t CM_SAVE_CHECK_INITERVAL = 2000;       // 检查保存间隔[2s]
 static constexpr uint32_t CM_SAVE_BACKUP_INTERVAL = 1000 * 10;  // 备份间隔[10s]
