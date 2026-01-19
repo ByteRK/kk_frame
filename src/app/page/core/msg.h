@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-11-24 05:46:03
- * @LastEditTime: 2026-01-14 11:33:34
+ * @LastEditTime: 2026-01-19 17:36:32
  * @FilePath: /kk_frame/src/app/page/core/msg.h
  * @Description: 消息类（初始化消息、运行时消息、）
  * @BugList:
@@ -67,16 +67,35 @@ struct SaveMsgBaseT :public SaveMsgBase {
 
 
 #if 0
-/// @brief 通用消息(举例用)
-/// @note 
-struct GeneralMsg :public RunMsgBase {
-    GeneralMsg() :RunMsgBase() {
-        msgType = MSG_TYPE_GENERAL;
+
+/**
+ * 用法比较简单
+ * 在需要接收消息的窗口/弹窗类中，继承对应的消息类，并实现clone接口
+ * 发送消息，则直接new一个消息类，并调用wind_mgr的send接口即可
+ * 
+ * 若只是发送个状态，没有特殊数据，直接调用带MSG_TYPE参数的通用消息接口
+ * 
+ * 若自定义消息结构中含有指针，
+ * 必须要根据实际情况实现clone接口进行复制并且在析构中进行释放，
+ * 否则会导致内存泄漏
+ */
+
+/// @brief 消息定义方式(举例用)
+struct Demo1Msg :public RunMsgBase {
+    int a;
+    Demo1Msg() {
+        msgType = MSG_GENERAL;
     }
-    RunMsgBase* clone() const override {
-        return new GeneralMsg(*this);
+    Demo1Msg* clone() const override {
+        return new Demo1Msg(*this);
     }
 };
+
+/// @brief 消息定义方式(举例用)
+struct Demo2Msg : public RunMsgBaseT<Demo2Msg>{
+    int a;
+};
+
 #endif
 
 #endif // !__MSG_H__
