@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2026-01-16 11:37:56
+ * @LastEditTime: 2026-01-19 09:26:55
  * @FilePath: /kk_frame/src/app/managers/config_mgr.cc
  * @Description:
  * @BugList:
@@ -20,21 +20,17 @@
 
 #define CONFIG_SECTION "conf" // 配置文件节点
 
-static constexpr uint32_t CM_SAVE_CHECK_INITERVAL = 2000;       // 检查保存间隔[2s]
-static constexpr uint32_t CM_SAVE_BACKUP_INTERVAL = 1000 * 10;  // 备份间隔[10s]
+ConfigMgr::ConfigMgr() :
+    AutoSaveItem(2000, 10000) {
+}
 
 ConfigMgr::~ConfigMgr() {
-    mLooper->removeMessages(this);
 }
 
 /// @brief 初始化
 void ConfigMgr::init() {
-    loadFromFile();
-
-    mNextBakTime = UINT64_MAX;
-    mCheckSaveMsg.what = MSG_SAVE;
-    mLooper = Looper::getMainLooper();
-    mLooper->sendMessageDelayed(CM_SAVE_CHECK_INITERVAL, this, mCheckSaveMsg);
+    load();
+    AutoSaveItem::init();
 }
 
 /// @brief 重置
@@ -47,21 +43,9 @@ void ConfigMgr::reset() {
     LOGE("config_mgr factory reset.");
 }
 
-/// @brief 定时任务，用于保存修改后的配置
-/// @param message 
-void ConfigMgr::handleMessage(Message& message) {
-    switch (message.what) {
-    case MSG_SAVE:
-        checkToSave();
-        break;
-    default:
-        break;
-    }
-}
-
 /// @brief 从文件中加载配置
 /// @return 
-bool ConfigMgr::loadFromFile() {
+bool ConfigMgr::load() {
     mConfig = cdroid::Preferences(); // 清空原配置
 
     std::string loadingPath = "";
@@ -82,22 +66,20 @@ bool ConfigMgr::loadFromFile() {
     return true;
 }
 
-/// @brief 保存配置文件
-void ConfigMgr::checkToSave() {
-    uint64_t now = SystemClock::uptimeMillis();
-    if (mConfig.getUpdates()) {
-        mConfig.save(CONFIG_FILE_PATH);
-        FileUtils::sync();
-        mNextBakTime = now + CM_SAVE_BACKUP_INTERVAL;
-        LOG(INFO) << "[config] save config. file=" << CONFIG_FILE_PATH;
-    }
-    if (now >= mNextBakTime) {
-        mConfig.save(CONFIG_FILE_BAK_PATH);
-        FileUtils::sync();
-        mNextBakTime = UINT64_MAX;
-        LOG(INFO) << "[config] save config bak. file=" << CONFIG_FILE_BAK_PATH;
-    }
-    mLooper->sendMessageDelayed(CM_SAVE_CHECK_INITERVAL, this, mCheckSaveMsg);
+/// @brief 保存配置到文件
+/// @param isBackup 是否为备份
+/// @return 
+bool ConfigMgr::save(bool isBackup) {
+    mConfig.save(
+        isBackup ? CONFIG_FILE_BAK_PATH : CONFIG_FILE_PATH
+    );
+    return true;
+}
+
+/// @brief 检查是否存在变动，触发保存
+/// @return 
+bool ConfigMgr::haveChange() {
+    return mConfig.getUpdates();
 }
 
 /**************************************************************************************/

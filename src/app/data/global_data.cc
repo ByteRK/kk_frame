@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2026-01-13 10:10:54
+ * @LastEditTime: 2026-01-19 10:37:25
  * @FilePath: /kk_frame/src/app/data/global_data.cc
  * @Description:
  * @BugList:
@@ -19,38 +19,34 @@
 #include <unistd.h>
 #include <core/cxxopts.h>
 #include <core/app.h>
+#include <core/systemclock.h>
+#include <cdlog.h>
 
-static constexpr uint32_t GD_SAVE_CHECK_INITERVAL = 2000;       // 检查保存间隔[2s]
-static constexpr uint32_t GD_SAVE_BACKUP_INTERVAL = 1000 * 10;  // 备份间隔[10s]
-
-GlobalData::GlobalData() :mAppStart(SystemClock::uptimeMillis()) {
+GlobalData::GlobalData() :
+    mAppStart(cdroid::SystemClock::uptimeMillis()),
+    AutoSaveItem(2000, 10000) {
 }
 
 /// @brief 析构
 GlobalData::~GlobalData() {
-    mLooper->removeMessages(this);
 }
 
 /// @brief 初始化
 void GlobalData::init(int argc, const char* argv[]) {
     mArgc = argc;
     mArgv = argv;
-    mPowerOnTime = SystemClock::uptimeMillis();
 
     mIsFirstInit = FileUtils::check(APP_FIRST_INIT_TAG);
     mDeviceMode = (
-        App::getInstance().getName() == (std::string("kk") + std::string("_frame"))
+        cdroid::App::getInstance().getName() == (std::string("kk") + std::string("_frame"))
         ) ?
         DEVICE_MODE_DEMO : DEVICE_MODE_SAMPLE;
 
     checkenv();
     checkArgv();
-    loadFromFile();
+    load();
 
-    mNextBakTime = UINT64_MAX;
-    mCheckSaveMsg.what = MSG_SAVE;
-    mLooper = Looper::getMainLooper();
-    mLooper->sendMessageDelayed(GD_SAVE_CHECK_INITERVAL, this, mCheckSaveMsg);
+    AutoSaveItem::init();
 }
 
 /// @brief 重置
@@ -61,6 +57,7 @@ void GlobalData::reset() {
     setFirstInit(true);
     // FileUtils::sync(); // 不需要Sync，上一步已Sync
     init(mArgc, mArgv);
+    mHaveChange = true;
     LOGE("global_data factory reset.");
 }
 
@@ -73,18 +70,6 @@ void GlobalData::setFirstInit(bool first) {
     std::system(command.c_str());
     mIsFirstInit = first;
     FileUtils::sync();
-}
-
-/// @brief 定时任务，用于保存修改后的配置
-/// @param message 
-void GlobalData::handleMessage(Message& message) {
-    switch (message.what) {
-    case MSG_SAVE:
-        checkToSave();
-        break;
-    default:
-        break;
-    }
 }
 
 /// @brief 检查环境变量
@@ -119,7 +104,7 @@ void GlobalData::checkArgv() {
 
 /// @brief 载入本地文件
 /// @return 
-bool GlobalData::loadFromFile() {
+bool GlobalData::load() {
     Json::Value appJson;
     std::string loadingPath = "";
     size_t fileLen = 0;
@@ -144,39 +129,27 @@ bool GlobalData::loadFromFile() {
 }
 
 /// @brief 保存文件到本地
-/// @param isBak 是否为备份
-/// @return 
-bool GlobalData::saveToFile(bool isBak) {
+/// @param isBackup 是否为备份
+bool GlobalData::save(bool isBackup) {
     Json::Value appJson;
     /**** 开始写入数据 ****/
     appJson["coffee"] = mCoffee;
     /**** 结束写入数据 ****/
+    mHaveChange = false;
     return JsonUtils::save(
-        isBak ? APP_FILE_BAK_PATH : APP_FILE_PATH,
+        isBackup ? APP_FILE_BAK_PATH : APP_FILE_PATH,
         appJson);
 }
 
-/// @brief 检查是否需要保存
-void GlobalData::checkToSave() {
-    uint64_t now = SystemClock::uptimeMillis();
-    if (mHaveChange) {
-        saveToFile();
-        FileUtils::sync();
-        mHaveChange = false;
-        mNextBakTime = now + GD_SAVE_BACKUP_INTERVAL;
-        LOG(INFO) << "[app] save GlobalData. file=" << APP_FILE_PATH;
-    }
-    if (now >= mNextBakTime) {
-        saveToFile(true);
-        FileUtils::sync();
-        mNextBakTime = UINT64_MAX;
-        LOG(INFO) << "[app] save GlobalData bak. file=" << APP_FILE_BAK_PATH;
-    }
-    mLooper->sendMessageDelayed(GD_SAVE_CHECK_INITERVAL, this, mCheckSaveMsg);
+/// @brief 检查是否存在变动，触发保存
+/// @return 
+bool GlobalData::haveChange() {
+    return mHaveChange;
 }
 
-/// @brief 获取程序启动时间[可粗略计算程序运行时间]
-/// @return 
-uint64_t GlobalData::getPowerOnTime() {
-    return mPowerOnTime;
-}
+// /// @brief 更新咖啡[🎐测试用]
+// /// @param coffee 
+// void GlobalData::updateCoffee(bool coffee) {
+//     mCoffee = coffee;
+//     mHaveChange = true; // 触发自动保存
+// }

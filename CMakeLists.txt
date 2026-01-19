@@ -125,6 +125,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     src/comm/uart
 
     # 组件及模板工具
+    src/class
     src/template
     src/utils
     src/widgets
