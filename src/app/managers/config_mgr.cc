@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2026-01-19 09:26:55
+ * @LastEditTime: 2026-01-19 17:19:15
  * @FilePath: /kk_frame/src/app/managers/config_mgr.cc
  * @Description:
  * @BugList:
@@ -18,7 +18,7 @@
 #include <cdlog.h>
 #include <unistd.h>
 
-#define CONFIG_SECTION "conf" // 配置文件节点
+#define CONFIG_SECTION "app_config" // 配置文件节点
 
 ConfigMgr::ConfigMgr() :
     AutoSaveItem(2000, 10000) {
@@ -55,7 +55,8 @@ bool ConfigMgr::load() {
     } else if (FileUtils::check(CONFIG_FILE_BAK_PATH, &fileLen) && fileLen > 0) {
         loadingPath = CONFIG_FILE_BAK_PATH;
     } else {
-        LOG(ERROR) << "[config] no config file found. create new config file.";
+        LOG(ERROR) << "[config] no config file found. use default data.";
+        mConfig.setValue(CONFIG_SECTION, "HELLO", std::string("WORLD!!!"));
         return false;
     }
     LOG(INFO) << "[config] load config. file=" << loadingPath;
