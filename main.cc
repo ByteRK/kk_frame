@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2025-12-31 14:19:48
+ * @LastEditTime: 2026-01-19 16:13:59
  * @FilePath: /kk_frame/main.cc
  * @Description: 主程序入口
  * @BugList:
@@ -18,6 +18,8 @@
 #include "global_data.h"     // 全局数据
 
 #include "config_mgr.h"      // 配置管理器
+#include "history_mgr.h"     // 历史记录管理器
+#include "statistics_mgr.h"  // 统计管理器
 #include "thread_mgr.h"      // 线程管理器
 #include "timer_mgr.h"       // 定时器管理器
 #include "work_mgr.h"        // 工作管理器
@@ -43,6 +45,8 @@ int main(int argc, const char* argv[]) {
     g_data->init(argc, argv);
 
     g_config->init();
+    g_history->init();
+    g_statistics->init();
     // g_threadMgr->init(3);
     g_timer->init();
     g_work->init();

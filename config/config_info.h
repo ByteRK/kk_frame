@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-01-18 11:33:02
- * @LastEditTime: 2026-01-16 13:49:31
+ * @LastEditTime: 2026-01-19 17:20:08
  * @FilePath: /kk_frame/config/config_info.h
  * @Description: 项目信息
  * @BugList:
@@ -27,8 +27,10 @@
     static const char* name##_FILE_PATH = LOCAL_DATA_DIR #file; \
     static const char* name##_FILE_BAK_PATH = LOCAL_DATA_DIR #file ".bak";
 
-DEFINE_FILE_INFO(APP,    app.json);           // 应用数据文件
-DEFINE_FILE_INFO(CONFIG, config.xml);         // 配置文件名
+DEFINE_FILE_INFO(APP,        app.json);           // 应用数据文件
+DEFINE_FILE_INFO(CONFIG,     config.xml);         // 配置文件名
+DEFINE_FILE_INFO(HISTORY,    history.json)        // 历史记录文件名
+DEFINE_FILE_INFO(STATISTICS, statistics.json)     // 统计文件名
 
 #define APP_FIRST_INIT_TAG "./FIRSTINIT.TAG"  // 第一次初始化标记
 
