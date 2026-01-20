@@ -2,10 +2,16 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-16 09:20:32
- * @LastEditTime: 2026-01-19 17:12:45
+ * @LastEditTime: 2026-01-19 18:39:13
  * @FilePath: /kk_frame/src/app/managers/statistics_mgr.h
  * @Description: 数据统计管理
- * @BugList:
+ * 
+ *    循环缓冲区结构->
+ *      |-------------------------------------------------------|
+ *      |   3   |   2   |   1   |   0   |   6   |   5   |   4   |
+ *      |-------------------------------------------------------|
+ *      |   3   |大前天 | 前一天|  当前 |   6   |   5   |   4   |
+ *      |-------------------------------------------------------|
  *
  * Copyright (c) 2026 by Ricken, All Rights Reserved.
  *

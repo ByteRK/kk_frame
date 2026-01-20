@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-16 09:20:42
- * @LastEditTime: 2026-01-19 17:06:37
+ * @LastEditTime: 2026-01-20 09:05:08
  * @FilePath: /kk_frame/src/app/managers/statistics_mgr.cc
  * @Description: 数据统计管理
  * @BugList:
@@ -206,7 +206,7 @@ void StatisticsMgr::rotateToNewDay() {
 
     // 更新所有日期的相对索引
     for (size_t i = 0; i < MAX_DAYS; i++) {
-        int diff = (i + MAX_DAYS - mTodayIndex) % MAX_DAYS;
+        int diff = (mTodayIndex + MAX_DAYS - i) % MAX_DAYS;
         mBuffer[i].day_index = diff;
     }
 
