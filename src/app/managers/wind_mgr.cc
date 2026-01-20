@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2026-01-05 14:30:49
+ * @LastEditTime: 2026-01-20 15:58:36
  * @FilePath: /kk_frame/src/app/managers/wind_mgr.cc
  * @Description: 页面管理类
  * @BugList:
@@ -93,20 +93,6 @@ void WindMgr::init() {
         showPage(PAGE_HOME);
     }   break;
     }
-}
-
-/// @brief 注册页面
-/// @param page 
-/// @param func 
-void WindMgr::registerPage(int8_t page, std::function<PageBase* ()> func) {
-    mPageFactory[page] = func;
-}
-
-/// @brief 注册弹窗
-/// @param pop 
-/// @param func 
-void WindMgr::registerPop(int8_t pop, std::function<PopBase* ()> func) {
-    mPopFactory[pop] = func;
 }
 
 /// @brief 显示指定页面 (新建页面必须从此处调用)
@@ -460,22 +446,21 @@ void WindMgr::removePopHistory(int8_t pop) {
 /// @param page 页面ID
 /// @return 是否创建成功
 bool WindMgr::createPage(int8_t page) {
-    auto it = mPageFactory.find(page);
-    if (it != mPageFactory.end()) {
-        PageBase* pb = it->second(); // 调用构造函数创建页面
-        if (page != pb->getType()) { // 防呆
-            std::string msg = "page[" + std::to_string(page) + "] type error";
-            throw std::runtime_error(msg.c_str());
-        }
-#if OPEN_SCREENSAVER
-        refreshScreenSaver();
-#endif
-        mPageCache[page] = pb;
-        LOGW("add new page: %d <- %p | page count=%d ", page, pb, mPageCache.size());
-        return true;
+    PageBase* pb = PageCreator::get(page); // 调用构建器
+    if (!pb) {
+        LOGE("can not create page: %d", page);
+        return false;
     }
-    LOGE("can not create page: %d", page);
-    return false;
+    if (page != pb->getType()) { // 防呆
+        std::string msg = "page[" + std::to_string(page) + "] type error";
+        throw std::runtime_error(msg.c_str());
+    }
+#if OPEN_SCREENSAVER
+    refreshScreenSaver();
+#endif
+    mPageCache[page] = pb;
+    LOGW("add new page: %d <- %p | page count=%d ", page, pb, mPageCache.size());
+    return true;
 }
 
 /// @brief 检查是否允许页面跳转
@@ -506,22 +491,21 @@ void WindMgr::autoRecyclePage() {
 /// @param pop 弹窗ID
 /// @return 是否创建成功
 bool WindMgr::createPop(int8_t pop) {
-    auto it = mPopFactory.find(pop);
-    if (it != mPopFactory.end()) {
-        PopBase* pb = it->second(); // 调用构造函数创建页面
-        if (pop != pb->getType()) { // 防呆
-            std::string msg = "pop[" + std::to_string(pop) + "] type error";
-            throw std::runtime_error(msg.c_str());
-        }
-#if OPEN_SCREENSAVER
-        refreshScreenSaver();
-#endif
-        mPopCache[pop] = pb;
-        LOGW("add new pop: %d <- %p | pop count=%d ", pop, pb, mPopCache.size());
-        return true;
+    PopBase* pb = PopCreator::get(pop); // 调用构建器
+    if (!pb) {
+        LOGE("can not create pop: %d", pop);
+        return false;
     }
-    LOGE("can not create pop: %d", pop);
-    return false;
+    if (pop != pb->getType()) { // 防呆
+        std::string msg = "pop[" + std::to_string(pop) + "] type error";
+        throw std::runtime_error(msg.c_str());
+    }
+#if OPEN_SCREENSAVER
+    refreshScreenSaver();
+#endif
+    mPopCache[pop] = pb;
+    LOGW("add new pop: %d <- %p | pop count=%d ", pop, pb, mPopCache.size());
+    return true;
 }
 
 /// @brief 检查是否允许弹窗跳转

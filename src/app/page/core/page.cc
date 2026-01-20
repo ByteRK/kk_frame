@@ -2,19 +2,21 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-04 13:52:43
- * @LastEditTime: 2026-01-04 14:03:35
+ * @LastEditTime: 2026-01-20 16:26:32
  * @FilePath: /kk_frame/src/app/page/core/page.cc
- * @Description: 
- * @BugList: 
- * 
- * Copyright (c) 2026 by Ricken, All Rights Reserved. 
- * 
+ * @Description:
+ * @BugList:
+ *
+ * Copyright (c) 2026 by Ricken, All Rights Reserved.
+ *
 **/
 
 #include "page.h"
 #include "wind_mgr.h"
-
 #include <widget/imageview.h>
+
+// 静态变量定义
+std::map<int8_t, PageCreator::CallBack> PageCreator::sPage;
 
 /// @brief 构造
 /// @param resource 资源路径
@@ -50,12 +52,4 @@ void PageBase::setBackBtn(int id) {
         if (iv && iv->getDrawable())
             iv->getDrawable()->setFilterBitmap(true);
     }
-}
-
-/*
- ************************************** 注册接口 **************************************
-**/
-
-void registerPageToMgr(int8_t page, std::function<PageBase* ()> func) {
-    g_windMgr->registerPage(page, func);
 }

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2026-01-05 13:45:08
+ * @LastEditTime: 2026-01-20 15:35:46
  * @FilePath: /kk_frame/src/app/managers/wind_mgr.h
  * @Description: 页面管理类
  * @BugList:
@@ -70,9 +70,6 @@ private:
 
     std::vector<std::pair<int8_t, std::unique_ptr<SaveMsgBase>>> mPopHistory;    // 弹窗历史
     std::vector<std::pair<int8_t, std::unique_ptr<SaveMsgBase>>> mPageHistory;   // 页面历史
-
-    std::unordered_map<int8_t, std::function<PopBase* ()>>  mPopFactory;         // 弹窗工厂
-    std::unordered_map<int8_t, std::function<PageBase* ()>> mPageFactory;        // 页面工厂
 
 private:
     WindMgr();

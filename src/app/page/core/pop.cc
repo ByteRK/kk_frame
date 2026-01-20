@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-04 13:52:55
- * @LastEditTime: 2026-01-05 16:29:26
+ * @LastEditTime: 2026-01-20 16:25:04
  * @FilePath: /kk_frame/src/app/page/core/pop.cc
  * @Description: 弹窗基类
  * @BugList:
@@ -12,8 +12,10 @@
 **/
 
 #include "pop.h"
-#include "wind_mgr.h"
 #include <widget/relativelayout.h>
+
+// 静态变量定义
+std::map<int8_t, PopCreator::CallBack> PopCreator::sPop;
 
 #define POP_DISPLAY_ANIMATE 1
 
@@ -83,12 +85,3 @@ void PopBase::setColor(int color) {
     ColorDrawable* d = dynamic_cast<ColorDrawable*>(mPopRootView->getBackground());
     if (d) d->setColor(color);
 }
-
-/*
- ************************************** 注册接口 **************************************
-**/
-
-void registerPopToMgr(int8_t pop, std::function<PopBase* ()> func) {
-    g_windMgr->registerPop(pop, func);
-}
-
