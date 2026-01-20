@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-01-04 14:03:02
+ * @LastEditTime: 2026-01-20 17:11:53
  * @FilePath: /kk_frame/src/app/page/core/wind.h
  * @Description: 主窗口类
  * @BugList:
@@ -33,15 +33,14 @@ public:
 protected:
     Context*          mContext;        // 上下文
     ViewGroup*        mRootView;       // 根容器
-    uint64_t          mLastTick;       // 上次Tick时间
     
     PopBase*          mPop;            // 弹窗指针
     ViewGroup*        mPopBox;         // 弹窗容器
-    uint64_t          mPopTickTime;    // 弹窗Tick时间
+    uint64_t          mPopNextTick;    // 弹窗下次Tick时间
 
     PageBase*         mPage;           // 页面指针
     ViewGroup*        mPageBox;        // 页面容器
-    uint64_t          mPageTickTime;   // 页面Tick时间
+    uint64_t          mPageNextTick;   // 页面下次Tick时间
 
     View*             mBlackView;      // 黑屏
     bool              mIsBlackView;    // 黑屏是否正在显示

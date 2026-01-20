@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-01-13 11:47:35
+ * @LastEditTime: 2026-01-20 17:26:06
  * @FilePath: /kk_frame/src/app/page/core/wind.cc
  * @Description: 窗口类
  * @BugList:
@@ -35,9 +35,8 @@ static void playSound(int sound) {
 /// @return 返回MainWindow对象
 MainWindow::MainWindow() :Window(0, 0, -1, -1) {
     mLastAction = SystemClock::uptimeMillis();
-    mLastTick = 0;
-    mPopTickTime = 0;
-    mPageTickTime = 0;
+    mPopNextTick = 0;
+    mPageNextTick = 0;
 
     App::getInstance().addEventHandler(this);
 }
@@ -51,27 +50,23 @@ MainWindow::~MainWindow() {
 /// @brief Tick检查
 /// @return 返回1表示需要处理
 int MainWindow::checkEvents() {
-    int64_t tick = SystemClock::uptimeMillis();
-    if (tick >= mLastTick) {
-        mLastTick = tick + 100;
-        return 1;
-    }
-    return 0;
+    return SystemClock::uptimeMillis() >= std::min(mPageNextTick, mPopNextTick);
 }
 
 /// @brief Tick处理
 /// @return 
 int MainWindow::handleEvents() {
     int64_t tick = SystemClock::uptimeMillis();
-    if (tick >= mPageTickTime) {
-        mPageTickTime = tick + PAGE_TICK_INTERVAL;
+    if (tick >= mPageNextTick) {
+        mPageNextTick = tick + PAGE_TICK_INTERVAL;
         if (mPage)mPage->callTick();
+        
+        WindToast::onTick();
     }
-    if (tick >= mPopTickTime) {
-        mPopTickTime = tick + POP_TICK_INTERVAL;
+    if (tick >= mPopNextTick) {
+        mPopNextTick = tick + POP_TICK_INTERVAL;
         if (mPop)mPop->callTick();
     }
-    WindToast::onTick();
     return 1;
 }
 
