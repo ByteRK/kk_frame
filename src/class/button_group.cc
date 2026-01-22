@@ -1,10 +1,10 @@
 /*
- * @Author: xialc
+ * @Author: Ricken
  * @Email:
  * @Date: 2026-01-14 16:18:31
- * @LastEditTime: 2026-01-22 22:47:13
- * @FilePath: /kk_frame/src/app/page/components/button_group.cc
- * @Description: 按键组
+ * @LastEditTime: 2026-01-23 00:09:33
+ * @FilePath: /kk_frame/src/class/button_group.cc
+ * @Description: 按键组(灵感来源于xialc)
  *               SingleChoice:单选  MultiChoice:多选
  * @BugList:
  *
