@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email:
  * @Date: 2026-01-14 16:09:30
- * @LastEditTime: 2026-01-23 00:08:36
+ * @LastEditTime: 2026-01-23 00:14:00
  * @FilePath: /kk_frame/src/class/button_group.h
  * @Description: 按键组(灵感来源于xialc)
  *               SingleChoice:单选  MultiChoice:多选
@@ -55,7 +55,7 @@ protected:
     OnItemCLickListener     mOnClickListener;
 };
 
-/// @brief 多选按键组 TODO
+/// @brief 多选按键组
 class MultiChoiceG {
 public:
     typedef std::map<int, View*>             ButtonViews;

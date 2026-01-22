@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email:
  * @Date: 2026-01-14 16:18:31
- * @LastEditTime: 2026-01-23 00:09:33
+ * @LastEditTime: 2026-01-23 00:14:35
  * @FilePath: /kk_frame/src/class/button_group.cc
  * @Description: 按键组(灵感来源于xialc)
  *               SingleChoice:单选  MultiChoice:多选
@@ -117,7 +117,10 @@ SingleChoiceG::ButtonViews* SingleChoiceG::getButtons() {
 /// @brief 按键点击事件
 /// @param v 按键
 void SingleChoiceG::onButtonClick(View& v) {
-    if (mOnClickListener)mOnClickListener(getID(), v.getId());
+    if (
+        mOnClickListener &&
+        !mOnClickListener(getID(), v.getId())
+        ) return;
     clickView(v.getId());
 }
 
@@ -293,9 +296,9 @@ void MultiChoiceG::onButtonClick(View& v) {
     bool oldSelected = isSelected(id);
     bool newSelected = !oldSelected;
 
-    // 切换选中状态
+    if (
+        mOnClickListener &&
+        !mOnClickListener(id, newSelected)
+        ) return;
     toggleView(id);
-
-    // 回调监听器
-    if (mOnClickListener) mOnClickListener(id, newSelected);
 }
