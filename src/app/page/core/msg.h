@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-11-24 05:46:03
- * @LastEditTime: 2026-01-19 17:36:32
+ * @LastEditTime: 2026-01-23 17:12:24
  * @FilePath: /kk_frame/src/app/page/core/msg.h
  * @Description: 消息类（初始化消息、运行时消息、）
  * @BugList:
@@ -13,6 +13,8 @@
 
 #ifndef __MSG_H__
 #define __MSG_H__
+
+#include "core/id.h"
 
 /*
  *************************************** 消息基类 ***************************************
