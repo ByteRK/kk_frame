@@ -73,6 +73,7 @@ endif()
 if (ENABLED_PIXMAN)
     add_definitions(-DENABLE_PIXMAN=1)
     find_package(Pixman)
+    list(APPEND PROJECT_INCLUDE_DIR ${PIXMAN_INCLUDE_DIR})
     list(APPEND PROJECT_LIBRARIES ${PIXMAN_LIBRARIES})
 endif()
 
