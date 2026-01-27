@@ -1,4 +1,4 @@
-#ifndef KEYBOARD_DISABLE // CMakeLists.txt -> add_definitions(-DKEYBOARD_ENABLE)
+#if defined(ENABLE_KEYBOARD) || defined(__VSCODE__)
 
 #include "R.h"
 #include "cKeyBoard.h"
@@ -6,7 +6,7 @@
 
 #ifdef ENABLE_PINYIN2HZ
 #include <core/inputmethodmanager.h>
-#ifdef CDROID_RUNNING
+#ifndef __VSCODE__
 #include <pinyin/pinyinime.h>
 #endif
 #endif
@@ -415,7 +415,7 @@ void CKeyBoard::initValue() {
         if (gObjPinyin == nullptr) gObjPinyin = new GooglePinyin("");
         gObjPinyin->load_dicts(PINYIN_DATA_FILE, USERDICT_FILE);
 
-#ifdef CDROID_RUNNING
+#ifndef __VSCODE__
         ime_pinyin::im_enable_ym_as_szm(true);
 #endif
 

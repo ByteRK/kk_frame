@@ -1,4 +1,4 @@
-#ifndef KEYBOARD_DISABLE // CMakeLists.txt -> add_definitions(-DKEYBOARD_ENABLE)
+#if defined(ENABLE_KEYBOARD) || defined(__VSCODE__)
 
 // 输入法 CDROID版
 // 键盘控件，放置于最外层控件组首个
