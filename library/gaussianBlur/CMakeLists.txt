@@ -10,7 +10,7 @@ string(TOLOWER "${LIB_NAME}" LIB_NAME_LOWER)
 message(STATUS "Configuring library: ${LIB_NAME}")
 
 # 2. 库目标名
-set(TARGET_NAME "${LIB_NAME_LOWER}_lib")
+set(TARGET_NAME "${PROJECT_NAME}_${LIB_NAME_LOWER}_lib")
 
 # 3. 源文件收集
 file(GLOB_RECURSE LIB_SOURCES 
