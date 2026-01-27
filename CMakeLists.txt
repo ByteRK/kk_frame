@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+
 # 功能开关
 option(ENABLED_KEYBOARD "Enable keyboard support" OFF)
 option(ENABLED_KEYBOARD_PINYIN "Enable pinyin input" OFF)
@@ -16,6 +17,10 @@ option(ENABLED_OPENSSL "Enable OpenSSL" OFF)
 option(ENABLED_JSON "Enable JSON support" ON)
 option(ENABLED_VIDEO "Enable video playback" ON)
 option(ENABLED_PIXMAN "Enable Pixman" OFF)
+option(ENABLED_GLASS_VIEW "Enable glass view" ON)
+option(ENABLED_GLASS_DRAWABLE "Enable glass drawable" OFF)
+
+
 
 # 源文件收集 [./*.c和./*.cc]会意外导致匹配到非src目录下的源文件
 file(GLOB_RECURSE PROJECT_SOURCES
@@ -24,6 +29,13 @@ file(GLOB_RECURSE PROJECT_SOURCES
     "./src/*/*.cc"
     "./src/*/*.cpp"
 )
+
+# 设置项目特定的库输出目录
+set(PROJECT_LIBRARY_OUTPUT_DIR "${CMAKE_BINARY_DIR}/apps/${PROJECT_NAME}/lib")
+message(STATUS "Project library output directory: ${PROJECT_LIBRARY_OUTPUT_DIR}")
+
+# 创建目录
+file(MAKE_DIRECTORY ${PROJECT_LIBRARY_OUTPUT_DIR})
 
 # 可执行文件配置
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
@@ -49,12 +61,15 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     KEYBOARD_DISABLE # 禁用键盘
 )
 
+# 添加库目录
+add_subdirectory(library)
+
 # 键盘 && 拼音 #
 if (ENABLED_KEYBOARD OR CDROID_CHIPSET STREQUAL x64)
-    add_definitions(-DENABLED_KEYBOARD=1)
+    add_definitions(-DENABLE_KEYBOARD=1)
     
     if(ENABLED_KEYBOARD_PINYIN)
-        add_definitions(-DENABLED_KEYBOARD_PINYIN=1)
+        add_definitions(-DENABLE_KEYBOARD_PINYIN=1)
     endif()
 endif()
 
@@ -76,7 +91,7 @@ endif()
 
 # Json #
 if (ENABLED_JSON)
-  add_definitions(-DENABLED_JSON=1)
+  add_definitions(-DENABLE_JSON=1)
   find_package(jsoncpp CONFIG REQUIRED)
   list(APPEND UTILS_LIBS JsonCpp::JsonCpp)
 endif()
@@ -99,6 +114,16 @@ if (ENABLED_PIXMAN)
     add_definitions(-DENABLED_PIXMAN=1)
     find_package(Pixman)
     list(APPEND UTILS_LIBS ${PIXMAN_LIBRARIES})
+endif()
+
+# 模糊控件 #
+if (ENABLE_GLASS_VIEW)
+    add_definitions(-DENABLE_GLASS_VIEW)
+endif()
+
+# 模糊Drawable #
+if (ENABLE_GLASS_DRAWABLE)
+    add_definitions(-DENABLE_GLASS_DRAWABLE)
 endif()
 
 # 头文件路径配置
@@ -141,18 +166,23 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
     # 工具库
     ${UTILS_INCLUDE_DIR}
+
+    # 项目库头文件
+    ${PROJECT_LIBRARY_INCLUDE}
 )
 
 # 库搜索路径配置
 target_link_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_BINARY_DIR}/lib
     ${UTILS_LIBS_DIR}
+    ${PROJECT_LIBRARY_OUTPUT_DIR}
 )
 
 # 链接库配置
 target_link_libraries(${PROJECT_NAME} PRIVATE
     cdroid
     ${UTILS_LIBS}
+    ${PROJECT_LIBRARIES}
 )
 
 # PAK打包
@@ -165,3 +195,20 @@ CreatePAK(
 
 # 安装配置 进行编译
 install(TARGETS ${PROJECT_NAME} DESTINATION bin)
+
+# 打印配置信息
+message(STATUS "========================================")
+message(STATUS "Configuration Summary")
+message(STATUS "========================================")
+message(STATUS "Project: ${PROJECT_NAME}")
+message(STATUS "Target: ${CMAKE_BUILD_TYPE}")
+message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")
+message(STATUS "Libraries enabled: ${PROJECT_LIBRARIES}")
+message(STATUS "Library count: ${PROJECT_LIBRARIES}")
+if(PROJECT_LIBRARIES)
+    list(LENGTH PROJECT_LIBRARIES lib_count)
+    message(STATUS "Total libraries to link: ${lib_count}")
+else()
+    message(STATUS "Total libraries to link: 0")
+endif()
+message(STATUS "========================================")

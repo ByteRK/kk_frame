@@ -5,4 +5,6 @@ config/fonts_info.h
 config/app_version.h
 fonts/fonts.conf
 
+library/library_config.h
+
 package
