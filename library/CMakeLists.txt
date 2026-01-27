@@ -1,27 +1,15 @@
 # 库管理模块
 
 message(STATUS "========================================")
-message(STATUS "Library Manager Initializing...")
+message(STATUS "Library Manager Running...")
 message(STATUS "========================================")
 
 # 1. 预定义库选项
-option(USE_FASTGAUSSIANBLUR "Enable fastGaussianBlur library" ON)
-option(USE_GAUSSFILTER      "Enable gaussFilter library"      ON)
-option(USE_GAUSSIANBLUR     "Enable gaussianblur library"     ON)
+include(${CMAKE_CURRENT_SOURCE_DIR}/option.cmake)
 
-
-
-
-
-# 2. 使用从父项目传递的库输出目录
-if(DEFINED PROJECT_LIBRARY_OUTPUT_DIR)
-    set(LIBRARY_OUTPUT_DIR ${PROJECT_LIBRARY_OUTPUT_DIR})
-    message(STATUS "Using project library output directory: ${LIBRARY_OUTPUT_DIR}")
-else()
-    set(LIBRARY_OUTPUT_DIR "${CMAKE_BINARY_DIR}/lib")
-    message(STATUS "Using default library output directory: ${LIBRARY_OUTPUT_DIR}")
-endif()
-
+# 2. 设置库输出目录
+set(LIBRARY_OUTPUT_DIR "${CMAKE_BINARY_DIR}/apps/${PROJECT_NAME}/lib")
+file(MAKE_DIRECTORY ${LIBRARY_OUTPUT_DIR})
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${LIBRARY_OUTPUT_DIR})
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${LIBRARY_OUTPUT_DIR})
 
@@ -34,9 +22,8 @@ file(GLOB lib_subdirs
 list(REMOVE_ITEM lib_subdirs "CMakeLists.txt")
 
 # 4. 定义库管理变量
-set(ALL_LIB_TARGETS "" CACHE INTERNAL "All library targets for linking")
-set(PROJECT_LIBRARIES "" CACHE INTERNAL "List of project library targets")
-set(PROJECT_LIBRARY_INCLUDE "" CACHE INTERNAL "Library include directories")
+set(LIB_LIBRARIES "")
+set(LIB_INCLUDE_DIR "")
 
 # 5. 遍历所有库目录
 foreach(lib_dir IN LISTS lib_subdirs)
@@ -58,14 +45,13 @@ foreach(lib_dir IN LISTS lib_subdirs)
                 # 获取子库导出的目标名
                 if(DEFINED ${lib_dir}_TARGET_NAME)
                     set(lib_target_name ${${lib_dir}_TARGET_NAME})
-                    list(APPEND PROJECT_LIBRARIES ${lib_target_name})
-                    list(APPEND ALL_LIB_TARGETS ${lib_target_name})
+                    list(APPEND LIB_LIBRARIES ${lib_target_name})
                     
                     # 获取子库的头文件目录
                     if(DEFINED ${lib_dir}_INCLUDE_DIRS)
-                        list(APPEND PROJECT_LIBRARY_INCLUDE ${${lib_dir}_INCLUDE_DIRS})
+                        list(APPEND LIB_INCLUDE_DIR ${${lib_dir}_INCLUDE_DIRS})
                     else()
-                        list(APPEND PROJECT_LIBRARY_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/${lib_dir})
+                        list(APPEND LIB_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${lib_dir})
                     endif()
                 else()
                     message(WARNING "Library ${lib_dir} did not set target name")
@@ -77,16 +63,8 @@ foreach(lib_dir IN LISTS lib_subdirs)
     endif()
 endforeach()
 
-# 6. 创建聚合库
-# if(ALL_LIB_TARGETS AND CREATE_AGGREGATE_LIB)
-#     add_library(aggregated_lib STATIC)
-#     target_link_libraries(aggregated_lib PRIVATE ${ALL_LIB_TARGETS})
-#     set(AGGREGATE_LIB_TARGET aggregated_lib CACHE INTERNAL "Aggregate library target")
-#     message(STATUS "Created aggregate library: aggregated_lib")
-# endif()
-
 # ========================================
-# 7. 生成库配置头文件
+# 6. 生成库配置头文件
 # ========================================
 function(generate_library_config_header)
     # 确定输出目录
@@ -134,7 +112,7 @@ function(generate_library_config_header)
         endif()
     endforeach()
     
-    list(LENGTH PROJECT_LIBRARIES ENABLED_LIB_COUNT)
+    list(LENGTH LIB_LIBRARIES ENABLED_LIB_COUNT)
     
     set(CONTENT "${CONTENT}// ========================================\n")
     set(CONTENT "${CONTENT}// Convenience Macros\n")
@@ -206,18 +184,19 @@ endfunction()
 generate_library_config_header()
 
 # ========================================
-# 8. 导出变量供父项目使用
+# 7. 追加库的包含目录至父变量
 # ========================================
 
-set(PROJECT_LIBRARIES ${PROJECT_LIBRARIES} PARENT_SCOPE)
-set(PROJECT_LIBRARY_INCLUDE ${PROJECT_LIBRARY_INCLUDE} PARENT_SCOPE)
+set(LIB_LIBRARIES ${LIB_LIBRARIES} PARENT_SCOPE)
+set(LIB_LIBRARY_DIR ${LIBRARY_OUTPUT_DIR} PARENT_SCOPE)
+set(LIB_INCLUDE_DIR ${LIB_INCLUDE_DIR} PARENT_SCOPE)
 
-message(STATUS "========================================")
-message(STATUS "Library Manager Summary:")
-message(STATUS "  Total libraries found: ${lib_subdirs}")
-message(STATUS "  Enabled libraries: ${PROJECT_LIBRARIES}")
-message(STATUS "  Enabled library count: ${ENABLED_LIB_COUNT}")
-message(STATUS "  Include directories: ${PROJECT_LIBRARY_INCLUDE}")
-message(STATUS "  Library output directory: ${LIBRARY_OUTPUT_DIR}")
-message(STATUS "  Config header generated: library_config.h")
-message(STATUS "========================================")
+# message(STATUS "========================================")
+# message(STATUS "Library Manager Summary:")
+# message(STATUS "  Total libraries found: ${lib_subdirs}")
+# message(STATUS "  Enabled libraries: ${LIB_LIBRARIES}")
+# message(STATUS "  Enabled library count: ${ENABLED_LIB_COUNT}")
+# message(STATUS "  Include directories: ${LIB_INCLUDE_DIR}")
+# message(STATUS "  Library output directory: ${LIBRARY_OUTPUT_DIR}")
+# message(STATUS "  Config header generated: library_config.h")
+# message(STATUS "========================================")
