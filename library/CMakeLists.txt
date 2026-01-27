@@ -184,7 +184,7 @@ function(generate_library_config_header)
     set(CONTENT "${CONTENT}\n")
     set(CONTENT "${CONTENT}// For Check Lib Enable Status\n")
     set(CONTENT "${CONTENT}#ifndef PRJ_LIB_ENABLED\n")
-    set(CONTENT "${CONTENT}#define PRJ_LIB_ENABLED(name) (defined(USE_##name##_ENABLED) && USE_##name##_ENABLED)\n")
+    set(CONTENT "${CONTENT}#define PRJ_LIB_ENABLED(name) (defined(LIB_##name##_ENABLED) && LIB_##name##_ENABLED)\n")
     set(CONTENT "${CONTENT}#endif\n")
     set(CONTENT "${CONTENT}\n")
     
