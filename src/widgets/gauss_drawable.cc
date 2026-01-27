@@ -2,7 +2,7 @@
  * @Author: cy
  * @Email: 964028708@qq.com
  * @Date: 2025-05-16 14:52:37
- * @LastEditTime: 2026-01-27 11:43:03
+ * @LastEditTime: 2026-01-27 19:00:34
  * @FilePath: /kk_frame/src/widgets/gauss_drawable.cc
  * @Description: 高斯模糊
  * @BugList:1、不使用fromview的方法，待测试
@@ -272,10 +272,11 @@ void GaussDrawable::computeBitmapGasuss(){
 
     // 创建一个 Pixman 蒙版
     pixman_color_t color_t = {
-        ((mMaskColor >> 16) & 0xFF) << 8,   // 16位红色分量
-        ((mMaskColor >> 8) & 0xFF) << 8,    // 16位绿色分量
-        ( mMaskColor & 0xFF) << 8,          // 16位蓝色分量
-        ((mMaskColor >> 24) & 0xFF) << 8}; // 16位透明度分量
+        static_cast<uint16_t>(((mMaskColor >> 16) & 0xFF) << 8),   // 16位红色分量
+        static_cast<uint16_t>(((mMaskColor >> 8) & 0xFF) << 8),    // 16位绿色分量
+        static_cast<uint16_t>(( mMaskColor & 0xFF) << 8),          // 16位蓝色分量
+        static_cast<uint16_t>(((mMaskColor >> 24) & 0xFF) << 8)    // 16位透明度分量
+    };
 
     pixman_image_t* maskColorImage = pixman_image_create_solid_fill(&color_t);
     // // 将 maskColorImage 设置为 dstImage 的蒙版
