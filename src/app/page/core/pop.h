@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-04 13:52:49
- * @LastEditTime: 2026-01-20 16:20:26
+ * @LastEditTime: 2026-01-27 11:58:13
  * @FilePath: /kk_frame/src/app/page/core/pop.h
  * @Description: 弹窗基类
  * @BugList:
@@ -20,7 +20,12 @@
 class PopBase :public PBase {
 protected:
     ViewGroup* mPopRootView;         // 弹窗根节点
-    
+
+private:
+    bool           mIsGauss;         // 是否有模糊背景
+    int            mGaussRadius;     // 模糊背景圆角
+    int            mGaussColor;      // 模糊背景颜色
+
 public:
     PopBase(std::string resource);   // 构造函数
     virtual ~PopBase();              // 析构函数
@@ -31,9 +36,13 @@ protected:
     void onAttach() override;        // 挂载
     void onDetach() override;        // 卸载
 
-    void setMargin(int start, int top, int end, int bottom);   // 设置边距
-    void setGlass(int radius = 10, uint color = 0x99000000);   // 设置模糊背景
+    void setMargin(int start, int top, int end, int bottom);   // 设置外边距
+    void setPadding(int start, int top, int end, int bottom);  // 设置内边距
+    void setGauss(int radius = 10, int color = 0x99000000);    // 设置模糊背景
     void setColor(int color = 0x99000000);                     // 设置背景色
+
+private:
+    void applyGauss();               // 应用模糊背景
 };
 
 /// @brief 弹窗构建器

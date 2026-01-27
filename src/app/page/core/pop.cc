@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-04 13:52:55
- * @LastEditTime: 2026-01-20 16:25:04
+ * @LastEditTime: 2026-01-27 13:42:52
  * @FilePath: /kk_frame/src/app/page/core/pop.cc
  * @Description: 弹窗基类
  * @BugList:
@@ -11,26 +11,34 @@
  *
 **/
 
+#define POP_DISPLAY_ANIMATE 1
+
 #include "pop.h"
+#include "gauss_drawable.h"
+#include "wind_mgr.h"
 #include <widget/relativelayout.h>
 
 // 静态变量定义
 std::map<int8_t, PopCreator::CallBack> PopCreator::sPop;
-
-#define POP_DISPLAY_ANIMATE 1
 
 /// @brief 构造
 /// @param resource 资源路径
 PopBase::PopBase(std::string resource) :PBase(resource) {
     mPopRootView = new RelativeLayout(LayoutParams::MATCH_PARENT, LayoutParams::MATCH_PARENT);
     mPopRootView->setOnTouchListener([](View& v, MotionEvent& e) { return true; });
-    mPopRootView->setBackgroundColor(0x99000000);
     mPopRootView->addView(mRootView);
-    setMargin(0, 0, 0, 0); // 默认全屏
+    setColor(0x99000000);      // 默认背景颜色
+    setMargin(0, 0, 0, 0);     // 默认全屏
+    setPadding(0, 0, 0, 0);    // 默认无内边距
+    mIsGauss = false;          // 默认不模糊背景
+    mGaussRadius = 10;         // 默认模糊半径
+    mGaussColor = 0x99000000;  // 默认模糊颜色
 }
 
 /// @brief 析构
 PopBase::~PopBase() {
+    __delete(mPopRootView);
+    mRootView = nullptr;
 }
 
 /// @brief 获取根节点
@@ -41,6 +49,7 @@ View* PopBase::getRootView() {
 
 /// @brief 挂载
 void PopBase::onAttach() {
+    if (mIsGauss)applyGauss();
 #if POP_DISPLAY_ANIMATE
     mPopRootView->setAlpha(0.f);
     mPopRootView->animate().alpha(1.f).setDuration(300).start();
@@ -67,21 +76,39 @@ void PopBase::setMargin(int start, int top, int end, int bottom) {
     mPopRootView->setLayoutParams(marginParams);
 }
 
+/// @brief 设置内边距
+/// @param start 左
+/// @param top 上
+/// @param end 右
+/// @param bottom 下
+void PopBase::setPadding(int start, int top, int end, int bottom) {
+    mPopRootView->setPaddingRelative(start, top, end, bottom);
+}
+
 /// @brief 设置模糊背景
 /// @param radius 模糊半径，默认为10
 /// @param color 颜色，默认0x99000000
-void PopBase::setGlass(int radius, uint color) {
-#if 1
-    ColorDrawable* d = dynamic_cast<ColorDrawable*>(mPopRootView->getBackground());
-    if (d) d->setColor(color);
+void PopBase::setGauss(int radius, int color) {
+#if defined(ENABLE_GAUSS_DRAWABLE) || defined(__VSCODE__)
+    mIsGauss = true;
+    mGaussRadius = radius;
+    mGaussColor = color;
+    if (mIsAttach)applyGauss();
 #else
-    // TODO
+    setColor(color);
 #endif
 }
 
 /// @brief 设置背景颜色
 /// @param color 颜色，默认0x99000000
 void PopBase::setColor(int color) {
-    ColorDrawable* d = dynamic_cast<ColorDrawable*>(mPopRootView->getBackground());
-    if (d) d->setColor(color);
+    mIsGauss = false;
+    mPopRootView->setBackgroundColor(color);
+}
+
+/// @brief 应用模糊背景
+void PopBase::applyGauss() {
+#if defined(ENABLE_GAUSS_DRAWABLE) || defined(__VSCODE__)
+    mPopRootView->setBackground(new GaussDrawable(getRootView(), mGaussRadius, 0.5f, mGaussColor, true));
+#endif
 }
