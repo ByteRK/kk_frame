@@ -17,8 +17,8 @@ option(ENABLED_OPENSSL "Enable OpenSSL" OFF)
 option(ENABLED_JSON "Enable JSON support" ON)
 option(ENABLED_VIDEO "Enable video playback" ON)
 option(ENABLED_PIXMAN "Enable Pixman" OFF)
-option(ENABLED_GLASS_VIEW "Enable glass view" ON)
-option(ENABLED_GLASS_DRAWABLE "Enable glass drawable" OFF)
+option(ENABLED_GAUSS_VIEW "Enable glass view" ON)
+option(ENABLED_GAUSS_DRAWABLE "Enable glass drawable" OFF)
 
 
 
@@ -111,19 +111,19 @@ endif()
 
 # Pixman #
 if (ENABLED_PIXMAN)
-    add_definitions(-DENABLED_PIXMAN=1)
+    add_definitions(-DENABLE_PIXMAN=1)
     find_package(Pixman)
     list(APPEND UTILS_LIBS ${PIXMAN_LIBRARIES})
 endif()
 
 # 模糊控件 #
-if (ENABLE_GLASS_VIEW)
-    add_definitions(-DENABLE_GLASS_VIEW)
+if (ENABLED_GAUSS_VIEW)
+    add_definitions(-DENABLE_GAUSS_VIEW)
 endif()
 
 # 模糊Drawable #
-if (ENABLE_GLASS_DRAWABLE)
-    add_definitions(-DENABLE_GLASS_DRAWABLE)
+if (ENABLED_GAUSS_DRAWABLE)
+    add_definitions(-DENABLE_GAUSS_DRAWABLE)
 endif()
 
 # 头文件路径配置

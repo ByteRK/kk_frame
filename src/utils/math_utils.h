@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 18:24:46
- * @LastEditTime: 2025-12-29 11:20:26
+ * @LastEditTime: 2026-01-27 13:53:47
  * @FilePath: /kk_frame/src/utils/math_utils.h
  * @Description: 计算相关的一些函数
  * @BugList:
@@ -46,6 +46,34 @@ namespace MathUtils {
     /// @param a 
     /// @return 
     inline int32_t rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+
+    /// @brief 高斯模糊1
+    /// @param input 需要模糊的图像数据
+    /// @param width 图像的宽度
+    /// @param height 图像的高度
+    /// @param sigma 模糊半径
+    /// @note 纯<math.h>库进行模糊 GaussianBlurFilter
+    void gaussianBlur(uint8_t* input, int width, int height, float sigma);
+
+    /// @brief 高斯模糊2
+    /// @param src 输入图像数据
+    /// @param dst 输出图像数据
+    /// @param height 图像的高度
+    /// @param width 图像的宽度
+    /// @param channel 图像的通道数
+    /// @param ksize 模糊半径
+    /// @note 使用Neon的指令集进行模糊 gaussianFilter_u8_Neon
+    void gaussianBlur2(uint8_t* src, uint8_t* dst, int height, int width, int channel, int ksize);
+
+    /// @brief 高斯模糊3
+    /// @param scl 输入图像数据
+    /// @param tcl 输出图像数据
+    /// @param w 图像的宽度
+    /// @param h 图像的高度
+    /// @param ch 图像的通道数
+    /// @param r 模糊半径
+    /// @note 使用GLM进行模糊 FastGaussianBlur -> GaussianBlur4
+    void gaussianBlur3(uint8_t *scl, uint8_t *tcl, int w, int h, int ch, int r);
 
 } // MathUtils
 
