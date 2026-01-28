@@ -15,7 +15,7 @@ set(ENABLED_FILE_SYSTEM ON)       # 文件系统
 set(ENABLED_WIFI ON)              # WIFI
 set(ENABLED_OPENSSL OFF)          # OpenSSL
 set(ENABLED_JSON ON)              # Json
-set(ENABLED_PIXMAN OFF)           # Pixman
+set(ENABLED_PIXMAN ON)            # Pixman
 set(ENABLED_VIDEO ON)             # 视频
 
 
@@ -44,6 +44,9 @@ if (ENABLED_GAUSS_VIEW)
     add_definitions(-DENABLE_GAUSS_VIEW)
 endif()
 if (ENABLED_GAUSS_DRAWABLE)
+    if(NOT ENABLED_PIXMAN)
+        message(FATAL_ERROR "ENABLED_PIXMAN must be enabled when ENABLED_GAUSS_DRAWABLE is enabled")
+    endif()
     add_definitions(-DENABLE_GAUSS_DRAWABLE)
 endif()
 
