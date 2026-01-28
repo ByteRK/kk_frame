@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-29 01:23:13
- * @LastEditTime: 2026-01-29 02:32:03
+ * @LastEditTime: 2026-01-29 03:10:01
  * @FilePath: /kk_frame/src/utils/arg_utils.cc
  * @Description: 命令行参数解析工具
  * @BugList:
@@ -12,7 +12,6 @@
 **/
 
 #include "arg_utils.h"
-#include "app_version.h"
 #include <string>
 #include <iostream>
 #include <core/cxxopts.h>
@@ -26,7 +25,7 @@ namespace ArgUtils {
     }
 
     void parse(int argc, const char* argv[]) {
-        cxxopts::Options options(("./" + std::string(APP_NAME_STR)).c_str(), "Pass in specific arguments to enable special functions.");
+        cxxopts::Options options(argv[0], "Pass in specific arguments to enable special functions.");
         options.add_options()
             ("demo", "demo mode", cxxopts::value<bool>(mRes.isDemo)->default_value("false"))
             ("p,page", "show any page", cxxopts::value<int>(mRes.selectPage)->default_value("0"));
