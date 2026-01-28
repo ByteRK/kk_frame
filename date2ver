@@ -2,7 +2,7 @@
  # @Author: Ricken
  # @Email: me@ricken.cn
  # @Date: 2024-12-03 00:21:57
- # @LastEditTime: 2025-12-31 16:45:42
+ # @LastEditTime: 2026-01-29 03:03:15
  # @FilePath: /kk_frame/date2ver
  # @Description: 版本号生成脚本
  # @BugList: 
@@ -41,6 +41,7 @@ fi
 
 # 检查已生成的版本文件
 if [ -f ${VERSION_FILE} ]; then
+    o_name=`grep -a 'APP_NAME_STR' ${VERSION_FILE} | awk 'NR{print $3}' | sed 's/"//g'`
     o_v1=`grep -a 'MAJOR_VERSION' ${VERSION_FILE} | awk 'NR{print $3}'`
     o_v2=`grep -a 'MINOR_VERSION' ${VERSION_FILE} | awk 'NR{print $3}'`
     o_v3=`grep -a 'REVISE_VERSION' ${VERSION_FILE} | awk 'NR{print $3}'`
@@ -48,14 +49,16 @@ if [ -f ${VERSION_FILE} ]; then
     o_GIT_VER=`grep -a 'GIT_VERSION' ${VERSION_FILE} | awk 'NR{print $3}' | sed 's/"//g'`
     o_CUR_DATE=$(grep -a 'BUILD_DATE' ${VERSION_FILE} | sed 's/^.*"\(.*\)".*$/\1/')
     o_VERSION_INFO=`grep -a 'APP_VER_INFO' ${VERSION_FILE} | awk 'NR{print $3}'`
-    
-    # 检查版本号和 Git 哈希值是否相同
-    if [ "$o_v1" = "$v1" -a "$o_v2" = "$v2" -a "$o_v3" = "$v3" -a "$o_v4" = "$v4" -a "$o_GIT_VER" = "$GIT_VER" ]; then
-        # 检查是否有本地修改
-        if ! git diff --quiet; then
-            echo $PROJECT_ID "->" $o_VERSION_INFO "->" $o_CUR_DATE
-            exit
-        fi 
+
+    if [ "$o_name" = "$NAME" ]; then
+        # 检查版本号和 Git 哈希值是否相同
+        if [ "$o_v1" = "$v1" -a "$o_v2" = "$v2" -a "$o_v3" = "$v3" -a "$o_v4" = "$v4" -a "$o_GIT_VER" = "$GIT_VER" ]; then
+            # 检查是否有本地修改
+            if ! git diff --quiet; then
+                echo $PROJECT_ID "->" $o_VERSION_INFO "->" $o_CUR_DATE
+                exit
+            fi 
+        fi
     fi
 fi
 
