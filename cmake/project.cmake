@@ -8,10 +8,10 @@ message(STATUS "========================================")
 set(ENABLED_KEYBOARD OFF)         # 键盘
 set(ENABLED_KEYBOARD_PINYIN ON)   # 拼音
 
-set(ENABLED_GAUSS_VIEW ON)        # 高斯视图
-set(ENABLED_GAUSS_DRAWABLE OFF)   # 高斯绘图
+set(ENABLED_GAUSS_VIEW OFF)       # 高斯视图
+set(ENABLED_GAUSS_DRAWABLE ON)    # 高斯绘图
 
-set(ENABLED_FILE_SYSTEM OFF)      # 文件系统
+set(ENABLED_FILE_SYSTEM ON)       # 文件系统
 set(ENABLED_WIFI ON)              # WIFI
 set(ENABLED_OPENSSL OFF)          # OpenSSL
 set(ENABLED_JSON ON)              # Json

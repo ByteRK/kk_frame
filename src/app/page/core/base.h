@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2026-01-13 15:09:18
+ * @LastEditTime: 2026-01-28 18:39:27
  * @FilePath: /kk_frame/src/app/page/core/base.h
  * @Description: 页面基类
  * @BugList:
@@ -36,7 +36,7 @@ namespace AppRid = APP_NAME::R::id;
 class PBase {
 protected:
     Looper*         mLooper = nullptr;                         // 事件循环
-    Context*        mContext = nullptr;                        // 上下文
+    cdroid::Context*mContext = nullptr;                        // 上下文
     LayoutInflater* mInflater = nullptr;                       // 布局加载器
     uint8_t         mLang = LANG_ZH_CN;                        // 语言
 
