@@ -2,7 +2,7 @@
 Author: Ricken
 Email: me@ricken.cn
 Date: 2025-04-25 12:52:59
-LastEditTime: 2026-01-22 23:53:36
+LastEditTime: 2026-01-29 02:56:10
 FilePath: /kk_frame/build.py
 Description: 项目构建脚本
 BugList: 
@@ -163,6 +163,29 @@ def replace_placeholders_in_readme(new_project_name):
         file.write(updated_content)
 
     cprint(f"已生成 README.md", "GREEN")
+
+# 替换 R.h
+def replace_r_h(new_project_name):
+    # 指定 R.h 文件路径
+    r_h_file_path = 'R.h'
+
+    # 检查文件是否存在
+    if not os.path.isfile(r_h_file_path):
+        cprint(f"文件 {r_h_file_path} 不存在。", "YELLOW")
+        return
+
+    # 读取文件内容
+    with open(r_h_file_path, 'r', encoding='utf-8') as file:
+        content = file.read()
+
+    # 替换指定文本
+    updated_content = content.replace('kk_frame', new_project_name)
+
+    # 将修改后的内容写回文件
+    with open(r_h_file_path, 'w', encoding='utf-8') as file:
+        file.write(updated_content)
+
+    cprint(f"已生成项目R.h", "GREEN")
 
 # 替换 CMakeLists.txt
 def replace_project_name_in_cmake(new_project_name):
@@ -393,6 +416,7 @@ def perform_replacements_in_target(target_dir, project_name):
         os.chdir(target_dir)
         cprint(f"\n已切换到新目录: {os.getcwd()}", "CYAN")
         
+        replace_r_h(project_name)
         replace_project_name_in_cmake(project_name)
         replace_placeholders_in_readme(project_name)
 
