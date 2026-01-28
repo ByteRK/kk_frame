@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2026-01-19 10:35:26
+ * @LastEditTime: 2026-01-29 01:36:18
  * @FilePath: /kk_frame/src/app/data/global_data.h
  * @Description: 全局应用数据
  * @BugList:
@@ -34,8 +34,6 @@ class GlobalData : public Singleton<GlobalData>,
     public AutoSaveItem {
     friend class Singleton<GlobalData>;
 public: // 特殊信息
-    int              mArgc = 0;                         // 启动参数个数
-    const char**     mArgv = nullptr;                   // 启动参数
     const uint64_t   mAppStart;                         // 应用启动时间
     uint8_t          mDeviceMode = DEVICE_MODE_SAMPLE;  // 设备模式
     int              mTestPage = 0;                     // 测试页面
@@ -66,13 +64,12 @@ private:
 
 public:
     ~GlobalData();
-    void init(int argc, const char* argv[]);
+    void init();
     void reset();
     void setFirstInit(bool first = true);
 
 private:
     void checkenv();
-    void checkArgv();
     bool load();
     bool save(bool isBackup = false) override;
     bool haveChange() override;

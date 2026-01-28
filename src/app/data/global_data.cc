@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2026-01-19 10:37:25
+ * @LastEditTime: 2026-01-29 02:31:19
  * @FilePath: /kk_frame/src/app/data/global_data.cc
  * @Description:
  * @BugList:
@@ -12,12 +12,12 @@
 **/
 
 #include "global_data.h"
+#include "arg_utils.h"
 #include "json_utils.h"
 #include "file_utils.h"
 #include "base_data.h"
 #include "config_info.h"
 #include <unistd.h>
-#include <core/cxxopts.h>
 #include <core/app.h>
 #include <core/systemclock.h>
 #include <cdlog.h>
@@ -32,10 +32,7 @@ GlobalData::~GlobalData() {
 }
 
 /// @brief 初始化
-void GlobalData::init(int argc, const char* argv[]) {
-    mArgc = argc;
-    mArgv = argv;
-
+void GlobalData::init() {
     mIsFirstInit = FileUtils::check(APP_FIRST_INIT_TAG);
     mDeviceMode = (
         cdroid::App::getInstance().getName() == (std::string("kk") + std::string("_frame"))
@@ -43,7 +40,12 @@ void GlobalData::init(int argc, const char* argv[]) {
         DEVICE_MODE_DEMO : DEVICE_MODE_SAMPLE;
 
     checkenv();
-    checkArgv();
+
+    if (ArgUtils::get().isDemo) // 模板演示模式
+        mDeviceMode = DEVICE_MODE_DEMO;
+    if ((mTestPage = ArgUtils::get().selectPage) != 0) // 测试模式（进入随意页面）
+        mDeviceMode = DEVICE_MODE_TEST;
+
     load();
 
     AutoSaveItem::init();
@@ -56,7 +58,7 @@ void GlobalData::reset() {
     std::system(command.c_str());
     setFirstInit(true);
     // FileUtils::sync(); // 不需要Sync，上一步已Sync
-    init(mArgc, mArgv);
+    init();
     mHaveChange = true;
     LOGE("global_data factory reset.");
 }
@@ -82,24 +84,6 @@ void GlobalData::checkenv() {
         }
     }
     LOGW_IF(mDeviceMode, "DEVICE_MODE: %d", mDeviceMode);
-}
-
-/// @brief 检查命令行参数
-void GlobalData::checkArgv() {
-    if (mArgc == 0 || mArgv == nullptr)return;
-    bool demo = false;
-
-    cxxopts::Options options("kk_frame", "");
-    options.add_options()
-        ("demo", "demo mode", cxxopts::value<bool>(demo))
-        ("p,page", "show any page", cxxopts::value<int>(mTestPage)->default_value("0"));
-    options.allow_unrecognised_options();
-    cxxopts::ParseResult result = options.parse(mArgc, mArgv);
-
-    // demo模式
-    if (demo) mDeviceMode = DEVICE_MODE_DEMO;
-    // 测试模式（进入随意页面）
-    if (mTestPage != 0) mDeviceMode = DEVICE_MODE_TEST;
 }
 
 /// @brief 载入本地文件

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-01-19 16:13:59
+ * @LastEditTime: 2026-01-29 02:12:26
  * @FilePath: /kk_frame/main.cc
  * @Description: 主程序入口
  * @BugList:
@@ -14,6 +14,7 @@
 #include <cdlog.h>           // 日志
 #include <core/app.h>        // Cdroid应用
 
+#include "arg_utils.h"
 #include "project_utils.h"   // 项目工具集
 #include "global_data.h"     // 全局数据
 
@@ -37,12 +38,13 @@
 int main(int argc, const char* argv[]) {
     ProjectUtils::env();           // 设定环境变量（x64生效）
     ProjectUtils::pInfo(argv[0]);  // 打印项目信息
+    ArgUtils::parse(argc, argv);   // 解析命令行参数
     ProjectUtils::pKeyMap();       // 打印项目按键映射
 
     App app(argc, argv);
     cdroid::Context* ctx = &app;
 
-    g_data->init(argc, argv);
+    g_data->init();
 
     g_config->init();
     g_history->init();
