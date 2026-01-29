@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-11-24 09:40:23
- * @LastEditTime: 2026-01-29 10:54:19
+ * @LastEditTime: 2026-01-29 17:03:58
  * @FilePath: /kk_frame/src/app/app_common.h
  * @Description: 项目通用头文件
  * @BugList:
@@ -82,13 +82,7 @@ inline void __delete(T*& p) {
 }
 
 /// @brief 动态转换
-/// @tparam T 
-/// @param p 
-/// @return 
-template<typename T>
-inline T* __dc(void* p) {
-    return dynamic_cast<T*>(p);
-}
+#define __dc(T, p) dynamic_cast<T*>(p)
 
 #endif // __APP_COMMON_H__
 
