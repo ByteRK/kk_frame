@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-08-22 16:52:55
- * @LastEditTime: 2026-01-04 09:18:24
+ * @LastEditTime: 2026-01-29 11:11:45
  * @FilePath: /kk_frame/src/utils/time_utils.cc
  * @Description: 时间相关的一些函数
  * @BugList:
@@ -80,6 +80,20 @@ std::string TimeUtils::getTimeFmtStrAP(const time_t& timestamp, const char* fmtA
     // time_tm->tm_hour = time_tm->tm_hour > 0 ? time_tm->tm_hour -= 12 : 12;
     strftime(datetime, sizeof(datetime), (time_tm->tm_hour >= 12 ? fmtAM : fmtPM), time_tm);
     return datetime;
+}
+
+int TimeUtils::getMaxYear(int upperLimit) {
+    int year = 2036;
+    if (sizeof(time_t) == 8) {
+        // 64位系统，time_t 通常为 64位
+        // 最大值可表示到公元约292,277,026,596年
+        year = 292277026 - 1;
+    } else if (sizeof(time_t) == 4) {
+        // 32位系统，time_t 通常为 32位
+        // 最大值到2038年（2038年问题）
+        year = 2037 - 1;
+    }
+    return std::min(year, upperLimit);
 }
 
 int TimeUtils::getMaxDay(int year, int month) {

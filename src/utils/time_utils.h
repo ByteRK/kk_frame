@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-08-22 16:52:55
- * @LastEditTime: 2026-01-08 18:26:57
+ * @LastEditTime: 2026-01-29 11:09:54
  * @FilePath: /kk_frame/src/utils/time_utils.h
  * @Description: 时间相关的一些函数
  * @BugList:
@@ -72,6 +72,11 @@ namespace TimeUtils {
     /// @param fmtPM 下午格式化参数 (小时位请使用%I以格式化为12小时制）
     /// @return 格式化后的时间字符串
     std::string getTimeFmtStrAP(const time_t& timestamp, const char* fmtAM, const char* fmtPM);
+
+    /// @brief 获取最大年份
+    /// @param upperLimit 上限
+    /// @return 
+    int getMaxYear(int upperLimit = 2099);
 
     /// @brief 获取指定年份指定月份的最大天数
     /// @param year 年
