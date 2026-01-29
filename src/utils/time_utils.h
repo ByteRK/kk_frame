@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-08-22 16:52:55
- * @LastEditTime: 2026-01-29 11:09:54
+ * @LastEditTime: 2026-01-29 11:33:12
  * @FilePath: /kk_frame/src/utils/time_utils.h
  * @Description: 时间相关的一些函数
  * @BugList:
@@ -26,6 +26,15 @@ namespace TimeUtils {
     static constexpr int64_t HOUR_MSEC = 1000 * HOUR_SECONDS;       // 小时毫秒数
     static constexpr int64_t DAY_MSEC = 1000 * DAY_SECONDS;         // 天毫秒数
 
+    /// @brief 获取当前时间
+    /// @param year 年
+    /// @param month 月
+    /// @param day 日
+    /// @param hour 时
+    /// @param minute 分
+    /// @param second 秒
+    void getTime(int* year, int* month, int* day, int* hour, int* minute, int* second);
+
     /// @brief 判断是否是今天
     /// @param timestamp 时间戳
     /// @return true or false
@@ -33,7 +42,7 @@ namespace TimeUtils {
 
     /// @brief 获取秒级时间戳
     /// @return 秒级时间戳
-    int64_t getTimeSec();
+    time_t getTimeSec();
 
     /// @brief 获取毫秒级时间戳
     /// @return 毫秒级时间戳

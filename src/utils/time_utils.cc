@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-08-22 16:52:55
- * @LastEditTime: 2026-01-29 11:11:45
+ * @LastEditTime: 2026-01-29 11:33:18
  * @FilePath: /kk_frame/src/utils/time_utils.cc
  * @Description: 时间相关的一些函数
  * @BugList:
@@ -16,12 +16,29 @@
 #include <chrono>
 #include <sys/time.h>
 
+void TimeUtils::getTime(int* year, int* month, int* day, int* hour, int* minute, int* second) {
+#if 0  // 高精度使用
+    auto        now = std::chrono::system_clock::now();
+    std::time_t t   = std::chrono::system_clock::to_time_t(now);
+#else
+    time_t      t   = time(NULL);
+#endif
+    std::tm* cur = std::localtime(&t);
+
+    if (year) *year = cur->tm_year + 1900;
+    if (month) *month = cur->tm_mon + 1;
+    if (day) *day = cur->tm_mday;
+    if (hour) *hour = cur->tm_hour;
+    if (minute) *minute = cur->tm_min;
+    if (second) *second = cur->tm_sec;
+}
+
 bool TimeUtils::isToday(const time_t& timestamp) {
     time_t zeroSec = getZeroTimeSec();
     return zeroSec <= timestamp && zeroSec + DAY_SECONDS > timestamp;
 }
 
-int64_t TimeUtils::getTimeSec() {
+time_t TimeUtils::getTimeSec() {
     struct timeval _val;
     gettimeofday(&_val, NULL);
     return _val.tv_sec;
