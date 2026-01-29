@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-01-20 17:26:06
+ * @LastEditTime: 2026-01-29 14:11:24
  * @FilePath: /kk_frame/src/app/page/core/wind.cc
  * @Description: 窗口类
  * @BugList:
@@ -86,11 +86,11 @@ void MainWindow::init() {
 
     // 初始化页面
     mPage = nullptr;
-    mPageBox->setOnClickListener([](View&) { });
+    mPageBox->setOnTouchListener([](View&, MotionEvent&) { return true; });
 
     // 初始化弹窗
     mPop = nullptr;
-    mPopBox->setOnClickListener([](View&) { });
+    mPopBox->setOnTouchListener([](View&, MotionEvent&) { return true; });
 
     // 初始化黑屏
     mIsBlackView = false;
