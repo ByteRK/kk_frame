@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-04 13:52:49
- * @LastEditTime: 2026-01-27 11:58:13
+ * @LastEditTime: 2026-01-29 11:15:53
  * @FilePath: /kk_frame/src/app/page/core/pop.h
  * @Description: 弹窗基类
  * @BugList:
@@ -33,6 +33,8 @@ public:
     View* getRootView() override;    // 获取根节点
 
 protected:
+    void close();                    // 关闭弹窗
+    
     void onAttach() override;        // 挂载
     void onDetach() override;        // 卸载
 

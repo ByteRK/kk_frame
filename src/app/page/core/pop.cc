@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-04 13:52:55
- * @LastEditTime: 2026-01-27 13:42:52
+ * @LastEditTime: 2026-01-29 11:15:58
  * @FilePath: /kk_frame/src/app/page/core/pop.cc
  * @Description: 弹窗基类
  * @BugList:
@@ -45,6 +45,11 @@ PopBase::~PopBase() {
 /// @return 根节点
 View* PopBase::getRootView() {
     return mPopRootView;
+}
+
+/// @brief 关闭弹窗
+void PopBase::close() {
+    g_window->removePop();
 }
 
 /// @brief 挂载
