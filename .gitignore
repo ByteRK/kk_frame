@@ -8,3 +8,4 @@ fonts/fonts.conf
 library/library_config.h
 
 package
+fileCountCache
