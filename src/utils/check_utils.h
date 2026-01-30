@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-29 11:52:07
- * @LastEditTime: 2025-12-29 17:17:13
+ * @LastEditTime: 2026-01-30 11:26:08
  * @FilePath: /kk_frame/src/utils/check_utils.h
  * @Description: 校验相关的一些函数
  * @BugList:
@@ -30,6 +30,18 @@ namespace CheckUtils {
             sum += data[i];
         return sum;
     }
+
+    /// @brief 计算CRC16校验(CCITT)
+    /// @param data 数据
+    /// @param length 数据长度
+    /// @return CRC16校验值
+    uint16_t crc16CCITT(const uint8_t *data, uint16_t length);
+
+    /// @brief 计算CRC16校验(MODBUS)
+    /// @param data 数据
+    /// @param length 数据长度
+    /// @return CRC16校验值
+    uint16_t crc16MODBUS(const uint8_t *data, uint16_t length);
 
 } // namespace CheckUtils
 
