@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-04 13:52:55
- * @LastEditTime: 2026-01-29 11:15:58
+ * @LastEditTime: 2026-01-31 16:25:18
  * @FilePath: /kk_frame/src/app/page/core/pop.cc
  * @Description: 弹窗基类
  * @BugList:
@@ -11,7 +11,7 @@
  *
 **/
 
-#define POP_DISPLAY_ANIMATE 1
+#define POP_DISPLAY_ANIMATE 0
 
 #include "pop.h"
 #include "gauss_drawable.h"
