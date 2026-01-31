@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-01-18 11:33:02
- * @LastEditTime: 2025-12-24 16:34:50
+ * @LastEditTime: 2026-01-31 18:33:43
  * @FilePath: /kk_frame/config/series_info.h
  * @Description: 项目硬件参数
  * @BugList: 
@@ -31,10 +31,10 @@
     #define FUNCTION_WIFI    1
 #endif
 
-/***********************************************/
-
 #define WLAN_NAME     "wlan0"
 #define WIRE_NAME     ""
+
+/***********************************************/
 
 #define SYS_SCREEN_BEIGHTNESS_PWM "pwm2"   // 屏幕亮度控制PWM
 #define SYS_SCREEN_BRIGHTNESS_MIN 0        // 屏幕亮度最小可设置值

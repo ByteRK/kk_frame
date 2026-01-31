@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-23 00:04:17
- * @LastEditTime: 2025-12-31 14:50:23
+ * @LastEditTime: 2026-01-29 10:23:55
  * @FilePath: /kk_frame/src/app/page/view/page_demo.cc
  * @Description: 框架演示主页面（建议保留）
  * @BugList:
@@ -37,7 +37,7 @@ int8_t DemoPage::getType() const {
 }
 
 void DemoPage::setView() {
-    get<View>(AppRid::hello)->setOnClickListener([](View& v) {
+    click(AppRid::hello, [](View& v) {
         v.setActivated(!v.isActivated());
         g_window->showToast("STOP !!!");
     });
