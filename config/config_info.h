@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-01-18 11:33:02
- * @LastEditTime: 2026-01-19 17:20:08
+ * @LastEditTime: 2026-01-31 15:32:46
  * @FilePath: /kk_frame/config/config_info.h
  * @Description: 项目信息
  * @BugList:
@@ -15,9 +15,10 @@
 #define __CONFIG_INFO_H__
 
 /*********************** 文件信息 ***********************/
-
-#ifndef CDROID_X64
+#if defined(PRODUCT_SIGMA)
 #define LOCAL_DATA_DIR "/appconfigs/"
+#elif defined(PRODUCT_RK3506)
+#define LOCAL_DATA_DIR "/userdata/cdroid/app/data/"
 #else
 #include "app_version.h"
 #define LOCAL_DATA_DIR "./apps/" APP_NAME_STR "/"
