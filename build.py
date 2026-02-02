@@ -2,7 +2,7 @@
 Author: Ricken
 Email: me@ricken.cn
 Date: 2025-04-25 12:52:59
-LastEditTime: 2026-02-02 07:53:45
+LastEditTime: 2026-02-02 08:01:35
 FilePath: /kk_frame/build.py
 Description: 项目构建脚本
 BugList: 
@@ -611,60 +611,60 @@ def is_valid_project_name(name):
 
 # 获取项目名称
 def get_valid_project_name():
-    try:
-        while True:
-            name = cinput("请输入项目名称（只能使用字母、数字和下划线，且不能以数字开头）: ", "BOLD").strip()
-            
-            if is_valid_project_name(name):
-                return name
-            
-            cprint("错误：项目名称不合法！", "RED")
-            cprint("请确保项目名称:", "RED")
-            cprint("- 只包含字母（a-z, A-Z）、数字（0-9）和下划线（_）", "RED")
-            cprint("- 不以数字开头", "RED")
-            cprint("- 不包含空格、短横线或其他特殊字符\n", "RED")
-    except KeyboardInterrupt:
-        # 当用户按下 Ctrl+C 时
-        cprint("\n\n操作已取消。", "RED")
-        sys.exit(0)  # 优雅地退出程序
+    while True:
+        name = cinput("请输入项目名称（只能使用字母、数字和下划线，且不能以数字开头）: ", "BOLD").strip()
+        
+        if is_valid_project_name(name):
+            return name
+        
+        cprint("错误：项目名称不合法！", "RED")
+        cprint("请确保项目名称:", "RED")
+        cprint("- 只包含字母（a-z, A-Z）、数字（0-9）和下划线（_）", "RED")
+        cprint("- 不以数字开头", "RED")
+        cprint("- 不包含空格、短横线或其他特殊字符\n", "RED")
 
 # 主程序
 def main():
-    # a. 获取项目名称（带验证）
-    new_project_name = get_valid_project_name()
-    
-    # b. 计算目标目录
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    parent_dir = os.path.dirname(current_dir)
-    new_project_dir = os.path.join(parent_dir, new_project_name)
-    
-    # c. 检查目标目录
-    if not prepare_target_directory(new_project_dir):
-        return
-    
-    # d. 创建目标目录
-    create_target_directory(new_project_dir)
-    
-    # e. 复制当前目录内容到目标目录
-    cprint("\n正在复制项目文件...", "CYAN")
-    copy_directory_contents(current_dir, new_project_dir)
-    cprint(f"已复制所有文件到: {new_project_dir}", "GREEN")
-    
-    # f. 切换到目标目录并执行替换操作
-    perform_replacements_in_target(new_project_dir, new_project_name)
-    
-    # g. 更新Git远程仓库配置
-    update_git_remote(new_project_dir, new_project_name, "kk_frame")
-    
-    # h. 输出成功信息
-    cprint(f"\n------------------------- SUCCESS -------------------------", "GREEN", bold=True)
-    cprint(f"已成功创建项目: '{new_project_name}'", "GREEN", bold=True)
-    cprint(f"项目路径: '{new_project_dir}'", "GREEN", bold=True)
-    cprint(f"\n后续步骤:", "CYAN")
-    cprint(f"1. 返回到 out 目录", "CYAN")
-    cprint(f"2. 运行 'touch ../apps/CMakeLists.txt'", "CYAN")
-    cprint(f"3. 运行 'make -j3' 编译项目", "CYAN")
-    cprint(f"\n", "YELLOW")
+    try:
+        # a. 获取项目名称（带验证）
+        new_project_name = get_valid_project_name()
+        
+        # b. 计算目标目录
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        parent_dir = os.path.dirname(current_dir)
+        new_project_dir = os.path.join(parent_dir, new_project_name)
+        
+        # c. 检查目标目录
+        if not prepare_target_directory(new_project_dir):
+            return
+        
+        # d. 创建目标目录
+        create_target_directory(new_project_dir)
+        
+        # e. 复制当前目录内容到目标目录
+        cprint("\n正在复制项目文件...", "CYAN")
+        copy_directory_contents(current_dir, new_project_dir)
+        cprint(f"已复制所有文件到: {new_project_dir}", "GREEN")
+        
+        # f. 切换到目标目录并执行替换操作
+        perform_replacements_in_target(new_project_dir, new_project_name)
+        
+        # g. 更新Git远程仓库配置
+        update_git_remote(new_project_dir, new_project_name, "kk_frame")
+        
+        # h. 输出成功信息
+        cprint(f"\n------------------------- SUCCESS -------------------------", "GREEN", bold=True)
+        cprint(f"已成功创建项目: '{new_project_name}'", "GREEN", bold=True)
+        cprint(f"项目路径: '{new_project_dir}'", "GREEN", bold=True)
+        cprint(f"\n后续步骤:", "CYAN")
+        cprint(f"1. 返回到 out 目录", "CYAN")
+        cprint(f"2. 运行 'touch ../apps/CMakeLists.txt'", "CYAN")
+        cprint(f"3. 运行 'make -j3' 编译项目", "CYAN")
+        cprint(f"\n", "YELLOW")
+    except KeyboardInterrupt:
+        # 当用户按下 Ctrl+C 时
+        cprint("\n\n操作已取消，已进行的操作残留需自行清理~", "RED")
+        sys.exit(0)  # 优雅地退出程序
 
 if __name__ == "__main__":
     main()
