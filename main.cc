@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-01-29 02:12:26
+ * @LastEditTime: 2026-01-31 14:32:28
  * @FilePath: /kk_frame/main.cc
  * @Description: 主程序入口
  * @BugList:
@@ -49,7 +49,7 @@ int main(int argc, const char* argv[]) {
     g_config->init();
     g_history->init();
     g_statistics->init();
-    // g_threadMgr->init(3);
+    g_threadMgr->init(3);
     g_timer->init();
     g_work->init();
     g_windMgr->init();

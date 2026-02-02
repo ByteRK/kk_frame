@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-01-18 11:33:02
- * @LastEditTime: 2025-12-24 16:34:50
+ * @LastEditTime: 2026-02-02 09:11:56
  * @FilePath: /kk_frame/config/series_info.h
  * @Description: 项目硬件参数
  * @BugList: 
@@ -24,17 +24,17 @@
 #define SCREEN_SIZE    "800*480"
 
 // net config
-#define FUNCTION_WIRE    1
-#ifdef DEBUG
-    #define FUNCTION_WIFI    0
+#if defined(PRODUCT_X64)
+#   define NET_LINE_NAME        "eno3"
+#   define NET_WLAN_NAME        NET_LINE_NAME
+#   define NET_FUNCTION_WLAN    0
 #else
-    #define FUNCTION_WIFI    1
+#   define NET_LINE_NAME        "eth0"
+#   define NET_WLAN_NAME        "wlan0"
+#   define NET_FUNCTION_WLAN    1
 #endif
 
 /***********************************************/
-
-#define WLAN_NAME     "wlan0"
-#define WIRE_NAME     ""
 
 #define SYS_SCREEN_BEIGHTNESS_PWM "pwm2"   // 屏幕亮度控制PWM
 #define SYS_SCREEN_BRIGHTNESS_MIN 0        // 屏幕亮度最小可设置值

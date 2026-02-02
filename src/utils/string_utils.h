@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 16:07:47
- * @LastEditTime: 2025-12-29 09:43:05
+ * @LastEditTime: 2026-02-02 17:42:27
  * @FilePath: /kk_frame/src/utils/string_utils.h
  * @Description: 字符串相关的一些操作函数
  * @BugList:
@@ -33,6 +33,12 @@ namespace StringUtils {
     /// @param str 
     /// @return 
     void lower(std::string& str);
+
+    /// @brief 格式化字符串
+    /// @param format 格式化字符串
+    /// @param ... 可变参数
+    /// @return 格式化后的字符串
+    std::string format(const char* format, ...);
 
     /// @brief 将数值转换为指定长度的字符串，不足部分用前缀填充
     /// @param num 待填充的数值
