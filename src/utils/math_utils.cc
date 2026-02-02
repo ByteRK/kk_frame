@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 18:24:51
- * @LastEditTime: 2026-01-27 10:58:28
+ * @LastEditTime: 2026-02-02 19:37:30
  * @FilePath: /kk_frame/src/utils/math_utils.cc
  * @Description:
  * @BugList:
@@ -14,6 +14,8 @@
 #include "math_utils.h"
 #include <cdlog.h>
 #include "library/library_config.h"
+#include <stdlib.h>
+#include <random>
 
 #if PRJ_LIB_ENABLED(GAUSSIANBLUR)
 #include "gaussianblur.h"
@@ -24,6 +26,17 @@
 #if PRJ_LIB_ENABLED(FASTGAUSSIANBLUR)
 #include "blur.h"
 #endif
+
+int MathUtils::rand(int min, int max) {
+    return min + std::rand() % (max - min + 1);
+}
+
+int MathUtils::randPlus(int min, int max) {
+    std::random_device rd;                          // 获取随机数种子
+    std::mt19937 gen(rd());                         // 梅森旋转算法生成随机数
+    std::uniform_int_distribution<> dis(min, max);  // 设定范围
+    return dis(gen);
+}
 
 uint8_t MathUtils::toU16(uint8_t h, uint8_t l) {
     return h << 8 | l;

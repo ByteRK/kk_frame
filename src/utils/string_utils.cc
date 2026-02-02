@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 16:07:53
- * @LastEditTime: 2025-12-29 13:56:39
+ * @LastEditTime: 2026-02-02 17:42:53
  * @FilePath: /kk_frame/src/utils/string_utils.cc
  * @Description: 字符串相关的一些操作函数
  * @BugList:
@@ -107,6 +107,15 @@ void StringUtils::lower(std::string& str) {
     });
 }
 
+std::string StringUtils::format(const char* format, ...) {
+    static char fmt_str[1025];
+    va_list     args;
+    va_start(args, format);
+    vsnprintf(fmt_str, sizeof(fmt_str), format, args);
+    va_end(args);
+    return std::string(fmt_str);
+}
+
 std::string StringUtils::fill(const int& num, int len, char pre) {
     std::string retString, numString = std::to_string(num);
     if (numString.length() < len) retString.append(len - numString.length(), pre);
@@ -156,7 +165,7 @@ std::string StringUtils::remove(std::string str, const char remove) {
 
 std::string StringUtils::trimRight(std::string str) {
     auto it = std::find_if(str.rbegin(), str.rend(), [](unsigned char ch) {
-        return !std::isspace(ch);
+            return !(std::isspace(ch) || ch == '\n' || ch == '\r' || ch == '\t');
     });
     str.erase(it.base(), str.end());
     return str;

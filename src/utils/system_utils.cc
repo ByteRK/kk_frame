@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 14:40:26
- * @LastEditTime: 2025-12-31 10:39:39
+ * @LastEditTime: 2026-02-02 14:02:42
  * @FilePath: /kk_frame/src/utils/system_utils.cc
  * @Description: 系统相关的一些函数
  * @BugList:
@@ -13,6 +13,8 @@
 
 #include "system_utils.h"
 #include "project_utils.h"
+#include "time_utils.h"
+#include "string_utils.h"
 #include "series_info.h"
 #include "config_info.h"
 #include <cdlog.h>
@@ -32,6 +34,7 @@ void SystemUtils::reboot() {
 std::string SystemUtils::system(const std::string& cmd) {
     std::string result;
     char        buffer[128]; // 存储输出数据的缓冲区
+    int64_t     start = TimeUtils::getTimeMSec();
 
     // 执行系统命令，并读取输出数据
     FILE* fp = popen(cmd.c_str(), "r");
@@ -47,7 +50,16 @@ std::string SystemUtils::system(const std::string& cmd) {
         bzero(buffer, sizeof(buffer));
     }
 
+    // 关闭指针
     pclose(fp);
+
+    // 裁剪尾部无效内容
+    StringUtils::trimRight(result);
+
+    // 计算执行时间
+    int64_t diff = TimeUtils::getTimeMSec() - start;
+    if(diff > 10) LOGW("consume [%lld]ms system [%s] [%s]", diff, cmd.c_str(), result.c_str());
+    else LOGV("consume [%lld]ms system [%s] [%s]", diff, cmd.c_str(), result.c_str());
     return result;
 }
 
