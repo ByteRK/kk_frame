@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2026-01-29 01:36:18
+ * @LastEditTime: 2026-02-02 16:52:16
  * @FilePath: /kk_frame/src/app/data/global_data.h
  * @Description: 全局应用数据
  * @BugList:
@@ -41,7 +41,8 @@ public: // 特殊信息
     bool             mIsFirstInit = true;               // 是否是首次初始化
 
 public: // 网络状态
-    uint8_t          mNetWork = 0;                      // 网络状态
+    bool             mNetOK = false;                    // 网络是否正常(连接成功)
+    uint8_t          mNetWork = 0;                      // 网络状态(信号)
     uint8_t          mNetWorkDetail = 0;                // 网络详细状态
 
 public: // 涂鸦部分

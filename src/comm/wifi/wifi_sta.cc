@@ -1,38 +1,48 @@
 
 
+
+// #include <comm_func.h>
+
+#include "wifi_sta.h"
+#include "series_info.h"
+#include "encoding_utils.h"
+#include "math_utils.h"
+#include "system_utils.h"
+
+#include <cdlog.h>
+#include <core/textutils.h>
+
 #include <cstdio>
 #include <iostream>
 #include <regex>
 #include <sys/prctl.h>
 #include <unistd.h>
-#include <core/textutils.h>
-#include <hv_series_conf.h>
+
 #include <hv_icmp.h>
 #include <hv_net.h>
-#include <comm_func.h>
-
-#include "hv_wifi_sta.h"
-#include <cdlog.h>
 
 using namespace std;
 
-#define WPA_INIT_CMD          "echo service>tmp/wpa.cmd && sleep 1"
 #define WPA_WORK_DIR          "/userdata/app"
+#define WPA_INIT_CMD          "echo service>" WPA_WORK_DIR "/tmp/wpa.cmd && sleep 1"
 #define WPA_SUPPLICANT_SCRIPT WPA_WORK_DIR "/wpa_supplicant.conf"
 
 #if defined(PRODUCT_X64)
-#define HV_POPEN(__cmd)
+#define WIFI_POPEN(__cmd)
 #else
-#define HV_POPEN(__cmd...)                                                                                             \
+#define WIFI_POPEN(__cmd...)                                                                                           \
     do {                                                                                                               \
         char __result[256] = {0};                                                                                      \
         snprintf(__result, sizeof(__result), ##__cmd);                                                                 \
         system(__result);                                                                                              \
-        printf("[wifi]%s\n", __result);                                                                              \
+        printf("[wifi]%s\n", __result);                                                                                \
     } while (0)
 #endif
 
-static void parseWifiScan(std::list<WifiSta::WIFI_ITEM_S> &wifiCells, const std::string &scanString) {
+/// @brief 格式化WIFI扫描结果
+/// @param wifiCells 
+/// @param scanString 
+static void __parse_wifi_scan(std::list<WifiSta::WIFI_ITEM_S> &wifiCells, const std::string &scanString) {
     std::istringstream   iss(scanString);
     std::string          line, val;
     WifiSta::WIFI_ITEM_S cell;
@@ -53,7 +63,7 @@ static void parseWifiScan(std::list<WifiSta::WIFI_ITEM_S> &wifiCells, const std:
                     case 1: /* frequency */ break;
                     case 2: /* signal level */ cell.signal = atoi(pl); break;
                     case 3: /* flags */ cell.encrypt = strstr(pl, "[WPA") != NULL; break;
-                    case 4: /* ssid */ cell.ssid = convert_to_unicode(pl); break;
+                    case 4: /* ssid */ cell.ssid = EncodingUtils::hexEscapes(pl); break;
                     default: break;
                     }
                     column++;
@@ -64,7 +74,7 @@ static void parseWifiScan(std::list<WifiSta::WIFI_ITEM_S> &wifiCells, const std:
             if (!pl) pl = p;
         }
         if (pl && *pl && cell.ssid.empty()) {
-            cell.ssid = convert_to_unicode(pl);
+            cell.ssid = EncodingUtils::hexEscapes(pl);
         }
 #else
         // bss[09]: bssid=22:8e:b2:4f:48:2f  ssid=   xiaomi-hook     channel=1(freq=2412)  rssi=-50  sec=WPA2_PSK
@@ -90,10 +100,10 @@ static void parseWifiScan(std::list<WifiSta::WIFI_ITEM_S> &wifiCells, const std:
     }
 }
 
-/// @brief
-/// @param ucSSID
-/// @param ucKey
-/// @return
+/// @brief 保存配置文件
+/// @param ssid SSID
+/// @param key 密码
+/// @return 0成功，-1失败
 static int __save_conf(const std::string &ssid, const std::string &key) {
     FILE *pFile = NULL;
 
@@ -131,22 +141,23 @@ static int __save_conf(const std::string &ssid, const std::string &key) {
     return 0;
 }
 
-/// @brief 重新启动wpa进程
+/// @brief 关闭wpa进程
 static void __kill_wpa() {
-    HV_POPEN("killall -9 udhcpc");
-    HV_POPEN("ifconfig " HV_WLAN_NAME " down");
-    HV_POPEN("ifconfig " HV_WLAN_NAME " up");
-    HV_POPEN("killall -9 wpa_supplicant");
+    WIFI_POPEN("killall -9 udhcpc");
+    WIFI_POPEN("ifconfig " NET_WLAN_NAME " down");
+    WIFI_POPEN("ifconfig " NET_WLAN_NAME " up");
+    WIFI_POPEN("killall -9 wpa_supplicant");
 }
 
+/// @brief 启动wpa进程
 static void __start_wpa_srv() {
-    HV_POPEN("[ -n \"$(ifconfig | grep wlan0)\" ] && [ -z \"$(pidof wpa_supplicant)\" ] && " WPA_INIT_CMD);
+    WIFI_POPEN("[ -n \"$(ifconfig | grep wlan0)\" ] && [ -z \"$(pidof wpa_supplicant)\" ] && " WPA_INIT_CMD);
 }
 
 /*****************************************************/
 WifiSta::WifiSta(/* args */) {
     mCurThreadInfo = 0;
-#if HV_FUNCTION_WIFI == 1
+#if NET_FUNCTION_WLAN == 1
     wpa_ctrl_run_set_path("/var/run");
 #endif
 }
@@ -162,23 +173,22 @@ WifiSta::~WifiSta() {
 /// @return
 int32_t WifiSta::scan(std::list<WIFI_ITEM_S> &wifilist) {
     __start_wpa_srv();
-#if HV_FUNCTION_WIFI == 1
+#if NET_FUNCTION_WLAN == 1
     int scane_count = 0;
     do {
-        sysCommand("wpa_cli -i " HV_WLAN_NAME " scan");
+        SystemUtils::system("wpa_cli -i " NET_WLAN_NAME " scan");
         std::this_thread::sleep_for(std::chrono::milliseconds(1500)); // 1.5s wait scan    
-        std::string bufStr = sysCommand("wpa_cli -i " HV_WLAN_NAME " scan_result");
-        parseWifiScan(wifilist, bufStr);
+        std::string bufStr = SystemUtils::system("wpa_cli -i " NET_WLAN_NAME " scan_result");
+        __parse_wifi_scan(wifilist, bufStr);
     }while (wifilist.empty() && ++scane_count < 3);
 #else
     std::this_thread::sleep_for(std::chrono::milliseconds(3000));
-
     for (uint8_t i = 0; i < 10; i++) {
         WIFI_ITEM_S item;
         item.ssid    = "test wifi " + std::to_string(i);
         item.mac     = "88:88:88:88:" + std::to_string(i);
-        item.encrypt = __rand_value(0, 1);
-        item.signal  = __rand_value(-100, 0);
+        item.encrypt = MathUtils::rand(0, 1);
+        item.signal  = MathUtils::rand(-100, 0);
         wifilist.push_back(item);
     }
 #endif
@@ -202,7 +212,7 @@ int32_t WifiSta::scan(std::list<WIFI_ITEM_S> &wifilist) {
 /// @return
 size_t WifiSta::connect(const std::string &name, const std::string &key) {
     size_t handle = 0;
-#if HV_FUNCTION_WIFI == 1
+#if NET_FUNCTION_WLAN == 1
     // 保存配置文件。连接wifi
     __save_conf(name, key);
 #endif
@@ -211,7 +221,7 @@ size_t WifiSta::connect(const std::string &name, const std::string &key) {
     if (mCurThreadInfo) mCurThreadInfo->running = false;
     mCurThreadInfo = new ThreadInfo(name, key);
     mCurThreadInfo->th = new std::thread(std::bind(&WifiSta::connect_run, this, std::placeholders::_1), mCurThreadInfo);
-#if HV_FUNCTION_WIFI == 0
+#if NET_FUNCTION_WLAN == 0
     mCurThreadInfo->conn_status = E_CONENCT_STA_GUARD;
 #endif
     mCurThreadInfo->th->detach();
@@ -245,7 +255,7 @@ WifiSta::CONENCT_STATUS_E WifiSta::handle_result(CONENCT_STATUS_E old, struct wi
 void WifiSta::connect_run(ThreadInfo *lpInfo) {
     LOGI("wifi sta thread start. ssid=%s", lpInfo->ssid.c_str());
 
-#if HV_FUNCTION_WIFI == 1
+#if NET_FUNCTION_WLAN == 1
     char szGateway[16] = {0};
     prctl(PR_SET_NAME, __func__);
     uint8_t pingCnt = 0;
@@ -253,7 +263,7 @@ void WifiSta::connect_run(ThreadInfo *lpInfo) {
 GOTO_CONENNCTION_REFUSED:
     if (lpInfo->softResetCnt > 5) {
         while (lpInfo->running) {
-            LOGW("%s abnormal. May require a reboot; status=%d", HV_WLAN_NAME, lpInfo->conn_status);
+            LOGW("%s abnormal. May require a reboot; status=%d", NET_WLAN_NAME, lpInfo->conn_status);
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
         mMutex.lock();
@@ -268,8 +278,8 @@ GOTO_CONENNCTION_REFUSED:
     __kill_wpa();
 
     /* 启动脚本链接wifi 在程序内启动会导致rkadk启动失败 */
-    // HV_POPEN("wpa_supplicant -B -Dnl80211 -i" HV_WLAN_NAME " -c" WPA_SUPPLICANT_SCRIPT);
-    HV_POPEN("echo connect>tmp/wpa.cmd");
+    // WIFI_POPEN("wpa_supplicant -B -Dnl80211 -i" NET_WLAN_NAME " -c" WPA_SUPPLICANT_SCRIPT);
+    WIFI_POPEN("echo connect>tmp/wpa.cmd");
     std::this_thread::sleep_for(std::chrono::seconds(2));
 
     int last_status     = E_ERROR_UNKNOW;
@@ -312,15 +322,15 @@ GOTO_CONENNCTION_REFUSED:
         } break;
         // 连接完成 分配或设置IP */
         case E_STA_CONENCTINGED: {
-            HV_POPEN("udhcpc -i " HV_WLAN_NAME " -n -q");
+            WIFI_POPEN("udhcpc -i " NET_WLAN_NAME " -n -q");
             lpInfo->conn_status = E_CONENCT_STA_DHCP;
         } break;
         // 检查IP 地址 和 MAC 不为空 */
         case E_CONENCT_STA_DHCP: {
             char szIP[16];
             char szMac[32];
-            HV_NET_GetIpAddr(HV_WLAN_NAME, szIP);
-            HV_NET_GetMacAddr(HV_WLAN_NAME, NULL, szMac);
+            HV_NET_GetIpAddr(NET_WLAN_NAME, szIP);
+            HV_NET_GetMacAddr(NET_WLAN_NAME, NULL, szMac);
             if (szIP[0] == '\0') {
                 LOGW("no correct ip!!!! softreset");
                 goto GOTO_CONENNCTION_REFUSED;
@@ -335,7 +345,7 @@ GOTO_CONENNCTION_REFUSED:
         case E_CONENCT_STA_GUARD: {
             // 还没获取到网关 */
             if (szGateway[0] == 0) {
-                HV_NET_GetGateway(HV_WLAN_NAME, szGateway, sizeof(szGateway));
+                HV_NET_GetGateway(NET_WLAN_NAME, szGateway, sizeof(szGateway));
                 if (szGateway[0] == 0) {
                     LOGW("not corect gatewat!!! softreset");
                     goto GOTO_CONENNCTION_REFUSED;
@@ -354,13 +364,13 @@ GOTO_CONENNCTION_REFUSED:
             }
             if (pingCnt > 10) {
                 // 网卡异常
-                if (HV_NET_CheckNicStatusUp(HV_WLAN_NAME) != 0) {
+                if (HV_NET_CheckNicStatusUp(NET_WLAN_NAME) != 0) {
                     LOGW("Network card abnormality");
                     goto GOTO_CONENNCTION_REFUSED;
                 }
 
                 // 网络连接异常
-                else if (HV_NET_CheckNicStatus(HV_WLAN_NAME) != 0) {
+                else if (HV_NET_CheckNicStatus(NET_WLAN_NAME) != 0) {
                     // 重新连接wifi
                     LOGW("Network link abnormality");
                     goto GOTO_CONENNCTION_REFUSED;
@@ -406,14 +416,14 @@ void WifiSta::exit(size_t handle) {
 }
 
 void WifiSta::down() {
-#if defined(HV_FUNCTION_WIFI) && HV_FUNCTION_WIFI
-    HV_POPEN("wpa_cli -i " HV_WLAN_NAME " disable_network 0 && wpa_cli -i " HV_WLAN_NAME " remove_network 0");
-    HV_POPEN("ifconfig " HV_WLAN_NAME " down");
+#if defined(NET_FUNCTION_WLAN) && NET_FUNCTION_WLAN
+    WIFI_POPEN("wpa_cli -i " NET_WLAN_NAME " disable_network 0 && wpa_cli -i " NET_WLAN_NAME " remove_network 0");
+    WIFI_POPEN("ifconfig " NET_WLAN_NAME " down");
 #endif
 }
 
 void WifiSta::up(){
-#if defined(HV_FUNCTION_WIFI) && HV_FUNCTION_WIFI
-    HV_POPEN("ifconfig " HV_WLAN_NAME " up");
+#if defined(NET_FUNCTION_WLAN) && NET_FUNCTION_WLAN
+    WIFI_POPEN("ifconfig " NET_WLAN_NAME " up");
 #endif
 }

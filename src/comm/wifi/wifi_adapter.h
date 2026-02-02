@@ -2,8 +2,8 @@
  * @Author: xlc
  * @Email: 
  * @Date: 2026-01-30 19:48:35
- * @LastEditTime: 2026-01-31 16:50:41
- * @FilePath: /kk_frame/src/class/wifi_adapter.h
+ * @LastEditTime: 2026-02-02 18:02:02
+ * @FilePath: /kk_frame/src/comm/wifi/wifi_adapter.h
  * @Description: 
  * @BugList: 
  * 
@@ -15,8 +15,10 @@
 #define __WIFI_ADAPTER_H__
 
 #include "thread_mgr.h"
+#include "wifi_sta.h"
+#include "template/singleton.h"
 #include <stdint.h>
-#include <hv_wifi_sta.h>
+#include <widget/adapter.h>
 
 #pragma pack(1)
 // WIFI列表
@@ -38,14 +40,15 @@ public:
     virtual void onSignalChange(int ms) = 0;
 };
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////
-// wifi data
-class WIFIAdapter : public Adapter, public ThreadTask {
+/// @brief WIFI数据适配器
+class WIFIAdapter : public cdroid::Adapter, public ThreadTask,
+    public Singleton<WIFIAdapter> {
+    friend Singleton<WIFIAdapter>;
 public:
     class Interface {
     public:
         virtual void onData(const std::vector<WIFIAdapterData> &data) {}
-        virtual ViewGroup* loadLayout(const_string& res) { return nullptr; }
+        virtual ViewGroup* loadLayout(const std::string& res) { return nullptr; }
         virtual void onClickItem(ViewGroup *v, WIFIAdapterData *pdat){}        
     };
     enum emWifiStatus {
@@ -55,13 +58,12 @@ public:
         WIFI_DISCONNECTED,
     };
 
-    static WIFIAdapter *ins();
     /* 检测网络 */
     static void autoCheck();
     /* 网速级别 */
-    static int speedLevel(int ms);    
+    static int  speedLevel(int ms);    
     /* 信号级别 */
-    static int signalLevel(int val);
+    static int  signalLevel(int val);
 
     void setParent(Interface *parent);
     void start();
@@ -73,11 +75,11 @@ public:
 
 protected:
     WIFIAdapter();
-    virtual int   getCount() const;
-    virtual void *getItem(int position) const;
-    virtual View *getView(int position, View *convertView, ViewGroup *parent);
-    virtual int   onTask(int id, void *data);
-    virtual void  onMain(int id, void *data);
+    virtual int   getCount() const override;
+    virtual void *getItem(int position) const override;
+    virtual View *getView(int position, View *convertView, ViewGroup *parent) override;
+    virtual int   onTask(int id, void *data) override;
+    virtual void  onMain(int id, void *data) override;
 
 protected:
     friend class SetWifi;

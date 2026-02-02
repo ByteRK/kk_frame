@@ -1,5 +1,5 @@
-#ifndef __HV_WIFI_STA_H__
-#define __HV_WIFI_STA_H__
+#ifndef __WIFI_STA_H__
+#define __WIFI_STA_H__
 
 #include <stdio.h>
 #include <stdint.h>
@@ -8,6 +8,7 @@
 #include <mutex>
 #include <string>
 #include <thread>
+#include <set>
 
 #ifdef __cplusplus
 extern "C" {
@@ -100,4 +101,4 @@ private:
     std::set<size_t> mHandles;
 };
 
-#endif
+#endif // !__WIFI_STA_H__
