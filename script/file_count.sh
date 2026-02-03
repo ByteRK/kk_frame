@@ -5,7 +5,7 @@
  # @Author: Ricken
  # @Email: me@ricken.cn
  # @Date: 2026-01-29 17:13:58
- # @LastEditTime: 2026-01-29 17:44:45
+ # @LastEditTime: 2026-02-03 17:34:31
  # @FilePath: /kk_frame/script/file_count.sh
  # @Description: 检查文件数量是否存在变化
  # @BugList: 
@@ -75,8 +75,9 @@ echo "检查完成"
 if [ "$changes_found" -eq 1 ]; then
     eval "$ALERT_COMMAND"
 
-    echo "温馨提示: 检测到文件数量变化，已重新触发Cmake构建，建议重新make当前项目"
-    exit 0
+    echo "温馨提示: 检测到文件数量变化，已重新触发Cmake构建，请重新make当前项目"
+    echo "        若不需要强制终止，请修改脚本返回值为0"
+    exit 1
 else
     echo "温馨提示: 未检测到文件数量变化"
     exit 0
