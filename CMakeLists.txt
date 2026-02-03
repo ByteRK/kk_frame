@@ -64,6 +64,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     src/comm/i2c
     src/comm/net
     src/comm/uart
+    src/comm/wifi
 
     # 组件及模板工具
     src/class
