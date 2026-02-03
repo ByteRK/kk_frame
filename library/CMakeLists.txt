@@ -23,6 +23,7 @@ list(REMOVE_ITEM lib_subdirs "CMakeLists.txt")
 
 # 4. 定义库管理变量
 set(LIB_LIBRARIES "")
+set(LIB_LIBRARY_DIRS "")
 set(LIB_INCLUDE_DIR "")
 
 # 5. 遍历所有库目录
@@ -53,6 +54,17 @@ foreach(lib_dir IN LISTS lib_subdirs)
                     else()
                         list(APPEND LIB_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${lib_dir})
                     endif()
+
+                    # 获取子库依赖库
+                    if(DEFINED ${lib_dir}_LIBRARIES)
+                        list(APPEND LIB_LIBRARIES ${${lib_dir}_LIBRARIES})
+                    endif()
+
+                    # 获取子库依赖库搜索目录
+                    if(DEFINED ${lib_dir}_LIBRARY_DIRS)
+                        list(APPEND LIB_LIBRARY_DIRS ${${lib_dir}_LIBRARY_DIRS})
+                    endif()
+
                 else()
                     message(WARNING "Library ${lib_dir} did not set target name")
                 endif()
@@ -186,6 +198,8 @@ generate_library_config_header()
 # ========================================
 # 7. 追加库的包含目录至父变量
 # ========================================
+
+list(APPEND LIBRARY_OUTPUT_DIR ${LIB_LIBRARY_DIRS})
 
 set(LIB_LIBRARIES ${LIB_LIBRARIES} PARENT_SCOPE)
 set(LIB_LIBRARY_DIR ${LIBRARY_OUTPUT_DIR} PARENT_SCOPE)
