@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2026-01-20 15:35:46
+ * @LastEditTime: 2026-02-03 21:34:21
  * @FilePath: /kk_frame/src/app/managers/wind_mgr.h
  * @Description: 页面管理类
  * @BugList:
@@ -77,8 +77,6 @@ private:
 public:
     ~WindMgr();
     void init();
-    void registerPage(int8_t page, std::function<PageBase* ()> func);
-    void registerPop(int8_t pop, std::function<PopBase* ()> func);
 
 #if ENABLE_THREAD_SAFE_MSG
     int checkEvents()override;
