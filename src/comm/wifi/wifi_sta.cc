@@ -244,7 +244,7 @@ size_t WifiSta::connect(const std::string &name, const std::string &key) {
 /**
  * 处理 WPA 的控制状态。
  *
- */
+**/
 WifiSta::CONENCT_STATUS_E WifiSta::handle_result(CONENCT_STATUS_E old, struct wifi_status_result_t &result) {
     CONENCT_STATUS_E state = old;
     printf("wifi sta state:%s\n", result.wpa_state);

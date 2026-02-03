@@ -9,7 +9,7 @@
  *
  * Copyright (c) 2025 by Ricken, All Rights Reserved.
  *
- */
+**/
 
 #include "config_mgr.h"
 #include "config_info.h"

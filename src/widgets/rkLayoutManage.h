@@ -9,7 +9,7 @@
  *
  * Copyright (c) 2024 by Ricken, All Rights Reserved.
  *
- */
+**/
 
 
 #ifndef __RK_LAYOUTMANAGER_H__

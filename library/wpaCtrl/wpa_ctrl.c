@@ -729,7 +729,7 @@ int wpa_ctrl_get_fd(struct wpa_ctrl *ctrl)
  *  "SIGNAL_POLL"
  *  ""
  *
- */
+**/
 int wpa_ctrl_run_cmd(const char *cmd, char *result, unsigned int *len)
 {
 	/*

@@ -9,7 +9,7 @@
  *
  * Copyright (c) 2025 by Ricken, All Rights Reserved.
  *
- */
+**/
 
 #ifndef __tuya_mgr_h__
 #define __tuya_mgr_h__

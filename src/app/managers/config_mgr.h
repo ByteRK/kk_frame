@@ -9,7 +9,7 @@
  *
  * Copyright (c) 2025 by Ricken, All Rights Reserved.
  *
- */
+**/
 
 #ifndef __CONFIG_MGR_H__
 #define __CONFIG_MGR_H__

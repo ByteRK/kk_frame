@@ -9,7 +9,7 @@
  *
  * Copyright (c) 2025 by Ricken, All Rights Reserved.
  *
- */
+**/
 
 #ifndef __POP_LOCK_H__
 #define __POP_LOCK_H__

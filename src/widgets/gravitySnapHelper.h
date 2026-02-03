@@ -16,7 +16,7 @@
  * Port: Ricken
  * Time: 2024/04/08
  *
- */
+**/
 
 #ifndef GRAVITYSNAPHELPER_H
 #define GRAVITYSNAPHELPER_H
@@ -39,7 +39,7 @@
  * To customize the maximum scroll distance during flings,
  * use {@link GravitySnapHelper#setMaxFlingSizeFraction(float)}
  * or {@link GravitySnapHelper#setMaxFlingDistance(int)}
- */
+**/
 class GravitySnapHelper :public LinearSnapHelper {
 public:
     /**

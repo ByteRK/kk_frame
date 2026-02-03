@@ -14,7 +14,7 @@
  *
  * Copyright (c) 2024 by Ricken, All Rights Reserved.
  *
- */
+**/
 
 #include "rvNumberPicker.h"
 #include <widgetEx/recyclerview/orientationhelper.h>

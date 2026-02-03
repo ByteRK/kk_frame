@@ -9,7 +9,7 @@
  *
  * Copyright (c) 2024 by Ricken, All Rights Reserved.
  *
- */
+**/
 
 #include "rkLayoutManage.h"
 #include "pickerSnapHelper.h"

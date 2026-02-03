@@ -9,7 +9,7 @@
  *
  * Copyright (c) 2025 by Ricken, All Rights Reserved.
  *
- */
+**/
 
 #include "tuya_mgr.h"
 #include <core/app.h>

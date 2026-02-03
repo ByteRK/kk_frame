@@ -14,7 +14,7 @@
  *
  * Copyright (c) 2024 by Ricken, All Rights Reserved.
  *
- */
+**/
 
 #ifndef __RV_NUMBERPICKER_H__
 #define __RV_NUMBERPICKER_H__

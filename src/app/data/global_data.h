@@ -9,7 +9,7 @@
  *
  * Copyright (c) 2025 by Ricken, All Rights Reserved.
  *
- */
+**/
 
 #ifndef __GLOBAL_DATA_H__
 #define __GLOBAL_DATA_H__
