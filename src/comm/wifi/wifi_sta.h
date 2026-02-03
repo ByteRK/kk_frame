@@ -1,3 +1,16 @@
+/*
+ * @Author: Ricken
+ * @Email: me@ricken.cn
+ * @Date: 2026-02-02 19:41:33
+ * @LastEditTime: 2026-02-03 09:54:27
+ * @FilePath: /kk_frame/src/comm/wifi/wifi_sta.h
+ * @Description: 
+ * @BugList: 
+ * 
+ * Copyright (c) 2026 by Ricken, All Rights Reserved. 
+ * 
+**/
+
 #ifndef __WIFI_STA_H__
 #define __WIFI_STA_H__
 

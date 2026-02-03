@@ -1,4 +1,15 @@
-
+/*
+ * @Author: xlc
+ * @Email: 
+ * @Date: 2026-01-30 19:48:35
+ * @LastEditTime: 2026-02-03 09:52:20
+ * @FilePath: /kk_frame/src/comm/wifi/wifi_adapter.cc
+ * @Description: 
+ * @BugList: 
+ * 
+ * Copyright (c) 2026 by Ricken, All Rights Reserved. 
+ * 
+**/
 
 #include "wifi_adapter.h"
 #include "config_mgr.h"

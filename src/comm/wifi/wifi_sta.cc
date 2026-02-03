@@ -1,7 +1,15 @@
-
-
-
-// #include <comm_func.h>
+/*
+ * @Author: Ricken
+ * @Email: me@ricken.cn
+ * @Date: 2026-02-02 19:41:33
+ * @LastEditTime: 2026-02-03 09:54:37
+ * @FilePath: /kk_frame/src/comm/wifi/wifi_sta.cc
+ * @Description: 
+ * @BugList: 
+ * 
+ * Copyright (c) 2026 by Ricken, All Rights Reserved. 
+ * 
+**/
 
 #include "wifi_sta.h"
 #include "series_info.h"
