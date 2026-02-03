@@ -1,20 +1,21 @@
 /*
  * @Author: xlc
- * @Email: 
- * @Date: 2026-01-30 19:48:35
- * @LastEditTime: 2026-02-03 09:52:20
+ * @Email:
+ * @Date: 2026-02-02 19:41:33
+ * @LastEditTime: 2026-02-03 15:15:36
  * @FilePath: /kk_frame/src/comm/wifi/wifi_adapter.cc
- * @Description: 
- * @BugList: 
- * 
- * Copyright (c) 2026 by Ricken, All Rights Reserved. 
- * 
+ * @Description:
+ * @BugList:
+ *
+ * Copyright (c) 2026 by Ricken, All Rights Reserved.
+ *
 **/
 
 #include "wifi_adapter.h"
 #include "config_mgr.h"
 #include "global_data.h"
 #include "string_utils.h"
+#include "encoding_utils.h"
 #include "wifi_set.h"
 #include "base.h"
 #include "R.h"
@@ -170,7 +171,9 @@ RecyclerView::ViewHolder* WIFIAdapter::onCreateViewHolder(ViewGroup* parent, int
 
 void WIFIAdapter::onBindViewHolder(RecyclerView::ViewHolder& holder, int position) {
     WIFIAdapterData* pdat = getItem(position);
-    mInterface->setItemLayout(__dc(ViewGroup, holder.itemView), pdat);
+    ViewGroup* vg = __dc(ViewGroup, holder.itemView);
+    mInterface->setItemLayout(vg, pdat);
+    vg->setOnClickListener([this, pdat](View& v) { mInterface->onClickItem(__dc(ViewGroup, &v), pdat); });
 }
 
 #else
@@ -232,11 +235,16 @@ int WIFIAdapter::onTask(int id, void* data) {
     std::list<WifiSta::WIFI_ITEM_S> wifiList;
     WifiSta::ins()->scan(wifiList);
 
-    std::string wifiName, wifiPasswd;
-    if (g_data->mNetOK) {
-        wifiName = g_config->getWifiSSID(),
-            wifiPasswd = g_config->getWifiPassword();
-    }
+    std::string wifiName;
+#if defined(PRODUCT_X64)
+    if (g_data->mNetOK)
+        wifiName = g_config->getWifiSSID();
+#else
+    wifi_status_result_t wt;
+    bzero(&wt, sizeof(wifi_status_result_t));
+    if (wpa_ctrl_sta_status(&wt) == 0)
+        wifiName = EncodingUtils::hexEscapes(wt.ssid);
+#endif
 
     mDataMutex.lock();
     mThreadWIFIData.clear();
@@ -249,6 +257,12 @@ int WIFIAdapter::onTask(int id, void* data) {
         mThreadWIFIData.push_back(wf_data);
     }
     mDataMutex.unlock();
+
+    auto it = std::find_if(mThreadWIFIData.begin(), mThreadWIFIData.end(), [wifiName](const WIFIAdapterData& wf_data) { return wf_data.name == wifiName; });
+    if (it != mThreadWIFIData.end()) {
+        mThreadWIFIData.erase(it);
+        mThreadWIFIData.insert(mThreadWIFIData.begin(), *it);
+    }
 
     return 0;
 }

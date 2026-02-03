@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-02 19:41:33
- * @LastEditTime: 2026-02-03 09:54:37
+ * @LastEditTime: 2026-02-03 14:40:22
  * @FilePath: /kk_frame/src/comm/wifi/wifi_sta.cc
  * @Description: 
  * @BugList: 
@@ -25,6 +25,7 @@
 #include <regex>
 #include <sys/prctl.h>
 #include <unistd.h>
+#include <cstring>
 
 #include <hv_icmp.h>
 #include <hv_net.h>
