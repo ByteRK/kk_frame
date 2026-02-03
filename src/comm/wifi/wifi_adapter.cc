@@ -15,6 +15,13 @@
 
 #define PING_FAIL_COUNT 3 /* 连续多次ping失败判定网络断开 */
 
+
+void WIFIAdapter::Interface::onData(const std::vector<WIFIAdapterData>& data) {
+}
+
+void WIFIAdapter::Interface::onClickItem(ViewGroup* v, WIFIAdapterData* pdat) {
+}
+
 void WIFIAdapter::autoCheck() {
     if (WIFIAdapter::instance()->mNetCheckTaskId > 0) return;
     WIFIAdapter::instance()->mNetCheckTaskId = ThreadPool::ins()->add(WIFIAdapter::instance(), 0);
@@ -74,17 +81,6 @@ void WIFIAdapter::setParent(Interface* parent) {
     }
 }
 
-void WIFIAdapter::cancel() {
-    mLoadComplete = false;
-    mConnecting = false;
-    mInterface = 0;
-
-    if (mWifiTaskID > 0) {
-        ThreadPool::ins()->del(mWifiTaskID);
-        mWifiTaskID = 0;
-    }
-}
-
 void WIFIAdapter::start() {
     if (!g_config->getWifi()) return;
     if (mWifiTaskID > 0) {
@@ -97,14 +93,6 @@ void WIFIAdapter::start() {
     mWifiTaskID = ThreadPool::ins()->add(this, 0);
 }
 
-void WIFIAdapter::onTick() {
-    if (!g_config->getWifi()) return;
-    if (mConnecting) return;
-    int64_t nowTick = SystemClock::uptimeMillis();
-    if (nowTick - mLastScanTime < 3000) return;
-    start();
-}
-
 void WIFIAdapter::stop() {
     if (mWifiTaskID > 0) {
         ThreadPool::ins()->del(mWifiTaskID);
@@ -112,6 +100,25 @@ void WIFIAdapter::stop() {
     }
 
     mConnecting = true;
+}
+
+void WIFIAdapter::cancel() {
+    mLoadComplete = false;
+    mConnecting = false;
+    mInterface = 0;
+
+    if (mWifiTaskID > 0) {
+        ThreadPool::ins()->del(mWifiTaskID);
+        mWifiTaskID = 0;
+    }
+}
+
+void WIFIAdapter::onTick() {
+    if (!g_config->getWifi()) return;
+    if (mConnecting) return;
+    int64_t nowTick = SystemClock::uptimeMillis();
+    if (nowTick - mLastScanTime < 3000) return;
+    start();
 }
 
 void WIFIAdapter::connecting(WIFIAdapterData* pdat) {
@@ -129,6 +136,34 @@ void WIFIAdapter::regNetChange(INetChange* inetchange) {
     mNetChange = inetchange;
 }
 
+#if WIFI_ADAPTER_AS_RECYCLEVIEW
+
+WIFIAdapterData* WIFIAdapter::getItem(int position) {
+    if (position >= 0 && position < mShowWIFIData.size()) {
+        return &mShowWIFIData.at(position);
+    }
+    LOGE("position out of data count!!! position=%d count=%d", position, mShowWIFIData.size());
+    return nullptr;
+}
+
+int WIFIAdapter::getItemCount() {
+    if (!mLoadComplete || !g_config->getWifi()) return 0;
+    LOGV("count=%d", mShowWIFIData.size());
+    return mShowWIFIData.size();
+}
+
+RecyclerView::ViewHolder* WIFIAdapter::onCreateViewHolder(ViewGroup* parent, int viewType) {
+    ViewGroup* vg = mInterface->loadItemLayout();
+    return new RecyclerView::ViewHolder(vg);
+}
+
+void WIFIAdapter::onBindViewHolder(RecyclerView::ViewHolder& holder, int position) {
+    WIFIAdapterData* pdat = getItem(position);
+    mInterface->setItemLayout(__dc(ViewGroup, holder.itemView), pdat);
+}
+
+#else
+
 int WIFIAdapter::getCount() const {
     if (!mLoadComplete || !g_config->getWifi()) return 0;
     LOGV("count=%d", mShowWIFIData.size());
@@ -140,43 +175,23 @@ void* WIFIAdapter::getItem(int position) const {
         return (void*)&mShowWIFIData.at(position);
     }
     LOGE("position out of data count!!! position=%d count=%d", position, mShowWIFIData.size());
-    return 0;
+    return nullptr;
 }
 
 View* WIFIAdapter::getView(int position, View* convertView, ViewGroup* parent) {
     LOGV("position=%d count=%d", position, mShowWIFIData.size());
 
     ViewGroup* vg = __dc(ViewGroup, convertView);
-    if (!vg) {
-        vg = mInterface->loadLayout("@layout/wifi_item");
-    }
+    if (!vg) vg = mInterface->loadItemLayout();
 
     WIFIAdapterData* pdat = (WIFIAdapterData*)getItem(position);
-
-    // TextView* wifi_name = PBase::get<TextView>(vg, AppRid::name);
-    // wifi_name->setText(pdat->name);
-
-    // if (pdat->conn_status == WIFI_CONNECTED) {
-    //     wifi_name->setTextColor(App::getInstance().getColor("@color/light_text"));
-    // } else {
-    //     wifi_name->setTextColor(App::getInstance().getColor("@color/normal_text"));
-    // }
-
-    // Drawable* leftDrawable = nullptr;
-    // Drawable* rightDrawable = nullptr;
-    // TextView* info = PBase::get<TextView>(vg, AppRid::info);
-    // if (pdat->locked) {
-    //     leftDrawable = App::getInstance().getDrawable("@mipmap/wifi_lock");
-    // }
-
-    // rightDrawable = App::getInstance().getDrawable(StringUtils::format("@mipmap/wifi_s%d", pdat->level));
-
-    // info->setCompoundDrawablesWithIntrinsicBounds(leftDrawable, 0, rightDrawable, 0);
-
+    mInterface->setItemLayout(vg, pdat);
     vg->setOnClickListener([this, pdat](View& v) { mInterface->onClickItem(__dc(ViewGroup, &v), pdat); });
 
     return vg;
 }
+
+#endif
 
 int WIFIAdapter::onTask(int id, void* data) {
     if (id == mNetCheckTaskId) {

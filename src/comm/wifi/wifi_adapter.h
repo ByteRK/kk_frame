@@ -2,7 +2,7 @@
  * @Author: xlc
  * @Email: 
  * @Date: 2026-01-30 19:48:35
- * @LastEditTime: 2026-02-02 18:02:02
+ * @LastEditTime: 2026-02-03 09:28:06
  * @FilePath: /kk_frame/src/comm/wifi/wifi_adapter.h
  * @Description: 
  * @BugList: 
@@ -14,11 +14,17 @@
 #ifndef __WIFI_ADAPTER_H__
 #define __WIFI_ADAPTER_H__
 
+#define WIFI_ADAPTER_AS_RECYCLEVIEW 1
+
 #include "thread_mgr.h"
 #include "wifi_sta.h"
 #include "template/singleton.h"
 #include <stdint.h>
+#if WIFI_ADAPTER_AS_RECYCLEVIEW
+#include <widgetEx/recyclerview/recyclerview.h>
+#else
 #include <widget/adapter.h>
+#endif
 
 #pragma pack(1)
 // WIFI列表
@@ -41,15 +47,21 @@ public:
 };
 
 /// @brief WIFI数据适配器
-class WIFIAdapter : public cdroid::Adapter, public ThreadTask,
+class WIFIAdapter : public ThreadTask,
+#if WIFI_ADAPTER_AS_RECYCLEVIEW
+    public RecyclerView::Adapter,
+#else
+    public cdroid::Adapter, 
+#endif
     public Singleton<WIFIAdapter> {
     friend Singleton<WIFIAdapter>;
 public:
     class Interface {
     public:
-        virtual void onData(const std::vector<WIFIAdapterData> &data) {}
-        virtual ViewGroup* loadLayout(const std::string& res) { return nullptr; }
-        virtual void onClickItem(ViewGroup *v, WIFIAdapterData *pdat){}        
+        virtual void       onData(const std::vector<WIFIAdapterData> &data);
+        virtual void       onClickItem(ViewGroup *v, WIFIAdapterData *pdat);
+        virtual ViewGroup* loadItemLayout() = 0;
+        virtual void       setItemLayout(ViewGroup *v, WIFIAdapterData *pdat) = 0;
     };
     enum emWifiStatus {
         WIFI_NULL = 0,
@@ -75,11 +87,18 @@ public:
 
 protected:
     WIFIAdapter();
-    virtual int   getCount() const override;
-    virtual void *getItem(int position) const override;
-    virtual View *getView(int position, View *convertView, ViewGroup *parent) override;
-    virtual int   onTask(int id, void *data) override;
-    virtual void  onMain(int id, void *data) override;
+#if WIFI_ADAPTER_AS_RECYCLEVIEW
+    WIFIAdapterData          *getItem(int position);
+    int                       getItemCount() override;
+    RecyclerView::ViewHolder *onCreateViewHolder(ViewGroup *parent, int viewType) override;
+    void                      onBindViewHolder(RecyclerView::ViewHolder &holder, int position) override;
+#else
+    int   getCount() const override;
+    void *getItem(int position) const override;
+    View *getView(int position, View *convertView, ViewGroup *parent) override;
+#endif
+    virtual int  onTask(int id, void *data) override;
+    virtual void onMain(int id, void *data) override;
 
 protected:
     friend class SetWifi;
