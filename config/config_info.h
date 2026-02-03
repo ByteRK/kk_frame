@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-01-18 11:33:02
- * @LastEditTime: 2026-02-02 16:49:24
+ * @LastEditTime: 2026-02-03 20:46:49
  * @FilePath: /kk_frame/config/config_info.h
  * @Description: 项目信息
  * @BugList:
@@ -27,6 +27,8 @@
     static const char* name##_FILE_NAME = #file; \
     static const char* name##_FILE_PATH = LOCAL_DATA_DIR #file; \
     static const char* name##_FILE_BAK_PATH = LOCAL_DATA_DIR #file ".bak";
+
+DEFINE_FILE_INFO(DEVCONF,    devices.xml)         // 设备配置文件
 
 DEFINE_FILE_INFO(APP,        app.json);           // 应用数据文件
 DEFINE_FILE_INFO(CONFIG,     config.xml);         // 配置文件名

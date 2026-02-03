@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2026-02-02 16:47:10
+ * @LastEditTime: 2026-02-03 20:44:16
  * @FilePath: /kk_frame/src/app/managers/config_mgr.cc
  * @Description:
  * @BugList:
@@ -30,6 +30,12 @@ ConfigMgr::~ConfigMgr() {
 /// @brief 初始化
 void ConfigMgr::init() {
     load();
+
+    if (access(DEVCONF_FILE_PATH, F_OK) == 0) {
+        LOGI("load %s", DEVCONF_FILE_PATH);
+        mDevConf.load(DEVCONF_FILE_PATH);
+    }
+
     AutoSaveItem::init();
 }
 
@@ -81,6 +87,30 @@ bool ConfigMgr::save(bool isBackup) {
 /// @return 
 bool ConfigMgr::haveChange() {
     return mConfig.getUpdates();
+}
+
+/**************************************************************************************/
+
+std::string ConfigMgr::getProductId() {
+    return mDevConf.getString(CONFIG_SECTION, "PID", "");
+}
+
+std::string ConfigMgr::getDeviceId() {
+    return mDevConf.getString(CONFIG_SECTION, "DID", "");
+}
+
+std::string ConfigMgr::getLicense() {
+    return mDevConf.getString(CONFIG_SECTION, "LIC", "");
+}
+
+void ConfigMgr::setDeviceConf(const std::string& _pid, const std::string& _did, const std::string& _lic) {
+    mDevConf.setValue(CONFIG_SECTION, "PID", _pid);
+    mDevConf.setValue(CONFIG_SECTION, "DID", _did);
+    mDevConf.setValue(CONFIG_SECTION, "LIC", _lic);
+
+    mDevConf.save(DEVCONF_FILE_PATH);
+    sync(); // 立即同步
+    LOGE("save read-only file. file=%s", DEVCONF_FILE_PATH);
 }
 
 /**************************************************************************************/

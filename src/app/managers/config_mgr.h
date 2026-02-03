@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2026-02-02 16:42:14
+ * @LastEditTime: 2026-02-03 20:47:08
  * @FilePath: /kk_frame/src/app/managers/config_mgr.h
  * @Description: 配置管理
  * @BugList:
@@ -24,7 +24,8 @@ class ConfigMgr : public Singleton<ConfigMgr>,
     public AutoSaveItem {
     friend class Singleton<ConfigMgr>;
 private:
-    cdroid::Preferences mConfig;               // 配置文件
+    cdroid::Preferences mConfig;    // 配置文件[rw]
+    cdroid::Preferences mDevConf;   // 设备配置，出厂烧写[ro]
 
 private:
     ConfigMgr();
@@ -39,6 +40,12 @@ private:
     bool load();
     bool save(bool isBackup = false) override;
     bool haveChange() override;
+
+public:
+    std::string getProductId();  // 产品ID
+    std::string getDeviceId();   // 设备ID
+    std::string getLicense();    // 授权码
+    void setDeviceConf(const std::string &_pid, const std::string &_did, const std::string &_lic);
 
 public:
     // 亮度
