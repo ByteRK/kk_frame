@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-08-29 16:14:15
- * @LastEditTime: 2026-02-02 17:05:51
+ * @LastEditTime: 2026-02-03 10:23:13
  * @FilePath: /kk_frame/src/app/managers/thread_mgr.h
  * @Description: 线程池管理
  * @BugList:
@@ -56,7 +56,6 @@ protected:
     } ThreadData;
 
 public:
-    static ThreadPool *ins();
     int                init(int count);
     int                add(ThreadTask *sink, void *data);
     int                del(int taskId);

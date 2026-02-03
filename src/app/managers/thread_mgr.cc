@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-11-24 09:40:23
- * @LastEditTime: 2026-02-02 18:46:11
+ * @LastEditTime: 2026-02-03 10:22:19
  * @FilePath: /kk_frame/src/app/managers/thread_mgr.cc
  * @Description: 
  * @BugList: 
@@ -19,11 +19,6 @@
 #include <inttypes.h>
 
 #define THREAD_RECYCLE_TIME 60000 // 线程回收时间
-
-ThreadPool *ThreadPool::ins() {
-    static ThreadPool sIns;
-    return &sIns;
-}
 
 ThreadPool::ThreadPool() {
     mIsInit     = false;

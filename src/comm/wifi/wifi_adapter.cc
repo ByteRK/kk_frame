@@ -35,7 +35,7 @@ void WIFIAdapter::Interface::onClickItem(ViewGroup* v, WIFIAdapterData* pdat) {
 
 void WIFIAdapter::autoCheck() {
     if (WIFIAdapter::instance()->mNetCheckTaskId > 0) return;
-    WIFIAdapter::instance()->mNetCheckTaskId = ThreadPool::ins()->add(WIFIAdapter::instance(), 0);
+    WIFIAdapter::instance()->mNetCheckTaskId = ThreadPool::instance()->add(WIFIAdapter::instance(), 0);
 }
 
 int WIFIAdapter::speedLevel(int ms) {
@@ -88,7 +88,7 @@ void WIFIAdapter::setParent(Interface* parent) {
 
     if (mWifiTaskID == 0 && g_config->getWifi()) {
         mLastScanTime = SystemClock::uptimeMillis();
-        mWifiTaskID = ThreadPool::ins()->add(this, 0);
+        mWifiTaskID = ThreadPool::instance()->add(this, 0);
     }
 }
 
@@ -101,12 +101,12 @@ void WIFIAdapter::start() {
 
     mConnecting = false;
     mLastScanTime = SystemClock::uptimeMillis();
-    mWifiTaskID = ThreadPool::ins()->add(this, 0);
+    mWifiTaskID = ThreadPool::instance()->add(this, 0);
 }
 
 void WIFIAdapter::stop() {
     if (mWifiTaskID > 0) {
-        ThreadPool::ins()->del(mWifiTaskID);
+        ThreadPool::instance()->del(mWifiTaskID);
         mWifiTaskID = 0;
     }
 
@@ -119,7 +119,7 @@ void WIFIAdapter::cancel() {
     mInterface = 0;
 
     if (mWifiTaskID > 0) {
-        ThreadPool::ins()->del(mWifiTaskID);
+        ThreadPool::instance()->del(mWifiTaskID);
         mWifiTaskID = 0;
     }
 }
