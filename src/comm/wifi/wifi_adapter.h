@@ -2,7 +2,7 @@
  * @Author: xlc
  * @Email: 
  * @Date: 2026-01-30 19:48:35
- * @LastEditTime: 2026-02-04 16:53:54
+ * @LastEditTime: 2026-02-04 17:31:28
  * @FilePath: /kk_frame/src/comm/wifi/wifi_adapter.h
  * @Description: 
  * @BugList: 
@@ -70,6 +70,9 @@ public:
         WIFI_DISCONNECTED,
     };
 
+    /* 设置已连接的WIFI的显示方式 -1：移除出队列，0：保留，1：移到最前 */
+    void setConnectedDisplay(int w);
+
     /* 检测网络 */
     static void autoCheck();
     /* 网速级别 */
@@ -115,6 +118,8 @@ protected:
     Interface                   *mInterface;
     bool                         mConnecting;
     int64_t                      mLastScanTime;
+
+    int                          mConnectedItemDisplay;
 };
 
 #endif // !__WIFI_ADAPTER_H__

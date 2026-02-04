@@ -2,7 +2,7 @@
  * @Author: xlc
  * @Email:
  * @Date: 2026-02-02 19:41:33
- * @LastEditTime: 2026-02-04 16:53:09
+ * @LastEditTime: 2026-02-04 17:31:32
  * @FilePath: /kk_frame/src/comm/wifi/wifi_adapter.cc
  * @Description:
  * @BugList:
@@ -32,6 +32,10 @@ void WIFIAdapter::Interface::onData(const std::vector<WIFIAdapterData>& data) {
 }
 
 void WIFIAdapter::Interface::onClickItem(ViewGroup* v, WIFIAdapterData* pdat) {
+}
+
+void WIFIAdapter::setConnectedDisplay(int w) {
+    mConnectedItemDisplay = w;
 }
 
 void WIFIAdapter::autoCheck() {
@@ -82,6 +86,7 @@ WIFIAdapter::WIFIAdapter() {
     mPingFailCount = 0;
     mPingTimems = 0;
     mNetChange = 0;
+    mConnectedItemDisplay = 0;
 }
 
 void WIFIAdapter::setParent(Interface* parent) {
@@ -259,16 +264,23 @@ int WIFIAdapter::onTask(int id, void* data) {
         wf_data.level = item.signal;
         wf_data.conn_status = (wifiName == item.ssid) ? WIFI_CONNECTED : WIFI_DISCONNECTED;
         wf_data.name = item.ssid;
-        mThreadWIFIData.push_back(wf_data);
+
+        if (wf_data.conn_status == WIFI_CONNECTED) {
+            switch (mConnectedItemDisplay) {
+            case 0: {  // 不做操作
+                mThreadWIFIData.push_back(wf_data);
+            }   break;
+            case 1: {  // 抽取已连接的WIFI放到第一位
+                mThreadWIFIData.insert(mThreadWIFIData.begin(), wf_data);
+            }   break;
+            default: { // 移除已连接的WIFI出队列
+            }   break;
+            }
+        } else {
+            mThreadWIFIData.push_back(wf_data);
+        }
     }
     mDataMutex.unlock();
-
-    // 抽取已连接的WIFI放到第一位
-    auto it = std::find_if(mThreadWIFIData.begin(), mThreadWIFIData.end(), [wifiName](const WIFIAdapterData& wf_data) { return wf_data.name == wifiName; });
-    if (it != mThreadWIFIData.end()) {
-        mThreadWIFIData.erase(it);
-        mThreadWIFIData.insert(mThreadWIFIData.begin(), *it);
-    }
 
     return 0;
 }
