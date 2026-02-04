@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-02-04 12:38:14
+ * @LastEditTime: 2026-02-04 16:07:32
  * @FilePath: /kk_frame/main.cc
  * @Description: 主程序入口
  * @BugList:
@@ -60,7 +60,8 @@ int main(int argc, const char* argv[]) {
     // g_tuyaMgr->init();
 
 #if ENABLE_WIFI
-    WIFIAdapter::instance()->autoCheck();
+    if (g_config->getWifi())
+        WIFIAdapter::instance()->autoCheck();
 #endif
     return app.exec();
 }

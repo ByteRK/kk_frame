@@ -2,7 +2,7 @@
  * @Author: xlc
  * @Email:
  * @Date: 2026-02-02 19:41:33
- * @LastEditTime: 2026-02-04 12:37:45
+ * @LastEditTime: 2026-02-04 16:53:09
  * @FilePath: /kk_frame/src/comm/wifi/wifi_adapter.cc
  * @Description:
  * @BugList:
@@ -164,8 +164,13 @@ int WIFIAdapter::getItemCount() {
     return mShowWIFIData.size();
 }
 
+int WIFIAdapter::getItemViewType(int position) {
+    WIFIAdapterData* pdat = getItem(position);
+    return pdat->conn_status;
+}
+
 RecyclerView::ViewHolder* WIFIAdapter::onCreateViewHolder(ViewGroup* parent, int viewType) {
-    ViewGroup* vg = mInterface->loadItemLayout();
+    ViewGroup* vg = mInterface->loadItemLayout(viewType);
     return new RecyclerView::ViewHolder(vg);
 }
 
@@ -194,11 +199,11 @@ void* WIFIAdapter::getItem(int position) const {
 
 View* WIFIAdapter::getView(int position, View* convertView, ViewGroup* parent) {
     LOGV("position=%d count=%d", position, mShowWIFIData.size());
+    WIFIAdapterData* pdat = (WIFIAdapterData*)getItem(position);
 
     ViewGroup* vg = __dc(ViewGroup, convertView);
-    if (!vg) vg = mInterface->loadItemLayout();
+    if (!vg) vg = mInterface->loadItemLayout(pdat->conn_status);
 
-    WIFIAdapterData* pdat = (WIFIAdapterData*)getItem(position);
     mInterface->setItemLayout(vg, pdat);
     vg->setOnClickListener([this, pdat](View& v) { mInterface->onClickItem(__dc(ViewGroup, &v), pdat); });
 
@@ -235,7 +240,7 @@ int WIFIAdapter::onTask(int id, void* data) {
     std::list<WifiSta::WIFI_ITEM_S> wifiList;
     WifiSta::ins()->scan(wifiList);
 
-    std::string wifiName;
+    std::string wifiName("kk_frame_wifi");
 #if defined(PRODUCT_X64)
     if (g_data->mNetOK)
         wifiName = g_config->getWifiSSID();
@@ -258,6 +263,7 @@ int WIFIAdapter::onTask(int id, void* data) {
     }
     mDataMutex.unlock();
 
+    // 抽取已连接的WIFI放到第一位
     auto it = std::find_if(mThreadWIFIData.begin(), mThreadWIFIData.end(), [wifiName](const WIFIAdapterData& wf_data) { return wf_data.name == wifiName; });
     if (it != mThreadWIFIData.end()) {
         mThreadWIFIData.erase(it);

@@ -2,7 +2,7 @@
  * @Author: xlc
  * @Email: 
  * @Date: 2026-01-30 19:48:35
- * @LastEditTime: 2026-02-03 09:28:06
+ * @LastEditTime: 2026-02-04 16:53:54
  * @FilePath: /kk_frame/src/comm/wifi/wifi_adapter.h
  * @Description: 
  * @BugList: 
@@ -60,7 +60,7 @@ public:
     public:
         virtual void       onData(const std::vector<WIFIAdapterData> &data);
         virtual void       onClickItem(ViewGroup *v, WIFIAdapterData *pdat);
-        virtual ViewGroup* loadItemLayout() = 0;
+        virtual ViewGroup* loadItemLayout(int type) = 0;
         virtual void       setItemLayout(ViewGroup *v, WIFIAdapterData *pdat) = 0;
     };
     enum emWifiStatus {
@@ -90,6 +90,7 @@ protected:
 #if WIFI_ADAPTER_AS_RECYCLEVIEW
     WIFIAdapterData          *getItem(int position);
     int                       getItemCount() override;
+    int                       getItemViewType(int position) override;
     RecyclerView::ViewHolder *onCreateViewHolder(ViewGroup *parent, int viewType) override;
     void                      onBindViewHolder(RecyclerView::ViewHolder &holder, int position) override;
 #else
