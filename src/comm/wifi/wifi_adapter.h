@@ -2,7 +2,7 @@
  * @Author: xlc
  * @Email: 
  * @Date: 2026-01-30 19:48:35
- * @LastEditTime: 2026-02-04 17:31:28
+ * @LastEditTime: 2026-02-04 17:37:13
  * @FilePath: /kk_frame/src/comm/wifi/wifi_adapter.h
  * @Description: 
  * @BugList: 
@@ -61,7 +61,7 @@ public:
         virtual void       onData(const std::vector<WIFIAdapterData> &data);
         virtual void       onClickItem(ViewGroup *v, WIFIAdapterData *pdat);
         virtual ViewGroup* loadItemLayout(int type) = 0;
-        virtual void       setItemLayout(ViewGroup *v, WIFIAdapterData *pdat) = 0;
+        virtual void       setItemLayout(int position, ViewGroup *v, WIFIAdapterData *pdat) = 0;
     };
     enum emWifiStatus {
         WIFI_NULL = 0,

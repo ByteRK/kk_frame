@@ -2,7 +2,7 @@
  * @Author: xlc
  * @Email:
  * @Date: 2026-02-02 19:41:33
- * @LastEditTime: 2026-02-04 17:31:32
+ * @LastEditTime: 2026-02-04 17:37:26
  * @FilePath: /kk_frame/src/comm/wifi/wifi_adapter.cc
  * @Description:
  * @BugList:
@@ -182,7 +182,7 @@ RecyclerView::ViewHolder* WIFIAdapter::onCreateViewHolder(ViewGroup* parent, int
 void WIFIAdapter::onBindViewHolder(RecyclerView::ViewHolder& holder, int position) {
     WIFIAdapterData* pdat = getItem(position);
     ViewGroup* vg = __dc(ViewGroup, holder.itemView);
-    mInterface->setItemLayout(vg, pdat);
+    mInterface->setItemLayout(position, vg, pdat);
     vg->setOnClickListener([this, pdat](View& v) { mInterface->onClickItem(__dc(ViewGroup, &v), pdat); });
 }
 
@@ -209,7 +209,7 @@ View* WIFIAdapter::getView(int position, View* convertView, ViewGroup* parent) {
     ViewGroup* vg = __dc(ViewGroup, convertView);
     if (!vg) vg = mInterface->loadItemLayout(pdat->conn_status);
 
-    mInterface->setItemLayout(vg, pdat);
+    mInterface->setItemLayout(position, vg, pdat);
     vg->setOnClickListener([this, pdat](View& v) { mInterface->onClickItem(__dc(ViewGroup, &v), pdat); });
 
     return vg;
