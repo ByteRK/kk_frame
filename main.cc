@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-01-31 14:32:28
+ * @LastEditTime: 2026-02-04 12:38:14
  * @FilePath: /kk_frame/main.cc
  * @Description: 主程序入口
  * @BugList:
@@ -30,6 +30,7 @@
 #include "btn_mgr.h"         // 按键板通讯
 #include "tuya_mgr.h"        // 涂鸦模组通讯
 
+#include "wifi_adapter.h"    // WIFI适配器
 
 /// @brief 主函数
 /// @param argc 参数个数
@@ -58,6 +59,9 @@ int main(int argc, const char* argv[]) {
     // g_btnMgr->init();
     // g_tuyaMgr->init();
 
+#if ENABLE_WIFI
+    WIFIAdapter::instance()->autoCheck();
+#endif
     return app.exec();
 }
 

@@ -2,7 +2,7 @@
  * @Author: xlc
  * @Email:
  * @Date: 2026-02-02 19:41:33
- * @LastEditTime: 2026-02-03 15:15:36
+ * @LastEditTime: 2026-02-04 12:37:45
  * @FilePath: /kk_frame/src/comm/wifi/wifi_adapter.cc
  * @Description:
  * @BugList:
@@ -271,9 +271,11 @@ void WIFIAdapter::onMain(int id, void* data) {
     if (id == mNetCheckTaskId) {
         if (mPingFailCount >= PING_FAIL_COUNT && g_data->mNetOK) {
             LOGE("net disconnected!!!");
+            g_data->mNetOK = false;
             if (mNetChange) mNetChange->onNetChange(INetChange::NET_ERR);
         } else if (!g_data->mNetOK && mPingFailCount == 0) {
             LOGI("net connected!!!");
+            g_data->mNetOK = true;
             if (mNetChange) mNetChange->onNetChange(INetChange::NET_OK);
         }
         if (g_data->mNetOK && speedLevel(mPingTimems) != speedLevel(1e6)) {
