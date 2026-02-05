@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-02-04 16:07:32
+ * @LastEditTime: 2026-02-05 18:40:20
  * @FilePath: /kk_frame/main.cc
  * @Description: 主程序入口
  * @BugList:
@@ -30,7 +30,9 @@
 #include "btn_mgr.h"         // 按键板通讯
 #include "tuya_mgr.h"        // 涂鸦模组通讯
 
+#if ENABLE_WIFI
 #include "wifi_adapter.h"    // WIFI适配器
+#endif
 
 /// @brief 主函数
 /// @param argc 参数个数
