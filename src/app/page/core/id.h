@@ -20,6 +20,7 @@ typedef enum {
     PAGE_HOME,         // 主页面
     PAGE_OTA,          // OTA
 
+    PAGE_TEST_TCP,     // TCP测试
     PAGE_MAX,          // 页面类型数量
 } PAGE_TYPE;
 

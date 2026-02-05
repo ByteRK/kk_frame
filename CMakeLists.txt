@@ -65,6 +65,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     src/comm/net
     src/comm/uart
     src/comm/wifi
+    src/comm/tcp
 
     # 组件及模板工具
     src/class
