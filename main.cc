@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-02-05 18:40:20
+ * @LastEditTime: 2026-02-06 09:11:48
  * @FilePath: /kk_frame/main.cc
  * @Description: 主程序入口
  * @BugList:
@@ -13,6 +13,7 @@
 
 #include <cdlog.h>           // 日志
 #include <core/app.h>        // Cdroid应用
+#include "common.h"
 
 #include "arg_utils.h"
 #include "project_utils.h"   // 项目工具集
@@ -30,7 +31,7 @@
 #include "btn_mgr.h"         // 按键板通讯
 #include "tuya_mgr.h"        // 涂鸦模组通讯
 
-#if ENABLE_WIFI
+#if ENABLED(WIFI) || defined(__VSCODE__)
 #include "wifi_adapter.h"    // WIFI适配器
 #endif
 
@@ -61,7 +62,7 @@ int main(int argc, const char* argv[]) {
     // g_btnMgr->init();
     // g_tuyaMgr->init();
 
-#if ENABLE_WIFI
+#if ENABLED(WIFI) || defined(__VSCODE__)
     if (g_config->getWifi())
         WIFIAdapter::instance()->autoCheck();
 #endif

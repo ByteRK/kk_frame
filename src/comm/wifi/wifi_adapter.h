@@ -2,7 +2,7 @@
  * @Author: xlc
  * @Email: 
  * @Date: 2026-01-30 19:48:35
- * @LastEditTime: 2026-02-04 17:37:13
+ * @LastEditTime: 2026-02-06 09:16:10
  * @FilePath: /kk_frame/src/comm/wifi/wifi_adapter.h
  * @Description: 
  * @BugList: 
@@ -13,6 +13,9 @@
 
 #ifndef __WIFI_ADAPTER_H__
 #define __WIFI_ADAPTER_H__
+
+#include "common.h"
+#if ENABLED(WIFI) || defined(__VSCODE__)
 
 #define WIFI_ADAPTER_AS_RECYCLEVIEW 1
 
@@ -121,5 +124,7 @@ protected:
 
     int                          mConnectedItemDisplay;
 };
+
+#endif // !ENABLED(WIFI)
 
 #endif // !__WIFI_ADAPTER_H__

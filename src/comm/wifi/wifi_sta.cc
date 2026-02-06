@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-02 19:41:33
- * @LastEditTime: 2026-02-03 14:40:22
+ * @LastEditTime: 2026-02-06 09:16:37
  * @FilePath: /kk_frame/src/comm/wifi/wifi_sta.cc
  * @Description: 
  * @BugList: 
@@ -12,6 +12,9 @@
 **/
 
 #include "wifi_sta.h"
+
+#if ENABLED(WIFI) || defined(__VSCODE__)
+
 #include "series_info.h"
 #include "encoding_utils.h"
 #include "math_utils.h"
@@ -436,3 +439,5 @@ void WifiSta::up(){
     WIFI_POPEN("ifconfig " NET_WLAN_NAME " up");
 #endif
 }
+
+#endif // !ENABLED(WIFI)

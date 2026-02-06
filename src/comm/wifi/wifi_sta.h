@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-02 19:41:33
- * @LastEditTime: 2026-02-03 09:54:27
+ * @LastEditTime: 2026-02-06 09:15:56
  * @FilePath: /kk_frame/src/comm/wifi/wifi_sta.h
  * @Description: 
  * @BugList: 
@@ -13,6 +13,9 @@
 
 #ifndef __WIFI_STA_H__
 #define __WIFI_STA_H__
+
+#include "common.h"
+#if ENABLED(WIFI) || defined(__VSCODE__)
 
 #include <stdio.h>
 #include <stdint.h>
@@ -113,5 +116,7 @@ private:
     ThreadInfo *mCurThreadInfo;
     std::set<size_t> mHandles;
 };
+
+#endif // !ENABLED(WIFI)
 
 #endif // !__WIFI_STA_H__

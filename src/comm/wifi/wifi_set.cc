@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-02 16:22:43
- * @LastEditTime: 2026-02-02 17:33:40
+ * @LastEditTime: 2026-02-06 09:16:29
  * @FilePath: /kk_frame/src/comm/wifi/wifi_set.cc
  * @Description:
  * @BugList:
@@ -12,6 +12,9 @@
 **/
 
 #include "wifi_set.h"
+
+#if ENABLED(WIFI) || defined(__VSCODE__)
+
 #include "config_mgr.h"
 #include "global_data.h"
 
@@ -63,3 +66,5 @@ void SetWifi::autoConnect() {
 void SetWifi::setAuto(bool flag) {
     mAutoConnect = flag;
 }
+
+#endif // !ENABLED(WIFI)

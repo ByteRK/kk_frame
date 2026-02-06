@@ -2,7 +2,7 @@
  * @Author: xlc
  * @Email:
  * @Date: 2026-02-02 19:41:33
- * @LastEditTime: 2026-02-04 17:37:26
+ * @LastEditTime: 2026-02-06 09:16:24
  * @FilePath: /kk_frame/src/comm/wifi/wifi_adapter.cc
  * @Description:
  * @BugList:
@@ -12,6 +12,9 @@
 **/
 
 #include "wifi_adapter.h"
+
+#if ENABLED(WIFI) || defined(__VSCODE__)
+
 #include "config_mgr.h"
 #include "global_data.h"
 #include "string_utils.h"
@@ -319,3 +322,5 @@ void WIFIAdapter::onMain(int id, void* data) {
         notifyDataSetChanged();
     }
 }
+
+#endif // !ENABLED(WIFI)

@@ -12,7 +12,7 @@ set(ENABLED_GAUSS_VIEW OFF)       # 高斯视图
 set(ENABLED_GAUSS_DRAWABLE ON)    # 高斯绘图
 
 set(ENABLED_FILE_SYSTEM ON)       # 文件系统
-set(ENABLED_WIFI ON)              # WIFI
+set(ENABLED_WIFI OFF)             # WIFI
 set(ENABLED_OPENSSL OFF)          # OpenSSL
 set(ENABLED_JSON ON)              # Json
 set(ENABLED_PIXMAN ON)            # Pixman
