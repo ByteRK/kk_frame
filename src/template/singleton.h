@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-29 11:59:20
- * @LastEditTime: 2026-01-02 18:22:02
+ * @LastEditTime: 2026-02-06 11:33:01
  * @FilePath: /kk_frame/src/template/singleton.h
  * @Description: 单例模板
  * @BugList:
@@ -20,8 +20,8 @@ template<typename T>
 class Singleton {
 protected:
     Singleton() = default;
-    virtual ~Singleton() = default;
 public:
+    virtual ~Singleton() = default;
     Singleton(const Singleton&) = delete;
     Singleton& operator=(const Singleton&) = delete;
     Singleton(Singleton&&) = delete;

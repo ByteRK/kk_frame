@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-06-20 15:14:05
- * @LastEditTime: 2025-12-29 11:57:15
+ * @LastEditTime: 2026-02-06 11:34:26
  * @FilePath: /kk_frame/src/app/protocol/tuya_mgr.h
  * @Description:
  * @BugList:
@@ -11,18 +11,21 @@
  *
 **/
 
-#ifndef __tuya_mgr_h__
-#define __tuya_mgr_h__
+#ifndef __TUYA_MGR_H__
+#define __TUYA_MGR_H__
 
 #include "packet_buffer.h"
 #include "uart_client.h"
 #include "packet_handler.h"
+#include "template/singleton.h"
 
 #include "struct.h"
 
-#define g_tuyaMgr TuyaMgr::ins()
+#define g_tuyaMgr TuyaMgr::instance()
 
-class TuyaMgr : public EventHandler, public IHandler {
+class TuyaMgr : public EventHandler, public IHandler,
+    public Singleton<TuyaMgr>{
+    friend Singleton<TuyaMgr>;
 private: // 涂鸦数据点缓存
     bool             mPower = true;          // 开关
 
@@ -43,16 +46,12 @@ private:
     uint32_t         mOTALen = 0;           // OTA数据长度
     uint32_t         mOTACurLen = 0;        // OTA当前接收长度
     uint64_t         mOTAAcceptTime = 0;    // OTA接收数据时间
+
 protected:
     TuyaMgr();
     ~TuyaMgr();
 
 public:
-    static TuyaMgr* ins() {
-        static TuyaMgr stIns;
-        return &stIns;
-    }
-
     int init();
 
 protected:
@@ -141,6 +140,7 @@ private:
 
     /// @brief 处理开启天气服务结果
     void acceptOpenWeather(uint8_t* data);
+    
 private:
 
 private:
@@ -153,4 +153,4 @@ private:
     void dealOTAData(uint8_t* data, uint16_t len);
 };
 
-#endif
+#endif // !__TUYA_MGR_H__

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:54:27
- * @LastEditTime: 2025-12-29 11:57:18
+ * @LastEditTime: 2026-02-06 11:33:55
  * @FilePath: /kk_frame/src/app/protocol/conn_mgr.h
  * @Description: 
  * @BugList: 
@@ -17,13 +17,15 @@
 #include "packet_buffer.h"
 #include "uart_client.h"
 #include "packet_handler.h"
+#include "template/singleton.h"
 
 #include "struct.h"
 
-#define g_connMgr CConnMgr::ins()
+#define g_connMgr CConnMgr::instance()
 
-class CConnMgr : public EventHandler, public IHandler {
-
+class CConnMgr : public EventHandler, public IHandler,
+    public Singleton<CConnMgr>{
+    friend Singleton<CConnMgr>;
 private:
     IPacketBuffer*   mPacket;            // 数据包
     UartClient*      mUartMCU;           // MCU串口
@@ -33,13 +35,11 @@ private:
 protected:
     CConnMgr();
     ~CConnMgr();
+
 public:
-    static CConnMgr* ins() {
-        static CConnMgr stIns;
-        return &stIns;
-    }
     int init();
     std::string getVersion();
+
 protected:
     int checkEvents();
     int handleEvents();
@@ -49,6 +49,7 @@ protected:
     
     // 处理相应
     void onCommDeal(IAck* ack);
+
 public:
 };
 

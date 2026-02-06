@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-06-12 14:49:06
- * @LastEditTime: 2025-12-30 17:23:38
+ * @LastEditTime: 2026-02-06 11:34:55
  * @FilePath: /kk_frame/src/app/protocol/btn_mgr.h
  * @Description:
  * @BugList:
@@ -17,6 +17,7 @@
 #include "packet_buffer.h"
 #include "uart_client.h"
 #include "packet_handler.h"
+#include "template/singleton.h"
 
 // 按键数量
 constexpr int LEFT_BTN_COUNT = 6;
@@ -30,7 +31,9 @@ constexpr uint8_t BTN_CLOSE   = 0xFF * 0   / 100 ; // 关闭
 
 #define g_btnMgr BtnMgr::ins()
 
-class BtnMgr : public EventHandler, public IHandler {
+class BtnMgr : public EventHandler, public IHandler,
+    public Singleton<BtnMgr>{
+    friend Singleton<BtnMgr>;
 private:
     IPacketBuffer*   mPacket;
     int64_t          mNextEventTime;
@@ -41,22 +44,22 @@ private:
     uint8_t          mVersionR;
     uint8_t          mBtnLight[ALL_BTN_COUNT]; // 按键灯状态列表
     bool             mBtnLightChanged;         // 按键灯状态是否改变
+
 protected:
     BtnMgr();
     ~BtnMgr();
+
 public:
-    static BtnMgr* ins() {
-        static BtnMgr stIns;
-        return &stIns;
-    }
     int init();
     std::string getVersion();
+
 protected:
     int checkEvents() override;
     int handleEvents() override;
 
     void send2MCU();
     void onCommDeal(IAck* ack) override;
+    
 public:
     void setLight(uint8_t* light);
 };
