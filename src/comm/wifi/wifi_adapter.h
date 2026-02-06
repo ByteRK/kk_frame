@@ -2,7 +2,7 @@
  * @Author: xlc
  * @Email: 
  * @Date: 2026-01-30 19:48:35
- * @LastEditTime: 2026-02-06 09:16:10
+ * @LastEditTime: 2026-02-06 09:21:41
  * @FilePath: /kk_frame/src/comm/wifi/wifi_adapter.h
  * @Description: 
  * @BugList: 
@@ -14,7 +14,7 @@
 #ifndef __WIFI_ADAPTER_H__
 #define __WIFI_ADAPTER_H__
 
-#include "common.h"
+#include "src/common.h"
 #if ENABLED(WIFI) || defined(__VSCODE__)
 
 #define WIFI_ADAPTER_AS_RECYCLEVIEW 1

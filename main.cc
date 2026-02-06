@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-02-06 09:11:48
+ * @LastEditTime: 2026-02-06 09:21:48
  * @FilePath: /kk_frame/main.cc
  * @Description: 主程序入口
  * @BugList:
@@ -13,7 +13,7 @@
 
 #include <cdlog.h>           // 日志
 #include <core/app.h>        // Cdroid应用
-#include "common.h"
+#include "src/common.h"
 
 #include "arg_utils.h"
 #include "project_utils.h"   // 项目工具集

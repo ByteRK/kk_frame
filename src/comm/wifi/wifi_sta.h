@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-02 19:41:33
- * @LastEditTime: 2026-02-06 09:15:56
+ * @LastEditTime: 2026-02-06 09:22:32
  * @FilePath: /kk_frame/src/comm/wifi/wifi_sta.h
  * @Description: 
  * @BugList: 
@@ -14,7 +14,7 @@
 #ifndef __WIFI_STA_H__
 #define __WIFI_STA_H__
 
-#include "common.h"
+#include "src/common.h"
 #if ENABLED(WIFI) || defined(__VSCODE__)
 
 #include <stdio.h>
