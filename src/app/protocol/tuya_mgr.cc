@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-08-01 03:03:02
- * @LastEditTime: 2025-12-30 17:30:04
+ * @LastEditTime: 2026-02-06 13:43:28
  * @FilePath: /kk_frame/src/app/protocol/tuya_mgr.cc
  * @Description:
  * @BugList:
@@ -29,18 +29,20 @@
 
 #define TICK_TIME 50 // tick触发时间（毫秒）
 
- /**
-  * 分包大小
-  * 0x00：默认 256 bytes（兼容旧固件）
-  * 0x01：512 bytes
-  * 0x02：1024 bytes
-  */
+/**
+ * 分包大小
+ * 0x00：默认 256 bytes（兼容旧固件）
+ * 0x01：512 bytes
+ * 0x02：1024 bytes
+**/
 #define OTA_PACKAGE_LEVEL 0x02
 
 #define OTA_SAVE_PATH  "/tmp/kaidu_t2e_pro.tar.gz"
 #define RM_OTA_PATH  "rm -rf " OTA_SAVE_PATH
 
-  //////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+typedef IPacketBufferT<BT_TUYA, TuyaAsk, TuyaAck> TuyaPacketBuffer;
 
 TuyaMgr::TuyaMgr() {
     mPacket = new TuyaPacketBuffer();

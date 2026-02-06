@@ -6,6 +6,8 @@
 
 //////////////////////////////////////////////////////////////////
 
+typedef IPacketBufferT<BT_MCU, McuAsk, McuAck> McuPacketBuffer;
+
 CConnMgr::CConnMgr() {
     mPacket = new McuPacketBuffer();
     mUartMCU = nullptr;

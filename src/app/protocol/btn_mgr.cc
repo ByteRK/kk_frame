@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-11-24 09:40:23
- * @LastEditTime: 2025-12-30 17:26:18
+ * @LastEditTime: 2026-02-06 11:58:59
  * @FilePath: /kk_frame/src/app/protocol/btn_mgr.cc
  * @Description:
  * @BugList:
@@ -18,6 +18,8 @@
 #define TICK_TIME 50 // tick触发时间（毫秒）
 
 //////////////////////////////////////////////////////////////////
+
+typedef IPacketBufferT<BT_BTN, BtnAsk, BtnAck> BtnPacketBuffer;
 
 BtnMgr::BtnMgr() {
     mPacket = new BtnPacketBuffer();

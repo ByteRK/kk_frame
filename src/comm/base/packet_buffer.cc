@@ -2,8 +2,8 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-01-18 11:31:51
- * @LastEditTime: 2025-02-05 10:52:14
- * @FilePath: /kk_frame/src/protocol/packet_buffer.cc
+ * @LastEditTime: 2026-02-06 13:42:02
+ * @FilePath: /kk_frame/src/comm/base/packet_buffer.cc
  * @Description: 数据包缓存
  * @BugList:
  *
@@ -16,7 +16,7 @@
 #include <iostream>
 #include <iomanip>
 
- /////////////////////////////////////// 数据包缓存基类 ///////////////////////////////////////
+/////////////////////////////////////// 数据包缓存基类 ///////////////////////////////////////
 
 IPacketBuffer::~IPacketBuffer() {
     for (BuffData* bf : mBuffs) {
@@ -74,85 +74,4 @@ void IPacketBuffer::checkCode(BuffData* buf) {
 IAck* IPacketBuffer::ack(BuffData* bf) {
     mRCV->parse(bf);
     return mRCV;
-}
-
-
-/////////////////////////////////////// 按键数据包缓存 ///////////////////////////////////////
-
-BtnPacketBuffer::BtnPacketBuffer() {
-    mSND = new BtnAsk();
-    mRCV = new BtnAck();
-}
-
-BuffData* BtnPacketBuffer::obtain(bool receive, uint16_t dataLen) {
-    uint8_t len = (receive ? BtnAck::BUF_LEN : BtnAsk::MIN_LEN) + dataLen;
-    for (auto it = mBuffs.begin(); it != mBuffs.end(); it++) {
-        BuffData* bf = *it;
-        if (bf->type == BT_BTN && bf->slen == len) {
-            bf->len = 0;
-            mBuffs.erase(it);
-            return bf;
-        }
-    }
-    BuffData* bf = (BuffData*)calloc(1, sizeof(BuffData) + len);
-    bf->type = BT_BTN;
-    bf->slen = len;
-    bf->len = 0;
-    bzero(bf->buf, bf->slen);
-
-    return bf;
-}
-
-
-/////////////////////////////////////// 通讯数据包缓存 ///////////////////////////////////////
-
-McuPacketBuffer::McuPacketBuffer() {
-    mSND = new McuAsk();
-    mRCV = new McuAck();
-}
-
-BuffData* McuPacketBuffer::obtain(bool receive, uint16_t dataLe) {
-    uint8_t len = (receive ? McuAck::BUF_LEN : McuAsk::MIN_LEN) + dataLe;
-    for (auto it = mBuffs.begin(); it != mBuffs.end(); it++) {
-        BuffData* bf = *it;
-        if (bf->type == BT_MCU && bf->slen == len) {
-            bf->len = 0;
-            mBuffs.erase(it);
-            return bf;
-        }
-    }
-    BuffData* bf = (BuffData*)calloc(1, sizeof(BuffData) + len);
-    bf->type = BT_MCU;
-    bf->slen = len;
-    bf->len = 0;
-    bzero(bf->buf, bf->slen);
-
-    return bf;
-}
-
-
-/////////////////////////////////////// 涂鸦数据包缓存 ///////////////////////////////////////
-
-TuyaPacketBuffer::TuyaPacketBuffer() {
-    mSND = new TuyaAsk();
-    mRCV = new TuyaAck();
-}
-
-BuffData* TuyaPacketBuffer::obtain(bool receive, uint16_t dataLe) {
-    uint8_t len = (receive ? TuyaAck::BUF_LEN : TuyaAsk::MIN_LEN) + dataLe;
-    for (auto it = mBuffs.begin(); it != mBuffs.end(); it++) {
-        BuffData* bf = *it;
-        if (bf->type == BT_TUYA && bf->slen == len) {
-            bf->len = 0;
-            mBuffs.erase(it);
-            return bf;
-        }
-    }
-    BuffData* bf = (BuffData*)calloc(1, sizeof(BuffData) + len);
-    bf->type = BT_TUYA;
-    bf->slen = len;
-    bf->len = 0;
-    bzero(bf->buf, bf->slen);
-
-    return bf;
 }

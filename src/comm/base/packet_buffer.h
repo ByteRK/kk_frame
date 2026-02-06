@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-01-18 11:31:51
- * @LastEditTime: 2025-12-29 14:34:39
+ * @LastEditTime: 2026-02-06 13:41:43
  * @FilePath: /kk_frame/src/comm/base/packet_buffer.h
  * @Description: 数据包缓存
  * @BugList: 
@@ -38,25 +38,34 @@ public:
     virtual IAck       *ack(BuffData *bf);                                       // 转化成ack
 };
 
-/// @brief 按键数据包缓存
-class BtnPacketBuffer : public IPacketBuffer {
+/// @brief 数据包缓存模板类
+/// @tparam T 数据包类型
+/// @tparam Ask 发送数据包类
+/// @tparam Ack 接收数据包类
+template <BufferType T, typename Ask, typename Ack>
+class IPacketBufferT : public IPacketBuffer {
 public:
-    BtnPacketBuffer();
-    virtual BuffData   *obtain(bool receive, uint16_t dataLen) override;
-};
-
-/// @brief 通讯数据包缓存
-class McuPacketBuffer : public IPacketBuffer {
-public:
-    McuPacketBuffer();
-    virtual BuffData   *obtain(bool receive, uint16_t dataLen) override;
-};
-
-/// @brief 涂鸦数据包缓存
-class TuyaPacketBuffer : public IPacketBuffer {
-public:
-    TuyaPacketBuffer();
-    virtual BuffData   *obtain(bool receive, uint16_t dataLen) override;
+    IPacketBufferT() {
+        mSND = new Ask();
+        mRCV = new Ack();
+    }
+    BuffData* obtain(bool receive, uint16_t dataLen) override {
+        uint8_t len = (receive ? Ack::BUF_LEN : Ask::MIN_LEN) + dataLen;
+        for (auto it = mBuffs.begin(); it != mBuffs.end(); it++) {
+            BuffData* bf = *it;
+            if (bf->type == T && bf->slen == len) {
+                bf->len = 0;
+                mBuffs.erase(it);
+                return bf;
+            }
+        }
+        BuffData* bf = (BuffData*)calloc(1, sizeof(BuffData) + len);
+        bf->type = T;
+        bf->slen = len;
+        bf->len = 0;
+        bzero(bf->buf, bf->slen);
+        return bf;
+    }
 };
 
 #endif // !__PACKET_BUFFER_H__
