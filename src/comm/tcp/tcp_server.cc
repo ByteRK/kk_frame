@@ -131,10 +131,10 @@ void TcpServerTransport::dispatchEvent(const TransportEvent& ev) {
 
     switch (ev.type) {
     case TransportEvent::CLIENT_CONNECTED:
-        mHandler->onClientConnected(ev.clientId);
+        mHandler->onConnected(ev.clientId);
         break;
     case TransportEvent::CLIENT_DISCONNECTED:
-        mHandler->onClientDisconnected(ev.clientId);
+        mHandler->onDisconnected(ev.clientId);
         break;
     case TransportEvent::DATA:
         mHandler->onRecv(ev.clientId, ev.data.data(), ev.data.size());

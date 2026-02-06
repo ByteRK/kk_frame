@@ -22,8 +22,8 @@ class ITcpServerHandler {
 public:
     virtual ~ITcpServerHandler() { }
 
-    virtual void onClientConnected(int clientId) { }
-    virtual void onClientDisconnected(int clientId) { }
+    virtual void onConnected(int clientId) { }
+    virtual void onDisconnected(int clientId) { }
 
     virtual void onRecv(int clientId,
         const uint8_t* data, size_t len) = 0;

@@ -23,8 +23,8 @@ class EchoServerLogic : public ITcpServerHandler {
 public:
     int mLastClientId = 0;
     EchoServerLogic() = default;
-    void onClientConnected(int clientId) override;
-    void onClientDisconnected(int clientId) override;
+    void onConnected(int clientId) override;
+    void onDisconnected(int clientId) override;
     void onRecv(int clientId, const uint8_t* data, size_t len) override;
 };
 

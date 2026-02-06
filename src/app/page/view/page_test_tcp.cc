@@ -17,12 +17,12 @@
 
 #define LISTEN_PORT 18888
 
-void EchoServerLogic::onClientConnected(int clientId) {
+void EchoServerLogic::onConnected(int clientId) {
     mLastClientId = clientId;
     LOGI("[Server] client %d connected", clientId);
 }
 
-void EchoServerLogic::onClientDisconnected(int clientId) {
+void EchoServerLogic::onDisconnected(int clientId) {
     LOGI("[Server] client %d disconnected", clientId);
 }
 
