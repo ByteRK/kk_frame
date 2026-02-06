@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-29 11:52:11
- * @LastEditTime: 2026-01-30 11:26:57
+ * @LastEditTime: 2026-02-06 14:04:44
  * @FilePath: /kk_frame/src/utils/check_utils.cc
  * @Description: 校验相关的一些函数
  * @BugList:
@@ -12,6 +12,14 @@
 **/
 
 #include "check_utils.h"
+
+uint8_t CheckUtils::xorCheck(const uint8_t* data, uint64_t length) {
+    uint8_t result = 0;
+    for (uint64_t i = 0; i < length; i++) {
+        result ^= data[i];
+    }
+    return result;
+}
 
 uint16_t CheckUtils::crc16CCITT(const uint8_t* data, uint16_t length) {
     uint16_t crc = 0x0000;   //初始值

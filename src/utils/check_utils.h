@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-29 11:52:07
- * @LastEditTime: 2026-01-30 11:26:08
+ * @LastEditTime: 2026-02-06 14:04:21
  * @FilePath: /kk_frame/src/utils/check_utils.h
  * @Description: 校验相关的一些函数
  * @BugList:
@@ -30,6 +30,12 @@ namespace CheckUtils {
             sum += data[i];
         return sum;
     }
+
+    /// @brief 计算异或校验
+    /// @param data 数据
+    /// @param length 数据长度
+    /// @return 异或校验值
+    uint8_t xorCheck(const uint8_t *data, uint64_t length);
 
     /// @brief 计算CRC16校验(CCITT)
     /// @param data 数据
