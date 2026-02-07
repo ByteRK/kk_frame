@@ -60,6 +60,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     src/app/page/components
 
     # 通讯
+    src/comm/core
     src/comm/base
     src/comm/i2c
     src/comm/net

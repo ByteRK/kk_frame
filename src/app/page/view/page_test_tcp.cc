@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-05 17:16:25
- * @LastEditTime: 2026-02-07 12:03:34
+ * @LastEditTime: 2026-02-07 17:07:45
  * @FilePath: /kk_frame/src/app/page/view/page_test_tcp.cc
  * @Description: TCP 测试
  * @BugList:
@@ -15,20 +15,20 @@
 #include <widget/textview.h>
 
 
-#define LISTEN_PORT 18888
+#define LISTEN_PORT 23333
 
-void EchoServerLogic::onConnected(int clientId) {
-    mLastClientId = clientId;
-    LOGI("[Server] client %d connected", clientId);
+void EchoServerLogic::onConnected(int id) {
+    mLastClientId = id;
+    LOGI("[Server] client %d connected", id);
 }
 
-void EchoServerLogic::onDisconnected(int clientId) {
-    LOGI("[Server] client %d disconnected", clientId);
+void EchoServerLogic::onDisconnected(int id) {
+    LOGI("[Server] client %d disconnected", id);
 }
 
-void EchoServerLogic::onRecv(const uint8_t* data, size_t len, int clientId) {
-    mLastClientId = clientId;
-    LOGE("[Server] recv from %d: %.*s", clientId, (int)len, data);
+void EchoServerLogic::onRecv(const uint8_t* data, size_t len, int id) {
+    mLastClientId = id;
+    LOGE("[Server] recv from %d: %.*s", id, (int)len, data);
 }
 
 void EchoClientLogic::onConnected(int id) {
@@ -51,7 +51,7 @@ TestTcpPage::TestTcpPage() :PageBase("@layout/page_demo") {
 
     // ---------- Server ----------
     mServerLogic = new EchoServerLogic();
-    mTcpServer = new TcpServerTransport(LISTEN_PORT);
+    mTcpServer = new TcpServer(LISTEN_PORT);
     mTcpServer->setHandler(mServerLogic);
     mTcpServer->init();
     mTcpServer->start();
@@ -59,7 +59,7 @@ TestTcpPage::TestTcpPage() :PageBase("@layout/page_demo") {
 
     // ---------- Client ----------
     mClientLogic = new EchoClientLogic();
-    mTcpClient = new TcpClientTransport("127.0.0.1", LISTEN_PORT);
+    mTcpClient = new TcpClient("127.0.0.1", LISTEN_PORT);
     mTcpClient->setHandler(mClientLogic);
     mTcpClient->init();
     mTcpClient->start();

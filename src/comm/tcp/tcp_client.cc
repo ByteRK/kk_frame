@@ -20,33 +20,33 @@
 #include <core/app.h>
 #include <cdlog.h>
 
-TcpClientTransport::TcpClientTransport(const std::string& ip, uint16_t port)
+TcpClient::TcpClient(const std::string& ip, uint16_t port)
     : mIp(ip), mPort(port) {
-    LOGI("TcpClientTransport::TcpClientTransport(%s, %d)", ip.c_str(), port);
+    LOGI("TcpClient::TcpClient(%s, %d)", ip.c_str(), port);
 }
 
-TcpClientTransport::~TcpClientTransport() {
+TcpClient::~TcpClient() {
     stop();
 }
 
-void TcpClientTransport::setHandler(TcpHandler* handler) {
+void TcpClient::setHandler(TransportHandler* handler) {
     mHandler = handler;
 }
 
-void TcpClientTransport::init() {
+void TcpClient::init() {
     cdroid::App::getInstance().addEventHandler(this);
 }
 
-bool TcpClientTransport::start() {
+bool TcpClient::start() {
     if (mRunning)
         return false;
 
     mRunning = true;
-    mThread = std::thread(&TcpClientTransport::threadLoop, this);
+    mThread = std::thread(&TcpClient::threadLoop, this);
     return true;
 }
 
-void TcpClientTransport::stop() {
+void TcpClient::stop() {
     if (!mRunning)
         return;
 
@@ -62,7 +62,7 @@ void TcpClientTransport::stop() {
         mThread.join();
 }
 
-bool TcpClientTransport::connectServer() {
+bool TcpClient::connectServer() {
     mSock = socket(AF_INET, SOCK_STREAM, 0);
     if (mSock < 0)
         return false;
@@ -78,13 +78,13 @@ bool TcpClientTransport::connectServer() {
         return false;
     }
 
-    TransportEvent ev;
-    ev.type = TransportEvent::CONNECTED;
+    Transport::Event ev;
+    ev.type = Transport::Event::CONNECTED;
     postEvent(ev);
     return true;
 }
 
-void TcpClientTransport::threadLoop() {
+void TcpClient::threadLoop() {
     while (mRunning) {
         if (!connectServer()) {
             sleep(2);           // 防止空转
@@ -97,8 +97,8 @@ void TcpClientTransport::threadLoop() {
             if (n <= 0)
                 break;
 
-            TransportEvent ev;
-            ev.type = TransportEvent::DATA;
+            Transport::Event ev;
+            ev.type = Transport::Event::DATA;
             ev.data.assign(buf, buf + n);
             postEvent(ev);
         }
@@ -108,35 +108,35 @@ void TcpClientTransport::threadLoop() {
             mSock = -1;
         }
 
-        TransportEvent ev;
-        ev.type = TransportEvent::DISCONNECTED;
+        Transport::Event ev;
+        ev.type = Transport::Event::DISCONNECTED;
         postEvent(ev);
 
         sleep(2);   // 重连节流
     }
 }
 
-ssize_t TcpClientTransport::send(const uint8_t* data, size_t len, int) {
+ssize_t TcpClient::send(const uint8_t* data, size_t len, int) {
     if (mSock < 0)
         return -1;
     return ::send(mSock, data, len, 0);
 }
 
-void TcpClientTransport::dispatchEvent(const TransportEvent& ev) {
+void TcpClient::dispatchEvent(const Transport::Event& ev) {
     if (!mHandler)
         return;
 
     switch (ev.type) {
-    case TransportEvent::CONNECTED:
+    case Transport::Event::CONNECTED:
         mHandler->onConnected();
         break;
-    case TransportEvent::DISCONNECTED:
+    case Transport::Event::DISCONNECTED:
         mHandler->onDisconnected();
         break;
-    case TransportEvent::DATA:
+    case Transport::Event::DATA:
         mHandler->onRecv(ev.data.data(), ev.data.size());
         break;
-    case TransportEvent::ERROR:
+    case Transport::Event::ERROR:
         mHandler->onError(ev.error);
         break;
     default:

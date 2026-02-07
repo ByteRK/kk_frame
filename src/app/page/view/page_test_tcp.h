@@ -19,16 +19,16 @@
 #include "tcp_client.h"
 #include "tcp_server.h"
 
-class EchoServerLogic : public TcpHandler {
+class EchoServerLogic : public TransportHandler {
 public:
     int mLastClientId = 0;
     EchoServerLogic() = default;
-    void onConnected(int clientId) override;
-    void onDisconnected(int clientId) override;
-    void onRecv(const uint8_t* data, size_t len, int clientId) override;
+    void onConnected(int id) override;
+    void onDisconnected(int id) override;
+    void onRecv(const uint8_t* data, size_t len, int id) override;
 };
 
-class EchoClientLogic : public TcpHandler {
+class EchoClientLogic : public TransportHandler {
 public:
     EchoClientLogic() = default;
     void onConnected(int id) override;
@@ -40,10 +40,10 @@ public:
 class TestTcpPage :public PageBase {
 private:
     EchoClientLogic* mClientLogic;
-    TcpClientTransport* mTcpClient;
+    TcpClient* mTcpClient;
 
     EchoServerLogic* mServerLogic;
-    TcpServerTransport* mTcpServer;
+    TcpServer* mTcpServer;
 public:
     TestTcpPage();
     ~TestTcpPage();

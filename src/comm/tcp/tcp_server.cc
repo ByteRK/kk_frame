@@ -20,24 +20,24 @@
 #include <core/app.h>
 #include <cdlog.h>
 
-TcpServerTransport::TcpServerTransport(uint16_t port)
+TcpServer::TcpServer(uint16_t port)
     : mPort(port) {
-    LOGI("TcpServerTransport::TcpServerTransport(%d)", port);
+    LOGI("TcpServer::TcpServer(%d)", port);
 }
 
-TcpServerTransport::~TcpServerTransport() {
+TcpServer::~TcpServer() {
     stop();
 }
 
-void TcpServerTransport::setHandler(TcpHandler* handler) {
+void TcpServer::setHandler(TransportHandler* handler) {
     mHandler = handler;
 }
 
-void TcpServerTransport::init() {
+void TcpServer::init() {
     cdroid::App::getInstance().addEventHandler(this);
 }
 
-int TcpServerTransport::createListenSocket() {
+int TcpServer::createListenSocket() {
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd < 0)
         return -1;
@@ -63,7 +63,7 @@ int TcpServerTransport::createListenSocket() {
     return fd;
 }
 
-bool TcpServerTransport::start() {
+bool TcpServer::start() {
     if (mRunning)
         return false;
 
@@ -72,11 +72,11 @@ bool TcpServerTransport::start() {
         return false;
 
     mRunning = true;
-    mThread = std::thread(&TcpServerTransport::threadLoop, this);
+    mThread = std::thread(&TcpServer::threadLoop, this);
     return true;
 }
 
-void TcpServerTransport::stop() {
+void TcpServer::stop() {
     if (!mRunning)
         return;
 
@@ -98,7 +98,7 @@ void TcpServerTransport::stop() {
         mThread.join();
 }
 
-void TcpServerTransport::threadLoop() {
+void TcpServer::threadLoop() {
     fd_set rfds;
 
     while (mRunning) {
@@ -121,9 +121,9 @@ void TcpServerTransport::threadLoop() {
                 int cid = mNextClientId++;
                 mClients[cid] = fd;
 
-                TransportEvent ev;
-                ev.type = TransportEvent::CLIENT_CONNECTED;
-                ev.clientId = cid;
+                Transport::Event ev;
+                ev.type = Transport::Event::CLIENT_CONNECTED;
+                ev.id = cid;
                 postEvent(ev);
             }
         }
@@ -136,9 +136,9 @@ void TcpServerTransport::threadLoop() {
             if (FD_ISSET(fd, &rfds)) {
                 ssize_t n = recv(fd, buf, sizeof(buf), 0);
                 if (n <= 0) {
-                    TransportEvent ev;
-                    ev.type = TransportEvent::CLIENT_DISCONNECTED;
-                    ev.clientId = cid;
+                    Transport::Event ev;
+                    ev.type = Transport::Event::CLIENT_DISCONNECTED;
+                    ev.id = cid;
                     postEvent(ev);
 
                     close(fd);
@@ -146,9 +146,9 @@ void TcpServerTransport::threadLoop() {
                     continue;
                 }
 
-                TransportEvent ev;
-                ev.type = TransportEvent::DATA;
-                ev.clientId = cid;
+                Transport::Event ev;
+                ev.type = Transport::Event::DATA;
+                ev.id = cid;
                 ev.data.assign(buf, buf + n);
                 postEvent(ev);
             }
@@ -157,29 +157,29 @@ void TcpServerTransport::threadLoop() {
     }
 }
 
-ssize_t TcpServerTransport::send(const uint8_t* data, size_t len, int clientId) {
-    auto it = mClients.find(clientId);
+ssize_t TcpServer::send(const uint8_t* data, size_t len, int id) {
+    auto it = mClients.find(id);
     if (it == mClients.end())
         return -1;
     return ::send(it->second, data, len, 0);
 }
 
-void TcpServerTransport::dispatchEvent(const TransportEvent& ev) {
+void TcpServer::dispatchEvent(const Transport::Event& ev) {
     if (!mHandler)
         return;
 
     switch (ev.type) {
-    case TransportEvent::CLIENT_CONNECTED:
-        mHandler->onConnected(ev.clientId);
+    case Transport::Event::CLIENT_CONNECTED:
+        mHandler->onConnected(ev.id);
         break;
-    case TransportEvent::CLIENT_DISCONNECTED:
-        mHandler->onDisconnected(ev.clientId);
+    case Transport::Event::CLIENT_DISCONNECTED:
+        mHandler->onDisconnected(ev.id);
         break;
-    case TransportEvent::DATA:
+    case Transport::Event::DATA:
         mHandler->onRecv(
             ev.data.data(),
             ev.data.size(),
-            ev.clientId);
+            ev.id);
         break;
     default:
         break;

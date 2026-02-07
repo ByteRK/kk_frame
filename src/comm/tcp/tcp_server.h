@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-05 09:25:46
- * @LastEditTime: 2026-02-07 14:08:03
+ * @LastEditTime: 2026-02-07 16:57:05
  * @FilePath: /kk_frame/src/comm/tcp/tcp_server.h
  * @Description: TCP服务端实现
  * @BugList:
@@ -15,27 +15,27 @@
 #define __TCP_SERVER_H__
 
 #include "transport.h"
-#include "tcp_handler.h"
+#include "transport_handler.h"
 #include <thread>
 #include <atomic>
 #include <map>
 
 /// @brief TCP服务端实现
-class TcpServerTransport : public Transport {
+class TcpServer : public Transport {
 public:
-    explicit TcpServerTransport(uint16_t port);
-    ~TcpServerTransport();
+    explicit TcpServer(uint16_t port);
+    ~TcpServer();
 
-    void setHandler(TcpHandler* handler);
+    void setHandler(TransportHandler* handler);
 
     void init();
     bool start() override;
     void stop() override;
 
-    ssize_t send(const uint8_t* data, size_t len, int clientId) override;
+    ssize_t send(const uint8_t* data, size_t len, int id) override;
 
 protected:
-    void dispatchEvent(const TransportEvent& ev) override;
+    void dispatchEvent(const Transport::Event& ev) override;
 
 private:
     void threadLoop();
@@ -45,13 +45,13 @@ private:
     uint16_t mPort;
     int mListenSock{-1};
 
-    std::map<int, int> mClients; // clientId -> fd
+    std::map<int, int> mClients; // id -> fd
     int mNextClientId{1};
 
     std::thread mThread;
     std::atomic<bool> mRunning{false};
 
-    TcpHandler* mHandler{nullptr};
+    TransportHandler* mHandler{nullptr};
 };
 
 #endif // !__TCP_SERVER_H__
