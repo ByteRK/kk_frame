@@ -2,9 +2,9 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-05 09:27:49
- * @LastEditTime: 2026-02-07 10:48:33
+ * @LastEditTime: 2026-02-07 14:08:15
  * @FilePath: /kk_frame/src/comm/tcp/tcp_client.cc
- * @Description:
+ * @Description: TCP客户端实现
  * @BugList:
  *
  * Copyright (c) 2026 by Ricken, All Rights Reserved.
@@ -29,7 +29,7 @@ TcpClientTransport::~TcpClientTransport() {
     stop();
 }
 
-void TcpClientTransport::setHandler(ITcpClientHandler* handler) {
+void TcpClientTransport::setHandler(TcpHandler* handler) {
     mHandler = handler;
 }
 

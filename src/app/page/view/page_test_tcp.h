@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-05 17:16:11
- * @LastEditTime: 2026-02-05 17:36:41
+ * @LastEditTime: 2026-02-07 12:02:42
  * @FilePath: /kk_frame/src/app/page/view/page_test_tcp.h
  * @Description: TCP 测试
  * @BugList:
@@ -19,21 +19,21 @@
 #include "tcp_client.h"
 #include "tcp_server.h"
 
-class EchoServerLogic : public ITcpServerHandler {
+class EchoServerLogic : public TcpHandler {
 public:
     int mLastClientId = 0;
     EchoServerLogic() = default;
     void onConnected(int clientId) override;
     void onDisconnected(int clientId) override;
-    void onRecv(int clientId, const uint8_t* data, size_t len) override;
+    void onRecv(const uint8_t* data, size_t len, int clientId) override;
 };
 
-class EchoClientLogic : public ITcpClientHandler {
+class EchoClientLogic : public TcpHandler {
 public:
     EchoClientLogic() = default;
-    void onConnected() override;
-    void onDisconnected() override;
-    void onRecv(const uint8_t* data, size_t len) override;
+    void onConnected(int id) override;
+    void onDisconnected(int id) override;
+    void onRecv(const uint8_t* data, size_t len, int id) override;
 };
 
 

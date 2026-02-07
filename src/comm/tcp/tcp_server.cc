@@ -2,9 +2,9 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-05 09:29:26
- * @LastEditTime: 2026-02-07 10:48:46
+ * @LastEditTime: 2026-02-07 14:08:09
  * @FilePath: /kk_frame/src/comm/tcp/tcp_server.cc
- * @Description:
+ * @Description: TCP服务端实现
  * @BugList:
  *
  * Copyright (c) 2026 by Ricken, All Rights Reserved.
@@ -29,7 +29,7 @@ TcpServerTransport::~TcpServerTransport() {
     stop();
 }
 
-void TcpServerTransport::setHandler(ITcpServerHandler* handler) {
+void TcpServerTransport::setHandler(TcpHandler* handler) {
     mHandler = handler;
 }
 
@@ -176,9 +176,10 @@ void TcpServerTransport::dispatchEvent(const TransportEvent& ev) {
         mHandler->onDisconnected(ev.clientId);
         break;
     case TransportEvent::DATA:
-        mHandler->onRecv(ev.clientId,
+        mHandler->onRecv(
             ev.data.data(),
-            ev.data.size());
+            ev.data.size(),
+            ev.clientId);
         break;
     default:
         break;

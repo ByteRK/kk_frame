@@ -2,9 +2,9 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-05 09:24:24
- * @LastEditTime: 2026-02-07 10:36:19
+ * @LastEditTime: 2026-02-07 14:07:42
  * @FilePath: /kk_frame/src/comm/tcp/tcp_client.h
- * @Description:
+ * @Description: TCP客户端实现
  * @BugList:
  *
  * Copyright (c) 2026 by Ricken, All Rights Reserved.
@@ -14,21 +14,8 @@
 #ifndef __TCP_CLIENT_H__
 #define __TCP_CLIENT_H__
 
-#include <cstddef>
-#include <cstdint>
-
-/// @brief TCP客户端事件处理基类
-class ITcpClientHandler {
-public:
-    virtual ~ITcpClientHandler() { }
-
-    virtual void onConnected() { }
-    virtual void onDisconnected() { }
-    virtual void onRecv(const uint8_t* data, size_t len) = 0;
-    virtual void onError(int err) { }
-};
-
 #include "transport.h"
+#include "tcp_handler.h"
 #include <thread>
 #include <atomic>
 #include <string>
@@ -39,7 +26,7 @@ public:
     TcpClientTransport(const std::string& ip, uint16_t port);
     ~TcpClientTransport();
 
-    void setHandler(ITcpClientHandler* handler);
+    void setHandler(TcpHandler* handler);
 
     void init();
     bool start() override;
@@ -62,7 +49,7 @@ private:
     std::thread mThread;
     std::atomic<bool> mRunning{ false };
 
-    ITcpClientHandler* mHandler{ nullptr };
+    TcpHandler* mHandler{ nullptr };
 };
 
 #endif // !__TCP_CLIENT_H__

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-05 17:16:25
- * @LastEditTime: 2026-02-05 17:57:21
+ * @LastEditTime: 2026-02-07 12:03:34
  * @FilePath: /kk_frame/src/app/page/view/page_test_tcp.cc
  * @Description: TCP 测试
  * @BugList:
@@ -26,20 +26,20 @@ void EchoServerLogic::onDisconnected(int clientId) {
     LOGI("[Server] client %d disconnected", clientId);
 }
 
-void EchoServerLogic::onRecv(int clientId, const uint8_t* data, size_t len) {
+void EchoServerLogic::onRecv(const uint8_t* data, size_t len, int clientId) {
     mLastClientId = clientId;
     LOGE("[Server] recv from %d: %.*s", clientId, (int)len, data);
 }
 
-void EchoClientLogic::onConnected() {
+void EchoClientLogic::onConnected(int id) {
     LOGI("[Client] connected to server");
 }
 
-void EchoClientLogic::onDisconnected() {
+void EchoClientLogic::onDisconnected(int id) {
     LOGI("[Client] disconnected");
 }
 
-void EchoClientLogic::onRecv(const uint8_t* data, size_t len) {
+void EchoClientLogic::onRecv(const uint8_t* data, size_t len, int id) {
     LOGE("[Client] recv: %.*s", (int)len, data);
 }
 
