@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-05 09:27:49
- * @LastEditTime: 2026-02-07 10:46:14
+ * @LastEditTime: 2026-02-07 10:48:33
  * @FilePath: /kk_frame/src/comm/tcp/tcp_client.cc
  * @Description:
  * @BugList:
@@ -22,6 +22,7 @@
 
 TcpClientTransport::TcpClientTransport(const std::string& ip, uint16_t port)
     : mIp(ip), mPort(port) {
+    LOGI("TcpClientTransport::TcpClientTransport(%s, %d)", ip.c_str(), port);
 }
 
 TcpClientTransport::~TcpClientTransport() {
@@ -86,7 +87,7 @@ bool TcpClientTransport::connectServer() {
 void TcpClientTransport::threadLoop() {
     while (mRunning) {
         if (!connectServer()) {
-            sleep(3);           // 防止空转
+            sleep(2);           // 防止空转
             continue;
         }
 
@@ -111,7 +112,7 @@ void TcpClientTransport::threadLoop() {
         ev.type = TransportEvent::DISCONNECTED;
         postEvent(ev);
 
-        sleep(3);   // 重连节流
+        sleep(2);   // 重连节流
     }
 }
 

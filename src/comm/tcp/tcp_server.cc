@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-05 09:29:26
- * @LastEditTime: 2026-02-07 10:35:57
+ * @LastEditTime: 2026-02-07 10:48:46
  * @FilePath: /kk_frame/src/comm/tcp/tcp_server.cc
  * @Description:
  * @BugList:
@@ -22,6 +22,7 @@
 
 TcpServerTransport::TcpServerTransport(uint16_t port)
     : mPort(port) {
+    LOGI("TcpServerTransport::TcpServerTransport(%d)", port);
 }
 
 TcpServerTransport::~TcpServerTransport() {
