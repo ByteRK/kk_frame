@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-05 09:25:46
- * @LastEditTime: 2026-02-05 18:05:16
+ * @LastEditTime: 2026-02-07 10:34:41
  * @FilePath: /kk_frame/src/comm/tcp/tcp_server.h
  * @Description:
  * @BugList:
@@ -37,7 +37,7 @@ public:
 /// @brief TCP服务端实现
 class TcpServerTransport : public Transport {
 public:
-    TcpServerTransport(uint16_t port);
+    explicit TcpServerTransport(uint16_t port);
     ~TcpServerTransport();
 
     void setHandler(ITcpServerHandler* handler);
@@ -53,18 +53,19 @@ protected:
 
 private:
     void threadLoop();
+    int  createListenSocket();
 
 private:
     uint16_t mPort;
-    int mListenSock{ -1 };
+    int mListenSock{-1};
 
     std::map<int, int> mClients; // clientId -> fd
-    int mNextClientId{ 1 };
+    int mNextClientId{1};
 
     std::thread mThread;
-    std::atomic<bool> mRunning{ false };
+    std::atomic<bool> mRunning{false};
 
-    ITcpServerHandler* mHandler{ nullptr };
+    ITcpServerHandler* mHandler{nullptr};
 };
 
 #endif // !__TCP_SERVER_H__
