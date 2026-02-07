@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2026-02-03 21:34:21
+ * @LastEditTime: 2026-02-08 00:25:07
  * @FilePath: /kk_frame/src/app/managers/wind_mgr.h
  * @Description: 页面管理类
  * @BugList:
@@ -26,12 +26,6 @@
 #include <queue>
 #include <mutex>
 #endif
-
-enum { // 虚拟事件类型(适配串口按键以及非标准按键)
-    VIRT_EVENT_DOWN,     // 虚拟按下
-    VIRT_EVENT_LONG,     // 虚拟长按
-    VIRT_EVENT_UP,       // 虚拟松开
-};
 
 #define g_windMgr WindMgr::instance()
 #define g_window  g_windMgr->mWindow

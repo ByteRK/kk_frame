@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 01:53:51
- * @LastEditTime: 2025-12-29 11:14:17
+ * @LastEditTime: 2026-02-08 00:28:25
  * @FilePath: /kk_frame/src/utils/cdroid_utils.cc
  * @Description: Cdroid相关的一些函数
  * @BugList:
@@ -15,8 +15,8 @@
 #include <cdinput.h>
 #include <core/inputeventsource.h>
 
-void CdroidUtils::SENDKEY(int code, int value) {
-    analogInput(code, value);
+void CdroidUtils::sendKey(int code, bool down) {
+    analogInput(code, down ? 1 : 0);
 }
 
 void CdroidUtils::analogInput(int code, int value) {
@@ -38,7 +38,7 @@ void CdroidUtils::analogInput(int code, int value) {
 
 void CdroidUtils::refreshScreenSaver() {
 #if 1
-    SENDKEY(cdroid::KEY_EISU, 2);
+    sendKey(cdroid::KeyEvent::KEYCODE_WINDOW, 2);
 #else
     cdroid::InputEventSource::getInstance().closeScreenSaver();
 #endif

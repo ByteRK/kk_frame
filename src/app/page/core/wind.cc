@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-01-29 14:11:24
+ * @LastEditTime: 2026-02-08 00:36:19
  * @FilePath: /kk_frame/src/app/page/core/wind.cc
  * @Description: 窗口类
  * @BugList:
@@ -16,6 +16,7 @@
 #include "global_data.h"
 #include "config_info.h"
 #include "system_utils.h"
+#include "cdroid_utils.h"
 #include "app_common.h"
 
 #include "config_mgr.h"
@@ -60,7 +61,7 @@ int MainWindow::handleEvents() {
     if (tick >= mPageNextTick) {
         mPageNextTick = tick + PAGE_TICK_INTERVAL;
         if (mPage)mPage->callTick();
-        
+
         WindToast::onTick();
     }
     if (tick >= mPopNextTick) {
@@ -125,7 +126,7 @@ WindLogo::LOGO_INFO MainWindow::getLogo() {
 /// @param evt 事件
 /// @return 操作结果
 bool MainWindow::onKeyUp(int keyCode, KeyEvent& evt) {
-    return onKey(keyCode, VIRT_EVENT_UP) || Window::onKeyUp(keyCode, evt);
+    return onKey(keyCode, evt) || Window::onKeyUp(keyCode, evt);
 }
 
 /// @brief 键盘按下事件（Windows层）
@@ -133,25 +134,25 @@ bool MainWindow::onKeyUp(int keyCode, KeyEvent& evt) {
 /// @param evt 事件
 /// @return 操作结果
 bool MainWindow::onKeyDown(int keyCode, KeyEvent& evt) {
-    return onKey(keyCode, VIRT_EVENT_DOWN) || Window::onKeyDown(keyCode, evt);
+    return onKey(keyCode, evt) || Window::onKeyDown(keyCode, evt);
 }
 
 /// @brief 按键处理
 /// @param keyCode 键值
-/// @param status 状态
+/// @param evt 事件
 /// @return 是否需要响铃
-bool MainWindow::onKey(uint16_t keyCode, uint8_t status) {
+bool MainWindow::onKey(int keyCode, KeyEvent& evt) {
     mLastAction = SystemClock::uptimeMillis();
-    if (keyCode == KEY_WINDOW) return false;         // 刷新mLastAction用
-    if (WindLogo::isLogoShow()) return false;        // LOGO显示时，不响应按键
+    if (keyCode == KeyEvent::KEYCODE_WINDOW) return false;    // 刷新mLastAction用
+    if (WindLogo::isLogoShow()) return false;                 // LOGO显示时，不响应按键
     if (mIsBlackView) {
-        if (status != VIRT_EVENT_DOWN)return false;
+        if (evt.getAction() != KeyEvent::ACTION_UP)return false;
         hideBlack();
         return true;
     }
-    if (selfKey(keyCode, status)) return true;
-    if (mPop) return mPop->callKey(keyCode, status);
-    if (mPage) return mPage->callKey(keyCode, status);
+    if (selfKey(keyCode, evt)) return true;
+    if (mPop) return mPop->callKey(keyCode, evt);
+    if (mPage) return mPage->callKey(keyCode, evt);
     return false;
 }
 
@@ -202,7 +203,6 @@ bool MainWindow::showBlack(bool upload) {
 void MainWindow::hideBlack() {
     if (!mIsBlackView)return;
     g_windMgr->showPage(PAGE_HOME);
-    mPage->callKey(KEY_WINDOW, VIRT_EVENT_UP);
     mBlackView->setVisibility(GONE);
     mIsBlackView = false;
     SystemUtils::setBrightness(g_config->getBrightness());
@@ -271,6 +271,6 @@ void MainWindow::hideAll() {
 /// @param keyCode 
 /// @param status 
 /// @return 
-bool MainWindow::selfKey(uint16_t keyCode, uint8_t status) {
+bool MainWindow::selfKey(int keyCode, KeyEvent& evt) {
     return false;
 }

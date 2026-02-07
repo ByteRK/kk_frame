@@ -77,8 +77,8 @@ void PBase::callMcu(uint8_t* data, uint8_t len) {
     onMcu(data, len);
 }
 
-bool PBase::callKey(uint16_t keyCode, uint8_t evt) {
-    LOGV("callKey -> keyCode:%d evt:%d", keyCode, evt);
+bool PBase::callKey(int keyCode, KeyEvent& evt) {
+    LOGV("callKey -> keyCode:%d evt:%d", keyCode, evt.getAction());
     return onKey(keyCode, evt);
 }
 
@@ -116,7 +116,7 @@ void PBase::onMsg(const RunMsgBase* runMsg) {
 void PBase::onMcu(uint8_t* data, uint8_t len) {
 }
 
-bool PBase::onKey(uint16_t keyCode, uint8_t evt) {
+bool PBase::onKey(int keyCode, KeyEvent& evt) {
     return false;
 }
 

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-01-20 17:11:53
+ * @LastEditTime: 2026-02-08 00:34:00
  * @FilePath: /kk_frame/src/app/page/core/wind.h
  * @Description: 主窗口类
  * @BugList:
@@ -58,7 +58,7 @@ public:
 
     bool onKeyUp(int keyCode, KeyEvent& evt) override;
     bool onKeyDown(int keyCode, KeyEvent& evt) override;
-    bool onKey(uint16_t keyCode, uint8_t status);
+    bool onKey(int keyCode, KeyEvent& evt);
     bool dispatchTouchEvent(MotionEvent& evt) override;
 
     PageBase* getPage();
@@ -73,7 +73,7 @@ public:
     void      removePop();
     void      hideAll();
 private:
-    bool      selfKey(uint16_t keyCode, uint8_t status);
+    bool      selfKey(int keyCode, KeyEvent& evt);
 };
 
 #endif // !__WIND_H__

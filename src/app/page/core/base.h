@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2026-01-29 10:51:03
+ * @LastEditTime: 2026-02-08 00:34:30
  * @FilePath: /kk_frame/src/app/page/core/base.h
  * @Description: 页面基类
  * @BugList:
@@ -60,7 +60,7 @@ public:
     void callRestoreState(const SaveMsgBase* saveMsg);          // 恢复状态
     void callMsg(const RunMsgBase* runMsg);                     // 运行时消息
     void callMcu(uint8_t* data, uint8_t len);                   // 接受电控数据
-    bool callKey(uint16_t keyCode, uint8_t evt);                // 接受按键事件
+    bool callKey(int keyCode, KeyEvent& evt);                   // 接受按键事件
     void callLangChange(uint8_t lang);                          // 调用语言切换
     void callCheckLight(uint8_t* left, uint8_t* right);         // 调用检查按键灯
 
@@ -74,7 +74,7 @@ protected:
     virtual void onRestoreState(const SaveMsgBase* saveMsg);    // 状态恢复
     virtual void onMsg(const RunMsgBase* runMsg);               // 运行时消息回调
     virtual void onMcu(uint8_t* data, uint8_t len);             // 电控数据回调
-    virtual bool onKey(uint16_t keyCode, uint8_t evt);          // 按键事件回调
+    virtual bool onKey(int keyCode, KeyEvent& evt);             // 按键事件回调
     virtual void onLangChange();                                // 语言切换通知回调
     virtual void onCheckLight(uint8_t* left, uint8_t* right);   // 检查按键灯回调
     void setLangText(TextView* v, const Json::Value& value);    // 设置语言文本
