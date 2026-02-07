@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 01:53:51
- * @LastEditTime: 2026-02-08 00:29:06
+ * @LastEditTime: 2026-02-08 01:01:37
  * @FilePath: /kk_frame/src/utils/cdroid_utils.h
  * @Description: Cdroid相关的一些函数
  * @BugList:
@@ -15,6 +15,7 @@
 #define __CDROID_UTILS_H__
 
 #include <view/keyevent.h>
+#define SEND_WIND_KEY(down) CdroidUtils::sendKey(cdroid::KeyEvent::KEYCODE_WINDOW, down);
 
 namespace CdroidUtils {
 
