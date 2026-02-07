@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-25 10:31:16
- * @LastEditTime: 2026-02-08 04:16:00
+ * @LastEditTime: 2026-02-08 05:00:51
  * @FilePath: /kk_frame/src/app/page/components/wind_logo.cc
  * @Description: Logo组件
  * @BugList:
@@ -129,7 +129,7 @@ bool WindLogo::isLogoShow() const {
 /// @param keyCode 键值
 /// @param evt 事件
 /// @param result 处理结果
-/// @return 是否允许下一层处理
+/// @return 是否已消费 为true则下层不再处理
 bool WindLogo::onKey(int keyCode, KeyEvent& evt, bool& result) {
     return isLogoShow(); // Logo显示时拦截按键
 }

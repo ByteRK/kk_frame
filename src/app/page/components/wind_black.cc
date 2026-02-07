@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-08 02:37:55
- * @LastEditTime: 2026-02-08 04:15:51
+ * @LastEditTime: 2026-02-08 05:00:58
  * @FilePath: /kk_frame/src/app/page/components/wind_black.cc
  * @Description: 息屏组件
  * @BugList:
@@ -64,7 +64,7 @@ bool WindBlack::isBlackShow() {
 /// @param keyCode 键值
 /// @param evt 事件
 /// @param result 处理结果
-/// @return 是否允许下一层处理
+/// @return 是否已消费 为true则下层不再处理
 bool WindBlack::onKey(int keyCode, KeyEvent& evt, bool& result) {
     if (!isBlackShow())return false;
     if (evt.getAction() == KeyEvent::ACTION_UP) {
