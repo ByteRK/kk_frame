@@ -7,13 +7,13 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <RelativeLayout
-        android:id="@+id/page_box"
+        android:id="@+id/page"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
     </RelativeLayout>
 
     <RelativeLayout
-        android:id="@+id/pop_box"
+        android:id="@+id/pop"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="gone">
@@ -38,7 +38,7 @@
         android:visibility="gone"/>
 
     <View
-        android:id="@+id/cover"
+        android:id="@+id/black"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="#000000"

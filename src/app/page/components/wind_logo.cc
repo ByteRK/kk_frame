@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-25 10:31:16
- * @LastEditTime: 2025-12-30 17:20:56
+ * @LastEditTime: 2026-02-08 04:16:00
  * @FilePath: /kk_frame/src/app/page/components/wind_logo.cc
  * @Description: Logo组件
  * @BugList:
@@ -12,8 +12,7 @@
 **/
 
 #include "wind_logo.h"
-#include "app_version.h"
-#include "R.h"
+#include "base.h"
 #include <cdlog.h>
 
 WindLogo::WindLogo() {
@@ -30,11 +29,12 @@ WindLogo::~WindLogo() {
 /// @param parent 父节点
 void WindLogo::init(ViewGroup* parent) {
     if (mIsInit) return;
+    
     if (
-        !(mImage = dynamic_cast<ImageView*>(parent->findViewById(APP_NAME::R::id::logo))) ||
-        !(mVideo = dynamic_cast<VideoView*>(parent->findViewById(APP_NAME::R::id::logo_video)))
+        !(mImage = PBase::get<ImageView>(parent, AppRid::logo)) ||
+        !(mVideo = PBase::get<VideoView>(parent, AppRid::logo_video))
         ) {
-        LOGE("Logo节点获取失败");
+        LOGE("WindLogo init failed");
         return;
     }
 
@@ -108,7 +108,7 @@ void WindLogo::showLogo() {
 /// @brief 隐藏Logo
 void WindLogo::hideLogo() {
     if (!checkInit()) return;
-    
+
     // 清除状态
     mImage->removeCallbacks(mRuner);
     mRuner();
@@ -119,16 +119,25 @@ void WindLogo::hideLogo() {
     mVideo->setVisibility(View::GONE);
 }
 
-/// @brief 当前Logo是否正在显示
-/// @return 
+/// @brief 检查当前是否显示
+/// @return 是否显示
 bool WindLogo::isLogoShow() const {
     return mIsRunning;
 }
 
-/// @brief 判断当前Logo是否未初始化
-/// @return 
+/// @brief 按键监听
+/// @param keyCode 键值
+/// @param evt 事件
+/// @param result 处理结果
+/// @return 是否允许下一层处理
+bool WindLogo::onKey(int keyCode, KeyEvent& evt, bool& result) {
+    return isLogoShow(); // Logo显示时拦截按键
+}
+
+/// @brief 检查当前是否已初始化
+/// @return 是否已初始化
 inline bool WindLogo::checkInit() {
     if (mIsInit) return true;
-    LOGE("Logo未初始化");
+    LOGE("Logo uninit");
     return false;
 }

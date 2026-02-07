@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-25 10:23:15
- * @LastEditTime: 2026-01-08 10:01:21
+ * @LastEditTime: 2026-02-08 04:14:45
  * @FilePath: /kk_frame/src/app/page/components/wind_toast.cc
  * @Description: Toast组件
  * @BugList:
@@ -12,8 +12,7 @@
 **/
 
 #include "wind_toast.h"
-#include "app_version.h"
-#include "R.h"
+#include "base.h"
 #include <cdlog.h>
 
 WindToast::WindToast() {
@@ -36,18 +35,14 @@ WindToast::~WindToast() {
 void WindToast::init(ViewGroup* parent) {
     if (mIsInit) return;
 
-    mToastBox = dynamic_cast<ViewGroup*>(parent->findViewById(APP_NAME::R::id::toast));
-    if (!mToastBox) {
-        LOGE("Fail to get R::id::toast");
-        return;
-    }
+    if (
+        !(mToastBox = PBase::get<ViewGroup>(parent, AppRid::toast))
+        ) throw std::runtime_error("WindToast init failed");
 
     // 获取节点
-    mToast = dynamic_cast<TextView*>(mToastBox->findViewById(APP_NAME::R::id::toast_text));
-    if (!mToast) {
-        LOGE("Fail to get R::id::toast_text");
-        return;
-    }
+    if (
+        !(mToast = PBase::get<TextView>(mToastBox, AppRid::toast_text))
+        ) throw std::runtime_error("WindToast toast_text init failed");
 
     // 初始化Toast
     mRuner = [this] {

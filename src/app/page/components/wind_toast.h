@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-25 10:22:41
- * @LastEditTime: 2026-01-08 10:01:11
+ * @LastEditTime: 2026-02-08 04:16:29
  * @FilePath: /kk_frame/src/app/page/components/wind_toast.h
  * @Description: Toast组件
  * @BugList:
@@ -94,7 +94,7 @@ public:
     void setDiyToastAni(TOAST_ANIMATE ani);
 
 private:
-    inline bool checkInit();
+    bool checkInit();
 
     void onStart(bool withAnim);
     void onFinish();
