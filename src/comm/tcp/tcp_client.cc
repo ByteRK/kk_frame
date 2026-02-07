@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-05 09:27:49
- * @LastEditTime: 2026-02-07 10:36:43
+ * @LastEditTime: 2026-02-07 10:46:14
  * @FilePath: /kk_frame/src/comm/tcp/tcp_client.cc
  * @Description:
  * @BugList:
@@ -86,7 +86,7 @@ bool TcpClientTransport::connectServer() {
 void TcpClientTransport::threadLoop() {
     while (mRunning) {
         if (!connectServer()) {
-            sleep(1);           // 防止空转
+            sleep(3);           // 防止空转
             continue;
         }
 
@@ -111,7 +111,7 @@ void TcpClientTransport::threadLoop() {
         ev.type = TransportEvent::DISCONNECTED;
         postEvent(ev);
 
-        sleep(1);   // 重连节流
+        sleep(3);   // 重连节流
     }
 }
 
