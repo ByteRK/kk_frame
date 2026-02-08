@@ -14,6 +14,8 @@
 #ifndef __PROTO_H__
 #define __PROTO_H__
 
+#include <stdint.h>
+
 /**
  * 交互协议相关定义
 */
