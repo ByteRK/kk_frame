@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:47:17
- * @LastEditTime: 2025-12-29 17:04:18
+ * @LastEditTime: 2026-02-08 11:54:23
  * @FilePath: /kk_frame/src/utils/project_utils.h
  * @Description: 项目相关的一些操作函数
  * @BugList:
@@ -28,6 +28,9 @@ namespace ProjectUtils {
 
     /// @brief 输出按键映射
     void pKeyMap();
+
+    /// @brief 获取调试串口信息
+    void getDebugServiceInfo(std::string& ip, int16_t& port);
 
     /// @brief 获取德明利TP版本号
     /// @return 

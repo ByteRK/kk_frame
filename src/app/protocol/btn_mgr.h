@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-06-12 14:49:06
- * @LastEditTime: 2026-02-06 11:34:55
+ * @LastEditTime: 2026-02-08 12:11:46
  * @FilePath: /kk_frame/src/app/protocol/btn_mgr.h
  * @Description:
  * @BugList:
@@ -19,31 +19,18 @@
 #include "packet_handler.h"
 #include "template/singleton.h"
 
-// 按键数量
-constexpr int LEFT_BTN_COUNT = 6;
-constexpr int RIGHT_BTN_COUNT = 5;
-constexpr int ALL_BTN_COUNT = LEFT_BTN_COUNT + RIGHT_BTN_COUNT;
-
-// 按键灯亮度
-constexpr uint8_t BTN_HIGHT   = 0xFF * 100 / 100 ; // 高亮
-constexpr uint8_t BTN_LOW     = 0xFF * 30  / 100 ; // 低亮
-constexpr uint8_t BTN_CLOSE   = 0xFF * 0   / 100 ; // 关闭
-
-#define g_btnMgr BtnMgr::ins()
+#define g_btnMgr BtnMgr::instance()
 
 class BtnMgr : public EventHandler, public IHandler,
     public Singleton<BtnMgr>{
     friend Singleton<BtnMgr>;
 private:
-    IPacketBuffer*   mPacket;
-    int64_t          mNextEventTime;
-    int64_t          mLastSendTime;
-    UartClient*      mUartMCU; // 按键串口
-
-    uint8_t          mVersionL;
-    uint8_t          mVersionR;
-    uint8_t          mBtnLight[ALL_BTN_COUNT]; // 按键灯状态列表
-    bool             mBtnLightChanged;         // 按键灯状态是否改变
+    IPacketBuffer*   mPacket;                  // 按键数据包
+    int64_t          mNextEventTime;           // 下次事件时间
+    int64_t          mNextSendTime;            // 下次发送时间
+    int64_t          mLastAcceptTime;          // 上次接收时间
+    int              mBtnUpd;                  // 按键更新标志
+    UartClient*      mUartBtn;                 // 按键串口
 
 protected:
     BtnMgr();
@@ -51,17 +38,15 @@ protected:
 
 public:
     int init();
-    std::string getVersion();
 
 protected:
     int checkEvents() override;
     int handleEvents() override;
 
-    void send2MCU();
+    void send2Btn();
     void onCommDeal(IAck* ack) override;
     
 public:
-    void setLight(uint8_t* light);
 };
 
 #endif // !__BTN_MGR_H__

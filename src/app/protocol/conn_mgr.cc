@@ -1,32 +1,49 @@
+/*
+ * @Author: Ricken
+ * @Email: me@ricken.cn
+ * @Date: 2025-11-24 09:40:23
+ * @LastEditTime: 2026-02-08 12:15:10
+ * @FilePath: /kk_frame/src/app/protocol/conn_mgr.cc
+ * @Description:
+ * @BugList:
+ *
+ * Copyright (c) 2025 by Ricken, All Rights Reserved.
+ *
+**/
+
 #include "conn_mgr.h"
 #include "string_utils.h"
+#include "project_utils.h"
 #include <core/app.h>
 
-#define TICK_TIME 200 // tick触发时间（毫秒）
+#define TICK_TIME 100 // tick触发时间（毫秒）
 
 //////////////////////////////////////////////////////////////////
 
 typedef IPacketBufferT<BT_MCU, McuAsk, McuAck> McuPacketBuffer;
 
-CConnMgr::CConnMgr() {
+ConnMgr::ConnMgr() {
     mPacket = new McuPacketBuffer();
-    mUartMCU = nullptr;
     mNextEventTime = 0;
+    mNextSendTime = 0;
+    mLastAcceptTime = cdroid::SystemClock::uptimeMillis();
+    mMcuUpd = 0;
+    mUartMcu = nullptr;
 
     g_packetMgr->addHandler(BT_MCU, this);
 }
 
-CConnMgr::~CConnMgr() {
-    if (mUartMCU) {
-        delete mUartMCU;
-        mUartMCU = nullptr;
+ConnMgr::~ConnMgr() {
+    if (mUartMcu) {
+        delete mUartMcu;
+        mUartMcu = nullptr;
     }
 }
 
-int CConnMgr::init() {
-    LOGI("CConnMgr Start");
-    
+int ConnMgr::init() {
+    LOGI("ConnMgr init");
     UartOpenReq ss;
+
     snprintf(ss.serialPort, sizeof(ss.serialPort), "/dev/ttyS1");
     ss.speed = 9600;
     ss.flow_ctrl = 0;
@@ -34,11 +51,11 @@ int CConnMgr::init() {
     ss.stopbits = 1;
     ss.parity = 'N';
 
-    mUartMCU = new UartClient(mPacket, ss, "192.168.0.113", 1142, 0);
-    mUartMCU->init();
-
-    mLastSendTime = SystemClock::uptimeMillis();
-    mLastAcceptTime = SystemClock::uptimeMillis();
+    std::string debugIp;
+    short debugPort;
+    ProjectUtils::getDebugServiceInfo(debugIp, debugPort);
+    mUartMcu = new UartClient(mPacket, ss, debugIp, debugPort + BT_MCU, 0);
+    mUartMcu->init();
 
     // 启动延迟一会后开始发包
     mNextEventTime = SystemClock::uptimeMillis() + TICK_TIME * 10;
@@ -46,38 +63,46 @@ int CConnMgr::init() {
     return 0;
 }
 
-std::string CConnMgr::getVersion() {
-    return std::string("-.-");
-}
-
-int CConnMgr::checkEvents() {
-    int64_t curr_tick = SystemClock::uptimeMillis();
-    if (curr_tick >= mNextEventTime) {
-        mNextEventTime = curr_tick + TICK_TIME;
+int ConnMgr::checkEvents() {
+    int64_t now = SystemClock::uptimeMillis();
+    if (mUartMcu && mMcuUpd > 0) return 1;
+    if (now >= mNextEventTime) {
+        mNextEventTime = now + TICK_TIME;
         return 1;
     }
     return 0;
 }
 
-int CConnMgr::handleEvents() {
-    int64_t now_tick = SystemClock::uptimeMillis();
-    if (mUartMCU) mUartMCU->onTick();
-    send2MCU();
+int ConnMgr::handleEvents() {
+    if (mUartMcu) {
+        if (mMcuUpd > 0) send2Mcu();
+        mUartMcu->onTick();
+
+        if (mNextEventTime - mLastAcceptTime > 10 * 1000) {
+            LOGE("mcu communication failure");
+        }
+    }
     return 1;
 }
 
-void CConnMgr::send2MCU() {
-    BuffData* bd = mPacket->obtain(false, 0);
-    McuAsk    snd(bd);
-    
-    snd.checkCode(); // 修改检验位
+/// @brief 发送串口消息
+void ConnMgr::send2Mcu() {
+    BuffData* bd = mPacket->obtain(false);
+    BtnAsk    snd(bd);
 
-    mLastSendTime = SystemClock::uptimeMillis();
-    LOG(VERBOSE) << "[ <-- Send] bytes=" << StringUtils::hexStr(bd->buf, bd->len) << "    -->";
-    mUartMCU->send(bd);
+    // TODO:设置数据
+
+    snd.checkCode();
+    LOG(VERBOSE) << "send to btn. bytes=" << StringUtils::hexStr(bd->buf, bd->len);
+    mUartMcu->send(bd);
 }
 
-void CConnMgr::onCommDeal(IAck* ack) {
+/// @brief 处理串口信息
+/// @param ack 
+void ConnMgr::onCommDeal(IAck* ack) {
+
+    // TODO:解析处理
+
     mLastAcceptTime = SystemClock::uptimeMillis();
-    LOG(VERBOSE) << "[ <-- Accept] bytes=" << StringUtils::hexStr(ack->mBuf, ack->mDlen);
+    LOG(VERBOSE) << "hex str=" << StringUtils::hexStr(ack->mBuf, ack->mDlen);
 }

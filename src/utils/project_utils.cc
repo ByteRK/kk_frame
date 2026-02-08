@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:47:17
- * @LastEditTime: 2025-12-31 14:07:42
+ * @LastEditTime: 2026-02-08 11:54:34
  * @FilePath: /kk_frame/src/utils/project_utils.cc
  * @Description: 项目相关的一些操作函数
  * @BugList:
@@ -29,7 +29,7 @@
 #include <cdlog.h>
 
 void ProjectUtils::env() {
-#if defined(CDROID_X64) || defined(__VSCODE__)
+#if defined(PRODUCT_X64) || defined(__VSCODE__)
     setenv("FONTCONFIG_PATH", FONTCONFIG_PATH, 1);
     setenv("SCREEN_SIZE", SCREEN_SIZE, 1);
 #endif
@@ -75,8 +75,28 @@ void ProjectUtils::pKeyMap() {
     fprintf(stderr, "\033[0;37m\n");
 }
 
+void ProjectUtils::getDebugServiceInfo(std::string& ip, int16_t& port) {
+    ip = "127.0.0.1";
+    port = 8999;
+
+#if defined(PRODUCT_X64) || defined(__VSCODE__)
+    char* username = getlogin();
+    if (username == nullptr) {
+        LOGE("getlogin failed");
+        return;
+    }
+    std::string nameStr(username);
+    if (nameStr == "ricken") {
+        ip = "10.0.0.10";
+        port = 1140;
+    } else {
+        LOGW("unknown user: %s", username);
+    }
+#endif
+}
+
 int ProjectUtils::getTwscTpVersion() {
-#ifndef CDROID_X64
+#ifndef PRODUCT_X64
     return 0;
 #else
     int fd = open("/dev/techwin_ioctl", O_RDONLY);
@@ -101,7 +121,7 @@ void ProjectUtils::saveTime(const std::string& filename) {
     tm* timeinfo = localtime(&now);
     file << "Current Date and Time: " << asctime(timeinfo);
     file.close();
-#ifndef CDROID_X64
+#ifndef PRODUCT_X64
     std::system("sync");
 #endif
 }

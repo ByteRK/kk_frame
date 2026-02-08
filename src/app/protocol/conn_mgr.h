@@ -2,14 +2,14 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:54:27
- * @LastEditTime: 2026-02-06 11:33:55
+ * @LastEditTime: 2026-02-08 12:10:58
  * @FilePath: /kk_frame/src/app/protocol/conn_mgr.h
- * @Description: 
- * @BugList: 
- * 
- * Copyright (c) 2025 by Ricken, All Rights Reserved. 
- * 
- */
+ * @Description:
+ * @BugList:
+ *
+ * Copyright (c) 2025 by Ricken, All Rights Reserved.
+ *
+**/
 
 #ifndef __CONN_MGR_H__
 #define __CONN_MGR_H__
@@ -19,37 +19,33 @@
 #include "packet_handler.h"
 #include "template/singleton.h"
 
-#include "struct.h"
+#define g_connMgr ConnMgr::instance()
 
-#define g_connMgr CConnMgr::instance()
-
-class CConnMgr : public EventHandler, public IHandler,
-    public Singleton<CConnMgr>{
-    friend Singleton<CConnMgr>;
+class ConnMgr : public EventHandler, public IHandler,
+    public Singleton<ConnMgr>{
+    friend Singleton<ConnMgr>;
 private:
-    IPacketBuffer*   mPacket;            // 数据包
-    UartClient*      mUartMCU;           // MCU串口
-    int64_t          mNextEventTime;     // 下次事件时间
-    int64_t          mLastSendTime;      // 最后发送时间
-    int64_t          mLastAcceptTime;    // 最后接收时间
+    IPacketBuffer*   mPacket;                  // 电控数据包
+    int64_t          mNextEventTime;           // 下次事件时间
+    int64_t          mNextSendTime;            // 下次发送时间
+    int64_t          mLastAcceptTime;          // 上次接收时间
+    int              mMcuUpd;                  // 电控更新标志
+    UartClient*      mUartMcu;                 // 电控串口
+
 protected:
-    CConnMgr();
-    ~CConnMgr();
+    ConnMgr();
+    ~ConnMgr();
 
 public:
     int init();
-    std::string getVersion();
 
 protected:
-    int checkEvents();
-    int handleEvents();
+    int checkEvents() override;
+    int handleEvents() override;
 
-    // 发送给MCU
-    void send2MCU();
+    void send2Mcu();
+    void onCommDeal(IAck* ack) override;
     
-    // 处理相应
-    void onCommDeal(IAck* ack);
-
 public:
 };
 
