@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-06-12 14:49:06
- * @LastEditTime: 2026-02-08 12:11:46
+ * @LastEditTime: 2026-02-08 12:33:47
  * @FilePath: /kk_frame/src/app/protocol/btn_mgr.h
  * @Description:
  * @BugList:
@@ -22,7 +22,7 @@
 #define g_btnMgr BtnMgr::instance()
 
 class BtnMgr : public EventHandler, public IHandler,
-    public Singleton<BtnMgr>{
+    public Singleton<BtnMgr> {
     friend Singleton<BtnMgr>;
 private:
     IPacketBuffer*   mPacket;                  // 按键数据包
@@ -45,7 +45,7 @@ protected:
 
     void send2Btn();
     void onCommDeal(IAck* ack) override;
-    
+
 public:
 };
 

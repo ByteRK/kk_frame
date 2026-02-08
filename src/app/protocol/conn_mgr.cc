@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-11-24 09:40:23
- * @LastEditTime: 2026-02-08 12:15:10
+ * @LastEditTime: 2026-02-08 12:34:20
  * @FilePath: /kk_frame/src/app/protocol/conn_mgr.cc
  * @Description:
  * @BugList:
@@ -17,8 +17,6 @@
 #include <core/app.h>
 
 #define TICK_TIME 100 // tick触发时间（毫秒）
-
-//////////////////////////////////////////////////////////////////
 
 typedef IPacketBufferT<BT_MCU, McuAsk, McuAck> McuPacketBuffer;
 
@@ -78,7 +76,7 @@ int ConnMgr::handleEvents() {
         if (mMcuUpd > 0) send2Mcu();
         mUartMcu->onTick();
 
-        if (mNextEventTime - mLastAcceptTime > 10 * 1000) {
+        if (cdroid::SystemClock::uptimeMillis() - mLastAcceptTime > 10 * 1000) {
             LOGE("mcu communication failure");
         }
     }
@@ -93,7 +91,7 @@ void ConnMgr::send2Mcu() {
     // TODO:设置数据
 
     snd.checkCode();
-    LOG(VERBOSE) << "send to btn. bytes=" << StringUtils::hexStr(bd->buf, bd->len);
+    LOG(VERBOSE) << "[CONN -->] hex str: " << StringUtils::hexStr(bd->buf, bd->len);
     mUartMcu->send(bd);
 }
 
@@ -104,5 +102,5 @@ void ConnMgr::onCommDeal(IAck* ack) {
     // TODO:解析处理
 
     mLastAcceptTime = SystemClock::uptimeMillis();
-    LOG(VERBOSE) << "hex str=" << StringUtils::hexStr(ack->mBuf, ack->mDlen);
+    LOG(VERBOSE) << "[<-- CONN] hex str: " << StringUtils::hexStr(ack->mBuf, ack->mDlen);
 }

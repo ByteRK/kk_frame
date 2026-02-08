@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-11-24 09:40:23
- * @LastEditTime: 2026-02-08 12:14:51
+ * @LastEditTime: 2026-02-08 12:34:13
  * @FilePath: /kk_frame/src/app/protocol/btn_mgr.cc
  * @Description:
  * @BugList:
@@ -17,8 +17,6 @@
 #include <core/app.h>
 
 #define TICK_TIME 100 // tick触发时间（毫秒）
-
-//////////////////////////////////////////////////////////////////
 
 typedef IPacketBufferT<BT_BTN, BtnAsk, BtnAck> BtnPacketBuffer;
 
@@ -78,8 +76,8 @@ int BtnMgr::handleEvents() {
         if (mBtnUpd > 0) send2Btn();
         mUartBtn->onTick();
 
-        if (mNextEventTime - mLastAcceptTime > 10 * 1000) {
-            LOGE("mcu communication failure");
+        if (cdroid::SystemClock::uptimeMillis() - mLastAcceptTime > 10 * 1000) {
+            LOGE("btn communication failure");
         }
     }
     return 1;
@@ -93,16 +91,16 @@ void BtnMgr::send2Btn() {
     // TODO:设置数据
 
     snd.checkCode();
-    LOG(VERBOSE) << "send to btn. bytes=" << StringUtils::hexStr(bd->buf, bd->len);
+    LOG(VERBOSE) << "[BTN -->] hex str: " << StringUtils::hexStr(bd->buf, bd->len);
     mUartBtn->send(bd);
 }
 
 /// @brief 处理串口信息
 /// @param ack 
 void BtnMgr::onCommDeal(IAck* ack) {
-    
+
     // TODO:解析处理
 
     mLastAcceptTime = SystemClock::uptimeMillis();
-    LOG(VERBOSE) << "hex str=" << StringUtils::hexStr(ack->mBuf, ack->mDlen);
+    LOG(VERBOSE) << "[<-- BTN] hex str: " << StringUtils::hexStr(ack->mBuf, ack->mDlen);
 }
