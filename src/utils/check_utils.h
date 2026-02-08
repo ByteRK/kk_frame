@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-29 11:52:07
- * @LastEditTime: 2026-02-06 14:04:21
+ * @LastEditTime: 2026-02-08 10:59:33
  * @FilePath: /kk_frame/src/utils/check_utils.h
  * @Description: 校验相关的一些函数
  * @BugList:
@@ -48,6 +48,19 @@ namespace CheckUtils {
     /// @param length 数据长度
     /// @return CRC16校验值
     uint16_t crc16MODBUS(const uint8_t *data, uint16_t length);
+
+    /// @brief 计算CRC16校验(ANSI)
+    /// @param data 数据
+    /// @param length 数据长度
+    /// @return CRC16校验值
+    /// @note CRC-16-ANSI X3.28
+    uint16_t crc16ANSI(const uint8_t *data, uint16_t length);
+
+    /// @brief 计算CRC16校验(IBM)
+    /// @param data 数据
+    /// @param length 数据长度
+    /// @return CRC16校验值
+    uint16_t crc16IBM(const uint8_t *data, uint16_t length);
 
 } // namespace CheckUtils
 
