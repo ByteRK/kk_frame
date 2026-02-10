@@ -1,0 +1,430 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <EditText
+        style="@style/keyboard_input_box"
+        android:id="@+id/world_enter"
+        android:layout_width="570dp"
+        android:layout_height="60dp"
+        android:layout_marginRight="5dp"
+        android:layout_marginLeft="5dp"
+        android:gravity="left|center_vertical"
+        android:text=""
+        android:textColor="#959595"
+        android:textSize="34sp"
+        android:paddingHorizontal="10dp"
+        android:background="@drawable/keyboard_enter"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:textCursorDrawable="@drawable/text_cursor"/>
+    <Button
+        style="@style/keyboard_input_box"
+        android:id="@+id/cancel_button"
+        android:layout_width="100dp"
+        android:layout_height="60dp"
+        android:layout_marginRight="5dp"
+        android:layout_marginLeft="5dp"
+        android:layout_toEndOf="@id/world_enter"
+        android:text="取消"
+        android:textSize="34sp"
+        android:textColor="#FFFFFF"
+        android:background="@drawable/keyboard_func"
+        android:gravity="center"/>
+
+    <Button
+        style="@style/keyboard_input_box"
+        android:id="@+id/confirm_button"
+        android:layout_width="100dp"
+        android:layout_height="60dp"
+        android:layout_marginRight="5dp"
+        android:layout_marginLeft="5dp"
+        android:layout_toEndOf="@id/cancel_button"
+        android:text="确认"
+        android:textSize="34sp"
+        android:textColor="#FFFFFF"
+        android:background="@drawable/keyboard_func"
+        android:gravity="center"/>
+
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/world_enter">
+
+        <!-- 汉字拼音 -->
+        <TextView
+            android:id="@+id/txt_zh_pingyin"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:text="heng'wei"
+            android:textSize="24sp"
+            android:textColor="#efefef"
+            android:background="#26FFFFFF"/>
+        <!-- 待选区域 -->
+        <RelativeLayout
+            android:id="@+id/kb_show_container"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_below="@id/txt_zh_pingyin"
+            android:layout_marginTop="10dp"
+            android:layout_alignLeft="@id/key_q"
+            android:layout_alignRight="@id/key_p"
+            android:background="@drawable/keyboard_show">
+
+            <!-- 可选词条 -->
+            <LinearLayout
+                android:id="@+id/kb_choose_container"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginRight="110dp"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="10dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    style="@style/keyboard_world"
+                    android:id="@+id/key_world"
+                    android:text="中/英文候选区"
+                    android:textColor="#f2bb00"/>
+
+                <TextView
+                    style="@style/keyboard_world"
+                    android:id="@+id/key_world2"
+                    android:text="中/英文候选区2"/>
+
+                <TextView
+                    style="@style/keyboard_world"
+                    android:id="@+id/key_world3"
+                    android:text="中/英文候选区3"/>
+
+                <TextView
+                    style="@style/keyboard_world"
+                    android:id="@+id/key_world4"
+                    android:text="中/英文候选区4"/>
+
+                <TextView
+                    style="@style/keyboard_world"
+                    android:id="@+id/key_world5"
+                    android:text="中/英文候选区5"/>
+
+                <TextView
+                    style="@style/keyboard_world"
+                    android:id="@+id/key_world6"
+                    android:text="中/英文候选区6"/>
+
+                <TextView
+                    style="@style/keyboard_world"
+                    android:id="@+id/key_world7"
+                    android:text="中/英文候选区7"/>
+
+                <TextView
+                    style="@style/keyboard_world"
+                    android:id="@+id/key_world8"
+                    android:text="中/英文候选区8"/>
+                
+                <TextView
+                    style="@style/keyboard_world"
+                    android:id="@+id/key_world9"
+                    android:text="中/英文候选区9"/>
+                
+                <TextView
+                    style="@style/keyboard_world"
+                    android:id="@+id/key_world10"
+                    android:text="中/英文候选区10"/>
+
+            </LinearLayout>
+            <!-- 上一页 -->
+            <Button
+                android:id="@+id/btn_pre_page"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_toStartOf="@id/txt_hide_left"
+                android:background="@mipmap/kb_up"/>
+            <!-- 分隔线 -->
+            <TextView
+                android:id="@+id/txt_hide_left"
+                android:layout_width="2dp"
+                android:layout_height="50dp"
+                android:layout_centerVertical="true"
+                android:background="#000000"
+                android:layout_toStartOf="@id/btn_hide"/>
+            <!-- 下一页/取消 -->
+            <Button
+                android:id="@+id/btn_hide"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:background="@mipmap/kb_down"/>
+
+        </RelativeLayout>
+
+        <!-- 第1行字母键盘 -->
+        <Button
+            style="@style/keyboard_letter"
+            android:id="@+id/key_q"
+            android:layout_alignTop="@id/key_t"
+            android:text="q"/>
+
+        <Button
+            style="@style/keyboard_letter"
+            android:id="@+id/key_w"
+            android:layout_alignTop="@id/key_t"
+            android:layout_toEndOf="@id/key_q"
+            android:text="w"/>
+
+        <Button
+            style="@style/keyboard_letter"
+            android:id="@+id/key_e"
+            android:layout_alignTop="@id/key_t"
+            android:layout_toEndOf="@id/key_w"
+            android:text="e"/>
+
+        <Button
+            style="@style/keyboard_letter"
+            android:id="@+id/key_r"
+            android:layout_alignTop="@id/key_t"
+            android:layout_toEndOf="@id/key_e"
+            android:text="r"/>
+
+        <Button
+            style="@style/keyboard_letter"
+            android:id="@+id/key_t"
+            android:layout_below="@id/kb_show_container"
+            android:layout_toEndOf="@id/key_r"
+            android:layout_marginTop="10dp"
+            android:text="t"/>
+
+        <Button
+            style="@style/keyboard_letter"
+            android:id="@+id/key_y"
+            android:layout_alignTop="@id/key_t"
+            android:layout_toEndOf="@id/key_t"
+            android:text="y"/>
+
+        <Button
+            style="@style/keyboard_letter"
+            android:id="@+id/key_u"
+            android:layout_alignTop="@id/key_t"
+            android:layout_toEndOf="@id/key_y"
+            android:text="u"/>
+
+        <Button
+            style="@style/keyboard_letter"
+            android:id="@+id/key_i"
+            android:layout_alignTop="@id/key_t"
+            android:layout_toEndOf="@id/key_u"
+            android:text="i"/>
+
+        <Button
+            style="@style/keyboard_letter"
+            android:id="@+id/key_o"
+            android:layout_alignTop="@id/key_t"
+            android:layout_toEndOf="@id/key_i"
+            android:text="o"/>
+
+        <Button
+            style="@style/keyboard_letter"
+            android:id="@+id/key_p"
+            android:layout_alignTop="@id/key_t"
+            android:layout_toEndOf="@id/key_o"
+            android:text="p"
+            android:layout_marginRight="0dp"/>
+
+        <!-- 第二行字母键盘 -->
+        <RelativeLayout
+            android:id="@+id/keyboard_row2"
+            android:layout_width="match_parent"
+            android:layout_height="80dp"
+            android:layout_alignLeft="@id/key_q"
+            android:layout_alignRight="@id/key_p"
+            android:layout_below="@id/key_q"
+            android:gravity="center_vertical"
+            android:paddingLeft="40dp">
+
+            <Button
+                style="@style/keyboard_letter"
+                android:id="@+id/key_a"
+                android:text="a"/>
+
+            <Button
+                style="@style/keyboard_letter"
+                android:id="@+id/key_s"
+                android:layout_toEndOf="@id/key_a"
+                android:text="s"/>
+
+            <Button
+                style="@style/keyboard_letter"
+                android:id="@+id/key_d"
+                android:layout_toEndOf="@id/key_s"
+                android:text="d"/>
+
+            <Button
+                style="@style/keyboard_letter"
+                android:id="@+id/key_f"
+                android:layout_toEndOf="@id/key_d"
+                android:text="f"/>
+
+            <Button
+                style="@style/keyboard_letter"
+                android:id="@+id/key_g"
+                android:layout_toEndOf="@id/key_f"
+                android:text="g"/>
+
+            <Button
+                style="@style/keyboard_letter"
+                android:id="@+id/key_h"
+                android:layout_toEndOf="@id/key_g"
+                android:text="h"/>
+
+            <Button
+                style="@style/keyboard_letter"
+                android:id="@+id/key_j"
+                android:layout_toEndOf="@id/key_h"
+                android:text="j"/>
+
+            <Button
+                style="@style/keyboard_letter"
+                android:id="@+id/key_k"
+                android:layout_toEndOf="@id/key_j"
+                android:text="k"/>
+
+            <Button
+                style="@style/keyboard_letter"
+                android:id="@+id/key_l"
+                android:layout_toEndOf="@id/key_k"
+                android:text="l"/>
+
+            <!-- <Button
+                style="@style/keyboard_letter"
+                android:id="@+id/key_l_right"
+                android:layout_toEndOf="@id/key_l"
+                android:text="l-r"
+                android:visibility="gone"
+                android:layout_marginRight="0dp"/> -->
+
+        </RelativeLayout>
+
+        <!-- 第三行键盘 -->
+        <Button
+            style="@style/keyboard_letter"
+            android:id="@+id/key_case"
+            android:layout_width="100dp"
+            android:layout_below="@id/keyboard_row2"
+            android:layout_marginRight="10dp"
+            android:text="小写"
+            android:background="@drawable/keyboard_func"/>
+
+        <Button
+            style="@style/keyboard_letter"
+            android:id="@+id/key_z"
+            android:layout_alignTop="@id/key_case"
+            android:layout_toEndOf="@id/key_case"
+            android:text="z"/>
+
+        <Button
+            style="@style/keyboard_letter"
+            android:id="@+id/key_x"
+            android:layout_alignTop="@id/key_case"
+            android:layout_toEndOf="@id/key_z"
+            android:text="x"/>
+
+        <Button
+            style="@style/keyboard_letter"
+            android:id="@+id/key_c"
+            android:layout_alignTop="@id/key_case"
+            android:layout_toEndOf="@id/key_x"
+            android:text="c"/>
+
+        <Button
+            style="@style/keyboard_letter"
+            android:id="@+id/key_v"
+            android:layout_alignTop="@id/key_case"
+            android:layout_toEndOf="@id/key_c"
+            android:text="v"/>
+
+        <Button
+            style="@style/keyboard_letter"
+            android:id="@+id/key_b"
+            android:layout_alignTop="@id/key_case"
+            android:layout_toEndOf="@id/key_v"
+            android:text="b"/>
+
+        <Button
+            style="@style/keyboard_letter"
+            android:id="@+id/key_n"
+            android:layout_alignTop="@id/key_case"
+            android:layout_toEndOf="@id/key_b"
+            android:text="n"/>
+
+        <Button
+            style="@style/keyboard_letter"
+            android:id="@+id/key_m"
+            android:layout_alignTop="@id/key_case"
+            android:layout_toEndOf="@id/key_n"
+            android:text="m"/>
+
+        <Button
+            style="@style/keyboard_letter"
+            android:id="@+id/key_backspace"
+            android:layout_width="146dp"
+            android:layout_alignTop="@id/key_case"
+            android:layout_alignRight="@id/key_p"
+            android:layout_toEndOf="@id/key_m"
+            android:drawableRight="@mipmap/kb_backspace"
+            android:background="@drawable/keyboard_func"
+            android:gravity="center"/>
+
+        <!-- 第四行 -->
+        <Button
+            style="@style/keyboard_letter"
+            android:layout_width="100dp"
+            android:id="@+id/key_number"
+            android:layout_alignTop="@id/key_space"
+            android:text="123"
+            android:background="@drawable/keyboard_func"/>
+
+        <Button
+            style="@style/keyboard_letter"
+            android:layout_width="100dp"
+            android:id="@+id/key_zh_en"
+            android:layout_alignTop="@id/key_space"
+            android:layout_toEndOf="@id/key_number"
+            android:text="英文"
+            android:background="@drawable/keyboard_func"/>
+
+        <Button
+            style="@style/keyboard_letter"
+            android:id="@+id/key_douhao"
+            android:layout_alignTop="@id/key_space"
+            android:layout_toEndOf="@id/key_zh_en"
+            android:text="."/>
+
+        <Button
+            android:id="@+id/key_space"
+            style="@style/keyboard_letter"
+            android:layout_width="300dp"
+            android:layout_below="@+id/key_v"
+            android:layout_toEndOf="@id/key_douhao"
+            android:layout_marginTop="10dp"
+            android:text="空格"/>
+
+        <Button
+            style="@style/keyboard_letter"
+            android:id="@+id/key_juhao"
+            android:layout_alignTop="@id/key_space"
+            android:layout_toEndOf="@id/key_space"
+            android:text="?"/>
+
+        <Button
+            style="@style/keyboard_letter"
+            android:layout_width="180dp"
+            android:id="@+id/key_enter"
+            android:layout_alignTop="@id/key_space"
+            android:layout_alignRight="@id/key_p"
+            android:layout_toEndOf="@id/key_juhao"
+            android:layout_marginRight="0dp"
+            android:text="换行"
+            android:background="@drawable/keyboard_func"/>
+
+    </RelativeLayout>
+
+</merge>

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-02-08 04:09:10
+ * @LastEditTime: 2026-02-11 01:00:57
  * @FilePath: /kk_frame/src/app/page/core/wind.cc
  * @Description: 窗口类
  * @BugList:
@@ -48,6 +48,7 @@ void MainWindow::init() {
     WindPage::init(mRootView);
     WindPop::init(mRootView);
     WindToast::init(mRootView);
+    WindKeyboard::init(mRootView);
 
     // 增加点击反馈
     mAttachInfo->mPlaySoundEffect = playSound;

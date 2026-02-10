@@ -3,6 +3,7 @@
 #include "R.h"
 #include "cKeyBoard.h"
 #include "app_version.h"
+#include "string_utils.h"
 
 #ifdef ENABLE_PINYIN2HZ
 #include <core/inputmethodmanager.h>
@@ -27,6 +28,10 @@ using namespace cdroid;
 
 #define ENTERTEXT_SIZE 24
 #define DESCRIPTION_SIZE 24
+
+#ifndef __dc
+#define __dc(type, obj) dynamic_cast<type*>(obj)
+#endif
 
 GooglePinyin* gObjPinyin = nullptr;
 std::set<int> gLetterKeys;
@@ -648,8 +653,8 @@ void CKeyBoard::onClickID(int id) {
     } else if (id == R::id::confirm_button) {
         if (mCompleteListener) { mCompleteListener(mEnterText); }
         setVisibility(View::GONE);
-    }else if (id == R::id::cancel_button) {
-        if(mCancelListener) { mCancelListener(); }
+    } else if (id == R::id::cancel_button) {
+        if (mCancelListener) { mCancelListener(); }
         setVisibility(View::GONE);
     } else {
         switch (mEditTextType) {
@@ -748,10 +753,10 @@ void CKeyBoard::setDescription(const std::string& txt) {
 }
 
 void CKeyBoard::setEditText(const std::string& txt) {
-    int wordCount = wordLen(txt.c_str());
+    int wordCount = StringUtils::characterCount(txt.c_str());
     mLastTxt = txt;
     if (mWordCount > 0 && wordCount > mWordCount) {
-        mLastTxt = getWord(txt.c_str(), mWordCount);
+        mLastTxt = StringUtils::substringByChars(txt.c_str(), mWordCount);
         setText(mLastTxt, mText, 40, 16, 34);
     } else {
         setText(txt, mText, 40, 16, 34);
@@ -759,9 +764,9 @@ void CKeyBoard::setEditText(const std::string& txt) {
 }
 
 void CKeyBoard::setText(const std::string& txt) {
-    int wordCount = wordLen(txt.c_str());
+    int wordCount = StringUtils::characterCount(txt.c_str());
     if (mWordCount > 0 && wordCount > mWordCount) {
-        mLastTxt = getWord(txt.c_str(), mWordCount);
+        mLastTxt = StringUtils::substringByChars(txt.c_str(), mWordCount);
         setText(mLastTxt, mText, 40, 16, 34);
     } else {
         setText(txt, mText, 40, 16, 34);
@@ -785,7 +790,7 @@ std::string& CKeyBoard::decStr(std::string& txt) {
 
     if (txt.empty()) return txt;
 
-    txt = decLastWord(txt.c_str());
+    txt = StringUtils::removeLastCharacter(txt.c_str());
     return txt;
 }
 
@@ -800,7 +805,7 @@ void CKeyBoard::setEnterText(const std::string& txt) {
         mText->setTextColor(ENTERTEXT_COLOR);
         mText->setTextSize(ENTERTEXT_SIZE);
         mText->setText(mEnterText + " ");
-        mText->setCaretPos(wordLen(txt.c_str()));
+        mText->setCaretPos(StringUtils::characterCount(txt.c_str()));
     }
 }
 
@@ -876,12 +881,12 @@ void CKeyBoard::enterEnglish(int keyID) {
         std::string editTextStr = mText->getText();
         if ((mPageType == KB_PT_NUMBER || mPageType == KB_PT_MORE) && mZhPage) {
             auto keyValue = mZHPageValue[mPageType].find(keyID);
-            if (keyValue != mZHPageValue[mPageType].end() && (editTextStr == mDescription || (mWordCount > 0 && wordLen(editTextStr.c_str()) < mWordCount + 1)))
+            if (keyValue != mZHPageValue[mPageType].end() && (editTextStr == mDescription || (mWordCount > 0 && StringUtils::characterCount(editTextStr.c_str()) < mWordCount + 1)))
                 keyStr = keyValue->second;
             else keyStr = "";
         } else {
             auto keyValue = mENPageValue[mPageType].find(keyID);
-            if (keyValue != mENPageValue[mPageType].end() && (editTextStr == mDescription || (mWordCount > 0 && wordLen(editTextStr.c_str()) < mWordCount + 1)))
+            if (keyValue != mENPageValue[mPageType].end() && (editTextStr == mDescription || (mWordCount > 0 && StringUtils::characterCount(editTextStr.c_str()) < mWordCount + 1)))
                 keyStr = keyValue->second;
             else keyStr = "";
         }
@@ -893,13 +898,13 @@ void CKeyBoard::enterEnglish(int keyID) {
 
         // 首字母大写
         if (firstStr.empty()) {
-            mWord2->setText(toUpper(keyStr));
+            mWord2->setText(StringUtils::upperNew(keyStr));
         } else {
             setText(mWord2->getText() + keyStr, mWord2, 12, 16, 32);
         }
 
         // 全部大写
-        setText(mWord3->getText() + toUpper(keyStr), mWord3, 12, 16, 32);
+        setText(mWord3->getText() + StringUtils::upperNew(keyStr), mWord3, 12, 16, 32);
 
         setText(mLastTxt + mWord->getText());
 
@@ -908,10 +913,10 @@ void CKeyBoard::enterEnglish(int keyID) {
 
     // 符号
     mLastTxt += mWord->getText();
-    if(mZhPage){
+    if (mZhPage) {
         auto keyValue = mZHPageValue[mPageType].find(keyID);
-    if (keyValue != mZHPageValue[mPageType].end())   mLastTxt += keyValue->second;
-    }else{
+        if (keyValue != mZHPageValue[mPageType].end())   mLastTxt += keyValue->second;
+    } else {
         auto keyValue = mENPageValue[mPageType].find(keyID);
         if (keyValue != mENPageValue[mPageType].end())   mLastTxt += keyValue->second;
     }

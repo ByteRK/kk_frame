@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-02-08 03:37:25
+ * @LastEditTime: 2026-02-11 01:00:33
  * @FilePath: /kk_frame/src/app/page/core/wind.h
  * @Description: 主窗口类
  * @BugList:
@@ -21,6 +21,7 @@
 #include "wind_page.h"
 #include "wind_pop.h"
 #include "wind_toast.h"
+#include "wind_keyboard.h"
 
 #include <widget/cdwindow.h>
 
@@ -28,7 +29,7 @@ class MainWindow :public Singleton<MainWindow>,
     public Window, public EventHandler,
     public WindLogo, public WindBlack,
     public WindPage, public WindPop,
-    public WindToast {
+    public WindToast, public WindKeyboard {
     friend Singleton<MainWindow>;
 
 public:

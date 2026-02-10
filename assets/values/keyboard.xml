@@ -1,0 +1,24 @@
+<resources>
+    <style name="keyboard_input_box">
+        <item name="android:layout_marginTop">10dp</item>
+    </style>
+    <style name="keyboard_letter">
+        <item name="android:layout_width">70dp</item>
+        <item name="android:layout_height">60dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textSize">24sp</item>
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:background">@drawable/keyboard_letter</item>
+        <item name="android:layout_marginRight">10dp</item>
+    </style>
+    <style name="keyboard_world">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:textSize">32sp</item>
+        <item name="android:paddingHorizontal">5dp</item>
+        <item name="android:singleLine">true</item>
+    </style>
+
+</resources>

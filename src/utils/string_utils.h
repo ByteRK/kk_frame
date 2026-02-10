@@ -2,8 +2,8 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 16:07:47
- * @LastEditTime: 2026-02-02 17:42:27
- * @FilePath: /kk_frame/src/utils/string_utils.h
+ * @LastEditTime: 2026-02-11 00:46:46
+ * @FilePath: /X5000/src/utils/string_utils.h
  * @Description: 字符串相关的一些操作函数
  * @BugList:
  *
@@ -29,10 +29,20 @@ namespace StringUtils {
     /// @return 
     void upper(std::string& str);
 
+    /// @brief 转换为全大写
+    /// @param str 字符串
+    /// @return 大写结果
+    std::string upperNew(const std::string& str);
+
     /// @brief 转换为全小写
     /// @param str 
     /// @return 
     void lower(std::string& str);
+
+    /// @brief 转换为全小写
+    /// @param str 字符串
+    /// @return 小写结果
+    std::string lowerNew(const std::string& str);
 
     /// @brief 格式化字符串
     /// @param format 格式化字符串
