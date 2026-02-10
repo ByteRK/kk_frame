@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 18:24:51
- * @LastEditTime: 2026-02-02 19:37:30
+ * @LastEditTime: 2026-02-11 01:17:57
  * @FilePath: /kk_frame/src/utils/math_utils.cc
  * @Description:
  * @BugList:
@@ -32,8 +32,8 @@ int MathUtils::rand(int min, int max) {
 }
 
 int MathUtils::randPlus(int min, int max) {
-    std::random_device rd;                          // 获取随机数种子
-    std::mt19937 gen(rd());                         // 梅森旋转算法生成随机数
+    static std::random_device rd;                   // 获取随机数种子
+    static std::mt19937 gen(rd());                  // 梅森旋转算法生成随机数
     std::uniform_int_distribution<> dis(min, max);  // 设定范围
     return dis(gen);
 }
