@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 14:40:26
- * @LastEditTime: 2026-02-02 14:02:42
+ * @LastEditTime: 2026-02-10 17:18:30
  * @FilePath: /kk_frame/src/utils/system_utils.cc
  * @Description: 系统相关的一些函数
  * @BugList:
@@ -58,7 +58,7 @@ std::string SystemUtils::system(const std::string& cmd) {
 
     // 计算执行时间
     int64_t diff = TimeUtils::getTimeMSec() - start;
-    if(diff > 10) LOGW("consume [%lld]ms system [%s] [%s]", diff, cmd.c_str(), result.c_str());
+    if (diff > 10) LOGW("consume [%lld]ms system [%s] [%s]", diff, cmd.c_str(), result.c_str());
     else LOGV("consume [%lld]ms system [%s] [%s]", diff, cmd.c_str(), result.c_str());
     return result;
 }
@@ -95,16 +95,16 @@ bool SystemUtils::sysfs(const std::string& path, const std::string& value) {
 }
 
 void SystemUtils::setBrightness(int value, bool swap) {
-#ifndef CDROID_X64
+    value = value % 101;
+    if (swap) value = 100 - value;
+#if defined(PRODUCT_SIGMA)
 #define BRIGHTNESS_PWM_PATH "/sys/class/pwm/pwmchip0/" SYS_SCREEN_BEIGHTNESS_PWM
 #define BRIGHTNESS_ENABLE_PATH BRIGHTNESS_PWM_PATH "/enable"
 #define BRIGHTNESS_VALUE_PATH BRIGHTNESS_PWM_PATH "/duty_cycle"
 
-    value = value % 101;
     if (access(BRIGHTNESS_PWM_PATH, F_OK)) { return; }
 
     if (value) {
-        if (swap) value = 100 - value;
         if (value == 0) value = 1;
         sysfs(BRIGHTNESS_ENABLE_PATH, "1");
         sysfs(BRIGHTNESS_VALUE_PATH, std::to_string(value));
@@ -117,6 +117,13 @@ void SystemUtils::setBrightness(int value, bool swap) {
 #undef BRIGHTNESS_VALUE_PATH
 #undef BRIGHTNESS_ENABLE_PATH
 #undef BRIGHTNESS_PWM_PATH
+#elif defined(PRODUCT_RK3506)
+    int val = 255 * value / 100;
+    if (val < 0) val = 0;
+    if (val > 255) val = 255;
+    char cmd[256];
+    snprintf(cmd, sizeof(cmd), "echo %d > /sys/class/backlight/backlight/brightness", val);
+    system(cmd);
 #else
     LOGI("设置屏幕背光 %d | %d", value, swap);
 #endif
