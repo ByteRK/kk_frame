@@ -1,4 +1,5 @@
 #!/bin/sh
+#set -x
 ###
  # @Author: Ricken
  # @Email: me@ricken.cn

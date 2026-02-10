@@ -1,12 +1,13 @@
 #!/bin/sh
+#set -x
 ###
  # @Author: Ricken
  # @Email: me@ricken.cn
  # @Date: 2024-05-22 15:42:58
- # @LastEditTime: 2024-06-21 16:40:14
- # @FilePath: /kk_frame/script/updating.sh
+ # @LastEditTime: 2026-02-09 18:41:22
+ # @FilePath: /kk_frame/board/updating.sh
  # @Description: 
- # @BugList: 
+ # @BugList: 暂时不可用
  # 
  # Copyright (c) 2024 by Ricken, All Rights Reserved. 
  # 
