@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-25 10:31:16
- * @LastEditTime: 2026-02-08 05:00:51
+ * @LastEditTime: 2026-02-13 00:54:35
  * @FilePath: /kk_frame/src/app/page/components/wind_logo.cc
  * @Description: Logo组件
  * @BugList:
@@ -37,6 +37,10 @@ void WindLogo::init(ViewGroup* parent) {
         LOGE("WindLogo init failed");
         return;
     }
+
+    // 锁定点击事件
+    mImage->setOnTouchListener([](View&, MotionEvent&) { return true; });
+    mVideo->setOnTouchListener([](View&, MotionEvent&) { return true; });
 
     // 静态图LOGO回调
     mRuner = [this] {
