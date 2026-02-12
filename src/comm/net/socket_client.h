@@ -2,6 +2,7 @@
 #define __socket_client_h__
 
 #include "client.h"
+#include <string>
 
 // tcp client
 class SocketClient : public Client {

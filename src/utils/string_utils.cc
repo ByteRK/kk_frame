@@ -2,8 +2,8 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 16:07:53
- * @LastEditTime: 2026-02-11 00:47:04
- * @FilePath: /X5000/src/utils/string_utils.cc
+ * @LastEditTime: 2026-02-12 23:18:14
+ * @FilePath: /kk_frame/src/utils/string_utils.cc
  * @Description: 字符串相关的一些操作函数
  * @BugList:
  *
@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <sstream>
 #include <iomanip>
+#include <cstdint>
 
 
 /// @brief UTF-8字符结构体，用于统一处理

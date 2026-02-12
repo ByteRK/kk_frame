@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-05 09:20:18
- * @LastEditTime: 2026-02-07 16:55:25
+ * @LastEditTime: 2026-02-12 23:17:18
  * @FilePath: /kk_frame/src/comm/core/transport.h
  * @Description: 数据传输基类
  * @BugList:
@@ -18,6 +18,7 @@
 #include <mutex>
 #include <vector>
 #include <cstdint>
+#include <sys/types.h>
 
 #include <core/looper.h>
 
