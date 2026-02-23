@@ -42,7 +42,7 @@ set(${LIB_NAME}_INCLUDE_DIRS
 # 8. 导出目标名到父作用域
 set(${LIB_NAME}_TARGET_NAME ${TARGET_NAME} PARENT_SCOPE)
 
-# 9. 创建库
+# 9. 创建库（子库编译设定）
 if(LIB_SOURCES)
     # 静态库
     add_library(${TARGET_NAME} STATIC ${LIB_SOURCES})
