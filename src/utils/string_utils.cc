@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 16:07:53
- * @LastEditTime: 2026-02-12 23:18:14
+ * @LastEditTime: 2026-02-24 02:16:04
  * @FilePath: /kk_frame/src/utils/string_utils.cc
  * @Description: 字符串相关的一些操作函数
  * @BugList:
@@ -178,7 +178,7 @@ std::string StringUtils::remove(std::string str, const char remove) {
 
 std::string StringUtils::trimRight(std::string str) {
     auto it = std::find_if(str.rbegin(), str.rend(), [](unsigned char ch) {
-            return !(std::isspace(ch) || ch == '\n' || ch == '\r' || ch == '\t');
+        return !(std::isspace(ch) || ch == '\n' || ch == '\r' || ch == '\t');
     });
     str.erase(it.base(), str.end());
     return str;
@@ -264,63 +264,75 @@ std::string StringUtils::substringByChars(const char* str, size_t maxChars, int 
 
 std::string StringUtils::removeLastCharacter(const char* str) {
     if (!str || *str == '\0') return "";
+
     const unsigned char* p = reinterpret_cast<const unsigned char*>(str);
-    const unsigned char* lastCharStart = p;
-    const unsigned char* prevPos = p;
+    const unsigned char* lastCharStart = nullptr;
+    const unsigned char* current = p;
+
     // 遍历找到最后一个字符的起始位置
-    while (*p) {
-        Utf8Char ch = nextUtf8Char(p);
+    while (*current) {
+        Utf8Char ch = nextUtf8Char(current);
         if (!ch.valid) {
-            // 无效字符，跳过
-            p++;
+            // 无效字符，跳过这个字节
+            current++;
             continue;
         }
-        // 更新上一个字符的起始位置
-        lastCharStart = prevPos;
-        prevPos = p;
-        p += ch.length;
+
+        lastCharStart = current;
+        current += ch.length;
     }
-    // 如果整个字符串只有一个字符
-    if (lastCharStart == reinterpret_cast<const unsigned char*>(str) && *prevPos) {
+
+    // 如果没有找到有效字符或只有一个字符
+    if (lastCharStart == nullptr || lastCharStart == p) {
         return "";
     }
-    // 如果最后一个字符无效，需要特殊处理
-    if (!nextUtf8Char(prevPos).valid) {
-        lastCharStart = prevPos;
-    }
-    size_t length = reinterpret_cast<const char*>(lastCharStart) - str;
-    return std::string(str, length);
+
+    // 返回删除最后一个字符后的字符串
+    return std::string(str, lastCharStart - p);
 }
 
 void StringUtils::popLastCharacter(std::string& str) {
     if (str.empty()) return;
-    const unsigned char* p = reinterpret_cast<const unsigned char*>(str.data());
-    const unsigned char* end = p + str.size();
-    const unsigned char* lastCharStart = p;
-    const unsigned char* prevPos = p;
-    // 遍历找到最后一个字符的起始位置
-    while (p < end) {
-        Utf8Char ch = nextUtf8Char(p);
-        if (!ch.valid || p + ch.length > end) {
-            // 无效字符或超出范围
+
+    const unsigned char* data = reinterpret_cast<const unsigned char*>(str.data());
+    size_t len = str.size();
+    const unsigned char* lastCharStart = nullptr;
+    size_t pos = 0;
+
+    // 遍历找到最后一个有效字符的起始位置
+    while (pos < len) {
+        const unsigned char* charStart = data + pos;
+
+        // 获取当前字符信息
+        Utf8Char ch = nextUtf8Char(charStart);
+
+        if (!ch.valid) {
+            // 无效字符，跳过这个字节
+            pos++;
+            continue;
+        }
+
+        // 检查这个字符是否完整在字符串内
+        if (pos + ch.length <= len) {
+            lastCharStart = charStart;
+            pos += ch.length;
+        } else {
+            // 字符不完整，跳出循环
             break;
         }
-        // 更新上一个字符的起始位置
-        lastCharStart = prevPos;
-        prevPos = p;
-        p += ch.length;
     }
-    // 如果整个字符串只有一个有效字符
-    if (lastCharStart == reinterpret_cast<const unsigned char*>(str.data()) && prevPos != lastCharStart) {
-        str.clear();
-        return;
+
+    // 如果找到了有效字符，删除它
+    if (lastCharStart != nullptr) {
+        if (lastCharStart == data) {
+            // 整个字符串只有一个字符
+            str.clear();
+        } else {
+            // 删除最后一个字符
+            size_t newSize = lastCharStart - data;
+            str.resize(newSize);
+        }
     }
-    // 如果最后一个字符无效，需要特殊处理
-    if (prevPos < end && !nextUtf8Char(prevPos).valid) {
-        lastCharStart = prevPos;
-    }
-    size_t newSize = reinterpret_cast<const char*>(lastCharStart) - str.data();
-    str.resize(newSize);
 }
 
 std::string StringUtils::truncateWithLimit(const char* str, size_t maxChars, int chineseWeight, const std::string& suffix) {
