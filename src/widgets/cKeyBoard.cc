@@ -1069,4 +1069,15 @@ void CKeyBoard::setLoadType(LoadType lt) {
     }
 }
 
+#else
+
+#include <view/view.h>
+class CKBegister{
+public:
+    CKBegister(){
+        LayoutInflater::registerInflater("CKeyBoard","",[](Context*ctx,const AttributeSet&attr)->View*{return new View(ctx,attr);});
+    }
+};
+static CKBegister ckbegister;
+
 #endif // KEYBOARD_ENABLE
