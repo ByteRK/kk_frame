@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:47:17
- * @LastEditTime: 2026-02-08 11:54:34
+ * @LastEditTime: 2026-02-25 17:59:14
  * @FilePath: /kk_frame/src/utils/project_utils.cc
  * @Description: 项目相关的一些操作函数
  * @BugList:
@@ -13,6 +13,7 @@
 
 #include "project_utils.h"
 #include "time_utils.h"
+#include "env_utils.h"
 
 #include "fonts_info.h"
 #include "series_info.h"
@@ -80,6 +81,17 @@ void ProjectUtils::getDebugServiceInfo(std::string& ip, int16_t& port) {
     port = 8999;
 
 #if defined(PRODUCT_X64) || defined(__VSCODE__)
+    std::string ipStr;
+    int portInt;
+    if (EnvUtils::getString("DEBUG_SERVICE_IP", ipStr) && EnvUtils::getInt("DEBUG_SERVICE_PORT", portInt)) {
+        ip = ipStr;
+        port = portInt;
+        LOGI("getDebugServiceInfo: %s:%d", ip.c_str(), port);
+        return;
+    } else {
+        LOGW("NO SET DEBUG_SERVICE_IP OR DEBUG_SERVICE_PORT");
+    }
+
     char* username = getlogin();
     if (username == nullptr) {
         LOGE("getlogin failed");
