@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 14:06:52
- * @LastEditTime: 2025-12-29 18:41:04
+ * @LastEditTime: 2026-02-26 11:09:52
  * @FilePath: /kk_frame/src/utils/file_utils.cc
  * @Description: 文件相关的一些函数
  * @BugList:
@@ -21,6 +21,10 @@ void FileUtils::sync() {
 #else
     ::sync();
 #endif
+}
+
+bool FileUtils::have(const std::string& filePath) {
+    return access(filePath.c_str(), F_OK) == 0;
 }
 
 bool FileUtils::read(const std::string& filePath, std::string& content) {

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 14:06:45
- * @LastEditTime: 2025-12-29 18:40:49
+ * @LastEditTime: 2026-02-26 11:09:45
  * @FilePath: /kk_frame/src/utils/file_utils.h
  * @Description: 文件相关的一些函数
  * @BugList:
@@ -20,6 +20,11 @@ namespace FileUtils {
 
     /// @brief 同步写入文件
     void sync();
+
+    /// @brief 检查文件是否存在
+    /// @param filePath 文件名/路径
+    /// @return true 文件存在
+    bool have(const std::string& filePath);
 
     /// @brief 读取文件内容
     /// @param filePath 文件名/路径
