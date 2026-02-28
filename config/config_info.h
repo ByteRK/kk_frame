@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-01-18 11:33:02
- * @LastEditTime: 2026-02-03 20:46:49
+ * @LastEditTime: 2026-02-28 10:10:10
  * @FilePath: /kk_frame/config/config_info.h
  * @Description: 项目信息
  * @BugList:
@@ -32,6 +32,7 @@ DEFINE_FILE_INFO(DEVCONF,    devices.xml)         // 设备配置文件
 
 DEFINE_FILE_INFO(APP,        app.json);           // 应用数据文件
 DEFINE_FILE_INFO(CONFIG,     config.xml);         // 配置文件名
+DEFINE_FILE_INFO(WIFI,       wifi.xml);           // WIFI配置文件名
 DEFINE_FILE_INFO(HISTORY,    history.json)        // 历史记录文件名
 DEFINE_FILE_INFO(STATISTICS, statistics.json)     // 统计文件名
 
@@ -39,11 +40,12 @@ DEFINE_FILE_INFO(STATISTICS, statistics.json)     // 统计文件名
 
 /*********************** 默认设置 ***********************/
 
+#define WIFI_SWITCH           false    // wifi
+#define WIFI_SSID             ""       // wifi SSID
+#define WIFI_PASSWORD         " "      // wifi 密码
+
 #define CONFIG_BRIGHTNESS     80       // 亮度
 #define CONFIG_VOLUME         80       // 音量
-#define CONFIG_WIFI           false    // wifi
-#define CONFIG_WIFI_SSID      "Ricken" // wifi SSID
-#define CONFIG_WIFI_PASSWORD  "Ricken" // wifi 密码
 #define CONFIG_AUTOLOCK       false    // 自动锁屏
 
 #endif // __CONFIG_INFO_H__

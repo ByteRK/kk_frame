@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2026-02-03 20:47:08
+ * @LastEditTime: 2026-02-28 09:50:17
  * @FilePath: /kk_frame/src/app/managers/config_mgr.h
  * @Description: 配置管理
  * @BugList:
@@ -55,18 +55,6 @@ public:
     // 音量
     int  getVolume();
     void setVolume(int value);
-
-    // WIFI
-    bool getWifi();
-    void setWifi(bool value);
-
-    // WIFI SSID
-    std::string getWifiSSID();
-    void setWifiSSID(const std::string& value);
-
-    // WIFI 密码
-    std::string getWifiPassword();
-    void setWifiPassword(const std::string& value);
 
     // 自动锁屏
     bool getAutoLock();

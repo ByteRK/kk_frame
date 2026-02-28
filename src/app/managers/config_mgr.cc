@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2026-02-03 20:44:16
+ * @LastEditTime: 2026-02-28 10:30:47
  * @FilePath: /kk_frame/src/app/managers/config_mgr.cc
  * @Description:
  * @BugList:
@@ -139,33 +139,6 @@ int ConfigMgr::getVolume() {
 void ConfigMgr::setVolume(int value) {
     if (value == getVolume()) return;
     mConfig.setValue(CONFIG_SECTION, "VOLUME", value);
-}
-
-bool ConfigMgr::getWifi() {
-    return mConfig.getBool(CONFIG_SECTION, "WIFI", CONFIG_WIFI);
-}
-
-void ConfigMgr::setWifi(bool value) {
-    if (value == getWifi()) return;
-    mConfig.setValue(CONFIG_SECTION, "WIFI", value);
-}
-
-std::string ConfigMgr::getWifiSSID() {
-    return mConfig.getString(CONFIG_SECTION, "WIFI_SSID", CONFIG_WIFI_SSID);
-}
-
-void ConfigMgr::setWifiSSID(const std::string& value) {
-    if (value == getWifiSSID()) return;
-    mConfig.setValue(CONFIG_SECTION, "WIFI_SSID", value);
-}
-
-std::string ConfigMgr::getWifiPassword() {
-    return mConfig.getString(CONFIG_SECTION, "WIFI_PASSWORD", CONFIG_WIFI_PASSWORD);
-}
-
-void ConfigMgr::setWifiPassword(const std::string& value) {
-    if (value == getWifiPassword()) return;
-    mConfig.setValue(CONFIG_SECTION, "WIFI_PASSWORD", value);
 }
 
 /// @brief 获取自动锁屏

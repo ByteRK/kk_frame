@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-02-06 09:21:48
+ * @LastEditTime: 2026-02-28 18:27:02
  * @FilePath: /kk_frame/main.cc
  * @Description: 主程序入口
  * @BugList:
@@ -32,7 +32,7 @@
 #include "tuya_mgr.h"        // 涂鸦模组通讯
 
 #if ENABLED(WIFI) || defined(__VSCODE__)
-#include "wifi_adapter.h"    // WIFI适配器
+#include "wifi_mgr.h"
 #endif
 
 /// @brief 主函数
@@ -56,16 +56,17 @@ int main(int argc, const char* argv[]) {
     g_threadMgr->init(3);
     g_timer->init();
     g_work->init();
+
+#if ENABLED(WIFI) || defined(__VSCODE__)
+    g_wifi->init();
+#endif
+
     g_windMgr->init();
 
     // g_connMgr->init();
     // g_btnMgr->init();
     // g_tuyaMgr->init();
 
-#if ENABLED(WIFI) || defined(__VSCODE__)
-    if (g_config->getWifi())
-        WIFIAdapter::instance()->autoCheck();
-#endif
     return app.exec();
 }
 
