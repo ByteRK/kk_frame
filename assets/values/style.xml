@@ -8,7 +8,7 @@
         <item name="config_viewConfigurationHoverSlop">8dp</item>
         <item name="config_minScrollbarTouchTarget">48dp</item>
         <item name="config_viewMinFlingVelocity">50dp</item>
-        <item name="config_viewMaxFlingVelocity">300dp</item>
+        <item name="config_viewMaxFlingVelocity">7000dp</item>
         <item name="config_horizontalScrollFactor">64dp</item>
         <item name="config_verticalScrollFactor">64dp</item>
         <item name="config_globalActionsKeyTimeout">500</item>
