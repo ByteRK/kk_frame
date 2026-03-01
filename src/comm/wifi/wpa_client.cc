@@ -2,13 +2,13 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-27 09:39:44
- * @LastEditTime: 2026-02-27 17:13:53
+ * @LastEditTime: 2026-03-02 04:01:54
  * @FilePath: /kk_frame/src/comm/wifi/wpa_client.cc
  * @Description: wpa_ctrl 客户端封装
- * @BugList: 
- * 
- * Copyright (c) 2026 by Ricken, All Rights Reserved. 
- * 
+ * @BugList:
+ *
+ * Copyright (c) 2026 by Ricken, All Rights Reserved.
+ *
 **/
 
 #include "wpa_client.h"
@@ -49,6 +49,7 @@ WpaClient::~WpaClient() {
 }
 
 bool WpaClient::open() {
+#ifndef PRODUCT_X64
     if (mCmd) return true;
 
     // ctrl interface socket path 通常是: /var/run/wpa_supplicant/wlan0
@@ -63,10 +64,14 @@ bool WpaClient::open() {
         mCmd = nullptr;
         return false;
     }
+#else
+    LOGI("WpaClient::open()");
+#endif
     return true;
 }
 
 void WpaClient::close() {
+#ifndef PRODUCT_X64
     if (mMon) {
         wpa_ctrl_close(mMon);
         mMon = nullptr;
@@ -75,9 +80,13 @@ void WpaClient::close() {
         wpa_ctrl_close(mCmd);
         mCmd = nullptr;
     }
+#else
+    LOGI("WpaClient::close()");
+#endif
 }
 
 bool WpaClient::request(const std::string& cmd, std::string& reply) {
+#ifndef PRODUCT_X64
     reply.clear();
     if (!mCmd) return false;
 
@@ -105,10 +114,15 @@ bool WpaClient::request(const std::string& cmd, std::string& reply) {
     while (!reply.empty() && (reply.back() == '\n' || reply.back() == '\r')) {
         reply.pop_back();
     }
+#else
+    reply = "OK";
+    LOGI("WpaClient::request(%s)", cmd.c_str());
+#endif
     return true;
 }
 
 bool WpaClient::startMonitor(const EventCallback& cb) {
+#ifndef PRODUCT_X64
     if (!mMon) return false;
     if (mMonRunning.load()) return true;
 
@@ -120,10 +134,14 @@ bool WpaClient::startMonitor(const EventCallback& cb) {
 
     mMonRunning.store(true);
     mMonThread = std::thread(&WpaClient::monitorLoop, this);
+#else
+    LOGI("WpaClient::startMonitor()");
+#endif
     return true;
 }
 
 void WpaClient::stopMonitor() {
+#ifndef PRODUCT_X64
     if (!mMonRunning.exchange(false)) return;
 
     if (mMon) {
@@ -135,9 +153,13 @@ void WpaClient::stopMonitor() {
     if (mMonThread.joinable()) {
         mMonThread.join();
     }
+#else
+    LOGI("WpaClient::stopMonitor()");
+#endif
 }
 
 void WpaClient::monitorLoop() {
+#ifndef PRODUCT_X64
     while (mMonRunning.load()) {
         char buf[4096];
         std::memset(buf, 0, sizeof(buf));
@@ -157,4 +179,5 @@ void WpaClient::monitorLoop() {
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
     }
+#endif
 }

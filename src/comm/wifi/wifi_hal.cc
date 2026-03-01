@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-27 09:43:34
- * @LastEditTime: 2026-02-28 18:26:31
+ * @LastEditTime: 2026-03-02 04:01:47
  * @FilePath: /kk_frame/src/comm/wifi/wifi_hal.cc
  * @Description: WiFi 管理器
  * @BugList:
@@ -12,7 +12,6 @@
 **/
 
 #include "wifi_hal.h"
-#include "encoding_utils.h"
 #include <sstream>
 #include <cstdlib>
 #include <algorithm>
@@ -74,7 +73,9 @@ void WifiHal::setCallbacks(const Callbacks& cb) {
 bool WifiHal::enable() {
     if (state() != State::Off) return true;
 
+#ifndef PRODUCT_X64
     std::system(mOpt.ifup_cmd.c_str());
+#endif
 
     if (!mWpa.open()) {
         setState(State::Off, "wpa_ctrl_open failed (is wpa_supplicant running?)");
@@ -101,7 +102,9 @@ void WifiHal::disable() {
     mWpa.stopMonitor();
     mWpa.close();
 
+#ifndef PRODUCT_X64
     std::system(mOpt.ifdown_cmd.c_str());
+#endif
 }
 
 bool WifiHal::scan() {
@@ -113,6 +116,11 @@ bool WifiHal::scan() {
         setState(State::Idle, "SCAN cmd failed");
         return false;
     }
+
+#ifdef PRODUCT_X64
+    onWpaEvent(WPA_EVENT_SCAN_RESULTS);
+#endif
+
     return true;
 }
 
@@ -129,16 +137,21 @@ bool WifiHal::connect(const std::string& ssid, const std::string& psk) {
 
     cancelReconnect();
 
+#ifndef PRODUCT_X64
     if (!ensureNetworkConfigured(ssid, psk)) {
         setState(State::Disconnected, "configure network failed");
         return false;
     }
 
-    std::string reply;
-    if (!runCmd("RECONNECT", &reply)) {
-        setState(State::Disconnected, "RECONNECT cmd failed");
-        return false;
-    }
+    // std::string reply;
+    // if (!runCmd("RECONNECT", &reply)) {
+    //     setState(State::Disconnected, "RECONNECT cmd failed");
+    //     return false;
+    // }
+#else
+    setState(State::IpReady, std::string("dhcp ok ip=127.0.0.1"));
+#endif
+
     return true;
 }
 
@@ -363,7 +376,18 @@ bool WifiHal::parseScanResults(std::vector<ApInfo>& out) {
     // bssid / frequency / signal level / flags / ssid
     // fa:be:81:c3:dc:30       2462    -40     [WPA2-PSK-CCMP][WPS][ESS][P2P]  Ricken
     std::string reply;
+#ifndef PRODUCT_X64
     if (!runCmd("SCAN_RESULTS", &reply)) return false;
+#else
+    reply =
+        "bssid / frequency / signal level / flags / ssid\n"
+        "fa:be:81:c3:dc:30\t2462\t-40\t[WPA2-PSK-CCMP][WPS][ESS][P2P]\tTest1\n"
+        "00:1f:33:9d:3e:3c\t2462\t-44\t[P2P]\tTest2\n"
+        "00:1f:33:9d:3e:3d\t2462\t-44\t[WPA2-PSK-CCMP][WPS][ESS][P2P]\tTest3\n"
+        "00:1f:33:9d:3e:3e\t2462\t-44\t[WPA2-PSK-CCMP][WPS][ESS][P2P]\tTest4\n"
+        "00:1f:33:9d:3e:3f\t2462\t-44\t[WPA2-PSK-CCMP][WPS][ESS][P2P]\tTest5\n"
+        "00:1f:33:9d:3e:40\t2462\t-44\t[WPA2-PSK-CCMP][WPS][ESS][P2P]\tTest6\n";
+#endif
 
     std::istringstream iss(reply);
     std::string line;
@@ -392,7 +416,7 @@ bool WifiHal::parseScanResults(std::vector<ApInfo>& out) {
         if (cols.size() < 5) continue;
 
         ApInfo ap;
-        ap.bssid = EncodingUtils::hexEscapes(cols[0]);
+        ap.bssid = cols[0];
         ap.freq = std::atoi(cols[1].c_str());
         ap.signal = std::atoi(cols[2].c_str());
         ap.encrypted = (cols[3].find("WPA") != std::string::npos) || (cols[3].find("WEP") != std::string::npos);
