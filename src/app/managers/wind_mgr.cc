@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2026-01-20 15:58:36
+ * @LastEditTime: 2026-03-02 11:49:21
  * @FilePath: /kk_frame/src/app/managers/wind_mgr.cc
  * @Description: 页面管理类
  * @BugList:
@@ -302,7 +302,7 @@ void WindMgr::hidePop() {
     if (mWindow->getPopType() != POP_NULL) {
         auto saved = mWindow->getPop()->callSaveState();
         std::unique_ptr<SaveMsgBase> copy(nullptr);
-        if (saved) copy.reset(saved->clone());
+        if (saved) copy.reset(std::move(saved));
 
         mPopHistory.push_back(std::make_pair(mWindow->getPopType(), std::move(copy)));
     }
@@ -559,7 +559,7 @@ void WindMgr::addToHistory(bool isPage) {
     // 生成包含当前状态信息的智能指针
     auto saved = p->callSaveState();
     std::unique_ptr<SaveMsgBase> copy(nullptr);
-    if (saved) copy.reset(saved->clone());
+    if (saved) copy.reset(std::move(saved));
 
     // 加入历史记录
     history->push_back(std::make_pair(pType, std::move(copy)));
