@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-27 18:59:51
- * @LastEditTime: 2026-02-28 18:13:51
+ * @LastEditTime: 2026-03-02 09:43:02
  * @FilePath: /kk_frame/src/app/managers/wifi_mgr.cc
  * @Description: WIFI 管理器
  * @BugList:
@@ -123,9 +123,9 @@ void WifiMgr::getConnectInfo(std::string& ssid, std::string& psk) {
 }
 
 bool WifiMgr::getConnectedAp(WifiHal::ApInfo& ap) {
-    for (auto& ap : mAps) {
-        if (ap.connected) {
-            ap = ap;
+    for (auto& i_ap : mAps) {
+        if (i_ap.connected) {
+            ap = i_ap;
             return true;
         }
     }
