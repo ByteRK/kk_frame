@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-27 09:43:34
- * @LastEditTime: 2026-03-02 04:01:47
+ * @LastEditTime: 2026-03-02 09:55:52
  * @FilePath: /kk_frame/src/comm/wifi/wifi_hal.cc
  * @Description: WiFi 管理器
  * @BugList:
@@ -12,6 +12,7 @@
 **/
 
 #include "wifi_hal.h"
+#include "encoding_utils.h"
 #include <sstream>
 #include <cstdlib>
 #include <algorithm>
@@ -420,7 +421,7 @@ bool WifiHal::parseScanResults(std::vector<ApInfo>& out) {
         ap.freq = std::atoi(cols[1].c_str());
         ap.signal = std::atoi(cols[2].c_str());
         ap.encrypted = (cols[3].find("WPA") != std::string::npos) || (cols[3].find("WEP") != std::string::npos);
-        ap.ssid = cols[4];
+        ap.ssid = EncodingUtils::hexEscapes(cols[4]);
 
         // 过滤空 SSID
         if (!ap.ssid.empty()) {
