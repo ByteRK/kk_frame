@@ -27,13 +27,11 @@
 #include "work_mgr.h"        // 工作管理器
 #include "wind_mgr.h"        // 窗口管理器
 
+#include "wifi_mgr.h"        // WIFI
+
 #include "conn_mgr.h"        // 电控通讯
 #include "btn_mgr.h"         // 按键板通讯
 #include "tuya_mgr.h"        // 涂鸦模组通讯
-
-#if ENABLED(WIFI) || defined(__VSCODE__)
-#include "wifi_mgr.h"
-#endif
 
 /// @brief 主函数
 /// @param argc 参数个数
@@ -63,9 +61,7 @@ int main(int argc, const char* argv[]) {
     g_work->init();
 
     /* 网络 */
-#if ENABLED(WIFI)
-    g_wifi->init();
-#endif
+    // g_wifi->init();
 
     /* 通讯 */
     // g_connMgr->init();
