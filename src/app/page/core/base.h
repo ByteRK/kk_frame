@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2026-02-08 00:34:30
+ * @LastEditTime: 2026-03-09 15:19:08
  * @FilePath: /kk_frame/src/app/page/core/base.h
  * @Description: 页面基类
  * @BugList:
@@ -53,8 +53,8 @@ public:
     virtual int8_t getType() const = 0;                         // 获取页面类型
 
     void callTick();                                            // 调用定时器
-    void callAttach();                                          // 通知页面挂载
-    void callDetach();                                          // 通知页面剥离
+    virtual void callAttach();                                  // 通知页面挂载
+    virtual void callDetach();                                  // 通知页面剥离
     void callLoad(LoadMsgBase* loadMsg);                        // 调用重加载
     SaveMsgBase* callSaveState();                               // 保存状态
     void callRestoreState(const SaveMsgBase* saveMsg);          // 恢复状态

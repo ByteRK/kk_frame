@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-04 13:52:55
- * @LastEditTime: 2026-02-03 16:58:02
+ * @LastEditTime: 2026-03-09 15:26:05
  * @FilePath: /kk_frame/src/app/page/core/pop.cc
  * @Description: 弹窗基类
  * @BugList:
@@ -30,6 +30,7 @@ PopBase::PopBase(std::string resource) :PBase(resource) {
     setColor(0x99000000);      // 默认背景颜色
     setMargin(0, 0, 0, 0);     // 默认全屏
     setPadding(0, 0, 0, 0);    // 默认无内边距
+    setPageDisplay(false);     // 默认不显示底层页面
     mIsGauss = false;          // 默认不模糊背景
     mGaussRadius = 10;         // 默认模糊半径
     mGaussColor = 0x99000000;  // 默认模糊颜色
@@ -47,26 +48,30 @@ View* PopBase::getRootView() {
     return mPopRootView;
 }
 
-/// @brief 关闭弹窗
-void PopBase::close() {
-    if (g_window->getPopType() == getType())
-        g_window->removePop();
-}
-
 /// @brief 挂载
-void PopBase::onAttach() {
+void PopBase::callAttach() {
     if (mIsGauss)applyGauss();
 #if POP_DISPLAY_ANIMATE
     mPopRootView->setAlpha(0.f);
     mPopRootView->animate().alpha(1.f).setDuration(300).start();
 #endif
+    PBase::callAttach();
+    if (!mPageDisplay)g_window->hidePageBox();
 }
 
 /// @brief 卸载
-void PopBase::onDetach() {
+void PopBase::callDetach() {
 #if POP_DISPLAY_ANIMATE
     mPopRootView->animate().cancel();
 #endif
+    PBase::callDetach();
+    if (!mPageDisplay)g_window->showPageBox();
+}
+
+/// @brief 关闭弹窗
+void PopBase::close() {
+    if (g_window->getPopType() == getType())
+        g_window->removePop();
 }
 
 /// @brief 设置边距(适用于不需要完整覆盖屏幕的情况)
@@ -110,6 +115,12 @@ void PopBase::setGauss(int radius, int color) {
 void PopBase::setColor(int color) {
     mIsGauss = false;
     mPopRootView->setBackgroundColor(color);
+}
+
+/// @brief 设置底层页面是否显示
+/// @param show 是否显示
+void PopBase::setPageDisplay(bool show) {
+    mPageDisplay = show;
 }
 
 /// @brief 应用模糊背景

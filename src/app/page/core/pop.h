@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-04 13:52:49
- * @LastEditTime: 2026-01-29 11:15:53
+ * @LastEditTime: 2026-03-09 15:25:19
  * @FilePath: /kk_frame/src/app/page/core/pop.h
  * @Description: 弹窗基类
  * @BugList:
@@ -25,6 +25,7 @@ private:
     bool           mIsGauss;         // 是否有模糊背景
     int            mGaussRadius;     // 模糊背景圆角
     int            mGaussColor;      // 模糊背景颜色
+    bool           mPageDisplay;     // 底层页面显示
 
 public:
     PopBase(std::string resource);   // 构造函数
@@ -32,16 +33,17 @@ public:
 
     View* getRootView() override;    // 获取根节点
 
+    void callAttach() override;      // 挂载
+    void callDetach() override;      // 卸载
+
 protected:
     void close();                    // 关闭弹窗
-    
-    void onAttach() override;        // 挂载
-    void onDetach() override;        // 卸载
 
     void setMargin(int start, int top, int end, int bottom);   // 设置外边距
     void setPadding(int start, int top, int end, int bottom);  // 设置内边距
     void setGauss(int radius = 10, int color = 0x99000000);    // 设置模糊背景
     void setColor(int color = 0x99000000);                     // 设置背景色
+    void setPageDisplay(bool show);                            // 设置底层页面显示
 
 private:
     void applyGauss();               // 应用模糊背景
