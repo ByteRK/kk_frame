@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-04 13:52:55
- * @LastEditTime: 2026-03-09 15:26:05
+ * @LastEditTime: 2026-03-09 17:42:13
  * @FilePath: /kk_frame/src/app/page/core/pop.cc
  * @Description: 弹窗基类
  * @BugList:
@@ -34,6 +34,8 @@ PopBase::PopBase(std::string resource) :PBase(resource) {
     mIsGauss = false;          // 默认不模糊背景
     mGaussRadius = 10;         // 默认模糊半径
     mGaussColor = 0x99000000;  // 默认模糊颜色
+
+    mPageDspRunner = []() {g_window->hidePageBox();};
 }
 
 /// @brief 析构
@@ -56,7 +58,7 @@ void PopBase::callAttach() {
     mPopRootView->animate().alpha(1.f).setDuration(300).start();
 #endif
     PBase::callAttach();
-    if (!mPageDisplay)g_window->hidePageBox();
+    if (!mPageDisplay) getRootView()->postDelayed(mPageDspRunner, 500);
 }
 
 /// @brief 卸载
@@ -65,7 +67,8 @@ void PopBase::callDetach() {
     mPopRootView->animate().cancel();
 #endif
     PBase::callDetach();
-    if (!mPageDisplay)g_window->showPageBox();
+    getRootView()->removeCallbacks(mPageDspRunner);
+    g_window->showPageBox();
 }
 
 /// @brief 关闭弹窗
