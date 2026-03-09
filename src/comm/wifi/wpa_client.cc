@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-27 09:39:44
- * @LastEditTime: 2026-03-02 04:01:54
+ * @LastEditTime: 2026-03-09 16:24:34
  * @FilePath: /kk_frame/src/comm/wifi/wpa_client.cc
  * @Description: wpa_ctrl 客户端封装
  * @BugList:
@@ -49,6 +49,7 @@ WpaClient::~WpaClient() {
 }
 
 bool WpaClient::open() {
+#if ENABLED(WIFI)
 #ifndef PRODUCT_X64
     if (mCmd) return true;
 
@@ -66,11 +67,16 @@ bool WpaClient::open() {
     }
 #else
     LOGI("WpaClient::open()");
-#endif
+#endif // PRODUCT_X64
     return true;
+#else
+    LOGE("WIFI is not enabled");
+    return false;
+#endif // ENABLED(WIFI)
 }
 
 void WpaClient::close() {
+#if ENABLED(WIFI)
 #ifndef PRODUCT_X64
     if (mMon) {
         wpa_ctrl_close(mMon);
@@ -82,10 +88,14 @@ void WpaClient::close() {
     }
 #else
     LOGI("WpaClient::close()");
-#endif
+#endif // PRODUCT_X64
+#else
+    LOGE("WIFI is not enabled");
+#endif // ENABLED(WIFI)
 }
 
 bool WpaClient::request(const std::string& cmd, std::string& reply) {
+#if ENABLED(WIFI)
 #ifndef PRODUCT_X64
     reply.clear();
     if (!mCmd) return false;
@@ -117,11 +127,16 @@ bool WpaClient::request(const std::string& cmd, std::string& reply) {
 #else
     reply = "OK";
     LOGI("WpaClient::request(%s)", cmd.c_str());
-#endif
+#endif // PRODUCT_X64
     return true;
+#else
+    LOGE("WIFI is not enabled");
+    return false;
+#endif // ENABLED(WIFI)
 }
 
 bool WpaClient::startMonitor(const EventCallback& cb) {
+#if ENABLED(WIFI)
 #ifndef PRODUCT_X64
     if (!mMon) return false;
     if (mMonRunning.load()) return true;
@@ -136,11 +151,16 @@ bool WpaClient::startMonitor(const EventCallback& cb) {
     mMonThread = std::thread(&WpaClient::monitorLoop, this);
 #else
     LOGI("WpaClient::startMonitor()");
-#endif
+#endif // PRODUCT_X64
     return true;
+#else
+    LOGE("WIFI is not enabled");
+    return false;
+#endif // ENABLED(WIFI)
 }
 
 void WpaClient::stopMonitor() {
+#if ENABLED(WIFI)
 #ifndef PRODUCT_X64
     if (!mMonRunning.exchange(false)) return;
 
@@ -155,10 +175,23 @@ void WpaClient::stopMonitor() {
     }
 #else
     LOGI("WpaClient::stopMonitor()");
-#endif
+#endif // PRODUCT_X64
+#else
+    LOGE("WIFI is not enabled");
+#endif // ENABLED(WIFI)
+}
+
+bool WpaClient::isOpen() const {
+#if ENABLED(WIFI)
+    return mCmd != nullptr;
+#else
+    LOGE("WIFI is not enabled");
+    return false;
+#endif // ENABLED(WIFI)
 }
 
 void WpaClient::monitorLoop() {
+#if ENABLED(WIFI)
 #ifndef PRODUCT_X64
     while (mMonRunning.load()) {
         char buf[4096];
@@ -179,5 +212,6 @@ void WpaClient::monitorLoop() {
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
     }
-#endif
+#endif // PRODUCT_X64
+#endif // ENABLED(WIFI)
 }

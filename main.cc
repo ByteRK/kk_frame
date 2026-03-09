@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-02-28 18:27:02
+ * @LastEditTime: 2026-03-09 16:13:49
  * @FilePath: /kk_frame/main.cc
  * @Description: 主程序入口
  * @BugList:
@@ -42,31 +42,39 @@
 int main(int argc, const char* argv[]) {
     ProjectUtils::env();           // 设定环境变量（x64生效）
     ProjectUtils::pInfo(argv[0]);  // 打印项目信息
-    ArgUtils::parse(argc, argv);   // 解析命令行参数
     ProjectUtils::pKeyMap();       // 打印项目按键映射
+    ArgUtils::parse(argc, argv);   // 解析命令行参数
 
+    /* 框架 */
     App app(argc, argv);
     cdroid::Context* ctx = &app;
 
+    /* 数据与统计 */
     g_data->init();
-
     g_config->init();
     g_history->init();
     g_statistics->init();
+
+    /* 线程 */
     g_threadMgr->init(3);
+
+    /* 工作 */
     g_timer->init();
     g_work->init();
 
-#if ENABLED(WIFI) || defined(__VSCODE__)
+    /* 网络 */
+#if ENABLED(WIFI)
     g_wifi->init();
 #endif
 
-    g_windMgr->init();
-
+    /* 通讯 */
     // g_connMgr->init();
     // g_btnMgr->init();
     // g_tuyaMgr->init();
 
+    /* 页面 */
+    g_windMgr->init();
+    
     return app.exec();
 }
 

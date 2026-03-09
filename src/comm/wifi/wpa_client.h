@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-27 09:39:44
- * @LastEditTime: 2026-02-27 17:13:49
+ * @LastEditTime: 2026-03-09 16:49:39
  * @FilePath: /kk_frame/src/comm/wifi/wpa_client.h
  * @Description: wpa 客户端封装
  * @BugList:
@@ -20,9 +20,17 @@
 #include <thread>
 #include <atomic>
 
+#include "src/common.h"
+#ifdef __VSCODE__
+#undef ENABLE_WIFI
+#define ENABLE_WIFI 1
+#endif
+
+#if ENABLED(WIFI)
 extern "C" {
 #include <wpa_ctrl.h>
 }
+#endif
 
 class WpaClient {
 public:
@@ -48,7 +56,7 @@ public:
     bool startMonitor(const EventCallback& cb);
     void stopMonitor();
 
-    bool isOpen() const { return mCmd != nullptr; }
+    bool isOpen() const;
 
 private:
     void monitorLoop();
@@ -56,10 +64,11 @@ private:
 private:
     Options   mOpt;                          // 配置项
 
+#if ENABLED(WIFI)
     wpa_ctrl* mCmd = nullptr;                // 命令通道
     wpa_ctrl* mMon = nullptr;                // 事件通道
-
     std::mutex mCmdMtx;                      // 命令通道互斥锁
+#endif
 
     std::thread       mMonThread;            // 事件监听线程
     std::atomic<bool> mMonRunning{ false };  // 事件监听线程是否在运行

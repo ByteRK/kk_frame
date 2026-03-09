@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-27 09:43:34
- * @LastEditTime: 2026-03-02 09:55:52
+ * @LastEditTime: 2026-03-09 16:43:38
  * @FilePath: /kk_frame/src/comm/wifi/wifi_hal.cc
  * @Description: WiFi 管理器
  * @BugList:
@@ -72,62 +72,70 @@ void WifiHal::setCallbacks(const Callbacks& cb) {
 }
 
 bool WifiHal::enable() {
+#if ENABLED(WIFI)
     if (state() != State::Off) return true;
-
 #ifndef PRODUCT_X64
     std::system(mOpt.ifup_cmd.c_str());
-#endif
-
+#else
+    LOGI("WifiHal::enable run system(%s)", mOpt.ifup_cmd.c_str());
+#endif // PRODUCT_X64
     if (!mWpa.open()) {
         setState(State::Off, "wpa_ctrl_open failed (is wpa_supplicant running?)");
         return false;
     }
-
     bool ok = mWpa.startMonitor([this](const std::string& msg) { this->onWpaEvent(msg); });
     if (!ok) {
         setState(State::Off, "wpa_ctrl_attach failed");
         return false;
     }
-
     mUserDisconnect.store(false);
     setState(State::Idle, "wifi enabled");
     return true;
+#else
+    LOGE("WIFI is not enabled");
+    return false;
+#endif // ENABLED(WIFI)
 }
 
 void WifiHal::disable() {
+#if ENABLED(WIFI)
     cancelReconnect();
-
     if (state() == State::Off) return;
     setState(State::Off, "wifi disabled");
-
     mWpa.stopMonitor();
     mWpa.close();
-
 #ifndef PRODUCT_X64
     std::system(mOpt.ifdown_cmd.c_str());
-#endif
+#else
+    LOGI("WifiHal::disable run system(%s)", mOpt.ifdown_cmd.c_str());
+#endif // PRODUCT_X64
+#else
+    LOGE("WIFI is not enabled");
+#endif // ENABLED(WIFI)
 }
 
 bool WifiHal::scan() {
+#if ENABLED(WIFI)
     if (state() == State::Off) return false;   // state() 自己会加锁
     // setState(State::Scanning, "scan requested");
-
     std::string reply;
     if (!runCmd("SCAN", &reply)) {
         setState(State::Idle, "SCAN cmd failed");
         return false;
     }
-
 #ifdef PRODUCT_X64
     onWpaEvent(WPA_EVENT_SCAN_RESULTS);
 #endif
-
     return true;
+#else
+    LOGE("WIFI is not enabled");
+    return false;
+#endif // ENABLED(WIFI)
 }
 
 bool WifiHal::connect(const std::string& ssid, const std::string& psk) {
+#if ENABLED(WIFI)
     if (state() == State::Off) return false;
-
     {
         std::lock_guard<std::mutex> lk(mMtx);
         mUserDisconnect.store(false);
@@ -135,15 +143,12 @@ bool WifiHal::connect(const std::string& ssid, const std::string& psk) {
         mLastPsk = psk;
     }
     setState(State::Connecting, "connect requested");
-
     cancelReconnect();
-
 #ifndef PRODUCT_X64
     if (!ensureNetworkConfigured(ssid, psk)) {
         setState(State::Disconnected, "configure network failed");
         return false;
     }
-
     // std::string reply;
     // if (!runCmd("RECONNECT", &reply)) {
     //     setState(State::Disconnected, "RECONNECT cmd failed");
@@ -152,30 +157,47 @@ bool WifiHal::connect(const std::string& ssid, const std::string& psk) {
 #else
     setState(State::IpReady, std::string("dhcp ok ip=127.0.0.1"));
 #endif
-
     return true;
+#else
+    LOGE("WIFI is not enabled");
+    return false;
+#endif // ENABLED(WIFI)
 }
 
 bool WifiHal::disconnect() {
+#if ENABLED(WIFI)
     mUserDisconnect.store(true);
     cancelReconnect();
-
     std::string reply;
     bool ok = runCmd("DISCONNECT", &reply);
     setState(State::Disconnected, ok ? "user disconnect" : "DISCONNECT cmd failed");
     return ok;
+#else
+    LOGE("WIFI is not enabled");
+    return false;
+#endif // ENABLED(WIFI)
 }
 
 WifiHal::State WifiHal::state() const {
+#if ENABLED(WIFI)
     std::lock_guard<std::mutex> lk(mMtx);
     return mState;
+#else
+    LOGE("WIFI is not enabled");
+    return State::Off;
+#endif // ENABLED(WIFI)
 }
 
 bool WifiHal::getStatus(std::string& outStatusText) {
+#if ENABLED(WIFI)
     std::string reply;
     if (!runCmd("STATUS", &reply)) return false;
     outStatusText = reply;
     return true;
+#else
+    LOGE("WIFI is not enabled");
+    return false;
+#endif // ENABLED(WIFI)
 }
 
 WifiHal::Callbacks WifiHal::getCallbacks() {
@@ -184,6 +206,7 @@ WifiHal::Callbacks WifiHal::getCallbacks() {
 }
 
 void WifiHal::onWpaEvent(const std::string& msg) {
+#if ENABLED(WIFI)
     LOGV("onWpaEvent: %s", msg.c_str());
 
     // 常见事件：
@@ -253,6 +276,7 @@ void WifiHal::onWpaEvent(const std::string& msg) {
     }
 
     // 其他事件：在这里扩展更多解析/日志
+#endif // ENABLED(WIFI)
 }
 
 bool WifiHal::reconnectLight() {
