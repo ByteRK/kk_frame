@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-23 00:04:17
- * @LastEditTime: 2026-01-29 10:23:55
+ * @LastEditTime: 2026-03-17 02:07:51
  * @FilePath: /kk_frame/src/app/page/view/page_demo.cc
  * @Description: 框架演示主页面（建议保留）
  * @BugList:
@@ -40,5 +40,6 @@ void DemoPage::setView() {
     click(AppRid::hello, [](View& v) {
         v.setActivated(!v.isActivated());
         g_window->showToast("STOP !!!");
+        g_window->showKeyboard("", "Click KeyBoard");
     });
 }

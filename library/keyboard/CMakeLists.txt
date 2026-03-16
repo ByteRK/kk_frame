@@ -17,10 +17,8 @@ set(TARGET_NAME "${PROJECT_NAME}_${LIB_NAME_LOWER}_lib")
 
 # 4. 源文件收集
 file(GLOB_RECURSE LIB_SOURCES 
-    "${CMAKE_CURRENT_SOURCE_DIR}/*.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/*.cc"
-    "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/*.cxx"
+    "${CMAKE_CURRENT_SOURCE_DIR}/childs/*.cc"
 )
 
 # 5. 导出头文件目录到父作用域
@@ -63,8 +61,8 @@ if(LIB_SOURCES)
     
     # 设置头文件目录
     target_include_directories(${TARGET_NAME} PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/childs
 
         ${LIB_CDROID_INCLUDE_PATHS}   # 为了获取CDROID组件
         

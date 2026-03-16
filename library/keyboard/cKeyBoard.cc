@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-16 16:03:05
- * @LastEditTime: 2026-03-16 23:58:13
+ * @LastEditTime: 2026-03-17 02:01:01
  * @FilePath: /kk_frame/library/keyboard/cKeyBoard.cc
  * @Description: 输入法 CDROID 版
  * @BugList:
@@ -11,33 +11,10 @@
  *
 **/
 
-#include "R.h"
 #include "cKeyBoard.h"
-#include "app_version.h"
 #include "string_utils.h"
 
-namespace AppRid = APP_NAME::R::id;
-
-#ifndef __dc
-#define __dc(type, obj) dynamic_cast<type*>(obj)
-#endif
-
-/******************************** 键盘内层基类 ********************************/
-
-CKeyBoard::CKeyBoardChild::CKeyBoardChild(CKeyBoard* parent, const std::string& layout) :mParent(parent) {
-
-}
-
-void CKeyBoard::CKeyBoardChild::onShow() {
-}
-
-void CKeyBoard::CKeyBoardChild::onHide() {
-}
-
-void CKeyBoard::CKeyBoardChild::updateParentBtn(const std::string& conplete, const std::string& cancel) {
-    mParent->mCompleteBtn->setText(conplete);
-    mParent->mCancelBtn->setText(cancel);
-}
+#include "keyboard_en.h"
 
 /********************************** 键盘外层 **********************************/
 
@@ -82,17 +59,31 @@ void CKeyBoard::setCloseListener(OnCloseListener closeListener) {
     mCloseListener = closeListener;
 }
 
-void CKeyBoard::registerChild(CKeyBoardChild* child) {
-    mChilds.insert(child);
+void CKeyBoard::setChineseWeight(int weight) {
+    mChineseWeight = weight;
 }
 
 void CKeyBoard::appendText(const std::string& txt) {
+    std::string cacheText = mInputText + txt;
+    if (mMaxInputCount && StringUtils::characterCount(cacheText.c_str()) > mMaxInputCount, mChineseWeight)
+        cacheText = StringUtils::substringByChars(txt.c_str(), mMaxInputCount, mChineseWeight);
+    setEditText(cacheText);
 }
 
 void CKeyBoard::backspaceText() {
+    if (mInputText.empty())return;
+    setEditText(StringUtils::removeLastCharacter(mInputText.c_str()));
 }
 
 void CKeyBoard::showNextType() {
+    auto it = std::find(mEnableChilds.begin(), mEnableChilds.end(), mKBType);
+    if (it == mEnableChilds.end()) {
+        if (mEnableChilds.size() > 0) mKBType = mEnableChilds[0];
+        else mKBType = KeyBoardType::KB_TYPE_NONE;
+    } else {
+        mKBType = (++it == mEnableChilds.end()) ? mEnableChilds[0] : *it;
+    }
+    showType(mKBType);
 }
 
 void CKeyBoard::init() {
@@ -107,13 +98,15 @@ void CKeyBoard::init() {
 
     auto closeClick = [this](View&v) {
         if (mCloseListener)mCloseListener(v.getId() == AppRid::enter, mInputText);
-        mKBType = KeyBoardType::KB_TYPE_NONE;
         mInputText.clear();
         mDescription.clear();
+        showType(mKBType = KeyBoardType::KB_TYPE_NONE);
         setVisibility(View::GONE);
     };
     mCompleteBtn->setOnClickListener(closeClick);
     mCancelBtn->setOnClickListener(closeClick);
+
+    setEnableChilds({ KB_TYPE_EN });
 
     setVisibility(View::GONE);
 
@@ -121,6 +114,22 @@ void CKeyBoard::init() {
 }
 
 void CKeyBoard::showType(KeyBoardType t) {
+    CKeyBoardChild* child_t = nullptr;
+    for (auto& child : mChilds) {
+        if (child->getType() == t) child_t = child;
+        else child->onHide();
+    }
+    if (t == KB_TYPE_NONE || t == KB_TYPE_MAX) return;
+    if (std::find(mEnableChilds.begin(), mEnableChilds.end(), t) == mEnableChilds.end()) {
+        if (child_t)child_t->onHide();
+        LOGW("keyboard type %d not allow show", t);
+        return;
+    }
+    if (!child_t && !(child_t = createChild(t))) {
+        LOGE("keyboard type %d can not create", t);
+        return;
+    }
+    child_t->onShow();
 }
 
 void CKeyBoard::setEditText(const std::string& txt) {
@@ -134,4 +143,37 @@ void CKeyBoard::setEditText(const std::string& txt) {
         mInputTextEdit->setCaretPos(txt.length());
         mInputTextEdit->setAlpha(1.0f);
     }
+}
+
+CKeyBoardChild* CKeyBoard::createChild(KeyBoardType t) {
+    if (t == KB_TYPE_NONE || t == KB_TYPE_MAX)return nullptr;
+    CKeyBoardChild* child = nullptr;
+
+    switch (t) {
+    case KB_TYPE_EN: { child = new Keyboard_EN(this); }break;
+    default: break;
+    }
+
+    if (child)mChilds.insert(child);
+    return child;
+}
+
+/******************************** 键盘内层基类 ********************************/
+
+CKeyBoardChild::CKeyBoardChild(CKeyBoard* parent, const std::string& layout) :mParent(parent) {
+    mRootView = __dc(ViewGroup, LayoutInflater::from(parent->getContext())->inflate(layout, parent->mChildBox));
+    mRootView->setVisibility(View::GONE);
+}
+
+void CKeyBoardChild::onShow() {
+    mRootView->setVisibility(View::VISIBLE);
+}
+
+void CKeyBoardChild::onHide() {
+    mRootView->setVisibility(View::GONE);
+}
+
+void CKeyBoardChild::updateParentBtn(const std::string& conplete, const std::string& cancel) {
+    mParent->mCompleteBtn->setText(conplete);
+    mParent->mCancelBtn->setText(cancel);
 }
