@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-16 16:03:05
- * @LastEditTime: 2026-03-16 18:00:15
+ * @LastEditTime: 2026-03-16 23:50:22
  * @FilePath: /kk_frame/library/keyboard/include/cKeyBoard.h
  * @Description: 输入法 CDROID 版
  * @BugList:
@@ -27,6 +27,8 @@ public:
 
     // 键盘类型
     typedef enum {
+        KB_TYPE_NONE,
+
         KB_TYPE_EN,   // 英文
         KB_TYPE_CN,   // 中文
 
@@ -78,6 +80,7 @@ public:   // 子键盘用
 private: // 内部用
     void init();
     void showType(KeyBoardType t);
+    void setEditText(const std::string& txt);
 
 private:
     bool            mIsInit{ false };              // 是否已初始化

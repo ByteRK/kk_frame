@@ -1,8 +1,66 @@
 <resources>
+    <!--    大背景-->
+    <color name="keyboard_color_bg">#d0d3da</color>
+    <!--    容器背景-->
+    <color name="keyboard_color_box_bg">#00d0d3da</color>
+    <!--    输入框-->
+    <color name="keyboard_color_input">#2f3542</color>
+    <color name="keyboard_color_input_bg">#a9b0ba</color>
+    <color name="keyboard_color_input_bg_stroke">#f9f9f9</color>
+    <!--    功能键-->
+    <color name="keyboard_color_func">#FFFFFF</color>
+    <color name="keyboard_color_func_bg">#2f3542</color>
+    <color name="keyboard_color_func_bg_pressed">#57606f</color>
+    <!--    KEY-->
+    <color name="keyboard_color_key">#FFFFFF</color>
+    <color name="keyboard_color_key_bg">#2f3542</color>
+    <color name="keyboard_color_key_bg_pressed">#57606f</color>
+    <!--    特殊KEY-->
+    <color name="keyboard_color_key_sp">#FFFFFF</color>
+    <color name="keyboard_color_key_sp_bg">#2f3542</color>
+    <color name="keyboard_color_key_sp_bg_pressed">#57606f</color>
+
+
+    <!--    输入框-->
     <style name="keyboard_input_box">
+        <item name="android:layout_width">560dp</item>
+        <item name="android:layout_height">60dp</item>
         <item name="android:layout_marginTop">10dp</item>
+        <item name="android:layout_marginStart">10dp</item>
+        <item name="android:gravity">start|center_vertical</item>
+        <item name="android:textColor">@color/keyboard_color_input</item>
+        <item name="android:textSize">34sp</item>
+        <item name="android:paddingStart">10dp</item>
+        <item name="android:background">@drawable/keyboard_input</item>
+        <item name="android:focusable">true</item>
+        <item name="android:focusableInTouchMode">true</item>
+        <item name="android:cursorVisible">true</item>
     </style>
-    <style name="keyboard_letter">
+    <!--    功能键-->
+    <style name="keyboard_cancel">
+        <item name="android:layout_width">100dp</item>
+        <item name="android:layout_height">60dp</item>
+        <item name="android:layout_alignTop">@id/input_box</item>
+        <item name="android:layout_toEndOf">@id/input_box</item>
+        <item name="android:layout_marginStart">10dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/keyboard_color_func</item>
+        <item name="android:textSize">34sp</item>
+        <item name="android:background">@drawable/keyboard_func</item>
+    </style>
+    <style name="keyboard_enter">
+        <item name="android:layout_width">100dp</item>
+        <item name="android:layout_height">60dp</item>
+        <item name="android:layout_alignTop">@id/input_box</item>
+        <item name="android:layout_toEndOf">@id/cancel</item>
+        <item name="android:layout_marginStart">10dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/keyboard_color_func</item>
+        <item name="android:textSize">34sp</item>
+        <item name="android:background">@drawable/keyboard_func</item>
+    </style>
+    <!--    KEY-->
+    <style name="keyboard_key">
         <item name="android:layout_width">70dp</item>
         <item name="android:layout_height">60dp</item>
         <item name="android:gravity">center</item>
@@ -11,14 +69,14 @@
         <item name="android:background">@drawable/keyboard_letter</item>
         <item name="android:layout_marginRight">10dp</item>
     </style>
-    <style name="keyboard_world">
-        <item name="android:layout_width">wrap_content</item>
-        <item name="android:layout_height">match_parent</item>
-        <item name="android:gravity">center_vertical</item>
+    <!--    特殊KEY-->
+    <style name="keyboard_key_sp">
+        <item name="android:layout_width">70dp</item>
+        <item name="android:layout_height">60dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textSize">24sp</item>
         <item name="android:textColor">#FFFFFF</item>
-        <item name="android:textSize">32sp</item>
-        <item name="android:paddingHorizontal">5dp</item>
-        <item name="android:singleLine">true</item>
+        <item name="android:background">@drawable/keyboard_letter</item>
+        <item name="android:layout_marginRight">10dp</item>
     </style>
-
 </resources>

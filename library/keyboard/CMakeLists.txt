@@ -44,6 +44,15 @@ set(${LIB_NAME}_TARGET_NAME ${TARGET_NAME} PARENT_SCOPE)
 
 # 9. 创建库（子库编译设定）
 if(LIB_SOURCES)
+    # CDROID头文件目录
+    set(LIB_CDROID_INCLUDE_PATHS
+        ${CDROID_INCLUDE_DIRS}
+        ${CDROID_DEPINCLUDES}
+        ${CMAKE_BINARY_DIR}/include
+        ${CMAKE_BINARY_DIR}/include/gui
+        ${CMAKE_BINARY_DIR}/include/porting
+    )
+
     # 静态库
     add_library(${TARGET_NAME} STATIC ${LIB_SOURCES})
 
@@ -56,8 +65,12 @@ if(LIB_SOURCES)
     target_include_directories(${TARGET_NAME} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${APP_ROOT_DIR}            # 为了获取R.h
-        ${APP_ROOT_DIR}/config     # 为了获取APP_NAME
+
+        ${LIB_CDROID_INCLUDE_PATHS}   # 为了获取CDROID组件
+        
+        ${APP_ROOT_DIR}               # 为了获取R.h
+        ${APP_ROOT_DIR}/config        # 为了获取APP_NAME
+        ${APP_ROOT_DIR}/src/utils     # 为了获取utils
     )
     
     # 设置PIC以及输出目录

@@ -44,6 +44,15 @@ set(${LIB_NAME}_TARGET_NAME ${TARGET_NAME} PARENT_SCOPE)
 
 # 9. 创建库（子库编译设定）
 if(LIB_SOURCES)
+    # CDROID头文件目录
+    set(LIB_CDROID_INCLUDE_PATHS
+        ${CDROID_INCLUDE_DIRS}
+        ${CDROID_DEPINCLUDES}
+        ${CMAKE_BINARY_DIR}/include
+        ${CMAKE_BINARY_DIR}/include/gui
+        ${CMAKE_BINARY_DIR}/include/porting
+    )
+
     # 静态库
     add_library(${TARGET_NAME} STATIC ${LIB_SOURCES})
 

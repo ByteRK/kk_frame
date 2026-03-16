@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-16 16:03:05
- * @LastEditTime: 2026-03-16 18:01:52
+ * @LastEditTime: 2026-03-16 23:58:13
  * @FilePath: /kk_frame/library/keyboard/cKeyBoard.cc
  * @Description: 输入法 CDROID 版
  * @BugList:
@@ -16,7 +16,7 @@
 #include "app_version.h"
 #include "string_utils.h"
 
-using namespace APP_NAME;
+namespace AppRid = APP_NAME::R::id;
 
 #ifndef __dc
 #define __dc(type, obj) dynamic_cast<type*>(obj)
@@ -54,6 +54,8 @@ CKeyBoard::CKeyBoard(Context* ctx, const AttributeSet& attr) : RelativeLayout(ct
 void CKeyBoard::show() {
     setVisibility(View::VISIBLE);
     showType(mKBType); // 显示当前键盘
+    setEditText(mInputText);
+    mInputTextEdit->requestFocus();
 }
 
 void CKeyBoard::setType(KeyBoardType t) {
@@ -97,8 +99,39 @@ void CKeyBoard::init() {
     if (mIsInit)return;
     LayoutInflater::from(getContext())->inflate("@layout/keyboard", this);
 
+    mInputTextEdit = __dc(EditText, findViewById(AppRid::input_box));
+    mCompleteBtn = __dc(Button, findViewById(AppRid::enter));
+    mCancelBtn = __dc(Button, findViewById(AppRid::cancel));
+    mChildBox = __dc(ViewGroup, findViewById(AppRid::key_box));
+
+
+    auto closeClick = [this](View&v) {
+        if (mCloseListener)mCloseListener(v.getId() == AppRid::enter, mInputText);
+        mKBType = KeyBoardType::KB_TYPE_NONE;
+        mInputText.clear();
+        mDescription.clear();
+        setVisibility(View::GONE);
+    };
+    mCompleteBtn->setOnClickListener(closeClick);
+    mCancelBtn->setOnClickListener(closeClick);
+
     setVisibility(View::GONE);
+
+    mIsInit = true;
 }
 
 void CKeyBoard::showType(KeyBoardType t) {
+}
+
+void CKeyBoard::setEditText(const std::string& txt) {
+    mInputText = txt;
+    if (txt.empty()) {
+        mInputTextEdit->setText(" " + mDescription);
+        mInputTextEdit->setCaretPos(0);
+        mInputTextEdit->setAlpha(0.5f);
+    } else {
+        mInputTextEdit->setText(txt + " ");
+        mInputTextEdit->setCaretPos(txt.length());
+        mInputTextEdit->setAlpha(1.0f);
+    }
 }
