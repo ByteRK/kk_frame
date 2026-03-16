@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-10 22:50:08
- * @LastEditTime: 2026-02-11 01:05:51
+ * @LastEditTime: 2026-03-16 18:14:58
  * @FilePath: /kk_frame/src/app/page/components/wind_keyboard.cc
  * @Description: 键盘组件
  * @BugList:
@@ -13,6 +13,18 @@
 
 #include "wind_keyboard.h"
 #include "base.h"
+
+
+#if !defined(ENABLE_KEYBOARD)
+// 兜底策略，防止XML解析失败
+class CKBegister {
+public:
+    CKBegister() {
+        LayoutInflater::registerInflater("CKeyBoard", "", [](Context*ctx, const AttributeSet&attr)->View* {return new View(ctx, attr);});
+    }
+};
+static CKBegister ckbegister;
+#endif
 
 WindKeyboard::WindKeyboard() {
     mIsInit = false;
@@ -41,14 +53,9 @@ void WindKeyboard::init(ViewGroup* parent) {
 
     mRootView->setVisibility(View::GONE);
 #if defined(ENABLE_KEYBOARD)
-    mKeyBoard->setOnCompleteListener([this](const std::string& text) {
-        this->onKeyBoardClose(true, text);
-    });
-    mKeyBoard->setOnCancelListener([this]() {
-        this->onKeyBoardClose(false, "");
-    });
-    mKeyBoard->setEditType(EditText::TYPE_ANY);
-    mKeyBoard->setWordCount(30);
+    mKeyBoard->setCloseListener(
+        [this](bool isEnter, const std::string& text) {this->onKeyBoardClose(isEnter, text);}
+    );
 #endif
 
     mIsInit = true;
@@ -60,9 +67,9 @@ void WindKeyboard::onTick() {
 void WindKeyboard::showKeyboard(const std::string& text, const std::string& hint) {
     if (isKeyboardShow()) return;
 #if defined(ENABLE_KEYBOARD)
-    mKeyBoard->showWindow();
+    mKeyBoard->setInputText(text);
     mKeyBoard->setDescription(hint);
-    mKeyBoard->setEditText(text);
+    mKeyBoard->show();
     mRootView->setVisibility(View::VISIBLE);
     mIsShow = true;
 #else
@@ -84,17 +91,10 @@ bool WindKeyboard::onKey(int keyCode, KeyEvent& evt, bool& result) {
     return false;
 }
 
-void WindKeyboard::setKeyboardWordCount(int count) {
+void WindKeyboard::setKeyboardMaxInputCount(int count) {
     if (!checkInit()) return;
 #if defined(ENABLE_KEYBOARD)
-    mKeyBoard->setWordCount(count);
-#endif
-}
-
-void WindKeyboard::setKeyboardType(cdroid::EditText::INPUTTYPE type) {
-    if (!checkInit()) return;
-#if defined(ENABLE_KEYBOARD)
-    mKeyBoard->setEditType(type);
+    mKeyBoard->setMaxInputCount(count);
 #endif
 }
 

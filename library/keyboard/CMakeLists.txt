@@ -1,5 +1,5 @@
 # ========================================
-# 子库模板：<library_name>
+# 子库模板：<library_keyboard>
 # ========================================
 
 # 1. 设置库信息
@@ -9,10 +9,13 @@ string(TOLOWER "${LIB_NAME}" LIB_NAME_LOWER)
 
 message(STATUS "Configuring library: ${LIB_NAME}")
 
-# 2. 库目标名
+# 2. 推导项目根路径（若需要）
+set(APP_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../..)
+
+# 3. 库目标名
 set(TARGET_NAME "${PROJECT_NAME}_${LIB_NAME_LOWER}_lib")
 
-# 3. 源文件收集
+# 4. 源文件收集
 file(GLOB_RECURSE LIB_SOURCES 
     "${CMAKE_CURRENT_SOURCE_DIR}/*.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/*.cc"
@@ -20,16 +23,26 @@ file(GLOB_RECURSE LIB_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/*.cxx"
 )
 
-# 4. 导出头文件目录到父作用域
+# 5. 导出头文件目录到父作用域
 set(${LIB_NAME}_INCLUDE_DIRS 
-    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
     PARENT_SCOPE
 )
 
-# 5. 导出目标名到父作用域
+# 6. 导出依赖库到父作用域（非必选）
+#set(${LIB_NAME}_LIBRARIES
+#    PARENT_SCOPE
+#)
+
+# 7. 导出依赖库搜索目录到父作用域（非必选）
+#set(${LIB_NAME}_LIBRARY_DIRS
+#    PARENT_SCOPE
+#)
+
+# 8. 导出目标名到父作用域
 set(${LIB_NAME}_TARGET_NAME ${TARGET_NAME} PARENT_SCOPE)
 
-# 6. 创建库
+# 9. 创建库（子库编译设定）
 if(LIB_SOURCES)
     # 静态库
     add_library(${TARGET_NAME} STATIC ${LIB_SOURCES})
@@ -40,8 +53,11 @@ if(LIB_SOURCES)
     )
     
     # 设置头文件目录
-    target_include_directories(${TARGET_NAME} PUBLIC
+    target_include_directories(${TARGET_NAME} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${APP_ROOT_DIR}            # 为了获取R.h
+        ${APP_ROOT_DIR}/config     # 为了获取APP_NAME
     )
     
     # 设置PIC以及输出目录

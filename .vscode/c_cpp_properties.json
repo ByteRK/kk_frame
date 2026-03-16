@@ -11,7 +11,8 @@
                 "~/cdroid/outX64-Debug/src/gui/*"
             ],
             "defines": [
-                "__VSCODE__"
+                "__VSCODE__",
+                "ENABLE_KEYBOARD"
             ],
             "compilerPath": "/usr/bin/gcc",
             "cStandard": "c11",

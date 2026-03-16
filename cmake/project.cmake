@@ -5,8 +5,8 @@ message(STATUS "========================================")
 
 ################################## 开关 ##################################
 
-set(ENABLED_KEYBOARD OFF)         # 键盘
-set(ENABLED_KEYBOARD_PINYIN ON)   # 拼音
+set(ENABLED_KEYBOARD ON)          # 键盘
+set(ENABLED_KEYBOARD_PINYIN OFF)  # 拼音
 
 set(ENABLED_GAUSS_VIEW OFF)       # 高斯视图
 set(ENABLED_GAUSS_DRAWABLE ON)    # 高斯绘图

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-10 22:49:59
- * @LastEditTime: 2026-02-11 01:03:25
+ * @LastEditTime: 2026-03-16 17:53:07
  * @FilePath: /kk_frame/src/app/page/components/wind_keyboard.h
  * @Description: 键盘组件
  * @BugList:
@@ -18,8 +18,6 @@
 
 #if defined(ENABLE_KEYBOARD)
 #include "cKeyBoard.h"
-#else
-#include <widget/edittext.h>
 #endif
 
 class WindKeyboard {
@@ -48,8 +46,7 @@ public:
     bool         isKeyboardShow();
     bool         onKey(int keyCode, KeyEvent& evt, bool& result);
 
-    void         setKeyboardWordCount(int count);
-    void         setKeyboardType(cdroid::EditText::INPUTTYPE type);
+    void         setKeyboardMaxInputCount(int count);
     void         setKeyboardCallBack(OnCloseListener enter, OnCloseListener cancel);
 
 private:
