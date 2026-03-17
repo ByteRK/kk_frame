@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-16 16:03:05
- * @LastEditTime: 2026-03-17 18:46:50
+ * @LastEditTime: 2026-03-18 01:44:02
  * @FilePath: /kk_frame/library/keyboard/cKeyBoard.cc
  * @Description: 输入法 CDROID 版
  * @BugList:
@@ -28,6 +28,12 @@ CKeyBoard::CKeyBoard(int w, int h) : RelativeLayout(w, h) {
 
 CKeyBoard::CKeyBoard(Context* ctx, const AttributeSet& attr) : RelativeLayout(ctx, attr) {
     init();
+}
+
+CKeyBoard::~CKeyBoard() {
+    for (auto& kb : mChilds)
+        delete kb;
+    mChilds.clear();
 }
 
 void CKeyBoard::show() {
@@ -143,10 +149,13 @@ void CKeyBoard::setEditText(const std::string& txt) {
         mInputTextEdit->setCaretPos(0);
         LOGD("setEditText: [%s]", mDescription.c_str());
     } else {
-        mInputTextEdit->setText(txt + " ");
+        std::string endText(txt + " ");
+        int pos = StringUtils::characterCount(endText.c_str()) - 1;
+
+        mInputTextEdit->setText(endText);
         mInputTextEdit->setTextColor(App::getInstance().getColor("@color/keyboard_color_input"));
-        mInputTextEdit->setCaretPos(txt.length());
-        LOGI("setEditText: [CaretPos: %d][%s]", txt.length(), txt.c_str());
+        mInputTextEdit->setCaretPos(pos);
+        LOGI("setEditText: [CaretPos: %d][%s]", pos, txt.c_str());
     }
 }
 
@@ -172,6 +181,9 @@ CKeyBoardChild* CKeyBoard::createChild(KeyBoardType t) {
 CKeyBoardChild::CKeyBoardChild(CKeyBoard* parent, const std::string& layout) :mParent(parent) {
     mRootView = __dc(ViewGroup, LayoutInflater::from(parent->getContext())->inflate(layout, parent->mChildBox));
     mRootView->setVisibility(View::GONE);
+}
+
+CKeyBoardChild::~CKeyBoardChild() {
 }
 
 void CKeyBoardChild::init() {

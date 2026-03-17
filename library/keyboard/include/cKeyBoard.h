@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-16 16:03:05
- * @LastEditTime: 2026-03-17 18:11:32
+ * @LastEditTime: 2026-03-18 01:18:52
  * @FilePath: /kk_frame/library/keyboard/include/cKeyBoard.h
  * @Description: 输入法 CDROID 版
  * @BugList:
@@ -43,6 +43,7 @@ public:
 public:   // 构造
     CKeyBoard(int w, int h);
     CKeyBoard(Context* ctx, const AttributeSet& attr);
+    ~CKeyBoard();
 
 public:   // 外部用
     void show();
@@ -93,6 +94,7 @@ protected:
 
 public:
     CKeyBoardChild(CKeyBoard* parent, const std::string& layout);
+    virtual ~CKeyBoardChild();
     virtual CKeyBoard::KeyBoardType getType() = 0;
     virtual void init();
     virtual void onShow();
