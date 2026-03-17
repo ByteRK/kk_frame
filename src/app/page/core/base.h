@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2026-03-09 15:19:08
+ * @LastEditTime: 2026-03-17 23:06:02
  * @FilePath: /kk_frame/src/app/page/core/base.h
  * @Description: 页面基类
  * @BugList:
@@ -89,6 +89,11 @@ public:
     template <typename T>
     static inline T* get(View* vp, int id) {
         return dynamic_cast<T*>(get(vp, id));
+    }
+
+    /// @brief 设置点击事件
+    static inline void click(View* v, View::OnClickListener l){
+        v->setOnClickListener(l);
     }
 
     /// @brief 设置点击事件

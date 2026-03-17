@@ -1,25 +1,25 @@
 <resources>
     <!--    大背景-->
-    <color name="keyboard_color_bg">#00d0d3da</color>
+    <color name="keyboard_color_bg">#000000</color>
     <!--    容器背景-->
-    <color name="keyboard_color_box_bg">#d0d3da</color>
+    <color name="keyboard_color_box_bg">#d6e6f2</color>
     <!--    输入框-->
     <color name="keyboard_color_input">#f9f9f9</color>
     <color name="keyboard_color_description">#88f9f9f9</color>
-    <color name="keyboard_color_input_bg">#a9b0ba</color>
-    <color name="keyboard_color_input_bg_stroke">#f9f9f9</color>
+    <color name="keyboard_color_input_bg">#57606f</color>
+    <color name="keyboard_color_input_bg_stroke">#d6e6f2</color>
     <!--    功能键-->
     <color name="keyboard_color_func">#FFFFFF</color>
-    <color name="keyboard_color_func_bg">#2f3542</color>
-    <color name="keyboard_color_func_bg_pressed">#57606f</color>
+    <color name="keyboard_color_func_bg">#5e87b8</color>
+    <color name="keyboard_color_func_bg_pressed">#83cee0</color>
     <!--    KEY-->
     <color name="keyboard_color_key">#FFFFFF</color>
-    <color name="keyboard_color_key_bg">#666876</color>
-    <color name="keyboard_color_key_bg_pressed">#57606f</color>
+    <color name="keyboard_color_key_bg">#718093</color>
+    <color name="keyboard_color_key_bg_pressed">#7f8fa6</color>
     <!--    特殊KEY-->
     <color name="keyboard_color_key_sp">#FFFFFF</color>
-    <color name="keyboard_color_key_sp_bg">#2f3542</color>
-    <color name="keyboard_color_key_sp_bg_pressed">#57606f</color>
+    <color name="keyboard_color_key_sp_bg">#2f3640</color>
+    <color name="keyboard_color_key_sp_bg_pressed">#353b48</color>
 
 
     <!--    输入框-->
