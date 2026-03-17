@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-10 22:50:08
- * @LastEditTime: 2026-03-16 18:14:58
+ * @LastEditTime: 2026-03-17 16:41:07
  * @FilePath: /kk_frame/src/app/page/components/wind_keyboard.cc
  * @Description: 键盘组件
  * @BugList:
@@ -56,6 +56,8 @@ void WindKeyboard::init(ViewGroup* parent) {
     mKeyBoard->setCloseListener(
         [this](bool isEnter, const std::string& text) {this->onKeyBoardClose(isEnter, text);}
     );
+    mKeyBoard->setEnableChilds({ CKeyBoard::KB_TYPE_EN, CKeyBoard::KB_TYPE_CN });
+    mKeyBoard->setType(CKeyBoard::KB_TYPE_EN);
 #endif
 
     mIsInit = true;

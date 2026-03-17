@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     style="@style/keyboard_box">
+    <LinearLayout style="@style/keyboard_box_line"
+        android:id="@+id/candidate_box"
+        android:background="@drawable/keyboard_key_sp">
+
+    </LinearLayout>
     <LinearLayout style="@style/keyboard_box_line">
         <Button style="@style/keyboard_key" android:id="@+id/key_q"/>
         <Button style="@style/keyboard_key" android:id="@+id/key_w"/>

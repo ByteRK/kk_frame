@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-16 16:03:05
- * @LastEditTime: 2026-03-17 02:03:17
+ * @LastEditTime: 2026-03-17 18:11:32
  * @FilePath: /kk_frame/library/keyboard/include/cKeyBoard.h
  * @Description: 输入法 CDROID 版
  * @BugList:
@@ -68,10 +68,10 @@ private: // 内部用
 private:
     bool            mIsInit{ false };              // 是否已初始化
 
-    KeyBoardType    mKBType{ KB_TYPE_EN };         // 键盘加载类型
+    KeyBoardType    mKBType{ KB_TYPE_NONE };       // 键盘加载类型
     std::string     mInputText{ "" };              // 输入框内容
     std::string     mDescription{ "" };            // 描述文本
-    int             mMaxInputCount{ 10 };          // 最大输入长度
+    int             mMaxInputCount{ 20 };          // 最大输入长度
     OnCloseListener mCloseListener{ nullptr };     // 关闭回调
     int             mChineseWeight{ 2 };           // 中文字符权重
 
@@ -88,20 +88,17 @@ private:
 /// @brief 子键盘基类
 class CKeyBoardChild {
 protected:
-    const CKeyBoard* mParent;
-    ViewGroup*       mRootView{ nullptr };
+    CKeyBoard*const mParent;
+    ViewGroup*      mRootView{ nullptr };
 
 public:
     CKeyBoardChild(CKeyBoard* parent, const std::string& layout);
     virtual CKeyBoard::KeyBoardType getType() = 0;
+    virtual void init();
     virtual void onShow();
     virtual void onHide();
 
 protected:
-    template<typename T = View>
-    T* __get(int id) {
-        return dynamic_cast<T*>(mRootView->findViewById(id));
-    }
     void updateParentBtn(const std::string& conplete, const std::string& cancel);
 };
 

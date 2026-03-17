@@ -1,10 +1,11 @@
 <resources>
     <!--    大背景-->
-    <color name="keyboard_color_bg">#d0d3da</color>
+    <color name="keyboard_color_bg">#00d0d3da</color>
     <!--    容器背景-->
-    <color name="keyboard_color_box_bg">#00d0d3da</color>
+    <color name="keyboard_color_box_bg">#d0d3da</color>
     <!--    输入框-->
-    <color name="keyboard_color_input">#2f3542</color>
+    <color name="keyboard_color_input">#f9f9f9</color>
+    <color name="keyboard_color_description">#88f9f9f9</color>
     <color name="keyboard_color_input_bg">#a9b0ba</color>
     <color name="keyboard_color_input_bg_stroke">#f9f9f9</color>
     <!--    功能键-->
@@ -13,7 +14,7 @@
     <color name="keyboard_color_func_bg_pressed">#57606f</color>
     <!--    KEY-->
     <color name="keyboard_color_key">#FFFFFF</color>
-    <color name="keyboard_color_key_bg">#2f3542</color>
+    <color name="keyboard_color_key_bg">#666876</color>
     <color name="keyboard_color_key_bg_pressed">#57606f</color>
     <!--    特殊KEY-->
     <color name="keyboard_color_key_sp">#FFFFFF</color>
@@ -59,24 +60,76 @@
         <item name="android:textSize">34sp</item>
         <item name="android:background">@drawable/keyboard_func</item>
     </style>
+    <!--    容器-->
+    <style name="keyboard_box">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginStart">10dp</item>
+        <item name="android:layout_marginEnd">10dp</item>
+        <item name="android:layout_marginBottom">10dp</item>
+        <item name="android:background">@drawable/keyboard_box</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:showDividers">middle</item>
+        <item name="android:divider">@drawable/keyboard_space_v</item>
+        <item name="android:padding">6dp</item>
+    </style>
+    <!--    容器 行-->
+    <style name="keyboard_box_line">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">60dp</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:showDividers">middle</item>
+        <item name="android:divider">@drawable/keyboard_space_h</item>
+    </style>
     <!--    KEY-->
     <style name="keyboard_key">
-        <item name="android:layout_width">70dp</item>
-        <item name="android:layout_height">60dp</item>
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:layout_weight">1</item>
         <item name="android:gravity">center</item>
         <item name="android:textSize">24sp</item>
-        <item name="android:textColor">#FFFFFF</item>
-        <item name="android:background">@drawable/keyboard_letter</item>
-        <item name="android:layout_marginRight">10dp</item>
+        <item name="android:textColor">@color/keyboard_color_key</item>
+        <item name="android:background">@drawable/keyboard_key</item>
+        <item name="android:text">key</item>
     </style>
     <!--    特殊KEY-->
     <style name="keyboard_key_sp">
-        <item name="android:layout_width">70dp</item>
-        <item name="android:layout_height">60dp</item>
+        <item name="android:layout_width">100dp</item>
+        <item name="android:layout_height">match_parent</item>
         <item name="android:gravity">center</item>
         <item name="android:textSize">24sp</item>
-        <item name="android:textColor">#FFFFFF</item>
-        <item name="android:background">@drawable/keyboard_letter</item>
-        <item name="android:layout_marginRight">10dp</item>
+        <item name="android:textColor">@color/keyboard_color_key_sp</item>
+        <item name="android:background">@drawable/keyboard_key_sp</item>
+        <item name="android:text">spk</item>
+    </style>
+    <!--    空格键-->
+    <style name="keyboard_key_space">
+        <item name="android:layout_width">380dp</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textSize">24sp</item>
+        <item name="android:textColor">@color/keyboard_color_key</item>
+        <item name="android:background">@drawable/keyboard_key</item>
+        <item name="android:text">spk</item>
+    </style>
+    <!--    回退键-->
+    <style name="keyboard_key_backspace">
+        <item name="android:layout_width">100dp</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textSize">24sp</item>
+        <item name="android:textColor">@color/keyboard_color_key_sp</item>
+        <item name="android:background">@drawable/keyboard_backspace</item>
+        <item name="android:text"> </item>
+    </style>
+    <!--    大写键-->
+    <style name="keyboard_key_shift">
+        <item name="android:layout_width">100dp</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textSize">24sp</item>
+        <item name="android:textColor">@color/keyboard_color_key_sp</item>
+        <item name="android:background">@drawable/keyboard_shift</item>
+        <item name="android:text"> </item>
     </style>
 </resources>

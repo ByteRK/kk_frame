@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-16 16:03:05
- * @LastEditTime: 2026-03-17 02:01:01
+ * @LastEditTime: 2026-03-17 18:46:50
  * @FilePath: /kk_frame/library/keyboard/cKeyBoard.cc
  * @Description: 输入法 CDROID 版
  * @BugList:
@@ -13,8 +13,10 @@
 
 #include "cKeyBoard.h"
 #include "string_utils.h"
+#include <core/app.h>
 
 #include "keyboard_en.h"
+#include "keyboard_cn.h"
 
 /********************************** 键盘外层 **********************************/
 
@@ -30,6 +32,7 @@ CKeyBoard::CKeyBoard(Context* ctx, const AttributeSet& attr) : RelativeLayout(ct
 
 void CKeyBoard::show() {
     setVisibility(View::VISIBLE);
+    setEnabled(false);
     showType(mKBType); // 显示当前键盘
     setEditText(mInputText);
     mInputTextEdit->requestFocus();
@@ -65,8 +68,8 @@ void CKeyBoard::setChineseWeight(int weight) {
 
 void CKeyBoard::appendText(const std::string& txt) {
     std::string cacheText = mInputText + txt;
-    if (mMaxInputCount && StringUtils::characterCount(cacheText.c_str()) > mMaxInputCount, mChineseWeight)
-        cacheText = StringUtils::substringByChars(txt.c_str(), mMaxInputCount, mChineseWeight);
+    if (mMaxInputCount && StringUtils::characterCount(cacheText.c_str(), mChineseWeight) > mMaxInputCount)
+        cacheText = StringUtils::substringByChars(cacheText.c_str(), mMaxInputCount, mChineseWeight);
     setEditText(cacheText);
 }
 
@@ -100,7 +103,7 @@ void CKeyBoard::init() {
         if (mCloseListener)mCloseListener(v.getId() == AppRid::enter, mInputText);
         mInputText.clear();
         mDescription.clear();
-        showType(mKBType = KeyBoardType::KB_TYPE_NONE);
+        showType(KeyBoardType::KB_TYPE_NONE);
         setVisibility(View::GONE);
     };
     mCompleteBtn->setOnClickListener(closeClick);
@@ -136,12 +139,14 @@ void CKeyBoard::setEditText(const std::string& txt) {
     mInputText = txt;
     if (txt.empty()) {
         mInputTextEdit->setText(" " + mDescription);
+        mInputTextEdit->setTextColor(App::getInstance().getColor("@color/keyboard_color_description"));
         mInputTextEdit->setCaretPos(0);
-        mInputTextEdit->setAlpha(0.5f);
+        LOGD("setEditText: [%s]", mDescription.c_str());
     } else {
         mInputTextEdit->setText(txt + " ");
+        mInputTextEdit->setTextColor(App::getInstance().getColor("@color/keyboard_color_input"));
         mInputTextEdit->setCaretPos(txt.length());
-        mInputTextEdit->setAlpha(1.0f);
+        LOGI("setEditText: [CaretPos: %d][%s]", txt.length(), txt.c_str());
     }
 }
 
@@ -151,10 +156,14 @@ CKeyBoardChild* CKeyBoard::createChild(KeyBoardType t) {
 
     switch (t) {
     case KB_TYPE_EN: { child = new Keyboard_EN(this); }break;
+    case KB_TYPE_CN: { child = new Keyboard_CN(this); }break;
     default: break;
     }
 
-    if (child)mChilds.insert(child);
+    if (child) {
+        child->init();
+        mChilds.insert(child);
+    }
     return child;
 }
 
@@ -163,6 +172,9 @@ CKeyBoardChild* CKeyBoard::createChild(KeyBoardType t) {
 CKeyBoardChild::CKeyBoardChild(CKeyBoard* parent, const std::string& layout) :mParent(parent) {
     mRootView = __dc(ViewGroup, LayoutInflater::from(parent->getContext())->inflate(layout, parent->mChildBox));
     mRootView->setVisibility(View::GONE);
+}
+
+void CKeyBoardChild::init() {
 }
 
 void CKeyBoardChild::onShow() {
