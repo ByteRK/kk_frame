@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-17 01:07:04
- * @LastEditTime: 2026-03-17 01:44:55
+ * @LastEditTime: 2026-03-18 02:44:11
  * @FilePath: /kk_frame/library/keyboard/childs/keyboard_base.h
  * @Description: 子键盘通用头
  * @BugList:
@@ -14,12 +14,17 @@
 #ifndef __KEYBOARD_BASE_H__
 #define __KEYBOARD_BASE_H__
 
+#ifdef __VSCODE__
+#include "keyboard/R.h"
+#else
 #include "R.h"
-#include "cKeyBoard.h"
-#include "app_version.h"
+#endif
 
-/// @brief APP命名空间
-namespace AppRid = APP_NAME::R::id;
+#include "cKeyBoard.h"
+#include "lib_private_config.h"
+
+/// @brief Lib命名空间
+namespace LibRid = THIS_LIB_NAME::R::id;
 
 /// @brief 动态类型转换宏
 #ifndef __dc

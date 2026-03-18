@@ -47,11 +47,11 @@ CKeyBoard::KeyBoardType Keyboard_CN::getType() {
 
 void Keyboard_CN::init() {
     Keyboard_EN::init();
-    mCandidateBoxes = __dc(ViewGroup, mRootView->findViewById(AppRid::candidate_box));
+    mCandidateBoxes = __dc(ViewGroup, mRootView->findViewById(LibRid::candidate_box));
     mCandidateBoxes->setEnabled(false);
 
-    mPinyin = __dc(TextView, mRootView->findViewById(AppRid::pinyin));
-    mCandidateList = __dc(RecyclerView, mRootView->findViewById(AppRid::candidate_list));
+    mPinyin = __dc(TextView, mRootView->findViewById(LibRid::pinyin));
+    mCandidateList = __dc(RecyclerView, mRootView->findViewById(LibRid::candidate_list));
 
     mCandidateList->setLayoutManager(new LinearLayoutManager(mRootView->getContext(), LinearLayoutManager::HORIZONTAL, false));
     mCandidateList->setAdapter(this);

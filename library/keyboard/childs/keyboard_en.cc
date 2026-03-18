@@ -176,42 +176,42 @@ void Keyboard_EN::getKeyList() {
     } while (0)
 
     // 插入顺序必须与枚举 KEY_EN_XXX 一致，提高性能
-    PUSH_KEY_LIST(AppRid::key_q, KEY_EN_Q);
-    PUSH_KEY_LIST(AppRid::key_w, KEY_EN_W);
-    PUSH_KEY_LIST(AppRid::key_e, KEY_EN_E);
-    PUSH_KEY_LIST(AppRid::key_r, KEY_EN_R);
-    PUSH_KEY_LIST(AppRid::key_t, KEY_EN_T);
-    PUSH_KEY_LIST(AppRid::key_y, KEY_EN_Y);
-    PUSH_KEY_LIST(AppRid::key_u, KEY_EN_U);
-    PUSH_KEY_LIST(AppRid::key_i, KEY_EN_I);
-    PUSH_KEY_LIST(AppRid::key_o, KEY_EN_O);
-    PUSH_KEY_LIST(AppRid::key_p, KEY_EN_P);
-    PUSH_KEY_LIST(AppRid::key_a, KEY_EN_A);
-    PUSH_KEY_LIST(AppRid::key_s, KEY_EN_S);
-    PUSH_KEY_LIST(AppRid::key_d, KEY_EN_D);
-    PUSH_KEY_LIST(AppRid::key_f, KEY_EN_F);
-    PUSH_KEY_LIST(AppRid::key_g, KEY_EN_G);
-    PUSH_KEY_LIST(AppRid::key_h, KEY_EN_H);
-    PUSH_KEY_LIST(AppRid::key_j, KEY_EN_J);
-    PUSH_KEY_LIST(AppRid::key_k, KEY_EN_K);
-    PUSH_KEY_LIST(AppRid::key_l, KEY_EN_L);
-    PUSH_KEY_LIST(AppRid::key_z, KEY_EN_Z);
-    PUSH_KEY_LIST(AppRid::key_x, KEY_EN_X);
-    PUSH_KEY_LIST(AppRid::key_c, KEY_EN_C);
-    PUSH_KEY_LIST(AppRid::key_v, KEY_EN_V);
-    PUSH_KEY_LIST(AppRid::key_b, KEY_EN_B);
-    PUSH_KEY_LIST(AppRid::key_n, KEY_EN_N);
-    PUSH_KEY_LIST(AppRid::key_m, KEY_EN_M);
+    PUSH_KEY_LIST(LibRid::key_q, KEY_EN_Q);
+    PUSH_KEY_LIST(LibRid::key_w, KEY_EN_W);
+    PUSH_KEY_LIST(LibRid::key_e, KEY_EN_E);
+    PUSH_KEY_LIST(LibRid::key_r, KEY_EN_R);
+    PUSH_KEY_LIST(LibRid::key_t, KEY_EN_T);
+    PUSH_KEY_LIST(LibRid::key_y, KEY_EN_Y);
+    PUSH_KEY_LIST(LibRid::key_u, KEY_EN_U);
+    PUSH_KEY_LIST(LibRid::key_i, KEY_EN_I);
+    PUSH_KEY_LIST(LibRid::key_o, KEY_EN_O);
+    PUSH_KEY_LIST(LibRid::key_p, KEY_EN_P);
+    PUSH_KEY_LIST(LibRid::key_a, KEY_EN_A);
+    PUSH_KEY_LIST(LibRid::key_s, KEY_EN_S);
+    PUSH_KEY_LIST(LibRid::key_d, KEY_EN_D);
+    PUSH_KEY_LIST(LibRid::key_f, KEY_EN_F);
+    PUSH_KEY_LIST(LibRid::key_g, KEY_EN_G);
+    PUSH_KEY_LIST(LibRid::key_h, KEY_EN_H);
+    PUSH_KEY_LIST(LibRid::key_j, KEY_EN_J);
+    PUSH_KEY_LIST(LibRid::key_k, KEY_EN_K);
+    PUSH_KEY_LIST(LibRid::key_l, KEY_EN_L);
+    PUSH_KEY_LIST(LibRid::key_z, KEY_EN_Z);
+    PUSH_KEY_LIST(LibRid::key_x, KEY_EN_X);
+    PUSH_KEY_LIST(LibRid::key_c, KEY_EN_C);
+    PUSH_KEY_LIST(LibRid::key_v, KEY_EN_V);
+    PUSH_KEY_LIST(LibRid::key_b, KEY_EN_B);
+    PUSH_KEY_LIST(LibRid::key_n, KEY_EN_N);
+    PUSH_KEY_LIST(LibRid::key_m, KEY_EN_M);
 
-    PUSH_KEY_LIST(AppRid::key_left, KEY_EN_LEFT);
-    PUSH_KEY_LIST(AppRid::key_space, KEY_EN_SPACE);
-    PUSH_KEY_LIST(AppRid::key_right, KEY_EN_RIGHT);
+    PUSH_KEY_LIST(LibRid::key_left, KEY_EN_LEFT);
+    PUSH_KEY_LIST(LibRid::key_space, KEY_EN_SPACE);
+    PUSH_KEY_LIST(LibRid::key_right, KEY_EN_RIGHT);
 
-    PUSH_KEY_LIST(AppRid::key_math, KEY_EN_MATH);
-    PUSH_KEY_LIST(AppRid::key_more, KEY_EN_MORE);
-    PUSH_KEY_LIST(AppRid::key_lang, KEY_EN_LANG);
-    PUSH_KEY_LIST(AppRid::key_shift, KEY_EN_SHIFT);
-    PUSH_KEY_LIST(AppRid::key_backspace, KEY_EN_BACKSPACE);
+    PUSH_KEY_LIST(LibRid::key_math, KEY_EN_MATH);
+    PUSH_KEY_LIST(LibRid::key_more, KEY_EN_MORE);
+    PUSH_KEY_LIST(LibRid::key_lang, KEY_EN_LANG);
+    PUSH_KEY_LIST(LibRid::key_shift, KEY_EN_SHIFT);
+    PUSH_KEY_LIST(LibRid::key_backspace, KEY_EN_BACKSPACE);
 
 #undef PUSH_KEY_LIST
 }

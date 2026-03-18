@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-16 16:03:05
- * @LastEditTime: 2026-03-18 01:44:02
+ * @LastEditTime: 2026-03-18 02:50:14
  * @FilePath: /kk_frame/library/keyboard/cKeyBoard.cc
  * @Description: 输入法 CDROID 版
  * @BugList:
@@ -17,6 +17,16 @@
 
 #include "keyboard_en.h"
 #include "keyboard_cn.h"
+
+/********************************** 资源管理 **********************************/
+
+class KeyboardAssets :public cdroid::Assets {
+public:
+    KeyboardAssets() {
+        addResource("./" + std::string("cdroid.pak"), "cdroid");
+        addResource("./" + std::string("keyboard.pak"));
+    };
+};
 
 /********************************** 键盘外层 **********************************/
 
@@ -34,6 +44,12 @@ CKeyBoard::~CKeyBoard() {
     for (auto& kb : mChilds)
         delete kb;
     mChilds.clear();
+}
+
+Context* CKeyBoard::getKeyboardContext() {
+    static KeyboardAssets* s_KeyboardAssets = nullptr;
+    if (!s_KeyboardAssets)s_KeyboardAssets = new KeyboardAssets();
+    return s_KeyboardAssets;
 }
 
 void CKeyBoard::show() {
@@ -97,16 +113,17 @@ void CKeyBoard::showNextType() {
 
 void CKeyBoard::init() {
     if (mIsInit)return;
-    LayoutInflater::from(getContext())->inflate("@layout/keyboard", this);
 
-    mInputTextEdit = __dc(EditText, findViewById(AppRid::input_box));
-    mCompleteBtn = __dc(Button, findViewById(AppRid::enter));
-    mCancelBtn = __dc(Button, findViewById(AppRid::cancel));
-    mChildBox = __dc(ViewGroup, findViewById(AppRid::key_box));
+    mKeyboardRoot = __dc(ViewGroup, LayoutInflater::from(getKeyboardContext())->inflate("@layout/keyboard", nullptr));
+
+    mInputTextEdit = __dc(EditText, mKeyboardRoot->findViewById(LibRid::input_box));
+    mCompleteBtn = __dc(Button, mKeyboardRoot->findViewById(LibRid::enter));
+    mCancelBtn = __dc(Button, mKeyboardRoot->findViewById(LibRid::cancel));
+    mChildBox = __dc(ViewGroup, mKeyboardRoot->findViewById(LibRid::key_box));
 
 
     auto closeClick = [this](View&v) {
-        if (mCloseListener)mCloseListener(v.getId() == AppRid::enter, mInputText);
+        if (mCloseListener)mCloseListener(v.getId() == LibRid::enter, mInputText);
         mInputText.clear();
         mDescription.clear();
         showType(KeyBoardType::KB_TYPE_NONE);
@@ -179,7 +196,7 @@ CKeyBoardChild* CKeyBoard::createChild(KeyBoardType t) {
 /******************************** 键盘内层基类 ********************************/
 
 CKeyBoardChild::CKeyBoardChild(CKeyBoard* parent, const std::string& layout) :mParent(parent) {
-    mRootView = __dc(ViewGroup, LayoutInflater::from(parent->getContext())->inflate(layout, parent->mChildBox));
+    mRootView = __dc(ViewGroup, LayoutInflater::from(parent->getKeyboardContext())->inflate(layout, parent->mChildBox));
     mRootView->setVisibility(View::GONE);
 }
 

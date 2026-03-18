@@ -1,0 +1,8 @@
+#pragma once
+
+#ifndef __LIB_PRIVATE_CONFIG__
+#define __LIB_PRIVATE_CONFIG__
+
+#define THIS_LIB_NAME @TARGET_NAME@
+
+#endif // __LIB_PRIVATE_CONFIG__
