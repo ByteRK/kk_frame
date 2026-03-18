@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-17 14:15:07
- * @LastEditTime: 2026-03-18 10:34:27
+ * @LastEditTime: 2026-03-18 11:59:22
  * @FilePath: /kk_frame/library/keyboard/childs/keyboard_cn.cc
  * @Description:
  * @BugList:
@@ -17,6 +17,7 @@
 #if defined(ENABLE_KEYBOARD_PINYIN)
 #include <pinyinime.h>
 #include <utils/textutils.h>
+#include <unistd.h>
 #define PINYIN_DAT_PATH LOCAL_DATA_DIR "pinyin/"
 #endif
 
@@ -106,6 +107,9 @@ void Keyboard_CN::onBindViewHolder(RecyclerView::ViewHolder& holder, int positio
 void Keyboard_CN::pinyinOpen() {
     if (mPinyinhandle) return;
 #if defined(ENABLE_KEYBOARD_PINYIN)
+    if (access(PINYIN_DAT_PATH "dict_pinyin.dat", F_OK) != 0) LOGE("pinyin dat[%s] file not exist", PINYIN_DAT_PATH "dict_pinyin.dat");
+    if (access(PINYIN_DAT_PATH "user.dat", F_OK) != 0) LOGE("pinyin dat[%s] file not exist", PINYIN_DAT_PATH "user.dat");
+
     mPinyinhandle = ime_pinyin::im_open_decoder(PINYIN_DAT_PATH "dict_pinyin.dat", PINYIN_DAT_PATH "user.dat");
     LOGI("pinyinOpen: %p", mPinyinhandle);
 #else
