@@ -3,13 +3,13 @@
     <item android:state_pressed="true">
         <shape android:shape="rectangle">
             <corners android:radius="8dp"/>
-            <solid android:color="@color/keyboard_color_func_bg_pressed"/>
+            <solid android:color="@color/keyboard_color_key_sp_bg_pressed"/>
         </shape>
     </item>
     <item>
         <shape android:shape="rectangle">
             <corners android:radius="8dp"/>
-            <solid android:color="@color/keyboard_color_func_bg"/>
+            <solid android:color="@color/keyboard_color_key_sp_bg"/>
         </shape>
     </item>
 </selector>

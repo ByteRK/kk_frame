@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/keyboard_box">
+    <LinearLayout style="@style/keyboard_box_line">
+        <Button style="@style/keyboard_key" android:id="@+id/key_q"/>
+        <Button style="@style/keyboard_key" android:id="@+id/key_w"/>
+        <Button style="@style/keyboard_key" android:id="@+id/key_e"/>
+        <Button style="@style/keyboard_key" android:id="@+id/key_r"/>
+        <Button style="@style/keyboard_key" android:id="@+id/key_t"/>
+        <Button style="@style/keyboard_key" android:id="@+id/key_y"/>
+        <Button style="@style/keyboard_key" android:id="@+id/key_u"/>
+        <Button style="@style/keyboard_key" android:id="@+id/key_i"/>
+        <Button style="@style/keyboard_key" android:id="@+id/key_o"/>
+        <Button style="@style/keyboard_key" android:id="@+id/key_p"/>
+    </LinearLayout>
+    <LinearLayout style="@style/keyboard_box_line"
+        android:layout_marginHorizontal="35dp">
+        <Button style="@style/keyboard_key" android:id="@+id/key_a"/>
+        <Button style="@style/keyboard_key" android:id="@+id/key_s"/>
+        <Button style="@style/keyboard_key" android:id="@+id/key_d"/>
+        <Button style="@style/keyboard_key" android:id="@+id/key_f"/>
+        <Button style="@style/keyboard_key" android:id="@+id/key_g"/>
+        <Button style="@style/keyboard_key" android:id="@+id/key_h"/>
+        <Button style="@style/keyboard_key" android:id="@+id/key_j"/>
+        <Button style="@style/keyboard_key" android:id="@+id/key_k"/>
+        <Button style="@style/keyboard_key" android:id="@+id/key_l"/>
+    </LinearLayout>
+    <LinearLayout style="@style/keyboard_box_line">
+        <Button style="@style/keyboard_key_shift" android:id="@+id/key_shift"/>
+        <Button style="@style/keyboard_key_sp" android:id="@+id/key_more" android:visibility="gone"/>
+        <Button style="@style/keyboard_key" android:id="@+id/key_z"/>
+        <Button style="@style/keyboard_key" android:id="@+id/key_x"/>
+        <Button style="@style/keyboard_key" android:id="@+id/key_c"/>
+        <Button style="@style/keyboard_key" android:id="@+id/key_v"/>
+        <Button style="@style/keyboard_key" android:id="@+id/key_b"/>
+        <Button style="@style/keyboard_key" android:id="@+id/key_n"/>
+        <Button style="@style/keyboard_key" android:id="@+id/key_m"/>
+        <Button style="@style/keyboard_key_backspace" android:id="@+id/key_backspace"/>
+    </LinearLayout>
+    <LinearLayout style="@style/keyboard_box_line">
+        <Button style="@style/keyboard_key_sp" android:id="@+id/key_math"/>
+        <Button style="@style/keyboard_key" android:id="@+id/key_left"/>
+        <Button style="@style/keyboard_key_space" android:id="@+id/key_space"/>
+        <Button style="@style/keyboard_key" android:id="@+id/key_right"/>
+        <Button style="@style/keyboard_key_sp" android:id="@+id/key_lang"/>
+    </LinearLayout>
+</LinearLayout>

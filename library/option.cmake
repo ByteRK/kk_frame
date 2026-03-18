@@ -8,6 +8,10 @@ else()
     set(USE_HVTOOLS OFF)          # Enable hvTools library
 endif()
 
-set(USE_FASTGAUSSIANBLUR ON)  # Enable fastGaussianBlur library
-set(USE_GAUSSFILTER ON)       # Enable gaussFilter library
-set(USE_GAUSSIANBLUR ON)      # Enable gaussianblur library
+if(ENABLED_KEYBOARD)
+    set(USE_KEYBOARD ON)          # Enable keyboard library
+endif()
+
+set(USE_FASTGAUSSIANBLUR ON)      # Enable fastGaussianBlur library
+set(USE_GAUSSFILTER ON)           # Enable gaussFilter library
+set(USE_GAUSSIANBLUR ON)          # Enable gaussianblur library

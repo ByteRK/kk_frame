@@ -40,9 +40,8 @@ if(LIB_SOURCES)
     )
     
     # 设置头文件目录
-    target_include_directories(${TARGET_NAME}
-        PUBLIC
-            ${CMAKE_CURRENT_SOURCE_DIR}
+    target_include_directories(${TARGET_NAME} PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
     )
     
     # 设置PIC以及输出目录

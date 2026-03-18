@@ -1,5 +1,5 @@
 # ========================================
-# 子库模板：<library_name>
+# 子库模板：<library_keyboard>
 # ========================================
 
 # 1. 设置库信息
@@ -17,15 +17,13 @@ set(TARGET_NAME "${PROJECT_NAME}_${LIB_NAME_LOWER}_lib")
 
 # 4. 源文件收集
 file(GLOB_RECURSE LIB_SOURCES 
-    "${CMAKE_CURRENT_SOURCE_DIR}/*.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/*.cc"
-    "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/*.cxx"
+    "${CMAKE_CURRENT_SOURCE_DIR}/childs/*.cc"
 )
 
 # 5. 导出头文件目录到父作用域
 set(${LIB_NAME}_INCLUDE_DIRS 
-    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
     PARENT_SCOPE
 )
 
@@ -62,9 +60,15 @@ if(LIB_SOURCES)
     )
     
     # 设置头文件目录
-    target_include_directories(${TARGET_NAME} PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}
+    target_include_directories(${TARGET_NAME} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/childs
+
+        ${LIB_CDROID_INCLUDE_PATHS}   # 为了获取CDROID组件
+        
+        ${APP_ROOT_DIR}               # 为了获取R.h
+        ${APP_ROOT_DIR}/config        # 为了获取APP_NAME
+        ${APP_ROOT_DIR}/src/utils     # 为了获取utils
     )
     
     # 设置PIC以及输出目录
