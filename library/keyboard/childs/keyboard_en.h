@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-17 01:05:31
- * @LastEditTime: 2026-03-17 17:29:56
+ * @LastEditTime: 2026-03-18 09:49:19
  * @FilePath: /kk_frame/library/keyboard/childs/keyboard_en.h
  * @Description: 英文键盘 可作为一个基本键盘进行派生
  * @BugList:
@@ -51,7 +51,7 @@ private:
     int64_t mShiftLastClickTime{ 0 };  // 上次shift按键点击时间
 
 public:
-    Keyboard_EN(CKeyBoard* parent, const std::string& layout = "@layout/keyboard_en");
+    Keyboard_EN(CKeyBoard* parent, const std::string& layout = "@keyboard:layout/keyboard_en");
 
 protected:
     virtual CKeyBoard::KeyBoardType getType() override;

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-16 16:03:05
- * @LastEditTime: 2026-03-18 01:18:52
+ * @LastEditTime: 2026-03-18 09:42:03
  * @FilePath: /kk_frame/library/keyboard/include/cKeyBoard.h
  * @Description: 输入法 CDROID 版
  * @BugList:
@@ -77,6 +77,8 @@ private:
     int             mChineseWeight{ 2 };           // 中文字符权重
 
 private:
+    ViewGroup*      mKeyboardRoot{ nullptr };      // 键盘根布局
+
     EditText*       mInputTextEdit{ nullptr };     // 输入框
     Button*         mCompleteBtn{ nullptr };       // 完成按钮
     Button*         mCancelBtn{ nullptr };         // 取消按钮

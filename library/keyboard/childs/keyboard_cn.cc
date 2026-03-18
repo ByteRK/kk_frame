@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-17 14:15:07
- * @LastEditTime: 2026-03-18 01:30:50
+ * @LastEditTime: 2026-03-18 10:34:27
  * @FilePath: /kk_frame/library/keyboard/childs/keyboard_cn.cc
  * @Description:
  * @BugList:
@@ -14,10 +14,6 @@
 #include "keyboard_cn.h"
 #include "config_info.h"
 
-#ifdef __VSCODE__
-#define ENABLE_KEYBOARD_PINYIN
-#endif
-
 #if defined(ENABLE_KEYBOARD_PINYIN)
 #include <pinyinime.h>
 #include <utils/textutils.h>
@@ -25,7 +21,7 @@
 #endif
 
 
-Keyboard_CN::Keyboard_CN(CKeyBoard* parent) :Keyboard_EN(parent, "@layout/keyboard_cn") {
+Keyboard_CN::Keyboard_CN(CKeyBoard* parent) :Keyboard_EN(parent, "@keyboard:layout/keyboard_cn") {
     for (uint8_t i = 0; i < DISPLAY_TYPE_MAX; i++) {
         mKeyStr[i][KEY_EN_LANG] = "拼音";
         mKeyStr[i][KEY_EN_LEFT] = "，";
@@ -47,11 +43,11 @@ CKeyBoard::KeyBoardType Keyboard_CN::getType() {
 
 void Keyboard_CN::init() {
     Keyboard_EN::init();
-    mCandidateBoxes = __dc(ViewGroup, mRootView->findViewById(AppRid::candidate_box));
+    mCandidateBoxes = __dc(ViewGroup, mRootView->findViewById(LibRid::candidate_box));
     mCandidateBoxes->setEnabled(false);
 
-    mPinyin = __dc(TextView, mRootView->findViewById(AppRid::pinyin));
-    mCandidateList = __dc(RecyclerView, mRootView->findViewById(AppRid::candidate_list));
+    mPinyin = __dc(TextView, mRootView->findViewById(LibRid::pinyin));
+    mCandidateList = __dc(RecyclerView, mRootView->findViewById(LibRid::candidate_list));
 
     mCandidateList->setLayoutManager(new LinearLayoutManager(mRootView->getContext(), LinearLayoutManager::HORIZONTAL, false));
     mCandidateList->setAdapter(this);
@@ -83,7 +79,7 @@ int Keyboard_CN::getItemCount() {
 }
 
 RecyclerView::ViewHolder* Keyboard_CN::onCreateViewHolder(ViewGroup* parent, int viewType) {
-    TextView* item = __dc(TextView, LayoutInflater::from(parent->getContext())->inflate("@layout/keyboard_cn_candidate", parent, false));
+    TextView* item = __dc(TextView, LayoutInflater::from(parent->getContext())->inflate("@keyboard:layout/keyboard_cn_candidate", parent, false));
     item->setOnClickListener([this](View &v) {
         mParent->appendText(__dc(TextView, &v)->getText());
         clearCandidate();

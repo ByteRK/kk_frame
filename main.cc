@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-03-09 16:13:49
+ * @LastEditTime: 2026-03-18 10:33:19
  * @FilePath: /kk_frame/main.cc
  * @Description: 主程序入口
  * @BugList:
@@ -12,7 +12,7 @@
 **/
 
 #include <cdlog.h>           // 日志
-#include <core/app.h>        // Cdroid应用
+#include "custom_app.h"
 #include "src/common.h"
 
 #include "arg_utils.h"
@@ -44,8 +44,7 @@ int main(int argc, const char* argv[]) {
     ArgUtils::parse(argc, argv);   // 解析命令行参数
 
     /* 框架 */
-    App app(argc, argv);
-    cdroid::Context* ctx = &app;
+    CustomApp app(argc, argv);
 
     /* 数据与统计 */
     g_data->init();

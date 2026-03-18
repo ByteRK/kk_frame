@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-16 16:03:05
- * @LastEditTime: 2026-03-18 01:44:02
+ * @LastEditTime: 2026-03-18 10:30:43
  * @FilePath: /kk_frame/library/keyboard/cKeyBoard.cc
  * @Description: 输入法 CDROID 版
  * @BugList:
@@ -13,7 +13,7 @@
 
 #include "cKeyBoard.h"
 #include "string_utils.h"
-#include <core/app.h>
+#include "custom_app.h"
 
 #include "keyboard_en.h"
 #include "keyboard_cn.h"
@@ -97,16 +97,22 @@ void CKeyBoard::showNextType() {
 
 void CKeyBoard::init() {
     if (mIsInit)return;
-    LayoutInflater::from(getContext())->inflate("@layout/keyboard", this);
 
-    mInputTextEdit = __dc(EditText, findViewById(AppRid::input_box));
-    mCompleteBtn = __dc(Button, findViewById(AppRid::enter));
-    mCancelBtn = __dc(Button, findViewById(AppRid::cancel));
-    mChildBox = __dc(ViewGroup, findViewById(AppRid::key_box));
+    CustomApp* app = __dc(CustomApp, &CustomApp::getInstance());
+    if (!app) throw std::runtime_error("main.cc must use CustomApp to replace cdroid::App !!!");
 
+    if (!app->checkPackage("keyboard"))
+        app->addPackage("./" PROJECT_NAME "_keyboard.pak", "keyboard");
+
+    mKeyboardRoot = __dc(ViewGroup, LayoutInflater::from(getContext())->inflate("@keyboard:layout/keyboard", this));
+
+    mInputTextEdit = __dc(EditText, mKeyboardRoot->findViewById(LibRid::input_box));
+    mCompleteBtn = __dc(Button, mKeyboardRoot->findViewById(LibRid::enter));
+    mCancelBtn = __dc(Button, mKeyboardRoot->findViewById(LibRid::cancel));
+    mChildBox = __dc(ViewGroup, mKeyboardRoot->findViewById(LibRid::key_box));
 
     auto closeClick = [this](View&v) {
-        if (mCloseListener)mCloseListener(v.getId() == AppRid::enter, mInputText);
+        if (mCloseListener)mCloseListener(v.getId() == LibRid::enter, mInputText);
         mInputText.clear();
         mDescription.clear();
         showType(KeyBoardType::KB_TYPE_NONE);
@@ -145,7 +151,7 @@ void CKeyBoard::setEditText(const std::string& txt) {
     mInputText = txt;
     if (txt.empty()) {
         mInputTextEdit->setText(" " + mDescription);
-        mInputTextEdit->setTextColor(App::getInstance().getColor("@color/keyboard_color_description"));
+        mInputTextEdit->setTextColor(App::getInstance().getColor("@keyboard:color/keyboard_color_description"));
         mInputTextEdit->setCaretPos(0);
         LOGD("setEditText: [%s]", mDescription.c_str());
     } else {
@@ -153,7 +159,7 @@ void CKeyBoard::setEditText(const std::string& txt) {
         int pos = StringUtils::characterCount(endText.c_str()) - 1;
 
         mInputTextEdit->setText(endText);
-        mInputTextEdit->setTextColor(App::getInstance().getColor("@color/keyboard_color_input"));
+        mInputTextEdit->setTextColor(App::getInstance().getColor("@keyboard:color/keyboard_color_input"));
         mInputTextEdit->setCaretPos(pos);
         LOGI("setEditText: [CaretPos: %d][%s]", pos, txt.c_str());
     }

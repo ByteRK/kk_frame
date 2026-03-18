@@ -54,6 +54,20 @@ if(LIB_SOURCES)
     # 静态库
     add_library(${TARGET_NAME} STATIC ${LIB_SOURCES})
 
+    # Pak 打包    
+    CreatePAK(
+        ${TARGET_NAME}
+        ${CMAKE_CURRENT_SOURCE_DIR}/assets
+        ${PROJECT_BINARY_DIR}/${PROJECT_NAME}_keyboard.pak
+        ${CMAKE_CURRENT_SOURCE_DIR}/R.h
+    )
+
+    # 生成库私有头
+    configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib_private_config.h.in
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib_private_config.h
+    )
+
     # PRODUCT 定义
     target_compile_definitions(${TARGET_NAME} PRIVATE
         PRODUCT_${CDROID_CHIPSET_UPPER}
@@ -61,14 +75,15 @@ if(LIB_SOURCES)
     
     # 设置头文件目录
     target_include_directories(${TARGET_NAME} PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/childs
 
         ${LIB_CDROID_INCLUDE_PATHS}   # 为了获取CDROID组件
         
-        ${APP_ROOT_DIR}               # 为了获取R.h
-        ${APP_ROOT_DIR}/config        # 为了获取APP_NAME
+        ${APP_ROOT_DIR}/config        # 为了获取文件路径LOCAL_DATA_DIR
         ${APP_ROOT_DIR}/src/utils     # 为了获取utils
+        ${APP_ROOT_DIR}/src/class     # 为了获取CustomApp
     )
     
     # 设置PIC以及输出目录
