@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-17 01:05:31
- * @LastEditTime: 2026-03-19 00:09:36
+ * @LastEditTime: 2026-03-19 00:27:32
  * @FilePath: /kk_frame/library/keyboard/childs/keyboard_ru.cc
  * @Description: 英文键盘
  * @BugList:
@@ -224,6 +224,7 @@ void Keyboard_RU::getKeyList() {
     PUSH_KEY_LIST(LibRid::key_shift, KEY_EN_SHIFT);
     PUSH_KEY_LIST(LibRid::key_backspace, KEY_EN_BACKSPACE);
 
+#undef PUSH_KEY_LIST_BY_NUM
 #undef PUSH_KEY_LIST
 }
 
