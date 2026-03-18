@@ -3,8 +3,21 @@
     style="@style/keyboard_box">
     <LinearLayout style="@style/keyboard_box_line"
         android:id="@+id/candidate_box"
-        android:background="@drawable/keyboard_key_sp">
-
+        android:background="@drawable/keyboard_key_sp"
+        android:paddingStart="10dp">
+        <TextView
+            android:id="@+id/pinyin"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:singleLine="true"
+            android:gravity="center"
+            android:textColor="@color/keyboard_color_key"
+            android:textSize="20sp"/>
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/candidate_list"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginStart="10dp"/>
     </LinearLayout>
     <LinearLayout style="@style/keyboard_box_line">
         <Button style="@style/keyboard_key" android:id="@+id/key_q"/>
