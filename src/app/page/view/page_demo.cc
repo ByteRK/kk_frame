@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-23 00:04:17
- * @LastEditTime: 2026-03-17 23:08:38
+ * @LastEditTime: 2026-03-18 18:26:31
  * @FilePath: /kk_frame/src/app/page/view/page_demo.cc
  * @Description: 框架演示主页面（建议保留）
  * @BugList:
@@ -54,4 +54,5 @@ void DemoPage::onAttach() {
 }
 
 void DemoPage::onDetach() {
+    g_window->setKeyboardCallBack(nullptr, nullptr);
 }
