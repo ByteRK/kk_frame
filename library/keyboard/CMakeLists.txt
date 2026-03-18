@@ -58,7 +58,7 @@ if(LIB_SOURCES)
     CreatePAK(
         ${TARGET_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/assets
-        ${PROJECT_BINARY_DIR}/${LIB_NAME_LOWER}.pak
+        ${PROJECT_BINARY_DIR}/${PROJECT_NAME}_keyboard.pak
         ${CMAKE_CURRENT_SOURCE_DIR}/R.h
     )
 
@@ -83,6 +83,7 @@ if(LIB_SOURCES)
         
         ${APP_ROOT_DIR}/config        # 为了获取文件路径LOCAL_DATA_DIR
         ${APP_ROOT_DIR}/src/utils     # 为了获取utils
+        ${APP_ROOT_DIR}/src/class     # 为了获取CustomApp
     )
     
     # 设置PIC以及输出目录

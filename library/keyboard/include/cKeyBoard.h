@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-16 16:03:05
- * @LastEditTime: 2026-03-18 02:45:56
+ * @LastEditTime: 2026-03-18 09:42:03
  * @FilePath: /kk_frame/library/keyboard/include/cKeyBoard.h
  * @Description: 输入法 CDROID 版
  * @BugList:
@@ -44,8 +44,6 @@ public:   // 构造
     CKeyBoard(int w, int h);
     CKeyBoard(Context* ctx, const AttributeSet& attr);
     ~CKeyBoard();
-
-    Context* getKeyboardContext();
 
 public:   // 外部用
     void show();
