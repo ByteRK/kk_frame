@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-16 16:03:05
- * @LastEditTime: 2026-03-18 09:42:03
+ * @LastEditTime: 2026-03-18 22:34:57
  * @FilePath: /kk_frame/library/keyboard/include/cKeyBoard.h
  * @Description: 输入法 CDROID 版
  * @BugList:
@@ -27,8 +27,8 @@ class CKeyBoard : public RelativeLayout {
     friend CKeyBoardChild;
     
 public:
-    // 关闭回调
-    typedef std::function<void(bool, const std::string&)> OnCloseListener;
+    // 完成回调
+    typedef std::function<void(bool, const std::string&)> OnFinishListener;
 
     // 键盘类型
     typedef enum {
@@ -52,8 +52,11 @@ public:   // 外部用
     void setDescription(const std::string& txt);
     void setMaxInputCount(int count);
     void setEnableChilds(const std::vector<KeyBoardType>& childs);
-    void setCloseListener(OnCloseListener closeListener);
+    void setFinishListener(OnFinishListener finishListener);
     void setChineseWeight(int weight);
+
+public:   // 真实按键
+    void onRealKey(int keyCode);
 
 public:   // 子键盘用
     void appendText(const std::string& txt);
@@ -67,25 +70,27 @@ private: // 内部用
     CKeyBoardChild* createChild(KeyBoardType t);
 
 private:
-    bool            mIsInit{ false };              // 是否已初始化
+    bool             mIsInit{ false };              // 是否已初始化
 
-    KeyBoardType    mKBType{ KB_TYPE_NONE };       // 键盘加载类型
-    std::string     mInputText{ "" };              // 输入框内容
-    std::string     mDescription{ "" };            // 描述文本
-    int             mMaxInputCount{ 20 };          // 最大输入长度
-    OnCloseListener mCloseListener{ nullptr };     // 关闭回调
-    int             mChineseWeight{ 2 };           // 中文字符权重
+    KeyBoardType     mKBType{ KB_TYPE_NONE };       // 键盘加载类型
+    std::string      mInputText{ "" };              // 输入框内容
+    std::string      mDescription{ "" };            // 描述文本
+    int              mMaxInputCount{ 20 };          // 最大输入长度
+    OnFinishListener mFinishListener{ nullptr };    // 完成回调
+    int              mChineseWeight{ 2 };           // 中文字符权重
 
 private:
-    ViewGroup*      mKeyboardRoot{ nullptr };      // 键盘根布局
+    ViewGroup*       mKeyboardRoot{ nullptr };      // 键盘根布局
 
-    EditText*       mInputTextEdit{ nullptr };     // 输入框
-    Button*         mCompleteBtn{ nullptr };       // 完成按钮
-    Button*         mCancelBtn{ nullptr };         // 取消按钮
-    ViewGroup*      mChildBox{ nullptr };          // 子键盘容器
+    EditText*        mInputTextEdit{ nullptr };     // 输入框
+    Button*          mCompleteBtn{ nullptr };       // 确认按钮
+    Button*          mCancelBtn{ nullptr };         // 取消按钮
+    ViewGroup*       mChildBox{ nullptr };          // 子键盘容器
 
-    std::set<CKeyBoardChild*> mChilds;             // 子键盘
-    std::vector<KeyBoardType> mEnableChilds;       // 启用的子键盘
+    CKeyBoardChild*  mCurChild{ nullptr };          // 当前子键盘
+
+    std::set<CKeyBoardChild*> mChilds;              // 子键盘
+    std::vector<KeyBoardType> mEnableChilds;        // 启用的子键盘
 };
 
 /// @brief 子键盘基类
@@ -101,6 +106,7 @@ public:
     virtual void init();
     virtual void onShow();
     virtual void onHide();
+    virtual void onRealKey(int keyCode);
 
 protected:
     void updateParentBtn(const std::string& conplete, const std::string& cancel);

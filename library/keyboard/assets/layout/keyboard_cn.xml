@@ -60,6 +60,6 @@
         <Button style="@style/keyboard_key" android:id="@+id/key_left"/>
         <Button style="@style/keyboard_key_space" android:id="@+id/key_space"/>
         <Button style="@style/keyboard_key" android:id="@+id/key_right"/>
-        <Button style="@style/keyboard_key_sp" android:id="@+id/key_lang"/>
+        <Button style="@style/keyboard_key_lang" android:id="@+id/key_lang"/>
     </LinearLayout>
 </LinearLayout>

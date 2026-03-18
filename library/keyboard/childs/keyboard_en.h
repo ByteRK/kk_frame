@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-17 01:05:31
- * @LastEditTime: 2026-03-18 09:49:19
+ * @LastEditTime: 2026-03-18 22:35:18
  * @FilePath: /kk_frame/library/keyboard/childs/keyboard_en.h
  * @Description: 英文键盘 可作为一个基本键盘进行派生
  * @BugList:
@@ -58,6 +58,7 @@ protected:
     virtual void init() override;
     virtual void onShow() override;
     virtual void onHide() override;
+    virtual void onRealKey(int key) override;
 
 protected:
     void setKeyAction();

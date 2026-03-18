@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-01-18 11:33:02
- * @LastEditTime: 2026-02-02 09:11:56
+ * @LastEditTime: 2026-03-18 22:59:55
  * @FilePath: /kk_frame/config/series_info.h
  * @Description: 项目硬件参数
  * @BugList: 
@@ -14,6 +14,10 @@
 #ifndef __SERIES_INFO_H__
 #define __SERIES_INFO_H__
 
+#define TO_STR_HELPER(x) #x
+#define TO_STR(x) TO_STR_HELPER(x)
+
+
 // cpu config
 #define CPU_NAME     "SSD212"
 #define CPU_BRAND    "Sigmstar"
@@ -21,7 +25,7 @@
 // screen config
 #define SCREEN_WIDTH   800
 #define SCREEN_HEIGHT  480
-#define SCREEN_SIZE    "800*480"
+#define SCREEN_SIZE    TO_STR(SCREEN_WIDTH) "*" TO_STR(SCREEN_HEIGHT)
 
 // net config
 #if defined(PRODUCT_X64)

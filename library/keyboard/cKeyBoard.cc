@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-16 16:03:05
- * @LastEditTime: 2026-03-18 10:30:43
+ * @LastEditTime: 2026-03-18 22:35:50
  * @FilePath: /kk_frame/library/keyboard/cKeyBoard.cc
  * @Description: 输入法 CDROID 版
  * @BugList:
@@ -37,9 +37,8 @@ CKeyBoard::~CKeyBoard() {
 }
 
 void CKeyBoard::show() {
-    setVisibility(View::VISIBLE);
-    setEnabled(false);
-    showType(mKBType); // 显示当前键盘
+    // setVisibility(View::VISIBLE); // 交给外部控制
+    showType(mKBType);
     setEditText(mInputText);
     mInputTextEdit->requestFocus();
 }
@@ -64,12 +63,16 @@ void CKeyBoard::setEnableChilds(const std::vector<KeyBoardType>& childs) {
     mEnableChilds = childs;
 }
 
-void CKeyBoard::setCloseListener(OnCloseListener closeListener) {
-    mCloseListener = closeListener;
+void CKeyBoard::setFinishListener(OnFinishListener finishListener) {
+    mFinishListener = finishListener;
 }
 
 void CKeyBoard::setChineseWeight(int weight) {
     mChineseWeight = weight;
+}
+
+void CKeyBoard::onRealKey(int keyCode) {
+    if (mCurChild)mCurChild->onRealKey(keyCode);
 }
 
 void CKeyBoard::appendText(const std::string& txt) {
@@ -111,19 +114,17 @@ void CKeyBoard::init() {
     mCancelBtn = __dc(Button, mKeyboardRoot->findViewById(LibRid::cancel));
     mChildBox = __dc(ViewGroup, mKeyboardRoot->findViewById(LibRid::key_box));
 
-    auto closeClick = [this](View&v) {
-        if (mCloseListener)mCloseListener(v.getId() == LibRid::enter, mInputText);
+    auto btnClick = [this](View&v) {
+        if (mFinishListener)mFinishListener(v.getId() == LibRid::enter, mInputText);
         mInputText.clear();
         mDescription.clear();
         showType(KeyBoardType::KB_TYPE_NONE);
-        setVisibility(View::GONE);
+        // setVisibility(View::GONE); // 交给外部控制
     };
-    mCompleteBtn->setOnClickListener(closeClick);
-    mCancelBtn->setOnClickListener(closeClick);
+    mCompleteBtn->setOnClickListener(btnClick);
+    mCancelBtn->setOnClickListener(btnClick);
 
     setEnableChilds({ KB_TYPE_EN });
-
-    setVisibility(View::GONE);
 
     mIsInit = true;
 }
@@ -134,16 +135,22 @@ void CKeyBoard::showType(KeyBoardType t) {
         if (child->getType() == t) child_t = child;
         else child->onHide();
     }
-    if (t == KB_TYPE_NONE || t == KB_TYPE_MAX) return;
+    if (t == KB_TYPE_NONE || t == KB_TYPE_MAX) {
+        mCurChild = nullptr;
+        return;
+    }
     if (std::find(mEnableChilds.begin(), mEnableChilds.end(), t) == mEnableChilds.end()) {
         if (child_t)child_t->onHide();
+        mCurChild = nullptr;
         LOGW("keyboard type %d not allow show", t);
         return;
     }
     if (!child_t && !(child_t = createChild(t))) {
+        mCurChild = nullptr;
         LOGE("keyboard type %d can not create", t);
         return;
     }
+    mCurChild = child_t;
     child_t->onShow();
 }
 
@@ -201,6 +208,9 @@ void CKeyBoardChild::onShow() {
 
 void CKeyBoardChild::onHide() {
     mRootView->setVisibility(View::GONE);
+}
+
+void CKeyBoardChild::onRealKey(int keyCode) {
 }
 
 void CKeyBoardChild::updateParentBtn(const std::string& conplete, const std::string& cancel) {

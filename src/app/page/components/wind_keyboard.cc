@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-10 22:50:08
- * @LastEditTime: 2026-03-17 16:41:07
+ * @LastEditTime: 2026-03-18 22:49:14
  * @FilePath: /kk_frame/src/app/page/components/wind_keyboard.cc
  * @Description: 键盘组件
  * @BugList:
@@ -14,13 +14,12 @@
 #include "wind_keyboard.h"
 #include "base.h"
 
-
 #if !defined(ENABLE_KEYBOARD)
 // 兜底策略，防止XML解析失败
 class CKBegister {
 public:
     CKBegister() {
-        LayoutInflater::registerInflater("CKeyBoard", "", [](Context*ctx, const AttributeSet&attr)->View* {return new View(ctx, attr);});
+        LayoutInflater::registerInflater("CKeyBoard", "", [](Context*ctx, const AttributeSet&attr)->View* {return new TextView(ctx, attr);});
     }
 };
 static CKBegister ckbegister;
@@ -39,25 +38,29 @@ WindKeyboard::~WindKeyboard() {
 void WindKeyboard::init(ViewGroup* parent) {
     if (mIsInit) return;
 
-    if (
-        !(mRootView = PBase::get<ViewGroup>(parent, AppRid::keyboard_box))
-#if defined(ENABLE_KEYBOARD)
-        || !(mKeyBoard = PBase::get<CKeyBoard>(mRootView, AppRid::keyboard))
-#endif
-        )
+    if (!(mKeyBoard = PBase::get<CKeyBoard>(parent, AppRid::keyboard)))
         throw std::runtime_error("WindKeyboard init failed");
 
-    mRootView->setOnTouchListener([this](View&, MotionEvent&) {
+    mKeyBoard->setVisibility(View::GONE);
+
+#if defined(ENABLE_KEYBOARD)
+    mKeyBoard->setOnTouchListener([this](View&, MotionEvent&) {
         return true;
     });
-
-    mRootView->setVisibility(View::GONE);
-#if defined(ENABLE_KEYBOARD)
-    mKeyBoard->setCloseListener(
-        [this](bool isEnter, const std::string& text) {this->onKeyBoardClose(isEnter, text);}
-    );
+    mKeyBoard->setFinishListener([this](bool isEnter, const std::string& text) {
+        onKeyBoardFinish(isEnter, text);
+    });
     mKeyBoard->setEnableChilds({ CKeyBoard::KB_TYPE_EN, CKeyBoard::KB_TYPE_CN });
     mKeyBoard->setType(CKeyBoard::KB_TYPE_EN);
+#else
+    mKeyBoard->setOnClickListener([this](View& view) {
+        onKeyBoardFinish(false, "");
+    });
+    mKeyBoard->setBackgroundResource("#ff6b6b");
+    mKeyBoard->setGravity(Gravity::CENTER);
+    mKeyBoard->setTextColor(0xFFffffff);
+    mKeyBoard->setTextSize(40);
+    mKeyBoard->setText("KEYBOARD NOT ENABLE!!!");
 #endif
 
     mIsInit = true;
@@ -72,16 +75,16 @@ void WindKeyboard::showKeyboard(const std::string& text, const std::string& hint
     mKeyBoard->setInputText(text);
     mKeyBoard->setDescription(hint);
     mKeyBoard->show();
-    mRootView->setVisibility(View::VISIBLE);
-    mIsShow = true;
 #else
     LOGE("Keyboard not enabled");
 #endif
+    mIsShow = true;
+    mKeyBoard->setVisibility(View::VISIBLE);
 }
 
 void WindKeyboard::hideKeyboard() {
     if (!isKeyboardShow()) return;
-    mRootView->setVisibility(View::GONE);
+    mKeyBoard->setVisibility(View::GONE);
     mIsShow = false;
 }
 
@@ -90,6 +93,11 @@ bool WindKeyboard::isKeyboardShow() {
 }
 
 bool WindKeyboard::onKey(int keyCode, KeyEvent& evt, bool& result) {
+    if (!isKeyboardShow() || evt.getAction() != KeyEvent::ACTION_DOWN) return false;
+#if defined(ENABLE_KEYBOARD)
+    // 暂时不生效，会被editText抢占
+    mKeyBoard->onRealKey(keyCode);
+#endif
     return false;
 }
 
@@ -111,7 +119,7 @@ inline bool WindKeyboard::checkInit() {
     return false;
 }
 
-void WindKeyboard::onKeyBoardClose(bool isEnter, const std::string& text) {
+void WindKeyboard::onKeyBoardFinish(bool isEnter, const std::string& text) {
     OnCloseListener listener = isEnter ? mEnterListener : mCancelListener;
     if (listener) listener(text);
     hideKeyboard();

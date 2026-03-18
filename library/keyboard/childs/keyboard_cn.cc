@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-17 14:15:07
- * @LastEditTime: 2026-03-18 11:59:22
+ * @LastEditTime: 2026-03-18 23:32:14
  * @FilePath: /kk_frame/library/keyboard/childs/keyboard_cn.cc
  * @Description:
  * @BugList:
@@ -23,24 +23,35 @@
 
 
 Keyboard_CN::Keyboard_CN(CKeyBoard* parent) :Keyboard_EN(parent, "@keyboard:layout/keyboard_cn") {
-    for (uint8_t i = 0; i < DISPLAY_TYPE_MAX; i++) {
-        mKeyStr[i][KEY_EN_LANG] = "拼音";
-        mKeyStr[i][KEY_EN_LEFT] = "，";
-        mKeyStr[i][KEY_EN_RIGHT] = "。";
 
-        // TODO
-
-        // {{
-        //     {"1", "2", "3", "4", "5", "6", "7", "8", "9", "0"},
-        //     {"-", "/", "：", "；", "（", "）", "@", "“", "”"},
-        //     {"…", "～", "、", "？", "！", ".", "—"}
-        // }},
-        // {{
-        //     {"【", "】", "｛", "｝", "#", "%", "^", "*", "+", "="},
-        //     {"_", "\\", "|", "《", "》", "￥", "$", "&", "·"},
-        //     {"…", "～", "｀", "？", "！", ".", "’"}
-        // }},
-    }
+    mKeyStr[DISPLAY_TYPE_DEFAULT] = {
+        "q","w","e","r","t","y","u","i","o","p",
+        "a","s","d","f","g","h","j","k","l",
+        "z","x","c","v","b","n","m",
+        "，","空格","。",
+        "?123","符号","中文","",""
+    };
+    mKeyStr[DISPLAY_TYPE_UPPER] = mKeyStr[DISPLAY_TYPE_UPPER_PLUS] = {
+        "Q","W","E","R","T","Y","U","I","O","P",
+        "A","S","D","F","G","H","J","K","L",
+        "Z","X","C","V","B","N","M",
+        ",","空格",".",
+        "?123","符号","中文","",""
+    };
+    mKeyStr[DISPLAY_TYPE_NUMBER] = {
+        "1","2","3","4","5","6","7","8","9","0",
+        "！","？","：","；","（","）","—","、","=",
+        "￥","%","@","#","&","*","+",
+        "，","空格","。",
+        "拼音","符号","中文","",""
+    };
+    mKeyStr[DISPLAY_TYPE_MORE] = {
+        "「","」","『","』","【","】","《","》","〈","〉",
+        "〔","〕","〖","〗","※","☆","★","○","●",
+        "～","·","—","…","￥","€","£",
+        "？","空格","。",
+        "拼音","123","中文","",""
+    };
 
     LOGI("Keyboard_CN::Keyboard_CN() Created");
 }
@@ -60,6 +71,11 @@ void Keyboard_CN::init() {
 
     mPinyin = __dc(TextView, mRootView->findViewById(LibRid::pinyin));
     mCandidateList = __dc(RecyclerView, mRootView->findViewById(LibRid::candidate_list));
+
+    mPinyin->setOnClickListener([this](View &v) {
+        mParent->appendText(mPinyin->getText());
+        clearCandidate();
+    });
 
     mCandidateList->setLayoutManager(new LinearLayoutManager(mRootView->getContext(), LinearLayoutManager::HORIZONTAL, false));
     mCandidateList->setAdapter(this);

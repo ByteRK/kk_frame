@@ -18,21 +18,12 @@
         android:layout_height="match_parent"
         android:visibility="gone">
     </RelativeLayout>
-
-    <RelativeLayout
-        android:id="@+id/keyboard_box"
+    
+    <CKeyBoard
+        android:id="@+id/keyboard"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@NULL"
-        android:visibility="gone">
-        <CKeyBoard
-            android:id="@+id/keyboard"
-            android:layout_width="800dp"
-            android:layout_height="480dp"
-            android:layout_centerInParent="true"
-            android:background="@NULL"
-            android:clickable="true"/>
-    </RelativeLayout>
+        android:background="@null"/>
 
     <include layout="@layout/module_toast"
         android:id="@+id/toast"/>

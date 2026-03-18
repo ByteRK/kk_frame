@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-17 01:05:31
- * @LastEditTime: 2026-03-17 18:35:22
+ * @LastEditTime: 2026-03-18 23:24:44
  * @FilePath: /kk_frame/library/keyboard/childs/keyboard_en.cc
  * @Description: 英文键盘
  * @BugList:
@@ -17,32 +17,32 @@ Keyboard_EN::Keyboard_EN(CKeyBoard* parent, const std::string& layout) :CKeyBoar
     mKeyList.reserve(KEY_EN_MAX);
 
     mKeyStr[DISPLAY_TYPE_DEFAULT] = {
-        "q", "w", "e", "r", "t", "y", "u", "i", "o", "p",
-        "a", "s", "d", "f", "g", "h", "j", "k", "l",
-        "z", "x", "c", "v", "b", "n", "m",
-        ",", "空格", ".",
-        "?123", "更多", "英文", "", ""
+        "q","w","e","r","t","y","u","i","o","p",
+        "a","s","d","f","g","h","j","k","l",
+        "z","x","c","v","b","n","m",
+        ",","Space",".",
+        "?123","#+=","ENG","",""
     };
-    mKeyStr[DISPLAY_TYPE_UPPER_PLUS] = mKeyStr[DISPLAY_TYPE_UPPER] = {
-        "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P",
-        "A", "S", "D", "F", "G", "H", "J", "K", "L",
-        "Z", "X", "C", "V", "B", "N", "M",
-        ",", "空格", ".",
-        "?123", "更多", "英文", "", ""
+    mKeyStr[DISPLAY_TYPE_UPPER] = mKeyStr[DISPLAY_TYPE_UPPER_PLUS] = {
+        "Q","W","E","R","T","Y","U","I","O","P",
+        "A","S","D","F","G","H","J","K","L",
+        "Z","X","C","V","B","N","M",
+        ",","Space",".",
+        "?123","#+=","ENG","",""
     };
     mKeyStr[DISPLAY_TYPE_NUMBER] = {
-        "1", "2", "3", "4", "5", "6", "7", "8", "9", "0",
-        "+", "-", "*", "/", "=", "·", "&", "(", ")",
-        "~", ",", "...", "@", "!", "'", "\"",
-        ".", "空格", "?",
-        "返回", "更多", "英文", "", ""
+        "1","2","3","4","5","6","7","8","9","0",
+        "@","#","$","%","&","*","-","+","=",
+        "!","?","(",")","_","/","\"",
+        ".", "Space", ",",
+        "ABC","#+=","ENG","",""
     };
     mKeyStr[DISPLAY_TYPE_MORE] = {
-        "[", "]", "{", "}", "#", "%", "^", ";", ":", "_",
-        "ˇ", "|", "\\", "<", ">", "￥", "€", "£", "₤",
-        "~", ",", "$", "@", "!", "`", "\"",
-        ".", "空格", "?",
-        "返回", "123", "英文", "", ""
+        "[","]","{","}","<",">","^","|","\\","~",
+        ":",";","`","€","£","¥","₩","¢","§",
+        "...","·","(",")","_","/","\"",
+        ".", "Space", "?",
+        "ABC","123","ENG","",""
     };
 
     LOGI("Keyboard_EN::Keyboard_EN() Created");
@@ -65,6 +65,46 @@ void Keyboard_EN::onShow() {
 
 void Keyboard_EN::onHide() {
     mRootView->setVisibility(View::GONE);
+}
+
+void Keyboard_EN::onRealKey(int key) {
+#define REAL_KEY_ACTION(k) case KeyEvent::KEYCODE_##k: { mKeyList[KEY_EN_##k]->performClick(); } break
+    switch (key) {
+        REAL_KEY_ACTION(Q);
+        REAL_KEY_ACTION(W);
+        REAL_KEY_ACTION(E);
+        REAL_KEY_ACTION(R);
+        REAL_KEY_ACTION(T);
+        REAL_KEY_ACTION(Y);
+        REAL_KEY_ACTION(U);
+        REAL_KEY_ACTION(I);
+        REAL_KEY_ACTION(O);
+        REAL_KEY_ACTION(P);
+        REAL_KEY_ACTION(A);
+        REAL_KEY_ACTION(S);
+        REAL_KEY_ACTION(D);
+        REAL_KEY_ACTION(F);
+        REAL_KEY_ACTION(G);
+        REAL_KEY_ACTION(H);
+        REAL_KEY_ACTION(J);
+        REAL_KEY_ACTION(K);
+        REAL_KEY_ACTION(L);
+        REAL_KEY_ACTION(Z);
+        REAL_KEY_ACTION(X);
+        REAL_KEY_ACTION(C);
+        REAL_KEY_ACTION(V);
+        REAL_KEY_ACTION(B);
+        REAL_KEY_ACTION(N);
+        REAL_KEY_ACTION(M);
+    case KeyEvent::KEYCODE_SHIFT_LEFT:
+    case KeyEvent::KEYCODE_SHIFT_RIGHT: {
+        mKeyList[KEY_EN_LANG]->performClick();
+    }   break;
+    default: {
+        LOGW("Keyboard_EN::onRealKey() Unknown key: %d", key);
+    }   break;
+    }
+#undef REAL_KEY_ACTION
 }
 
 void Keyboard_EN::setKeyAction() {

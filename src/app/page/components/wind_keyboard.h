@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-10 22:49:59
- * @LastEditTime: 2026-03-16 17:53:07
+ * @LastEditTime: 2026-03-18 22:18:58
  * @FilePath: /kk_frame/src/app/page/components/wind_keyboard.h
  * @Description: 键盘组件
  * @BugList:
@@ -18,6 +18,9 @@
 
 #if defined(ENABLE_KEYBOARD)
 #include "cKeyBoard.h"
+#else
+#include <widget/textview.h>
+using CKeyBoard = TextView;
 #endif
 
 class WindKeyboard {
@@ -25,10 +28,7 @@ public:
     DECLARE_UIEVENT(void, OnCloseListener, const std::string &text);
 
 private:
-    ViewGroup*            mRootView;       // 根视图
-#if defined(ENABLE_KEYBOARD)
     CKeyBoard*            mKeyBoard;       // 键盘
-#endif
 
     bool                  mIsInit;         // 是否初始化
     bool                  mIsShow;         // 是否显示
@@ -51,7 +51,7 @@ public:
 
 private:
     inline bool  checkInit();
-    void         onKeyBoardClose(bool isEnter, const std::string& text);
+    void         onKeyBoardFinish(bool isEnter, const std::string& text);
 };
 
 #endif // !__WIND_KEYBOARD_H__
