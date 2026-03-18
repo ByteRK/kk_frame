@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-16 16:03:05
- * @LastEditTime: 2026-03-18 22:34:57
+ * @LastEditTime: 2026-03-19 00:05:01
  * @FilePath: /kk_frame/library/keyboard/include/cKeyBoard.h
  * @Description: 输入法 CDROID 版
  * @BugList:
@@ -36,6 +36,7 @@ public:
 
         KB_TYPE_EN,   // 英文
         KB_TYPE_CN,   // 中文
+        KB_TYPE_RU,   // 俄文
 
         KB_TYPE_MAX
     } KeyBoardType;

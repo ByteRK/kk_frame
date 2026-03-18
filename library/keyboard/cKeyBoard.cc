@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-16 16:03:05
- * @LastEditTime: 2026-03-18 22:35:50
+ * @LastEditTime: 2026-03-19 00:10:11
  * @FilePath: /kk_frame/library/keyboard/cKeyBoard.cc
  * @Description: 输入法 CDROID 版
  * @BugList:
@@ -17,6 +17,7 @@
 
 #include "keyboard_en.h"
 #include "keyboard_cn.h"
+#include "keyboard_ru.h"
 
 /********************************** 键盘外层 **********************************/
 
@@ -179,6 +180,7 @@ CKeyBoardChild* CKeyBoard::createChild(KeyBoardType t) {
     switch (t) {
     case KB_TYPE_EN: { child = new Keyboard_EN(this); }break;
     case KB_TYPE_CN: { child = new Keyboard_CN(this); }break;
+    case KB_TYPE_RU: { child = new Keyboard_RU(this); }break;
     default: break;
     }
 
