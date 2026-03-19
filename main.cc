@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-03-18 10:33:19
+ * @LastEditTime: 2026-03-19 11:02:52
  * @FilePath: /kk_frame/main.cc
  * @Description: 主程序入口
  * @BugList:
@@ -12,8 +12,8 @@
 **/
 
 #include <cdlog.h>           // 日志
-#include "custom_app.h"
-#include "src/common.h"
+#include "custom_app.h"      // 自定义应用程序
+#include "src/common.h"      // 公共头文件
 
 #include "arg_utils.h"
 #include "project_utils.h"   // 项目工具集
