@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-26 18:06:25
- * @LastEditTime: 2026-03-26 22:13:51
+ * @LastEditTime: 2026-03-26 22:21:40
  * @FilePath: /kk_frame/src/widgets/touch_test_view.h
  * @Description: 触摸测试组件
  * @BugList:
@@ -30,7 +30,9 @@ public:
     bool onTouchEvent(cdroid::MotionEvent& evt) override;
     void onDraw(cdroid::Canvas& canvas) override;
 
+    void resetTest();
     void setTestPadding(int left, int top, int right, int bottom);
+    
     void setBlockSize(int width, int height);
     void setBlockCount(int verCount, int horCount);
     void setBlockColor(double red, double green, double blue);

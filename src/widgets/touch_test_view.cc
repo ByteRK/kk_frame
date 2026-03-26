@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-26 18:06:25
- * @LastEditTime: 2026-03-26 22:11:28
+ * @LastEditTime: 2026-03-26 22:21:52
  * @FilePath: /kk_frame/src/widgets/touch_test_view.cc
  * @Description: 触摸测试组件
  * @BugList:
@@ -24,6 +24,10 @@ TouchTestView::TouchTestView(int w, int h) : View(w, h) {
 TouchTestView::TouchTestView(cdroid::Context* ctx, const cdroid::AttributeSet& attrs)
     : View(ctx, attrs) {
     mLayoutDirty = true;
+}
+
+void TouchTestView::resetTest() {
+    resetBlocks();
 }
 
 void TouchTestView::setTestPadding(int l, int t, int r, int b) {
