@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-25 10:22:41
- * @LastEditTime: 2026-02-08 04:16:29
+ * @LastEditTime: 2026-03-22 12:00:43
  * @FilePath: /kk_frame/src/app/page/components/wind_toast.h
  * @Description: Toast组件
  * @BugList:
@@ -80,7 +80,7 @@ private:
     TOAST_ANIMATE     mDiyToastAni;       // 自定义弹幕动画
 public:
     WindToast();
-    ~WindToast();
+    virtual ~WindToast();
     void init(ViewGroup* parent);
     void onTick();
     void showToast(std::string text);

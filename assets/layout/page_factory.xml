@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ViewFlipper xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_demo">
+    <GridLayout
+        android:id="@+id/menu"
+        android:columnCount="6"
+        android:padding="10dp"
+        style="@style/factory_match_parent">
+        <Button
+            android:id="@+id/to_touch"
+            style="@style/factory_menu_btn"
+            android:text="触摸测试"/>
+        <Button
+            android:id="@+id/to_color"
+            style="@style/factory_menu_btn"
+            android:text="颜色测试"/>
+        <Button
+            android:id="@+id/exit"
+            style="@style/factory_menu_btn"
+            android:text="结束测试"/>
+    </GridLayout>
+</ViewFlipper>

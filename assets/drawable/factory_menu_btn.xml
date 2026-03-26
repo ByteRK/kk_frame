@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_enabled="false">
+        <shape>
+            <corners android:radius="5dp"/>
+            <solid android:color="@color/factory_btn_disable"/>
+            <stroke android:color="#FFFFFF" android:width="2dp"/>
+        </shape>
+    </item>
+    <item android:state_activated="true" android:state_pressed="true">
+        <shape>
+            <corners android:radius="5dp"/>
+            <solid android:color="@color/factory_btn_activated_pressed"/>
+            <stroke android:color="#FFFFFF" android:width="2dp"/>
+        </shape>
+    </item>
+    <item android:state_activated="true">
+        <shape>
+            <corners android:radius="5dp"/>
+            <solid android:color="@color/factory_btn_activated"/>
+            <stroke android:color="#FFFFFF" android:width="2dp"/>
+        </shape>
+    </item>
+    <item android:state_pressed="true">
+        <shape>
+            <corners android:radius="5dp"/>
+            <solid android:color="@color/factory_btn_pressed"/>
+            <stroke android:color="#FFFFFF" android:width="2dp"/>
+        </shape>
+    </item>
+    <item>
+        <shape>
+            <corners android:radius="5dp"/>
+            <solid android:color="@color/factory_btn_default"/>
+            <stroke android:color="#FFFFFF" android:width="2dp"/>
+        </shape>
+    </item>
+</selector>

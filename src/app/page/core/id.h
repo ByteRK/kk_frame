@@ -21,6 +21,8 @@ typedef enum {
     PAGE_OTA,          // OTA
 
     PAGE_TEST_TCP,     // TCP测试
+    PAGE_FACTORY,      // 工厂页面
+
     PAGE_MAX,          // 页面类型数量
 } PAGE_TYPE;
 

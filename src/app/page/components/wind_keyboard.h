@@ -37,7 +37,7 @@ private:
     OnCloseListener       mCancelListener; // 回调函数
 public:
     WindKeyboard();
-    ~WindKeyboard();
+    virtual ~WindKeyboard();
 
     void         init(ViewGroup* parent);
     void         onTick();

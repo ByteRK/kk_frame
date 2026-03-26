@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="factory_text">#FFFFFF</color>
+
+    <color name="factory_btn_default">#70a1ff</color>
+    <color name="factory_btn_pressed">#4aa0d5</color>
+    <color name="factory_btn_activated">#10ac84</color>
+    <color name="factory_btn_activated_pressed">#1dd1a1</color>
+    <color name="factory_btn_disable">#feca57</color>
+
+    <style name="factory_match_parent">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">match_parent</item>
+    </style>
+    <style name="factory_menu_btn">
+        <item name="android:layout_width">115dp</item>
+        <item name="android:layout_height">60dp</item>
+        <item name="android:layout_margin">5dp</item>
+        <item name="android:background">@drawable/factory_menu_btn</item>
+        <item name="android:textColor">@color/factory_text</item>
+        <item name="android:textSize">20sp</item>
+        <item name="android:gravity">center</item>
+    </style>
+</resources>

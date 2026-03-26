@@ -6,19 +6,20 @@
     android:background="#000000"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- 页面层 -->
     <RelativeLayout
         android:id="@+id/page"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
-    </RelativeLayout>
+        android:layout_height="match_parent"/>
 
+    <!-- 弹窗层 -->
     <RelativeLayout
         android:id="@+id/pop"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:visibility="gone">
-    </RelativeLayout>
+        android:visibility="gone"/>
     
+    <!-- 键盘层 -->
     <CKeyBoard
         android:id="@+id/keyboard"
         android:layout_width="match_parent"
@@ -28,6 +29,7 @@
     <include layout="@layout/module_toast"
         android:id="@+id/toast"/>
     
+    <!-- LOGO层 -->
     <ImageView
         android:id="@+id/logo"
         android:layout_width="match_parent"
@@ -43,6 +45,7 @@
         android:oneShot="true"
         android:visibility="gone"/>
 
+    <!-- 熄屏层 -->
     <View
         android:id="@+id/black"
         android:layout_width="match_parent"

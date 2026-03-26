@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-25 10:31:08
- * @LastEditTime: 2026-02-08 04:16:51
+ * @LastEditTime: 2026-03-22 12:00:55
  * @FilePath: /kk_frame/src/app/page/components/wind_logo.h
  * @Description: Logo组件
  * @BugList:
@@ -43,7 +43,7 @@ private:
 
 public:
     WindLogo();
-    ~WindLogo();
+    virtual ~WindLogo();
 
     void              init(ViewGroup* parent);
     virtual void      showLogo();

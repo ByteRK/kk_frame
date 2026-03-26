@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-08 02:48:19
- * @LastEditTime: 2026-02-08 04:02:25
+ * @LastEditTime: 2026-03-22 12:00:49
  * @FilePath: /kk_frame/src/app/page/components/wind_pop.h
  * @Description: 弹窗组件
  * @BugList: 
@@ -24,7 +24,7 @@ private:
 
 public:
     WindPop();
-    ~WindPop();
+    virtual ~WindPop();
 
     void       init(ViewGroup* parent);
     void       onTick();

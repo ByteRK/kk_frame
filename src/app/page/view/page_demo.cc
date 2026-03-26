@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-23 00:04:17
- * @LastEditTime: 2026-03-18 22:20:11
+ * @LastEditTime: 2026-03-22 12:49:51
  * @FilePath: /kk_frame/src/app/page/view/page_demo.cc
  * @Description: 框架演示主页面（建议保留）
  * @BugList:
@@ -29,7 +29,7 @@ int8_t DemoPage::getType() const {
 
 void DemoPage::setView() {
     click(AppRid::hello, [this](View& v) {
-        g_window->showKeyboard(__dc(TextView, &v)->getText(), "Input Text~");
+        g_window->showKeyboard("Factory", "Input Text~");
     });
     click(mRootView, [this](View& v) {
         bool isActivated = v.isActivated();
@@ -50,6 +50,9 @@ void DemoPage::onTick() {
 void DemoPage::onAttach() {
     g_window->setKeyboardCallBack([this](const std::string &text) {
         get<TextView>(AppRid::hello)->setText(text.empty() ? "Hello World" : text);
+        if (text == "Factory") {
+            g_windMgr->showPage(PAGE_FACTORY);
+        }
     }, nullptr);
 }
 

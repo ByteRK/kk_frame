@@ -24,7 +24,7 @@ private:
 
 public:
     WindPage();
-    ~WindPage();
+    virtual ~WindPage();
     
     void       init(ViewGroup* parent);
     void       onTick();
