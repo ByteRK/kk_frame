@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<level-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:minLevel="7" android:maxLevel="7">
+        <shape>
+            <gradient android:startColor="#FF0000" android:centerColor="#00FF00" android:endColor="#0000FF"/>
+        </shape>
+    </item>
+    <item android:minLevel="6" android:maxLevel="6">
+        <shape>
+            <gradient android:startColor="#FFFFFF" android:endColor="#000000"/>
+        </shape>
+    </item>
+    <item android:minLevel="5" android:maxLevel="5">
+        <shape>
+            <solid android:color="#0000FF"/>
+        </shape>
+    </item>
+    <item android:minLevel="4" android:maxLevel="4">
+        <shape>
+            <solid android:color="#00FF00"/>
+        </shape>
+    </item>
+    <item android:minLevel="3" android:maxLevel="3">
+        <shape>
+            <solid android:color="#FF0000"/>
+        </shape>
+    </item>
+    <item android:minLevel="2" android:maxLevel="2">
+        <shape>
+            <solid android:color="#FFFFFF"/>
+        </shape>
+    </item>
+    <item android:minLevel="1" android:maxLevel="1">
+        <shape>
+            <solid android:color="#000000"/>
+        </shape>
+    </item>
+</level-list>

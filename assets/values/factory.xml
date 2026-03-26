@@ -8,10 +8,6 @@
     <color name="factory_btn_activated_pressed">#1dd1a1</color>
     <color name="factory_btn_disable">#feca57</color>
 
-    <style name="factory_match_parent">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">match_parent</item>
-    </style>
     <style name="factory_menu_btn">
         <item name="android:layout_width">115dp</item>
         <item name="android:layout_height">60dp</item>

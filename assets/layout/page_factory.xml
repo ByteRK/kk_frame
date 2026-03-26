@@ -3,22 +3,50 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bg_demo">
-    <GridLayout
-        android:id="@+id/menu"
-        android:columnCount="6"
-        android:padding="10dp"
-        style="@style/factory_match_parent">
-        <Button
-            android:id="@+id/to_touch"
-            style="@style/factory_menu_btn"
-            android:text="触摸测试"/>
-        <Button
-            android:id="@+id/to_color"
-            style="@style/factory_menu_btn"
-            android:text="颜色测试"/>
-        <Button
-            android:id="@+id/exit"
-            style="@style/factory_menu_btn"
-            android:text="结束测试"/>
-    </GridLayout>
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <GridLayout
+            android:id="@+id/menu"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:columnCount="6"
+            android:padding="10dp">
+            <Button
+                android:id="@+id/to_touch"
+                style="@style/factory_menu_btn"
+                android:text="触摸测试"/>
+            <Button
+                android:id="@+id/to_color"
+                style="@style/factory_menu_btn"
+                android:text="颜色测试"/>
+            <Button
+                android:id="@+id/to_switch"
+                style="@style/factory_menu_btn"
+                android:text="功能开关"/>
+            <Button
+                android:id="@+id/exit"
+                style="@style/factory_menu_btn"
+                android:text="结束测试"/>
+        </GridLayout>
+    
+    </RelativeLayout>
+
+    <TouchTestView
+        android:id="@+id/touch_test"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
+    <View
+        android:id="@+id/color_test"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/factory_color_test"/>
+
+    <RelativeLayout
+        android:id="@+id/switch_test"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+    </RelativeLayout>
 </ViewFlipper>
