@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-22 12:32:19
- * @LastEditTime: 2026-03-26 18:08:38
+ * @LastEditTime: 2026-03-26 22:18:15
  * @FilePath: /kk_frame/src/app/page/view/page_factory.h
  * @Description: 工厂界面
  * @BugList:
@@ -15,6 +15,7 @@
 #define __PAGE_FACTORY_H__
 
 #include "page.h"
+#include "touch_test_view.h"
 #include <widget/viewflipper.h>
 
 class PageFactory :public PageBase {
@@ -31,6 +32,8 @@ private:
 private:
     cdroid::ViewFlipper* mFlipper{ nullptr };
     FactoryPageType mCurPage{ FACTORY_MENU };
+
+    TouchTestView*  mTouchView{ nullptr };
 
 public:
     PageFactory();

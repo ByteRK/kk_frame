@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-22 12:32:26
- * @LastEditTime: 2026-03-26 18:07:57
+ * @LastEditTime: 2026-03-26 22:19:09
  * @FilePath: /kk_frame/src/app/page/view/page_factory.cc
  * @Description:
  * @BugList:
@@ -28,6 +28,7 @@ int8_t PageFactory::getType() const {
 
 void PageFactory::getView() {
     mFlipper = __dc(ViewFlipper, mRootView);
+    mTouchView = get<TouchTestView>(AppRid::touch_test);
 }
 
 void PageFactory::setView() {
@@ -62,8 +63,10 @@ void PageFactory::setFactoryMenu() {
 }
 
 void PageFactory::setFactoryTouch() {
-
-
+    mTouchView->setOnAllBlocksActivated([this]() {
+        mTouchView->resetTest();
+        mFlipper->setDisplayedChild(FACTORY_MENU);
+    });
 }
 
 void PageFactory::setFactoryColor() {
