@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-22 12:32:19
- * @LastEditTime: 2026-03-26 22:18:15
+ * @LastEditTime: 2026-04-02 11:27:23
  * @FilePath: /kk_frame/src/app/page/view/page_factory.h
  * @Description: 工厂界面
  * @BugList:
@@ -24,7 +24,7 @@ private:
         FACTORY_MENU = 0,  // 菜单页
         FACTORY_TOUCH,     // 触摸测试页
         FACTORY_COLOR,     // 颜色测试页
-        FACTORY_SWITCH,    // 开关测试页
+        FACTORY_SWITCH,    // 开关功能页
 
         FACTORY_MAX,       // 最大值
     } FactoryPageType;

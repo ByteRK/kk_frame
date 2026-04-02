@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-22 12:32:26
- * @LastEditTime: 2026-03-26 22:19:09
+ * @LastEditTime: 2026-04-02 12:46:33
  * @FilePath: /kk_frame/src/app/page/view/page_factory.cc
  * @Description:
  * @BugList:
@@ -46,18 +46,27 @@ void PageFactory::onAttach() {
 }
 
 void PageFactory::setFactoryMenu() {
+    /* 触摸测试 */
     click(AppRid::to_touch, [this](View&) {
         mCurPage = FACTORY_TOUCH;
         mFlipper->setDisplayedChild(mCurPage);
     });
 
+    /* 色彩测试 */
     click(AppRid::to_color, [this](View&) {
         mCurPage = FACTORY_COLOR;
         mFlipper->setDisplayedChild(mCurPage);
         mFlipper->getChildAt(mCurPage)->getBackground()->setLevel(1);
     });
 
-    click(AppRid::exit, [](View&) {
+    /* 功能开关 */
+    click(AppRid::to_switch, [this](View&) {
+        mCurPage = FACTORY_SWITCH;
+        mFlipper->setDisplayedChild(mCurPage);
+    });
+
+    /* 退出 */
+    click(mFlipper->getChildAt(FACTORY_MENU), AppRid::exit, [](View&) {
         g_windMgr->goToPageBack();
     });
 }
@@ -83,4 +92,8 @@ void PageFactory::setFactoryColor() {
     });
 }
 
-void PageFactory::setFactorySwitch() { }
+void PageFactory::setFactorySwitch() {
+    click(mFlipper->getChildAt(FACTORY_SWITCH), AppRid::exit, [this](View&) {
+        mFlipper->setDisplayedChild(FACTORY_MENU);
+    });
+}

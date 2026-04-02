@@ -29,7 +29,6 @@
                 style="@style/factory_menu_btn"
                 android:text="结束测试"/>
         </GridLayout>
-    
     </RelativeLayout>
 
     <TouchTestView
@@ -47,6 +46,28 @@
         android:id="@+id/switch_test"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-
+        <GridLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:columnCount="5"
+            android:padding="10dp">
+            <include layout="@layout/page_factory_switch"/>
+            <include layout="@layout/page_factory_switch"/>
+            <include layout="@layout/page_factory_switch"/>
+            <include layout="@layout/page_factory_switch"/>
+            <include layout="@layout/page_factory_switch"/>
+            <include layout="@layout/page_factory_switch"/>
+            <include layout="@layout/page_factory_switch"/>
+            <include layout="@layout/page_factory_switch"/>
+            <include layout="@layout/page_factory_switch"/>
+        </GridLayout>
+        <Button
+            android:id="@+id/exit"
+            style="@style/factory_menu_btn"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentEnd="true"
+            android:layout_margin="20dp"
+            android:text="完成"/>
     </RelativeLayout>
+
 </ViewFlipper>
