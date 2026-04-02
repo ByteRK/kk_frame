@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2026-03-17 23:06:02
+ * @LastEditTime: 2026-04-02 12:55:41
  * @FilePath: /kk_frame/src/app/page/core/base.h
  * @Description: 页面基类
  * @BugList:
@@ -92,13 +92,13 @@ public:
     }
 
     /// @brief 设置点击事件
-    static inline void click(View* v, View::OnClickListener l){
-        v->setOnClickListener(l);
+    static inline void click(View* v, View::OnClickListener l) {
+        if (v) v->setOnClickListener(l);
     }
 
     /// @brief 设置点击事件
     static inline void click(View* vg, int id, View::OnClickListener l) {
-        get(vg, id)->setOnClickListener(l);
+        click(get(vg, id), l);
     }
 
 protected:
