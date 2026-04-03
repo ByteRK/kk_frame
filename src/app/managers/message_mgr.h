@@ -2,9 +2,15 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-02 17:38:07
- * @LastEditTime: 2026-04-02 19:16:30
+ * @LastEditTime: 2026-04-03 09:16:47
  * @FilePath: /kk_frame/src/app/managers/message_mgr.h
- * @Description:
+ * @Description: 消息分发器
+ *
+ *      // 跨线程分发数据指针用法
+ *      std::unique_ptr<MyData> data(new MyData());
+ *      data->a = 10; data->b = 20;
+ *      MessageManager::instance()->postOwned(MSG_A, 0, std::move(data));
+ *
  * @BugList:
  *
  * Copyright (c) 2026 by Ricken, All Rights Reserved.
@@ -28,6 +34,7 @@
 #include <cstdio>
 #include <cstdlib>
 
+// 是否启用线程检查
 #ifndef MSG_MGR_ENABLE_THREAD_CHECK
 #define MSG_MGR_ENABLE_THREAD_CHECK 0
 #endif
@@ -58,6 +65,8 @@
 #endif
 
 
+#define g_msg MessageManager::instance()
+
 class MessageListener {
 public:
     virtual ~MessageListener() { }
@@ -76,8 +85,8 @@ protected:
 
 public:
 
-    // 必须在主线程初始化阶段调用一次
-    void bindMainThread();
+    // 必须在主线程初始化
+    void init();
 
     // 注册/反注册监听
     void add(int msgType, MessageListener* listener);
@@ -110,17 +119,12 @@ protected:
 
 private:
     struct Message {
-        int type;
-        int value;
-        void* ptr;
-        int64_t dispatchTimeMs;
+        int type{ 0 };
+        int value{ 0 };
+        void* ptr{ nullptr };
+        int64_t dispatchTimeMs{ 0 };
         std::shared_ptr<void> owner;
-
-        Message()
-            : type(0)
-            , value(0)
-            , ptr(nullptr)
-            , dispatchTimeMs(0) { }
+        Message() { }
     };
 
     void ensureMainThreadBound() const;

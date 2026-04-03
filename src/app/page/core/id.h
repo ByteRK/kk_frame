@@ -39,6 +39,8 @@ typedef enum {
 typedef enum {
     MSG_GENERAL = 0,   // 通用消息
 
+    
+
     MSG_MAX,           // 消息类型数量
 } MSG_TYPE;
 

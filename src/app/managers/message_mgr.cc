@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-02 17:41:09
- * @LastEditTime: 2026-04-02 19:16:04
+ * @LastEditTime: 2026-04-03 09:16:20
  * @FilePath: /kk_frame/src/app/managers/message_mgr.cc
  * @Description:
  * @BugList:
@@ -25,7 +25,7 @@ int64_t MessageManager::nowMs() {
     return cdroid::SystemClock::uptimeMillis();
 }
 
-void MessageManager::bindMainThread() {
+void MessageManager::init() {
     std::lock_guard<std::mutex> lock(mStateMutex);
     if (!mMainThreadBound) {
         mMainThreadId = std::this_thread::get_id();
@@ -33,7 +33,7 @@ void MessageManager::bindMainThread() {
         return;
     }
     MSG_MGR_FATAL_IF(mMainThreadId != std::this_thread::get_id(),
-        "bindMainThread() called again from different thread");
+        "init() called again from different thread");
 }
 
 void MessageManager::add(int msgType, MessageListener* listener) {
@@ -196,13 +196,13 @@ int MessageManager::handleEvents() {
 void MessageManager::ensureMainThreadBound() const {
     std::lock_guard<std::mutex> lock(mStateMutex);
     MSG_MGR_FATAL_IF(!mMainThreadBound,
-        "main thread not bound, call bindMainThread() first");
+        "main thread not bound, call init() first");
 }
 
 void MessageManager::ensureMainThread() const {
     std::lock_guard<std::mutex> lock(mStateMutex);
     MSG_MGR_FATAL_IF(!mMainThreadBound,
-        "main thread not bound, call bindMainThread() first");
+        "main thread not bound, call init() first");
     MSG_MGR_FATAL_IF(mMainThreadId != std::this_thread::get_id(),
         "this API must be called from main thread");
 }
@@ -210,24 +210,20 @@ void MessageManager::ensureMainThread() const {
 void MessageManager::ensureWorkerThread() const {
     std::lock_guard<std::mutex> lock(mStateMutex);
     MSG_MGR_FATAL_IF(!mMainThreadBound,
-        "main thread not bound, call bindMainThread() first");
+        "main thread not bound, call init() first");
     MSG_MGR_FATAL_IF(mMainThreadId == std::this_thread::get_id(),
         "this API must be called from worker thread");
 }
 
 void MessageManager::dispatchMessage(const Message& msg) {
     std::vector<MessageListener*> listenersCopy;
-
     {
         std::lock_guard<std::mutex> lock(mListenerMutex);
-
         std::unordered_map<int, std::vector<MessageListener*> >::const_iterator it =
             mListeners.find(msg.type);
 
-        // 允许没有监听者，直接忽略
-        if (it == mListeners.end() || it->second.empty()) {
+        if (it == mListeners.end() || it->second.empty())
             return;
-        }
 
         listenersCopy = it->second;
     }
@@ -235,7 +231,6 @@ void MessageManager::dispatchMessage(const Message& msg) {
     for (size_t i = 0; i < listenersCopy.size(); ++i) {
         MSG_MGR_FATAL_IF(listenersCopy[i] == nullptr,
             "null listener found while dispatching, msgType=%d", msg.type);
-
         listenersCopy[i]->onMessage(msg.type, msg.value, msg.ptr);
     }
 }

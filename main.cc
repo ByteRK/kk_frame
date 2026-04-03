@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-03-19 11:02:52
+ * @LastEditTime: 2026-04-03 09:14:50
  * @FilePath: /kk_frame/main.cc
  * @Description: 主程序入口
  * @BugList:
@@ -23,6 +23,7 @@
 #include "history_mgr.h"     // 历史记录管理器
 #include "statistics_mgr.h"  // 统计管理器
 #include "thread_mgr.h"      // 线程管理器
+#include "message_mgr.h"     // 消息管理器
 #include "timer_mgr.h"       // 定时器管理器
 #include "work_mgr.h"        // 工作管理器
 #include "wind_mgr.h"        // 窗口管理器
@@ -54,6 +55,9 @@ int main(int argc, const char* argv[]) {
 
     /* 线程 */
     g_threadMgr->init(3);
+
+    /* 消息 */
+    g_msg->init();
 
     /* 工作 */
     g_timer->init();
