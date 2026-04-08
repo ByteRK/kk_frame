@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-04-03 09:14:50
+ * @LastEditTime: 2026-04-08 23:25:41
  * @FilePath: /kk_frame/main.cc
  * @Description: 主程序入口
  * @BugList:
@@ -29,6 +29,7 @@
 #include "wind_mgr.h"        // 窗口管理器
 
 #include "wifi_mgr.h"        // WIFI
+#include "http_mgr.h"        // HTTP管理器
 
 #include "conn_mgr.h"        // 电控通讯
 #include "btn_mgr.h"         // 按键板通讯
@@ -65,6 +66,9 @@ int main(int argc, const char* argv[]) {
 
     /* 网络 */
     // g_wifi->init();
+
+    /* HTTP请求 */
+    // g_http->init(4);
 
     /* 通讯 */
     // g_connMgr->init();
