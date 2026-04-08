@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-04-08 23:25:41
+ * @LastEditTime: 2026-04-09 00:59:04
  * @FilePath: /kk_frame/main.cc
  * @Description: 主程序入口
  * @BugList:
@@ -68,7 +68,7 @@ int main(int argc, const char* argv[]) {
     // g_wifi->init();
 
     /* HTTP请求 */
-    // g_http->init(4);
+    g_http->init(nullptr, 4, 1000);
 
     /* 通讯 */
     // g_connMgr->init();
@@ -77,7 +77,7 @@ int main(int argc, const char* argv[]) {
 
     /* 页面 */
     g_windMgr->init();
-    
+
     return app.exec();
 }
 

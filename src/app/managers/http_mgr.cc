@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-08 22:48:56
- * @LastEditTime: 2026-04-09 01:04:11
+ * @LastEditTime: 2026-04-09 01:22:24
  * @FilePath: /kk_frame/src/app/managers/http_mgr.cc
  * @Description: Http 请求管理
  * @BugList:
@@ -31,7 +31,7 @@
 /// @brief FailFast 检查函数
 #define FailFast(condition, fmt, ...)   \
     do {                                \
-        if(!(condition)){               \
+        if(condition){                  \
             LOGE(fmt, ##__VA_ARGS__);   \
             std::abort();               \
         }                               \
@@ -40,7 +40,7 @@
 /// @brief FailFast 检查函数
 #define FailFast(condition, fmt, ...)                                               \
     do {                                                                            \
-        if (!(condition)) {                                                         \
+        if (condition) {                                                            \
             std::fprintf(stderr, "[HttpManager][FATAL] " fmt "\n", ##__VA_ARGS__);  \
             std::fflush(stderr);                                                    \
             std::abort();                                                           \
@@ -282,7 +282,7 @@ void HttpManager::initializeCurlGlobal() {
     std::lock_guard<std::mutex> lock(sCurlGlobalMutex);
     if (sCurlGlobalRefCount == 0) {
         const CURLcode rc = curl_global_init(CURL_GLOBAL_DEFAULT);
-        FailFast(rc == CURLE_OK,
+        FailFast(rc != CURLE_OK,
             "curl_global_init failed, rc=%d",
             static_cast<int>(rc));
     }
@@ -291,7 +291,7 @@ void HttpManager::initializeCurlGlobal() {
 
 void HttpManager::cleanupCurlGlobal() {
     std::lock_guard<std::mutex> lock(sCurlGlobalMutex);
-    FailFast(sCurlGlobalRefCount > 0, "invalid curl global ref count");
+    FailFast(sCurlGlobalRefCount <= 0, "invalid curl global ref count");
     --sCurlGlobalRefCount;
     if (sCurlGlobalRefCount == 0) {
         curl_global_cleanup();
@@ -299,51 +299,61 @@ void HttpManager::cleanupCurlGlobal() {
 }
 
 void HttpManager::validateRequestOrDie(const Request& request) {
-    FailFast(!request.url.empty(), "request.url is empty");
-    FailFast(request.listener != nullptr,
+    FailFast(request.url.empty(), "request.url is empty");
+    FailFast(request.listener == nullptr,
         "request.listener is null, url=%s",
         request.url.c_str());
-    FailFast(request.connectTimeoutMs > 0,
+    FailFast(request.connectTimeoutMs <= 0,
         "connectTimeoutMs must be > 0, url=%s",
         request.url.c_str());
-    FailFast(request.requestTimeoutMs > 0,
+    FailFast(request.requestTimeoutMs <= 0,
         "requestTimeoutMs must be > 0, url=%s",
         request.url.c_str());
-    FailFast(request.progressIntervalMs >= 0,
+    FailFast(request.progressIntervalMs < 0,
         "progressIntervalMs must be >= 0, url=%s",
         request.url.c_str());
-    FailFast(!(!request.body.empty() && !request.uploadFilePath.empty()),
+    FailFast(!request.body.empty() && !request.uploadFilePath.empty(),
         "body and uploadFilePath cannot both be set, url=%s",
         request.url.c_str());
 
     if (request.method == HttpMethod::CUSTOM) {
-        FailFast(!request.customMethod.empty(),
+        FailFast(request.customMethod.empty(),
             "customMethod is required when method == CUSTOM, url=%s",
             request.url.c_str());
     }
 
     if (!request.downloadFilePath.empty()) {
-        FailFast(!request.storeResponseBody,
+        FailFast(request.storeResponseBody,
             "downloadFilePath and storeResponseBody cannot both be enabled, url=%s",
             request.url.c_str());
     }
 
     if (!request.body.empty()) {
-        FailFast(request.method == HttpMethod::POST ||
-            request.method == HttpMethod::PUT ||
-            request.method == HttpMethod::PATCH ||
-            request.method == HttpMethod::DELETE_ ||
-            request.method == HttpMethod::CUSTOM,
-            "request.body is only supported for POST/PUT/PATCH/DELETE_/CUSTOM, url=%s",
-            request.url.c_str());
+        switch (request.method) {
+        case HttpMethod::POST:
+        case HttpMethod::PUT:
+        case HttpMethod::PATCH:
+        case HttpMethod::DELETE_:
+        case HttpMethod::CUSTOM: {
+        }   break;
+        default: {
+            FailFast(true, "request.body is only supported for POST/PUT/PATCH/DELETE_/CUSTOM, url=%s",
+                request.url.c_str());
+        }   break;
+        }
     }
 
     if (!request.uploadFilePath.empty()) {
-        FailFast(request.method == HttpMethod::PUT ||
-            request.method == HttpMethod::PATCH ||
-            request.method == HttpMethod::CUSTOM,
-            "uploadFilePath is only supported for PUT/PATCH/CUSTOM, url=%s",
-            request.url.c_str());
+        switch (request.method) {
+        case HttpMethod::PUT:
+        case HttpMethod::PATCH:
+        case HttpMethod::CUSTOM: {
+        }   break;
+        default: {
+            FailFast(true, "uploadFilePath is only supported for PUT/PATCH/CUSTOM, url=%s",
+                request.url.c_str());
+        }   break;
+        }
     }
 }
 
@@ -351,14 +361,14 @@ void HttpManager::init(cdroid::Looper* mainLooper,
     size_t maxWorkerCount,
     long workerIdleExitMs) {
     std::lock_guard<std::mutex> lifecycleLock(mLifecycleMutex);
-    FailFast(!mInitialized.load(), "HttpManager::init called twice");
+    FailFast(mInitialized.load(), "HttpManager::init called twice");
 
     mMainLooper = mainLooper != nullptr ? mainLooper : cdroid::Looper::getForThread();
-    FailFast(mMainLooper != nullptr,
+    FailFast(mMainLooper == nullptr,
         "main looper is null, call cdroid::Looper::prepare()/getForThread() in owner thread first");
 
     mMaxWorkerCount = (maxWorkerCount == 0) ? resolveDefaultMaxWorkerCount() : maxWorkerCount;
-    FailFast(mMaxWorkerCount > 0, "maxWorkerCount must be > 0");
+    FailFast(mMaxWorkerCount <= 0, "maxWorkerCount must be > 0");
     mWorkerIdleExitMs = workerIdleExitMs;
 
     mStopping.store(false);
@@ -369,10 +379,10 @@ void HttpManager::init(cdroid::Looper* mainLooper,
     initializeCurlGlobal();
 
     mWakeFd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
-    FailFast(mWakeFd >= 0, "eventfd failed, errno=%d", errno);
+    FailFast(mWakeFd < 0, "eventfd failed, errno=%d", errno);
 
     const int addResult = mMainLooper->addFd(mWakeFd, 0, cdroid::Looper::EVENT_INPUT, onMainThreadWake, this);
-    FailFast(addResult != 0, "Looper::addFd failed, fd=%d", mWakeFd);
+    FailFast(addResult == 0, "Looper::addFd failed, fd=%d", mWakeFd);
 
     mInitialized.store(true);
 }
@@ -432,10 +442,10 @@ bool HttpManager::isInitialized() const {
 }
 
 HttpManager::RequestId HttpManager::submit(const Request& request) {
-    FailFast(mInitialized.load(), "HttpManager is not initialized, call init() first");
+    FailFast(!mInitialized.load(), "HttpManager is not initialized, call init() first");
 
     validateRequestOrDie(request);
-    FailFast(!mStopping.load(), "submit called while manager is stopping");
+    FailFast(mStopping.load(), "submit called while manager is stopping");
 
     const RequestId requestId = mNextRequestId.fetch_add(1);
     const std::shared_ptr<RequestContext> requestContext(
@@ -451,7 +461,7 @@ HttpManager::RequestId HttpManager::submit(const Request& request) {
 }
 
 bool HttpManager::cancel(RequestId requestId) {
-    FailFast(mInitialized.load(), "HttpManager is not initialized, call init() first");
+    FailFast(!mInitialized.load(), "HttpManager is not initialized, call init() first");
 
     std::shared_ptr<RequestContext> cancelledContext;
 
@@ -491,7 +501,7 @@ bool HttpManager::cancel(RequestId requestId) {
 }
 
 size_t HttpManager::cancelByTag(const std::string& tag) {
-    FailFast(mInitialized.load(), "HttpManager is not initialized, call init() first");
+    FailFast(!mInitialized.load(), "HttpManager is not initialized, call init() first");
 
     if (tag.empty()) {
         return 0;
@@ -600,7 +610,7 @@ bool HttpManager::contains(RequestId requestId) const {
 }
 
 void HttpManager::ensureWorkerCapacityLocked() {
-    FailFast(mInitialized.load(), "ensureWorkerCapacityLocked called before init");
+    FailFast(!mInitialized.load(), "ensureWorkerCapacityLocked called before init");
 
     /*
      * 若待处理请求数大于当前空闲 worker 数，则按需补 worker
@@ -619,7 +629,7 @@ void HttpManager::ensureWorkerCapacityLocked() {
 }
 
 void HttpManager::onWorkerExitLocked() {
-    FailFast(mAliveWorkerCount > 0, "mAliveWorkerCount underflow");
+    FailFast(mAliveWorkerCount <= 0, "mAliveWorkerCount underflow");
     --mAliveWorkerCount;
     mWorkerExitCond.notify_all();
 }
@@ -641,9 +651,7 @@ void HttpManager::wakeMainThread() {
 
     const uint64_t value = 1;
     const ssize_t rc = write(mWakeFd, &value, sizeof(value));
-    if (rc < 0 && errno != EAGAIN) {
-        FailFast(false, "write(eventfd) failed, errno=%d", errno);
-    }
+    FailFast(rc < 0 && errno != EAGAIN, "write(eventfd) failed, errno=%d", errno);
 }
 
 void HttpManager::drainMainThreadMessages() {
@@ -657,7 +665,7 @@ void HttpManager::drainMainThreadMessages() {
         MainThreadMessage message = localMessages.front();
         localMessages.pop_front();
 
-        FailFast(message.listener != nullptr,
+        FailFast(message.listener == nullptr,
             "message.listener is null, requestId=%llu",
             static_cast<unsigned long long>(message.event.requestId));
         message.listener->onHttpEvent(message.event);
@@ -670,7 +678,7 @@ void HttpManager::postEvent(const std::shared_ptr<RequestContext>& requestContex
 }
 
 void HttpManager::postEvent(RequestContext* requestContext, EventType type) {
-    FailFast(requestContext != nullptr, "requestContext is null");
+    FailFast(requestContext == nullptr, "requestContext is null");
 
     MainThreadMessage message;
     message.listener = requestContext->request.listener;
@@ -775,7 +783,7 @@ void HttpManager::workerLoop() {
 
 void HttpManager::executeRequest(const std::shared_ptr<RequestContext>& requestContext) {
     CURL* easy = curl_easy_init();
-    FailFast(easy != nullptr,
+    FailFast(easy == nullptr,
         "curl_easy_init failed, requestId=%llu",
         static_cast<unsigned long long>(requestContext->requestId));
 
@@ -818,7 +826,7 @@ void HttpManager::executeRequest(const std::shared_ptr<RequestContext>& requestC
 
     for (size_t i = 0; i < request.headers.size(); ++i) {
         requestContext->headerList = curl_slist_append(requestContext->headerList, request.headers[i].c_str());
-        FailFast(requestContext->headerList != nullptr,
+        FailFast(requestContext->headerList == nullptr,
             "curl_slist_append failed, requestId=%llu",
             static_cast<unsigned long long>(requestContext->requestId));
     }
@@ -828,7 +836,7 @@ void HttpManager::executeRequest(const std::shared_ptr<RequestContext>& requestC
 
     if (!request.downloadFilePath.empty()) {
         requestContext->downloadFile = std::fopen(request.downloadFilePath.c_str(), "wb");
-        FailFast(requestContext->downloadFile != nullptr,
+        FailFast(requestContext->downloadFile == nullptr,
             "fopen(downloadFilePath=%s) failed, errno=%d",
             request.downloadFilePath.c_str(),
             errno);
@@ -838,16 +846,16 @@ void HttpManager::executeRequest(const std::shared_ptr<RequestContext>& requestC
     if (!request.uploadFilePath.empty()) {
         struct stat fileStat;
         const int statRc = stat(request.uploadFilePath.c_str(), &fileStat);
-        FailFast(statRc == 0,
+        FailFast(statRc != 0,
             "stat(uploadFilePath=%s) failed, errno=%d",
             request.uploadFilePath.c_str(),
             errno);
-        FailFast(S_ISREG(fileStat.st_mode),
+        FailFast(!S_ISREG(fileStat.st_mode),
             "uploadFilePath is not a regular file, path=%s",
             request.uploadFilePath.c_str());
 
         requestContext->uploadFile = std::fopen(request.uploadFilePath.c_str(), "rb");
-        FailFast(requestContext->uploadFile != nullptr,
+        FailFast(requestContext->uploadFile == nullptr,
             "fopen(uploadFilePath=%s) failed, errno=%d",
             request.uploadFilePath.c_str(),
             errno);
