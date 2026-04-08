@@ -12,7 +12,8 @@
             ],
             "defines": [
                 "__VSCODE__",
-                "ENABLE_KEYBOARD"
+                "ENABLE_KEYBOARD",
+                "ENABLE_CURL"
             ],
             "compilerPath": "/usr/bin/gcc",
             "cStandard": "c11",

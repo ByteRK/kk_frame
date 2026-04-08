@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-08 22:48:56
- * @LastEditTime: 2026-04-09 01:01:54
+ * @LastEditTime: 2026-04-09 01:43:10
  * @FilePath: /kk_frame/src/app/managers/http_mgr.h
  * @Description: Http 请求管理
  * @BugList:
@@ -13,6 +13,8 @@
 
 #ifndef __HTTP_MGR_H__
 #define __HTTP_MGR_H__
+
+#if defined(ENABLE_CURL)
 
 #include <core/looper.h>
 #include <curl/curl.h>
@@ -308,4 +310,6 @@ private:
     static size_t sCurlGlobalRefCount;
 };
 
-#endif  // __HTTP_MGR_H__
+#endif // defined(ENABLE_CURL)
+
+#endif // __HTTP_MGR_H__

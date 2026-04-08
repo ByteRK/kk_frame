@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-08 22:48:56
- * @LastEditTime: 2026-04-09 01:22:24
+ * @LastEditTime: 2026-04-09 01:42:47
  * @FilePath: /kk_frame/src/app/managers/http_mgr.cc
  * @Description: Http 请求管理
  * @BugList:
@@ -12,6 +12,8 @@
 **/
 
 #include "http_mgr.h"
+
+#if defined(ENABLE_CURL)
 
 #include <core/systemclock.h>
 #include <cdlog.h>
@@ -1035,3 +1037,5 @@ int HttpManager::onProgress(void* context,
         uploadNow);
     return 0;
 }
+
+#endif // defined(ENABLE_CURL)
