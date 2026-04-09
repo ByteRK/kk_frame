@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-08 22:48:56
- * @LastEditTime: 2026-04-09 01:43:10
+ * @LastEditTime: 2026-04-09 23:18:04
  * @FilePath: /kk_frame/src/app/managers/http_mgr.h
  * @Description: Http 请求管理
  * @BugList:
@@ -14,12 +14,9 @@
 #ifndef __HTTP_MGR_H__
 #define __HTTP_MGR_H__
 
-#if defined(ENABLE_CURL)
-
 #include <core/looper.h>
-#include <curl/curl.h>
-#include <stdint.h>
 
+#include <stdint.h>
 #include <atomic>
 #include <condition_variable>
 #include <cstddef>
@@ -30,6 +27,16 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+#if defined(ENABLE_CURL)
+#include <curl/curl.h>
+#else
+typedef int   CURLcode;
+typedef long  curl_off_t;
+typedef void* curl_slist;
+#define CURL_ERROR_SIZE 1
+#define CURLE_OK 0
+#endif
 
 #define g_http HttpManager::getInstance()
 
@@ -309,7 +316,5 @@ private:
     static std::mutex sCurlGlobalMutex;
     static size_t sCurlGlobalRefCount;
 };
-
-#endif // defined(ENABLE_CURL)
 
 #endif // __HTTP_MGR_H__

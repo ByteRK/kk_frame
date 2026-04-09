@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-08 22:48:56
- * @LastEditTime: 2026-04-09 01:42:47
+ * @LastEditTime: 2026-04-09 23:14:30
  * @FilePath: /kk_frame/src/app/managers/http_mgr.cc
  * @Description: Http 请求管理
  * @BugList:
@@ -12,8 +12,6 @@
 **/
 
 #include "http_mgr.h"
-
-#if defined(ENABLE_CURL)
 
 #include <core/systemclock.h>
 #include <cdlog.h>
@@ -88,7 +86,9 @@ struct HttpManager::RequestContext {
 
     ~RequestContext() {
         if (headerList != nullptr) {
+#if defined(ENABLE_CURL)
             curl_slist_free_all(headerList);
+#endif
             headerList = nullptr;
         }
         if (uploadFile != nullptr) {
@@ -281,6 +281,7 @@ HttpManager::~HttpManager() {
 }
 
 void HttpManager::initializeCurlGlobal() {
+#if defined(ENABLE_CURL)
     std::lock_guard<std::mutex> lock(sCurlGlobalMutex);
     if (sCurlGlobalRefCount == 0) {
         const CURLcode rc = curl_global_init(CURL_GLOBAL_DEFAULT);
@@ -289,15 +290,18 @@ void HttpManager::initializeCurlGlobal() {
             static_cast<int>(rc));
     }
     ++sCurlGlobalRefCount;
+#endif
 }
 
 void HttpManager::cleanupCurlGlobal() {
+#if defined(ENABLE_CURL)
     std::lock_guard<std::mutex> lock(sCurlGlobalMutex);
     FailFast(sCurlGlobalRefCount <= 0, "invalid curl global ref count");
     --sCurlGlobalRefCount;
     if (sCurlGlobalRefCount == 0) {
         curl_global_cleanup();
     }
+#endif
 }
 
 void HttpManager::validateRequestOrDie(const Request& request) {
@@ -362,6 +366,7 @@ void HttpManager::validateRequestOrDie(const Request& request) {
 void HttpManager::init(cdroid::Looper* mainLooper,
     size_t maxWorkerCount,
     long workerIdleExitMs) {
+#if defined(ENABLE_CURL)
     std::lock_guard<std::mutex> lifecycleLock(mLifecycleMutex);
     FailFast(mInitialized.load(), "HttpManager::init called twice");
 
@@ -387,9 +392,11 @@ void HttpManager::init(cdroid::Looper* mainLooper,
     FailFast(addResult == 0, "Looper::addFd failed, fd=%d", mWakeFd);
 
     mInitialized.store(true);
+#endif
 }
 
 void HttpManager::shutdown() {
+#if defined(ENABLE_CURL)
     std::lock_guard<std::mutex> lifecycleLock(mLifecycleMutex);
     if (!mInitialized.load()) {
         return;
@@ -437,6 +444,7 @@ void HttpManager::shutdown() {
     mMainLooper = nullptr;
     mStopping.store(false);
     mInitialized.store(false);
+#endif
 }
 
 bool HttpManager::isInitialized() const {
@@ -444,6 +452,7 @@ bool HttpManager::isInitialized() const {
 }
 
 HttpManager::RequestId HttpManager::submit(const Request& request) {
+#if defined(ENABLE_CURL)
     FailFast(!mInitialized.load(), "HttpManager is not initialized, call init() first");
 
     validateRequestOrDie(request);
@@ -460,9 +469,13 @@ HttpManager::RequestId HttpManager::submit(const Request& request) {
     }
     mRequestCond.notify_all();
     return requestId;
+#else
+    return 0;
+#endif
 }
 
 bool HttpManager::cancel(RequestId requestId) {
+#if defined(ENABLE_CURL)
     FailFast(!mInitialized.load(), "HttpManager is not initialized, call init() first");
 
     std::shared_ptr<RequestContext> cancelledContext;
@@ -500,9 +513,13 @@ bool HttpManager::cancel(RequestId requestId) {
     }
 
     return false;
+#else
+    return true;
+#endif
 }
 
 size_t HttpManager::cancelByTag(const std::string& tag) {
+#if defined(ENABLE_CURL)
     FailFast(!mInitialized.load(), "HttpManager is not initialized, call init() first");
 
     if (tag.empty()) {
@@ -541,9 +558,13 @@ size_t HttpManager::cancelByTag(const std::string& tag) {
     }
 
     return cancelledCount;
+#else
+    return 0;
+#endif
 }
 
 void HttpManager::cancelAll() {
+#if defined(ENABLE_CURL)
     if (!mInitialized.load()) {
         return;
     }
@@ -570,33 +591,47 @@ void HttpManager::cancelAll() {
         pendingCancelled[i]->response.errorMessage = "cancelled before execution";
         postEvent(pendingCancelled[i], EventType::CANCELLED);
     }
+#endif
 }
 
 size_t HttpManager::pendingCount() const {
+#if defined(ENABLE_CURL)
     if (!mInitialized.load()) {
         return 0;
     }
     std::lock_guard<std::mutex> lock(mRequestMutex);
     return mPendingRequests.size();
+#else
+    return 0;
+#endif
 }
 
 size_t HttpManager::runningCount() const {
+#if defined(ENABLE_CURL)
     if (!mInitialized.load()) {
         return 0;
     }
     std::lock_guard<std::mutex> lock(mRequestMutex);
     return mRunningRequests.size();
+#else
+    return 0;
+#endif
 }
 
 size_t HttpManager::requestCount() const {
+#if defined(ENABLE_CURL)
     if (!mInitialized.load()) {
         return 0;
     }
     std::lock_guard<std::mutex> lock(mRequestMutex);
     return mPendingRequests.size() + mRunningRequests.size();
+#else
+    return 0;
+#endif
 }
 
 bool HttpManager::contains(RequestId requestId) const {
+#if defined(ENABLE_CURL)
     if (!mInitialized.load()) {
         return false;
     }
@@ -609,6 +644,9 @@ bool HttpManager::contains(RequestId requestId) const {
         }
     }
     return mRunningRequests.find(requestId) != mRunningRequests.end();
+#else
+    return false;
+#endif
 }
 
 void HttpManager::ensureWorkerCapacityLocked() {
@@ -784,6 +822,7 @@ void HttpManager::workerLoop() {
 }
 
 void HttpManager::executeRequest(const std::shared_ptr<RequestContext>& requestContext) {
+#if defined(ENABLE_CURL)
     CURL* easy = curl_easy_init();
     FailFast(easy == nullptr,
         "curl_easy_init failed, requestId=%llu",
@@ -968,6 +1007,7 @@ void HttpManager::executeRequest(const std::shared_ptr<RequestContext>& requestC
 
     requestContext->completed.store(true);
     curl_easy_cleanup(easy);
+#endif
 }
 
 size_t HttpManager::onWrite(char* data, size_t size, size_t count, void* context) {
@@ -1037,5 +1077,3 @@ int HttpManager::onProgress(void* context,
         uploadNow);
     return 0;
 }
-
-#endif // defined(ENABLE_CURL)
