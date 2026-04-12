@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-23 00:04:23
- * @LastEditTime: 2026-03-17 23:03:51
+ * @LastEditTime: 2026-04-12 16:33:59
  * @FilePath: /kk_frame/src/app/page/view/page_demo.h
  * @Description: 框架演示主页面（建议保留）
  * @BugList:
@@ -27,6 +27,9 @@ protected:
     void onTick() override;
     void onAttach() override;
     void onDetach() override;
+
+private:
+    void showChineseCalendar();
 };
 
 #endif // !__PAGE_DEMO_H__

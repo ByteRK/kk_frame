@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-23 00:04:17
- * @LastEditTime: 2026-03-22 12:49:51
+ * @LastEditTime: 2026-04-12 16:50:33
  * @FilePath: /kk_frame/src/app/page/view/page_demo.cc
  * @Description: 框架演示主页面（建议保留）
  * @BugList:
@@ -13,15 +13,16 @@
 
 #include "page_demo.h"
 #include "wind_mgr.h"
+#include "chinese_calendar.h"
 
 PAGE_REGISTER(PAGE_DEMO, DemoPage);
 
 DemoPage::DemoPage() :PageBase("@layout/page_demo") {
     initUI();
+    showChineseCalendar();
 }
 
-DemoPage::~DemoPage() {
-}
+DemoPage::~DemoPage() { }
 
 int8_t DemoPage::getType() const {
     return PAGE_DEMO;
@@ -58,4 +59,12 @@ void DemoPage::onAttach() {
 
 void DemoPage::onDetach() {
     g_window->setKeyboardCallBack(nullptr, nullptr);
+}
+
+void DemoPage::showChineseCalendar() {
+    ChineseCalendar::Result res = ChineseCalendar::get();
+    LOGW("生肖：%s", res.zodiac.c_str());
+    LOGW("农历: %s", res.lunar.toString().c_str());
+    LOGW("干支: %s", res.ganzhi.toString().c_str());
+    LOGW("节气: %s", res.solarTerm.toString().c_str());
 }
