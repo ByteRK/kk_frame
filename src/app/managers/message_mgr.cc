@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-02 17:41:09
- * @LastEditTime: 2026-04-12 01:16:07
+ * @LastEditTime: 2026-04-12 01:26:37
  * @FilePath: /kk_frame/src/app/managers/message_mgr.cc
  * @Description:
  * @BugList:
@@ -17,7 +17,10 @@
 
 MessageManager::MessageManager() { }
 
-MessageManager::~MessageManager() { }
+MessageManager::~MessageManager() {
+    cdroid::Looper::getMainLooper()->removeEventHandler(this);
+    clear();
+}
 
 int64_t MessageManager::nowMs() {
     return cdroid::SystemClock::uptimeMillis();
@@ -25,6 +28,7 @@ int64_t MessageManager::nowMs() {
 
 void MessageManager::init() {
     cdroid::Looper::getMainLooper()->addEventHandler(this);
+    LOGI("[MessageManager] init() Enjoy using it!!!");
 }
 
 void MessageManager::add(int msgType, MessageListener* listener) {
@@ -108,6 +112,13 @@ void MessageManager::enqueueMessage(Message&& msg) {
     mQueue.insert(pos, std::move(msg));
 }
 
+size_t MessageManager::clear() {
+    std::lock_guard<std::mutex> lock(mQueueMutex);
+    size_t oldSize = mQueue.size();
+    mQueue.clear();
+    return oldSize;
+}
+
 size_t MessageManager::clear(int msgType) {
     std::lock_guard<std::mutex> lock(mQueueMutex);
 
@@ -119,7 +130,7 @@ size_t MessageManager::clear(int msgType) {
             ++it;
         }
     }
-    
+
     return oldSize - mQueue.size();
 }
 

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-27 18:59:51
- * @LastEditTime: 2026-03-02 09:43:02
+ * @LastEditTime: 2026-04-12 01:37:08
  * @FilePath: /kk_frame/src/app/managers/wifi_mgr.cc
  * @Description: WIFI 管理器
  * @BugList:
@@ -137,9 +137,9 @@ int WifiMgr::checkEvents() {
 }
 
 int WifiMgr::handleEvents() {
-    mNextEventTime = cdroid::SystemClock::uptimeMillis() + 500;
+    mNextEventTime = cdroid::SystemClock::uptimeMillis() + 1000;
 
-    if (mAutoConnect) {
+    if (mAutoConnect) { // 自动连接
         mAutoConnect = false;
         WifiHal::State state = getState();
         LOGI("[wifi] auto connect. state=%d", state);

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-02 17:38:07
- * @LastEditTime: 2026-04-12 01:18:27
+ * @LastEditTime: 2026-04-12 16:02:48
  * @FilePath: /kk_frame/src/app/managers/message_mgr.h
  * @Description: 消息分发器
  *
@@ -79,8 +79,10 @@ public:
         std::unique_ptr<T> msgPtr,
         int64_t delayMs = 0);
 
-    // 清除某个消息类型的所有排队消息（仅清队列，不影响正在处理的消息）
-    // 返回清除数量；线程安全，可任意线程调用
+    // 清除所有消息
+    size_t clear();
+
+    // 清除某个消息类型的所有消息
     size_t clear(int msgType);
 
 protected:
@@ -89,9 +91,9 @@ protected:
 
 private:
     struct Message {
-        int type{ 0 };
-        int value{ 0 };
-        void* ptr{ nullptr };
+        int     type{ 0 };
+        int     value{ 0 };
+        void*   ptr{ nullptr };
         int64_t dispatchTimeMs{ 0 };
         std::shared_ptr<void> owner;
         Message() { }

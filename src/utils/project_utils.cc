@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:47:17
- * @LastEditTime: 2026-02-25 17:59:14
+ * @LastEditTime: 2026-04-12 16:30:05
  * @FilePath: /kk_frame/src/utils/project_utils.cc
  * @Description: 项目相关的一些操作函数
  * @BugList:
@@ -65,15 +65,20 @@ void ProjectUtils::pInfo(const char* name) {
     fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", BUILD_DATE);
     fprintf(stderr, "\033[1;35m# Git:%s\033[m\n", GIT_VERSION);
     fprintf(stderr, "\033[1;35m# Cdroid:V%s_%s_%s\033[m\n", CDROID_VERSION, CDROID_COMMITID, std::to_string(CDROID_BUILD_NUMBER).c_str());
+    fprintf(stderr, "\033[1;35m# KK Frame:V2.1.0\033[m\n");
     fprintf(stderr, "\033[1;35m############ Ricken #############\n\n\033[0m");
 }
 
 void ProjectUtils::pKeyMap() {
-    fprintf(stderr, "\033[1;30m################################### KeyBoardMap ################################### \033[0;37m\n");
-    fprintf(stderr, "\033[1;30m# 6:电源  5:鲜蒸  4:嫩烤  3:湿烤  2:飓风 ┏━━━━━━┓ 8:魔方  9:香炸 10:炖焗 11:智能 12:辅助   \033[0;37m\n");
-    fprintf(stderr, "\033[1;30m# 7:加水  -:一一  -:一一  -:一一  -:一一 ┗━━━━━━┛ -:一一  -:一一  -:一一  -:一一  -:一一   \033[0;37m\n");
-    fprintf(stderr, "\033[1;30m################################################################################### \033[0;37m\n");
-    fprintf(stderr, "\033[0;37m\n");
+    /**
+     * 在此处输出项目映射的按键消息~
+     * */
+
+    // fprintf(stderr, "\033[1;30m################################### KeyBoardMap ################################### \033[0;37m\n");
+    // fprintf(stderr, "\033[1;30m# 6:电源  5:鲜蒸  4:嫩烤  3:湿烤  2:飓风 ┏━━━━━━┓ 8:魔方  9:香炸 10:炖焗 11:智能 12:辅助   \033[0;37m\n");
+    // fprintf(stderr, "\033[1;30m# 7:加水  -:一一  -:一一  -:一一  -:一一 ┗━━━━━━┛ -:一一  -:一一  -:一一  -:一一  -:一一   \033[0;37m\n");
+    // fprintf(stderr, "\033[1;30m################################################################################### \033[0;37m\n");
+    // fprintf(stderr, "\033[0;37m\n");
 }
 
 void ProjectUtils::getDebugServiceInfo(std::string& ip, int16_t& port) {

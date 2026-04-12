@@ -333,7 +333,7 @@ VideoView::VideoView(int w, int h) : ImageView(w, h) {
     initViewData();
 }
 
-VideoView::VideoView(Context *ctx, const AttributeSet &attrs) : ImageView(ctx, attrs) {
+VideoView::VideoView(cdroid::Context *ctx, const AttributeSet &attrs) : ImageView(ctx, attrs) {
     initViewData();
 
     mXMLWidth = attrs.getLayoutDimension("layout_width", -1);

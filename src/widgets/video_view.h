@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-24 10:07:01
- * @LastEditTime: 2025-12-29 13:52:17
+ * @LastEditTime: 2026-04-12 01:29:26
  * @FilePath: /kk_frame/src/widgets/video_view.h
  * @Description: 视频播放组件
  * @BugList: 
@@ -31,7 +31,7 @@ public:
     DECLARE_UIEVENT(void, OnPlayStatusChange, View &v, double duration, double progress, int status);
 
 public:
-    VideoView(Context *ctx, const AttributeSet &attrs);
+    VideoView(cdroid::Context *ctx, const AttributeSet &attrs);
     VideoView(int w, int h);
     ~VideoView();
     
