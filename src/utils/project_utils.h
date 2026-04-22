@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:47:17
- * @LastEditTime: 2026-02-08 11:54:23
+ * @LastEditTime: 2026-04-22 16:48:22
  * @FilePath: /kk_frame/src/utils/project_utils.h
  * @Description: 项目相关的一些操作函数
  * @BugList:
@@ -24,7 +24,7 @@ namespace ProjectUtils {
 
     /// @brief 输出项目信息
     /// @param name 
-    void pInfo(const char* name);
+    void pInfo(int argc, const char* argv[]);
 
     /// @brief 输出按键映射
     void pKeyMap();

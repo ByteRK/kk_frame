@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:47:17
- * @LastEditTime: 2026-04-12 16:30:05
+ * @LastEditTime: 2026-04-22 20:07:34
  * @FilePath: /kk_frame/src/utils/project_utils.cc
  * @Description: 项目相关的一些操作函数
  * @BugList:
@@ -36,9 +36,18 @@ void ProjectUtils::env() {
 #endif
 }
 
-void ProjectUtils::pInfo(const char* name) {
-    char szTmp[128];
-    int id = syscall(SYS_gettid);
+void ProjectUtils::pInfo(int argc, const char* argv[]) {
+    for (int i = 1; i < argc; ++i) { // 是否仅显示版本信息
+        if (strcmp(argv[i], "--version") == 0 || strcmp(argv[i], "-v") == 0) {
+            printf("%s\n", APP_VER_INFO);
+#if 0
+            ::exit(0);
+#else
+            fflush(stdout);
+            ::_exit(0);
+#endif
+        }
+    }
 
     fprintf(stderr, "\033[1;35m\n");
 
@@ -60,7 +69,7 @@ void ProjectUtils::pInfo(const char* name) {
     fprintf(stderr, "\033[1;32mREALSE");
 #endif
     fprintf(stderr, "\033[1;35m  [%s]\033[0;39m\n", APP_ID);
-    fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", name);
+    fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", argv[0]);
     fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", APP_VER_INFO);
     fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", BUILD_DATE);
     fprintf(stderr, "\033[1;35m# Git:%s\033[m\n", GIT_VERSION);
