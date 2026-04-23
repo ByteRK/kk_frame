@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-12 17:08:29
- * @LastEditTime: 2026-04-23 14:27:46
+ * @LastEditTime: 2026-04-23 14:58:34
  * @FilePath: /kk_frame/src/app/managers/tick_mgr.h
  * @Description: Tick 管理器
  * @BugList:
@@ -32,9 +32,10 @@ class TickMgr : public cdroid::EventHandler,
 
 public:
     /// @brief Tick 监听接口
+    /// @note 直接调用 startTick 默认周期是 1 秒
     class ITickListener {
     private:
-        int64_t mTickIntervalMs{ 0 };
+        int64_t mTickIntervalMs{ 1000 };
 
     public:
         virtual ~ITickListener();
