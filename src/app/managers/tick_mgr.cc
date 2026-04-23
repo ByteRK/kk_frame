@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-12 17:08:29
- * @LastEditTime: 2026-04-23 14:21:26
+ * @LastEditTime: 2026-04-23 14:43:25
  * @FilePath: /kk_frame/src/app/managers/tick_mgr.cc
  * @Description: Tick 管理器
  * @BugList:
@@ -24,7 +24,9 @@ static int64_t getNowMs() {
 
 /// @brief Tick 监听对象析构
 TickMgr::ITickListener::~ITickListener() {
+#if 0 // 降低性能影响，应用层自行管控
     stopTick();
+#endif
 }
 
 /// @brief 设置 Tick 间隔
