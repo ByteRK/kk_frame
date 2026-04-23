@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-04-09 23:15:46
+ * @LastEditTime: 2026-04-23 11:25:35
  * @FilePath: /kk_frame/main.cc
  * @Description: 主程序入口
  * @BugList:
@@ -19,6 +19,7 @@
 #include "project_utils.h"   // 项目工具集
 #include "global_data.h"     // 全局数据
 
+#include "tick_mgr.h"        // 心跳管理器
 #include "config_mgr.h"      // 配置管理器
 #include "history_mgr.h"     // 历史记录管理器
 #include "statistics_mgr.h"  // 统计管理器
@@ -47,6 +48,9 @@ int main(int argc, const char* argv[]) {
 
     /* 框架 */
     CustomApp app(argc, argv);
+
+    /* 心跳 */
+    g_tick->init();
 
     /* 数据与统计 */
     g_data->init();
