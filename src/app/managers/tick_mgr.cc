@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-12 17:08:29
- * @LastEditTime: 2026-04-23 11:20:06
+ * @LastEditTime: 2026-04-23 14:21:26
  * @FilePath: /kk_frame/src/app/managers/tick_mgr.cc
  * @Description: Tick 管理器
  * @BugList:
@@ -23,7 +23,30 @@ static int64_t getNowMs() {
 }
 
 /// @brief Tick 监听对象析构
-TickMgr::ITickListener::~ITickListener() { }
+TickMgr::ITickListener::~ITickListener() {
+    stopTick();
+}
+
+/// @brief 设置 Tick 间隔
+/// @param intervalMs 间隔时间（毫秒）
+void TickMgr::ITickListener::setTick(int64_t intervalMs) {
+    mTickIntervalMs = intervalMs;
+}
+
+/// @brief 开始 Tick 任务
+/// @param firstDelayMs 首次调度延迟：-1 立即执行；0 下一轮事件循环执行；>0 延迟指定毫秒后执行
+void TickMgr::ITickListener::startTick(int64_t firstDelayMs) {
+    if (!g_tick->hasTick(this)) {
+        g_tick->addTick(this, mTickIntervalMs, firstDelayMs);
+    } else if (firstDelayMs < 0) {
+        g_tick->runTickNow(this);
+    }
+}
+
+/// @brief 停止 Tick 任务
+void TickMgr::ITickListener::stopTick() {
+    if (g_tick->hasTick(this)) g_tick->removeTick(this);
+}
 
 /// @brief Tick 管理器构造
 TickMgr::TickMgr() { }
@@ -208,7 +231,7 @@ TickMgr::TickRecordPtr TickMgr::extractFrontIfDue(int64_t nowMs) {
 /// @param record 任务记录所有权
 /// @param nowMs 当前时间
 /// @return 状态
-/// @details 将当前任务移交到 mDispatchingRecord
+/// @details 将当前任务移交到 mDispatchingRecord，并将下次触发时间推进到 nowMs + intervalMs
 bool TickMgr::beginDispatch(TickRecordPtr record, int64_t nowMs) {
     if (!record) {
         LOGE("beginDispatch failed: record is nullptr");
@@ -265,7 +288,7 @@ bool TickMgr::dispatchRecord(TickRecordPtr record, int64_t nowMs) {
 /// @brief 添加任务
 /// @param listener 任务指针
 /// @param intervalMs 间隔时间，必须大于 0
-/// @param firstDelayMs 首次延迟时间，小于 0 时默认等于 intervalMs
+/// @param firstDelayMs 首次调度延迟：-1 立即执行；0 下一轮 check/handle 时执行；>0 延迟指定毫秒后执行
 /// @return 状态
 bool TickMgr::addTick(ITickListener* listener, int64_t intervalMs, int64_t firstDelayMs) {
     if (!listener) {
@@ -282,12 +305,21 @@ bool TickMgr::addTick(ITickListener* listener, int64_t intervalMs, int64_t first
     }
 
     const int64_t nowMs = getNowMs();
-    const int64_t delayMs = (firstDelayMs >= 0) ? firstDelayMs : intervalMs;
 
     TickRecordPtr record(new TickRecord());
     record->listener = listener;
     record->intervalMs = intervalMs;
-    record->nextFireMs = nowMs + delayMs;
+
+    if (firstDelayMs < 0) {
+        record->nextFireMs = nowMs;
+        if (!isDispatching()) {
+            return dispatchRecord(std::move(record), nowMs);
+        }
+        insertOrdered(std::move(record));
+        return true;
+    }
+
+    record->nextFireMs = nowMs + firstDelayMs;
     insertOrdered(std::move(record));
     return true;
 }

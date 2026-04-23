@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-12 17:08:29
- * @LastEditTime: 2026-04-23 11:25:19
+ * @LastEditTime: 2026-04-23 14:27:46
  * @FilePath: /kk_frame/src/app/managers/tick_mgr.h
  * @Description: Tick 管理器
  * @BugList:
@@ -33,9 +33,17 @@ class TickMgr : public cdroid::EventHandler,
 public:
     /// @brief Tick 监听接口
     class ITickListener {
+    private:
+        int64_t mTickIntervalMs{ 0 };
+
     public:
         virtual ~ITickListener();
         virtual void onTick(int64_t nowMs) = 0;
+
+    protected:
+        void setTick(int64_t intervalMs);
+        void startTick(int64_t firstDelayMs = 0);
+        void stopTick();
     };
 
 protected:
