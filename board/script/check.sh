@@ -1,8 +1,9 @@
 #!/bin/sh
 #set -x
+
 cd $(dirname $0)
 
-APP=kk_frame
+APP=$(sh ./name.sh)
 
 pid=$(pidof $APP)
 if [ -z "$pid" ]; then

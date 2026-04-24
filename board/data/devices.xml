@@ -1,0 +1,7 @@
+<sections>
+    <section name="init">
+        <item name="DeviceId"></item>
+        <item name="License"></item>
+        <item name="ProductId"></item>
+    </section>
+</sections>

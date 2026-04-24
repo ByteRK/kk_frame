@@ -1,7 +1,7 @@
 #!/bin/sh
 #set -x
 
-APP=kk_frame
+APP=$(sh ./name.sh)
 
 pid=$(pidof $APP)
 if [ -z "$pid" ]; then
