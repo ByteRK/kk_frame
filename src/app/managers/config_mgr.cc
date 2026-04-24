@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2026-04-24 15:38:29
+ * @LastEditTime: 2026-04-24 16:57:58
  * @FilePath: /kk_frame/src/app/managers/config_mgr.cc
  * @Description:
  * @BugList:
@@ -21,11 +21,9 @@
 #define CONFIG_SECTION "app_config" // 配置文件节点
 
 ConfigMgr::ConfigMgr() :
-    AutoSaveItem(2000, 10000) {
-}
+    AutoSaveItem(2000, 10000) { }
 
-ConfigMgr::~ConfigMgr() {
-}
+ConfigMgr::~ConfigMgr() { }
 
 /// @brief 初始化
 void ConfigMgr::init() {
@@ -52,24 +50,24 @@ void ConfigMgr::reset() {
 /// @brief 从文件中加载配置
 /// @return 
 bool ConfigMgr::load() {
-    mConfig = cdroid::Preferences(); // 清空原配置
-
+    mConfig = cdroid::Preferences();  // 清空原配置
     std::string loadingPath = "";
-    size_t fileLen = 0;
-    if (FileUtils::check(CONFIG_FILE_PATH, &fileLen) && fileLen > 0) {
-        loadingPath = CONFIG_FILE_PATH;
-    } else if (FileUtils::check(CONFIG_FILE_BAK_PATH, &fileLen) && fileLen > 0) {
-        loadingPath = CONFIG_FILE_BAK_PATH;
+
+    bool res = FileUtils::check(
+        { CONFIG_FILE_PATH, CONFIG_FILE_BAK_PATH },
+        [this, &loadingPath](const std::string& file, size_t size) {
+        if (size <= 0)return false;
+        mConfig.load(loadingPath);
+        return true;
+    });
+
+    if (res) {
+        LOG(INFO) << "[config] load config. file=" << loadingPath;
     } else {
         LOG(ERROR) << "[config] no config file found. use default data.";
-        mConfig.setValue(CONFIG_SECTION, "HELLO", std::string("WORLD!!!"));
         return false;
     }
-    LOG(INFO) << "[config] load config. file=" << loadingPath;
 
-    /**** 开始读取数据 ****/
-    mConfig.load(loadingPath);
-    /**** 结束读取数据 ****/
     return true;
 }
 

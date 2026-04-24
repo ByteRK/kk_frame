@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2026-01-29 02:31:19
+ * @LastEditTime: 2026-04-24 17:01:28
  * @FilePath: /kk_frame/src/app/data/global_data.cc
  * @Description:
  * @BugList:
@@ -24,12 +24,10 @@
 
 GlobalData::GlobalData() :
     mAppStart(cdroid::SystemClock::uptimeMillis()),
-    AutoSaveItem(2000, 10000) {
-}
+    AutoSaveItem(2000, 10000) { }
 
 /// @brief 析构
-GlobalData::~GlobalData() {
-}
+GlobalData::~GlobalData() { }
 
 /// @brief 初始化
 void GlobalData::init() {
@@ -91,20 +89,23 @@ void GlobalData::checkenv() {
 bool GlobalData::load() {
     Json::Value appJson;
     std::string loadingPath = "";
-    size_t fileLen = 0;
 
-    if (FileUtils::check(APP_FILE_PATH, &fileLen) && fileLen > 0) {
-        loadingPath = APP_FILE_PATH;
-    } else if (FileUtils::check(APP_FILE_BAK_PATH, &fileLen) && fileLen > 0) {
-        loadingPath = APP_FILE_BAK_PATH;
-    }
+    bool res = FileUtils::check(
+        { APP_FILE_PATH, APP_FILE_BAK_PATH },
+        [&appJson, &loadingPath](const std::string& file, size_t size) {
+        if (size <= 0)return false;
+        bool result = JsonUtils::load(file, appJson);
+        if (result)loadingPath = file;
+        return result;
+    });
 
-    if (loadingPath.empty() || !JsonUtils::load(loadingPath, appJson)) {
+    if (res) {
+        LOG(INFO) << "[app] load local data. file=" << loadingPath;
+    } else {
         LOG(ERROR) << "[app] no local data file found. use default data";
         mHaveChange = true;
         return false;
     }
-    LOG(INFO) << "[app] load local data. file=" << loadingPath;
 
     /**** 开始读取数据 ****/
     mCoffee = JsonUtils::get(appJson, "coffee", true);
@@ -114,6 +115,8 @@ bool GlobalData::load() {
 
 /// @brief 保存文件到本地
 /// @param isBackup 是否为备份
+/// @return 成功返回true
+/// @note 一般只建议保存需要离电记忆的页面状态数据
 bool GlobalData::save(bool isBackup) {
     Json::Value appJson;
     /**** 开始写入数据 ****/

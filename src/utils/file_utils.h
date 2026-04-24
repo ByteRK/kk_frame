@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 14:06:45
- * @LastEditTime: 2026-02-26 11:09:45
+ * @LastEditTime: 2026-04-24 16:45:16
  * @FilePath: /kk_frame/src/utils/file_utils.h
  * @Description: 文件相关的一些函数
  * @BugList:
@@ -15,6 +15,8 @@
 #define __FILE_UTILS_H__
 
 #include <string>
+#include <vector>
+#include <functional>
 
 namespace FileUtils {
 
@@ -43,7 +45,14 @@ namespace FileUtils {
     /// @param size 文件大小
     /// @return true 文件存在
     bool check(const std::string& filePath, size_t* size = nullptr);
-    
+
+    /// @brief 遍历判断文件是否存在并根据回调检测文件是否正常
+    /// @param fileList 文件路径列表
+    /// @param callback 回调处理函数
+    /// @return 处理结果
+    /// @note 用于配置文件加载，传入项为文件路径以及备份路径
+    bool check(const std::vector<std::string>& fileList, std::function<bool(const std::string&, size_t)> callback);
+
 } // FileUtils
 
 #endif // !__FILE_UTILS_H__

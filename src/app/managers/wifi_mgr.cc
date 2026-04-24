@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-27 18:59:51
- * @LastEditTime: 2026-04-12 01:37:08
+ * @LastEditTime: 2026-04-24 16:54:56
  * @FilePath: /kk_frame/src/app/managers/wifi_mgr.cc
  * @Description: WIFI 管理器
  * @BugList:
@@ -186,21 +186,21 @@ bool WifiMgr::haveChange() {
 
 void WifiMgr::load() {
     mOption = cdroid::Preferences(); // 清空原配置
-
     std::string loadingPath = "";
-    size_t fileLen = 0;
-    if (FileUtils::check(WIFI_FILE_PATH, &fileLen) && fileLen > 0) {
-        loadingPath = WIFI_FILE_PATH;
-    } else if (FileUtils::check(WIFI_FILE_BAK_PATH, &fileLen) && fileLen > 0) {
-        loadingPath = WIFI_FILE_BAK_PATH;
-    } else {
-        LOG(ERROR) << "[wifi] no option file found. use default data.";
-        mOption.setValue(WIFI_SECTION, "HELLO", std::string("WORLD!!!"));
-        return;
-    }
 
-    mOption.load(loadingPath);
-    LOG(INFO) << "[wifi] load option. file=" << loadingPath;
+    bool res = FileUtils::check(
+        { WIFI_FILE_PATH, WIFI_FILE_BAK_PATH },
+        [this, &loadingPath](const std::string& file, size_t size) {
+        if (size <= 0)return false;
+        mOption.load(loadingPath);
+        return true;
+    });
+
+    if (res) {
+        LOG(INFO) << "[wifi] load option. file=" << loadingPath;
+    } else {
+        LOG(ERROR) << "[wifi] no option file found.";
+    }
 }
 
 void WifiMgr::onStateChanged(WifiHal::State state, const std::string& reason) {

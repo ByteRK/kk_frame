@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 14:06:52
- * @LastEditTime: 2026-02-26 11:09:52
+ * @LastEditTime: 2026-04-24 16:43:44
  * @FilePath: /kk_frame/src/utils/file_utils.cc
  * @Description: 文件相关的一些函数
  * @BugList:
@@ -74,6 +74,16 @@ bool FileUtils::check(const std::string& filePath, size_t* size) {
         if (size) (*size) = ghc::filesystem::file_size(path);
         return true;
     }
-    LOGE("File not found or is a directory: %s", filePath.c_str());
+    LOGW("File not found or is a directory: %s", filePath.c_str());
+    return false;
+}
+
+bool FileUtils::check(const std::vector<std::string>& fileList, std::function<bool(const std::string&, size_t)> callback) {
+    size_t size{ 0 };
+    for (const std::string& file : fileList) {
+        if (file.empty())continue;
+        size = 0;
+        if (check(file, &size)) if (callback(file, size))return true;
+    }
     return false;
 }
