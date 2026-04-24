@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-08 02:48:19
- * @LastEditTime: 2026-02-08 05:00:33
+ * @LastEditTime: 2026-04-23 11:59:11
  * @FilePath: /kk_frame/src/app/page/components/wind_pop.cc
  * @Description: 弹窗组件
  * @BugList:
@@ -16,7 +16,6 @@
 WindPop::WindPop() {
     mPop = nullptr;
     mPopBox = nullptr;
-    mPopNextTick = 0;
 }
 
 WindPop::~WindPop() {
@@ -31,18 +30,6 @@ void WindPop::init(ViewGroup* parent) {
         )throw std::runtime_error("WindPop init failed");
     mPopBox->setOnTouchListener([](View&, MotionEvent&) { return true; });
     mPopBox->setVisibility(View::GONE);
-}
-
-/// @brief 弹窗更新
-void WindPop::onTick() {
-    mPopNextTick = cdroid::SystemClock::uptimeMillis() + 1000;
-    if (mPop) mPop->callTick();
-}
-
-/// @brief 获取弹窗下次更新时间
-/// @return 下次更新时间
-int64_t WindPop::getPopNextTick() {
-    return mPopNextTick;
 }
 
 /// @brief 获取当前弹窗指针
@@ -69,7 +56,6 @@ int8_t WindPop::showPop(PopBase* pop, LoadMsgBase* initData) {
         mPopBox->addView(mPop->getRootView());
         mPop->callAttach();
         mPop->callLoad(initData);
-        mPop->callTick(); // 为了避免有些页面变化是通过tick更新的，导致页面刚载入时闪烁
     }
     return getPopType();
 }

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-10 22:49:59
- * @LastEditTime: 2026-03-18 22:18:58
+ * @LastEditTime: 2026-04-23 15:01:56
  * @FilePath: /kk_frame/src/app/page/components/wind_keyboard.h
  * @Description: 键盘组件
  * @BugList:
@@ -40,7 +40,6 @@ public:
     virtual ~WindKeyboard();
 
     void         init(ViewGroup* parent);
-    void         onTick();
     virtual void showKeyboard(const std::string& text = "", const std::string& hint = "");
     virtual void hideKeyboard();
     bool         isKeyboardShow();

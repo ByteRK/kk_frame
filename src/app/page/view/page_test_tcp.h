@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-05 17:16:11
- * @LastEditTime: 2026-02-07 12:02:42
+ * @LastEditTime: 2026-04-23 15:00:40
  * @FilePath: /kk_frame/src/app/page/view/page_test_tcp.h
  * @Description: TCP 测试
  * @BugList:
@@ -50,8 +50,6 @@ public:
     int8_t getType() const override;
 protected:
     void setView() override;
-
-    void onTick() override;
 
 private:
     bool onTouchListen(View& v, MotionEvent& e);

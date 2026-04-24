@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-10 22:50:08
- * @LastEditTime: 2026-03-18 22:49:14
+ * @LastEditTime: 2026-04-23 15:02:06
  * @FilePath: /kk_frame/src/app/page/components/wind_keyboard.cc
  * @Description: 键盘组件
  * @BugList:
@@ -64,9 +64,6 @@ void WindKeyboard::init(ViewGroup* parent) {
 #endif
 
     mIsInit = true;
-}
-
-void WindKeyboard::onTick() {
 }
 
 void WindKeyboard::showKeyboard(const std::string& text, const std::string& hint) {

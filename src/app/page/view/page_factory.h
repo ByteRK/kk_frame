@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-22 12:32:19
- * @LastEditTime: 2026-04-02 11:27:23
+ * @LastEditTime: 2026-04-23 14:56:32
  * @FilePath: /kk_frame/src/app/page/view/page_factory.h
  * @Description: 工厂界面
  * @BugList:
@@ -44,7 +44,6 @@ public:
 protected:
     void getView() override;
     void setView() override;
-    void onTick() override;
     void onAttach() override;
 
 private:

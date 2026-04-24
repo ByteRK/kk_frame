@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2026-01-04 14:42:28
+ * @LastEditTime: 2026-04-23 16:15:14
  * @FilePath: /kk_frame/src/app/page/core/base.cc
  * @Description: 页面基类
  * @BugList:
@@ -21,10 +21,9 @@
 **/
 
 PBase::PBase(std::string resource) {
-    mContext = &App::getInstance();;
+    mContext = &App::getInstance();
     mLooper = Looper::getMainLooper();
     mInflater = LayoutInflater::from(mContext);
-    mLastTick = 0;
 
     int64_t startTime = SystemClock::uptimeMillis();
     mRootView = (ViewGroup*)mInflater->inflate(resource, nullptr);
@@ -41,10 +40,6 @@ uint8_t PBase::getLang() const {
 
 View* PBase::getRootView() {
     return mRootView;
-}
-
-void PBase::callTick() {
-    onTick();
 }
 
 void PBase::callAttach() {
@@ -91,40 +86,31 @@ void PBase::callCheckLight(uint8_t* left, uint8_t* right) {
     onCheckLight(left, right);
 }
 
-void PBase::onTick() {
-}
+void PBase::onAttach() { }
 
-void PBase::onAttach() {
-}
+void PBase::onDetach() { }
 
-void PBase::onDetach() {
-}
-
-void PBase::onLoad(LoadMsgBase* loadMsg) {
-}
+void PBase::onLoad(LoadMsgBase* loadMsg) { }
 
 SaveMsgBase* PBase::onSaveState() {
     return nullptr;
 }
 
-void PBase::onRestoreState(const SaveMsgBase* saveMsg) {
-}
+void PBase::onRestoreState(const SaveMsgBase* saveMsg) { }
 
-void PBase::onMsg(const RunMsgBase* runMsg) {
-}
+void PBase::onTick(int64_t nowMs) { }
 
-void PBase::onMcu(uint8_t* data, uint8_t len) {
-}
+void PBase::onMsg(const RunMsgBase* runMsg) { }
+
+void PBase::onMcu(uint8_t* data, uint8_t len) { }
 
 bool PBase::onKey(int keyCode, KeyEvent& evt) {
     return false;
 }
 
-void PBase::onLangChange() {
-}
+void PBase::onLangChange() { }
 
-void PBase::onCheckLight(uint8_t* left, uint8_t* right) {
-}
+void PBase::onCheckLight(uint8_t* left, uint8_t* right) { }
 
 void PBase::setLangText(TextView* v, const Json::Value& value) {
     if (v == nullptr) LOGE("TextView is nullptr");

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-02-11 01:00:57
+ * @LastEditTime: 2026-04-23 11:55:45
  * @FilePath: /kk_frame/src/app/page/core/wind.cc
  * @Description: 窗口类
  * @BugList:
@@ -24,7 +24,6 @@ static void playSound(int sound) {
 /// @return 返回MainWindow对象
 MainWindow::MainWindow() :Window(0, 0, -1, -1) {
     mLastAction = SystemClock::uptimeMillis();
-    App::getInstance().addEventHandler(this);
 }
 
 /// @brief 析构
@@ -72,27 +71,6 @@ WindLogo::LOGO_INFO MainWindow::getLogo() {
     info.type = WindLogo::LOGO_TYPE_IMG;
     info.duration = 3000;
     return info;
-}
-
-/// @brief Tick检查
-/// @return 返回1表示需要处理
-int MainWindow::checkEvents() {
-    return SystemClock::uptimeMillis() >=
-        std::min(getPageNextTick(), getPopNextTick());
-}
-
-/// @brief Tick处理
-/// @return 
-int MainWindow::handleEvents() {
-    int64_t tick = SystemClock::uptimeMillis();
-    if (tick >= getPageNextTick()) {
-        WindPage::onTick();
-        WindToast::onTick();
-    }
-    if (tick >= getPopNextTick()) {
-        WindPop::onTick();
-    }
-    return 1;
 }
 
 /// @brief 重载触摸事件入口，方便计时最后一次触摸时间

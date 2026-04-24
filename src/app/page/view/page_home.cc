@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-23 00:04:17
- * @LastEditTime: 2025-12-31 11:45:06
+ * @LastEditTime: 2026-04-23 16:19:03
  * @FilePath: /kk_frame/src/app/page/view/page_home.cc
  * @Description: 主页面
  * @BugList:
@@ -20,10 +20,9 @@ HomePage::HomePage() :PageBase("@layout/page_home") {
     initUI();
 }
 
-HomePage::~HomePage() {
-}
+HomePage::~HomePage() { }
 
-void HomePage::onTick() {
+void HomePage::onTick(int64_t now) {
     int64_t tick = SystemClock::uptimeMillis();
     if (tick - g_window->mLastAction >= 120000) {
         if (tick - g_window->mLastAction <= 123000)
@@ -34,6 +33,14 @@ void HomePage::onTick() {
 
 int8_t HomePage::getType() const {
     return PAGE_HOME;
+}
+
+void HomePage::onAttach() {
+    startTick();
+}
+
+void HomePage::onDetach() {
+    stopTick();
 }
 
 void HomePage::setView() {

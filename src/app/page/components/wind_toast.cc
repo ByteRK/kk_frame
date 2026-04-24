@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-25 10:23:15
- * @LastEditTime: 2026-02-08 04:14:45
+ * @LastEditTime: 2026-04-24 10:18:36
  * @FilePath: /kk_frame/src/app/page/components/wind_toast.cc
  * @Description: Toast组件
  * @BugList:
@@ -23,11 +23,15 @@ WindToast::WindToast() {
     mDiyToastAni.finish = nullptr;
     mDiyToastAni.stop = nullptr;
     mDiyToastAni.aniEnd = nullptr;
+    mToastTicker.setTick(200);
+    mToastTicker.setCallBack([this](int64_t now) { this->onTick(now); });
+    mToastTicker.startTick(1000);
 }
 
 WindToast::~WindToast() {
     mToastBox->removeCallbacks(mRuner);
     mToastBox->animate().cancel();
+    mToastTicker.stopTick();
 }
 
 /// @brief 初始化Toast
@@ -60,26 +64,6 @@ void WindToast::init(ViewGroup* parent) {
     mToastBox->animate().setListener(toastAnimtorListener);
 
     mIsInit = true;
-}
-
-/// @brief Tick事件
-void WindToast::onTick() {
-    if (!checkInit() || mIsRunning) return;
-
-    if (mList.size()) {
-        TOAST_TYPE item = mList.front();
-        mList.pop();
-
-        LOGV("showToast[over:%d]: %s", mList.size(), item.text.c_str());
-        mToastBox->removeCallbacks(mRuner);
-
-        mIsRunning = true;
-        mLevel = item.level;
-        mToast->setText(item.text);
-        mToastBox->setVisibility(View::VISIBLE);
-        onStart(item.animate);
-        if (!item.lock)mToastBox->postDelayed(mRuner, mDuration);
-    }
 }
 
 /// @brief 显示Toast
@@ -163,6 +147,26 @@ inline bool WindToast::checkInit() {
     if (mIsInit) return true;
     LOGE("Toast uninit");
     return false;
+}
+
+/// @brief Tick事件
+void WindToast::onTick(int64_t now) {
+    if (!checkInit() || mIsRunning) return;
+
+    if (mList.size()) {
+        TOAST_TYPE item = mList.front();
+        mList.pop();
+
+        LOGV("showToast[over:%d]: %s", mList.size(), item.text.c_str());
+        mToastBox->removeCallbacks(mRuner);
+
+        mIsRunning = true;
+        mLevel = item.level;
+        mToast->setText(item.text);
+        mToastBox->setVisibility(View::VISIBLE);
+        onStart(item.animate);
+        if (!item.lock)mToastBox->postDelayed(mRuner, mDuration);
+    }
 }
 
 /// @brief 开始显示

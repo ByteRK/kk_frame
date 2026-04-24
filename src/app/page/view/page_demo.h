@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-23 00:04:23
- * @LastEditTime: 2026-04-12 16:33:59
+ * @LastEditTime: 2026-04-23 16:19:36
  * @FilePath: /kk_frame/src/app/page/view/page_demo.h
  * @Description: 框架演示主页面（建议保留）
  * @BugList:
@@ -24,9 +24,9 @@ public:
     int8_t getType() const override;
 protected:
     void setView() override;
-    void onTick() override;
     void onAttach() override;
     void onDetach() override;
+    void onTick(int64_t now) override;
 
 private:
     void showChineseCalendar();

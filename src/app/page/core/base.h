@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2026-04-02 12:55:41
+ * @LastEditTime: 2026-04-24 10:16:49
  * @FilePath: /kk_frame/src/app/page/core/base.h
  * @Description: 页面基类
  * @BugList:
@@ -21,6 +21,7 @@
 #include "project_utils.h"
 #include "app_common.h"
 #include "app_version.h"
+#include "tick_mgr.h"
 
 #include <view/view.h>
 #include <view/viewgroup.h>
@@ -33,7 +34,7 @@
 namespace AppRid = APP_NAME::R::id;
 
 /// @brief 基类
-class PBase {
+class PBase: public TickMgr::ITickClass {
 protected:
     Looper*          mLooper = nullptr;                         // 事件循环
     cdroid::Context* mContext = nullptr;                        // 上下文
@@ -41,7 +42,6 @@ protected:
     uint8_t          mLang = LANG_ZH_CN;                        // 语言
 
     ViewGroup*       mRootView = nullptr;                       // 根节点
-    uint64_t         mLastTick = 0;                             // 上次Tick时间
     bool             mIsAttach = false;                         // 是否已经Attach
 
 public:
@@ -52,7 +52,6 @@ public:
     virtual View* getRootView();                                // 获取根节点
     virtual int8_t getType() const = 0;                         // 获取页面类型
 
-    void callTick();                                            // 调用定时器
     virtual void callAttach();                                  // 通知页面挂载
     virtual void callDetach();                                  // 通知页面剥离
     void callLoad(LoadMsgBase* loadMsg);                        // 调用重加载
@@ -66,12 +65,12 @@ public:
 
 protected:
     virtual void initUI() = 0;                                  // 初始化UI
-    virtual void onTick();                                      // 定时器回调
     virtual void onAttach();                                    // 挂载页面回调
     virtual void onDetach();                                    // 剥离页面回调
     virtual void onLoad(LoadMsgBase* loadMsg);                  // 数据加载回调
     virtual SaveMsgBase* onSaveState();                         // 状态保存
     virtual void onRestoreState(const SaveMsgBase* saveMsg);    // 状态恢复
+    virtual void onTick(int64_t nowMs) override;                // 定时器回调
     virtual void onMsg(const RunMsgBase* runMsg);               // 运行时消息回调
     virtual void onMcu(uint8_t* data, uint8_t len);             // 电控数据回调
     virtual bool onKey(int keyCode, KeyEvent& evt);             // 按键事件回调

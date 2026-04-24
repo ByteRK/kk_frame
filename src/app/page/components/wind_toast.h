@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-25 10:22:41
- * @LastEditTime: 2026-03-22 12:00:43
+ * @LastEditTime: 2026-04-24 10:18:26
  * @FilePath: /kk_frame/src/app/page/components/wind_toast.h
  * @Description: Toast组件
  * @BugList:
@@ -13,6 +13,8 @@
 
 #ifndef __WIND_TOAST_H__
 #define __WIND_TOAST_H__
+
+#include "tick_mgr.h"
 
 #include <view/view.h>
 #include <view/viewgroup.h>
@@ -64,6 +66,7 @@ private:
         bool        animate = true;       // 是否动画显示
         bool        lock = false;         // 是否锁定
     } TOAST_TYPE;
+
 private:
     bool              mIsInit;            // 是否初始化
     bool              mIsRunning;         // 是否正在显示
@@ -78,11 +81,13 @@ private:
     int               mDuration = 2500;   // 弹幕显示时间(ms)
     int               mAnimatime = 600;   // 弹幕动画时间(ms)
     TOAST_ANIMATE     mDiyToastAni;       // 自定义弹幕动画
+
+    TickMgr::ITickVariable mToastTicker;  // 弹幕心跳
+    
 public:
     WindToast();
     virtual ~WindToast();
     void init(ViewGroup* parent);
-    void onTick();
     void showToast(std::string text);
     void showToast(std::string text, int8_t level, bool keepNow = false, bool animate = true, bool lock = false);
     void hideToast();
@@ -96,6 +101,7 @@ public:
 private:
     bool checkInit();
 
+    void onTick(int64_t now);
     void onStart(bool withAnim);
     void onFinish();
     void onStop();

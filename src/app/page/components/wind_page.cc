@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-08 02:48:19
- * @LastEditTime: 2026-02-08 05:00:43
+ * @LastEditTime: 2026-04-23 11:59:32
  * @FilePath: /kk_frame/src/app/page/components/wind_page.cc
  * @Description: 页面组件
  * @BugList:
@@ -16,7 +16,6 @@
 WindPage::WindPage() {
     mPage = nullptr;
     mPageBox = nullptr;
-    mPageNextTick = 0;
 }
 
 WindPage::~WindPage() {
@@ -31,18 +30,6 @@ void WindPage::init(ViewGroup* parent) {
         )throw std::runtime_error("WindPage init failed");
     mPageBox->setOnTouchListener([](View&, MotionEvent&) { return true; });
     mPageBox->setVisibility(View::GONE);
-}
-
-/// @brief 页面更新
-void WindPage::onTick() {
-    mPageNextTick = cdroid::SystemClock::uptimeMillis() + 200;
-    if (mPage) mPage->callTick();
-}
-
-/// @brief 获取页面下次更新时间
-/// @return 下次更新时间
-int64_t WindPage::getPageNextTick() {
-    return mPageNextTick;
 }
 
 /// @brief 获取当前页面指针
@@ -69,7 +56,6 @@ int8_t WindPage::showPage(PageBase* page, LoadMsgBase* initData) {
         mPageBox->addView(mPage->getRootView());
         mPage->callAttach();
         mPage->callLoad(initData);
-        mPage->callTick(); // 为了避免有些页面变化是通过tick更新的，导致页面刚载入时闪烁
     }
     return getPageType();
 }

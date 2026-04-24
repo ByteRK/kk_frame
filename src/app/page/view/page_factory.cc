@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-22 12:32:26
- * @LastEditTime: 2026-04-02 12:46:33
+ * @LastEditTime: 2026-04-23 14:56:46
  * @FilePath: /kk_frame/src/app/page/view/page_factory.cc
  * @Description:
  * @BugList:
@@ -37,8 +37,6 @@ void PageFactory::setView() {
     setFactoryColor();
     setFactorySwitch();
 }
-
-void PageFactory::onTick() { }
 
 void PageFactory::onAttach() {
     mCurPage = FACTORY_MENU;

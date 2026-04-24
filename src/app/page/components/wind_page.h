@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-08 02:48:19
- * @LastEditTime: 2026-02-08 03:45:45
+ * @LastEditTime: 2026-04-23 15:02:29
  * @FilePath: /kk_frame/src/app/page/components/wind_page.h
  * @Description: 页面组件
  * @BugList:
@@ -20,15 +20,12 @@ class WindPage {
 private:
     PageBase*   mPage;           // 页面指针
     ViewGroup*  mPageBox;        // 页面容器
-    int64_t     mPageNextTick;   // 页面下次Tick时间
 
 public:
     WindPage();
     virtual ~WindPage();
     
     void       init(ViewGroup* parent);
-    void       onTick();
-    int64_t    getPageNextTick();
 
     PageBase*  getPage();
     int8_t     getPageType();

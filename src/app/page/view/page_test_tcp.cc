@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-05 17:16:25
- * @LastEditTime: 2026-02-07 17:07:45
+ * @LastEditTime: 2026-04-23 15:00:46
  * @FilePath: /kk_frame/src/app/page/view/page_test_tcp.cc
  * @Description: TCP 测试
  * @BugList:
@@ -96,9 +96,6 @@ void TestTcpPage::setView() {
     }
 
     mRootView->setOnTouchListener(std::bind(&TestTcpPage::onTouchListen, this, std::placeholders::_1, std::placeholders::_2));
-}
-
-void TestTcpPage::onTick() {
 }
 
 bool TestTcpPage::onTouchListen(View& v, MotionEvent& e) {
