@@ -102,18 +102,18 @@ public:
 
 protected:
     /// @brief 获取控件指针
-    inline View* get(int id) {
+    View* get(int id) {
         return mRootView->findViewById(id);
     }
 
     /// @brief 获取控件指针
     template <typename T>
-    inline T* get(int id) {
+    T* get(int id) {
         return get<T>(mRootView, id);
     }
 
     /// @brief 设置点击事件
-    inline void click(int id, View::OnClickListener l) {
+    void click(int id, View::OnClickListener l) {
         click(mRootView, id, l);
     }
 };

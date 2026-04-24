@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-08 02:37:55
- * @LastEditTime: 2026-02-08 05:00:58
+ * @LastEditTime: 2026-04-24 14:09:49
  * @FilePath: /kk_frame/src/app/page/components/wind_black.cc
  * @Description: 息屏组件
  * @BugList:
@@ -76,7 +76,7 @@ bool WindBlack::onKey(int keyCode, KeyEvent& evt, bool& result) {
 
 /// @brief 检查当前是否已初始化
 /// @return 是否已初始化
-inline bool WindBlack::checkInit() {
+bool WindBlack::checkInit() {
     if (mIsInit) return true;
     LOGE("Black uninit");
     return false;

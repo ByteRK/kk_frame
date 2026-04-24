@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-11-24 09:40:23
- * @LastEditTime: 2026-01-29 17:03:58
+ * @LastEditTime: 2026-04-24 14:07:13
  * @FilePath: /kk_frame/src/app/app_common.h
  * @Description: 项目通用头文件
  * @BugList:
@@ -77,7 +77,7 @@
 /// @tparam T 
 /// @param p 
 template<typename T>
-inline void __delete(T*& p) {
+void __delete(T*& p) {
     if (p) { delete p; p = nullptr; }
 }
 

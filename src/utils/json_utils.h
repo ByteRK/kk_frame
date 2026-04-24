@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:39:39
- * @LastEditTime: 2025-12-26 11:15:49
+ * @LastEditTime: 2026-04-24 14:07:32
  * @FilePath: /kk_frame/src/utils/json_utils.h
  * @Description: Json相关的一些函数
  * @BugList:
@@ -31,7 +31,7 @@ namespace JsonUtils {
     }
 
     template<>
-    inline int to<int>(const Json::Value& value, const int& defaultValue) {
+    int to<int>(const Json::Value& value, const int& defaultValue) {
         if (value.isNull()) return defaultValue;
         if (value.isInt()) return value.asInt();
         if (value.isString()) {
@@ -46,13 +46,13 @@ namespace JsonUtils {
     }
 
     template<>
-    inline std::string to<std::string>(const Json::Value& value, const std::string& defaultValue) {
+    std::string to<std::string>(const Json::Value& value, const std::string& defaultValue) {
         if (!value.isNull() && value.isString()) return value.asString();
         return defaultValue;
     }
 
     template<>
-    inline bool to<bool>(const Json::Value& value, const bool& defaultValue) {
+    bool to<bool>(const Json::Value& value, const bool& defaultValue) {
         if (value.isNull()) return defaultValue;
         if (value.isBool()) return value.asBool();
         if (value.isInt()) return value.asInt() != 0;

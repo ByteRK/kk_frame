@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-25 10:31:16
- * @LastEditTime: 2026-02-13 00:54:35
+ * @LastEditTime: 2026-04-24 14:09:24
  * @FilePath: /kk_frame/src/app/page/components/wind_logo.cc
  * @Description: Logo组件
  * @BugList:
@@ -140,7 +140,7 @@ bool WindLogo::onKey(int keyCode, KeyEvent& evt, bool& result) {
 
 /// @brief 检查当前是否已初始化
 /// @return 是否已初始化
-inline bool WindLogo::checkInit() {
+bool WindLogo::checkInit() {
     if (mIsInit) return true;
     LOGE("Logo uninit");
     return false;

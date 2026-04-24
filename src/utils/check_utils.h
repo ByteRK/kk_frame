@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-29 11:52:07
- * @LastEditTime: 2026-02-08 10:59:33
+ * @LastEditTime: 2026-04-24 14:10:30
  * @FilePath: /kk_frame/src/utils/check_utils.h
  * @Description: 校验相关的一些函数
  * @BugList:
@@ -24,7 +24,7 @@ namespace CheckUtils {
     /// @param length 数据长度
     /// @return 校验和
     template <typename T>
-    inline uint64_t checkSum(const T* data, uint64_t length) {
+    uint64_t checkSum(const T* data, uint64_t length) {
         uint64_t sum = 0;
         for (int i = 0; i < length; i++)
             sum += data[i];

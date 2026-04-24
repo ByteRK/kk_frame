@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-10 22:49:59
- * @LastEditTime: 2026-04-23 15:01:56
+ * @LastEditTime: 2026-04-24 14:09:30
  * @FilePath: /kk_frame/src/app/page/components/wind_keyboard.h
  * @Description: 键盘组件
  * @BugList:
@@ -49,7 +49,7 @@ public:
     void         setKeyboardCallBack(OnCloseListener enter, OnCloseListener cancel);
 
 private:
-    inline bool  checkInit();
+    bool         checkInit();
     void         onKeyBoardFinish(bool isEnter, const std::string& text);
 };
 

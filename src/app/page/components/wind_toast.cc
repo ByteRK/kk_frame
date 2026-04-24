@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-25 10:23:15
- * @LastEditTime: 2026-04-24 10:18:36
+ * @LastEditTime: 2026-04-24 14:09:19
  * @FilePath: /kk_frame/src/app/page/components/wind_toast.cc
  * @Description: Toast组件
  * @BugList:
@@ -143,7 +143,7 @@ void WindToast::setDiyToastAni(TOAST_ANIMATE ani) {
 
 /// @brief 判断当前Toast是否未初始化
 /// @return 
-inline bool WindToast::checkInit() {
+bool WindToast::checkInit() {
     if (mIsInit) return true;
     LOGE("Toast uninit");
     return false;

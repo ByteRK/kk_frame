@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 16:07:53
- * @LastEditTime: 2026-02-24 02:16:04
+ * @LastEditTime: 2026-04-24 14:07:51
  * @FilePath: /kk_frame/src/utils/string_utils.cc
  * @Description: 字符串相关的一些操作函数
  * @BugList:
@@ -29,7 +29,7 @@ struct Utf8Char {
 /// @brief 获取下一个UTF-8字符的信息
 /// @param pos 当前位置指针
 /// @return Utf8Char结构体，包含字符信息和有效性
-inline Utf8Char nextUtf8Char(const unsigned char* pos) {
+Utf8Char nextUtf8Char(const unsigned char* pos) {
     Utf8Char ch = { reinterpret_cast<const char*>(pos), 1, true };
     if (*pos == 0) {
         ch.valid = false;

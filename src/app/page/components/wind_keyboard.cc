@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-10 22:50:08
- * @LastEditTime: 2026-04-23 15:02:06
+ * @LastEditTime: 2026-04-24 14:09:43
  * @FilePath: /kk_frame/src/app/page/components/wind_keyboard.cc
  * @Description: 键盘组件
  * @BugList:
@@ -110,7 +110,7 @@ void WindKeyboard::setKeyboardCallBack(OnCloseListener enter, OnCloseListener ca
     mCancelListener = cancel;
 }
 
-inline bool WindKeyboard::checkInit() {
+bool WindKeyboard::checkInit() {
     if (mIsInit) return true;
     LOGE("Keyboard uninit");
     return false;

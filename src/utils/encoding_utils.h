@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 11:38:20
- * @LastEditTime: 2026-02-26 02:25:16
+ * @LastEditTime: 2026-04-24 14:05:40
  * @FilePath: /kk_frame/src/utils/encoding_utils.h
  * @Description: 编码相关的一些函数
  * @BugList:
@@ -21,7 +21,7 @@ namespace EncodingUtils {
 
     /// @brief 检查当前系统是否为小端字节序
     /// @return 
-    inline bool isLittleEndian() {
+    bool isLittleEndian() {
         const uint16_t test = 0x0102;
         return *(reinterpret_cast<const uint8_t*>(&test)) == 0x02;
     }
@@ -48,20 +48,20 @@ namespace EncodingUtils {
     }
 
     /* 机器序与大端序智能互换 */
-    inline uint16_t hostToBig16(uint16_t v) { return isLittleEndian() ? bswap16(v) : v; }
-    inline uint32_t hostToBig32(uint32_t v) { return isLittleEndian() ? bswap32(v) : v; }
-    inline uint64_t hostToBig64(uint64_t v) { return isLittleEndian() ? bswap64(v) : v; }
-    inline uint16_t bigToHost16(uint16_t v) { return hostToBig16(v); }
-    inline uint32_t bigToHost32(uint32_t v) { return hostToBig32(v); }
-    inline uint64_t bigToHost64(uint64_t v) { return hostToBig64(v); }
+    uint16_t hostToBig16(uint16_t v) { return isLittleEndian() ? bswap16(v) : v; }
+    uint32_t hostToBig32(uint32_t v) { return isLittleEndian() ? bswap32(v) : v; }
+    uint64_t hostToBig64(uint64_t v) { return isLittleEndian() ? bswap64(v) : v; }
+    uint16_t bigToHost16(uint16_t v) { return hostToBig16(v); }
+    uint32_t bigToHost32(uint32_t v) { return hostToBig32(v); }
+    uint64_t bigToHost64(uint64_t v) { return hostToBig64(v); }
 
     /* 机器序与小端序智能互换 */
-    inline uint16_t hostToLittle16(uint16_t v) { return isLittleEndian() ? v : bswap16(v); }
-    inline uint32_t hostToLittle32(uint32_t v) { return isLittleEndian() ? v : bswap32(v); }
-    inline uint64_t hostToLittle64(uint64_t v) { return isLittleEndian() ? v : bswap64(v); }
-    inline uint16_t littleToHost16(uint16_t v) { return hostToLittle16(v); }
-    inline uint32_t littleToHost32(uint32_t v) { return hostToLittle32(v); }
-    inline uint64_t littleToHost64(uint64_t v) { return hostToLittle64(v); }
+    uint16_t hostToLittle16(uint16_t v) { return isLittleEndian() ? v : bswap16(v); }
+    uint32_t hostToLittle32(uint32_t v) { return isLittleEndian() ? v : bswap32(v); }
+    uint64_t hostToLittle64(uint64_t v) { return isLittleEndian() ? v : bswap64(v); }
+    uint16_t littleToHost16(uint16_t v) { return hostToLittle16(v); }
+    uint32_t littleToHost32(uint32_t v) { return hostToLittle32(v); }
+    uint64_t littleToHost64(uint64_t v) { return hostToLittle64(v); }
 
     
     /// @brief 将字符串从一种编码转换为另一种编码
