@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-08 02:37:55
- * @LastEditTime: 2026-04-24 14:09:49
+ * @LastEditTime: 2026-04-24 16:09:25
  * @FilePath: /kk_frame/src/app/page/components/wind_black.cc
  * @Description: 息屏组件
  * @BugList:
@@ -35,7 +35,7 @@ void WindBlack::init(ViewGroup* parent) {
     mBlackView->setOnClickListener([this](View& view) { hideBlack(); });
 
     // 初始化亮度
-    SystemUtils::setBrightness(g_config->getBrightness());
+    SystemUtils::setBrightness(g_config->brightness());
 
     mIsInit = true;
 }
@@ -51,7 +51,7 @@ void WindBlack::showBlack() {
 void WindBlack::hideBlack() {
     if (!checkInit() || !isBlackShow()) return;
     mBlackView->setVisibility(View::GONE);
-    SystemUtils::setBrightness(g_config->getBrightness());
+    SystemUtils::setBrightness(g_config->brightness());
 }
 
 /// @brief 检查当前是否显示

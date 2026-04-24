@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-08 22:48:56
- * @LastEditTime: 2026-04-09 23:18:04
+ * @LastEditTime: 2026-04-24 16:09:07
  * @FilePath: /kk_frame/src/app/managers/http_mgr.h
  * @Description: Http 请求管理
  * @BugList:
@@ -28,6 +28,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "template/singleton.h"
+
 #if defined(ENABLE_CURL)
 #include <curl/curl.h>
 #else
@@ -38,9 +40,11 @@ typedef void* curl_slist;
 #define CURLE_OK 0
 #endif
 
-#define g_http HttpManager::getInstance()
+#define g_http HttpManager::instance()
 
-class HttpManager {
+class HttpManager : public Singleton<HttpManager> {
+    friend Singleton<HttpManager>;
+
 public:
     typedef uint64_t RequestId;
 
@@ -167,10 +171,11 @@ public:
             const std::string& contentType = "application/octet-stream");
     };
 
-public:
-    /* 获取全局唯一实例 */
-    static HttpManager* getInstance();
+protected:
+    HttpManager();
+    ~HttpManager();
 
+public:
     /*
      * 初始化管理器
      * 1. 必须在 submit/cancel 等接口前调用；
@@ -212,12 +217,6 @@ private:
     struct MainThreadMessage;
 
 private:
-    HttpManager();
-    ~HttpManager();
-
-    HttpManager(const HttpManager&) = delete;
-    HttpManager& operator=(const HttpManager&) = delete;
-
     static void initializeCurlGlobal();
     static void cleanupCurlGlobal();
     static void validateRequestOrDie(const Request& request);

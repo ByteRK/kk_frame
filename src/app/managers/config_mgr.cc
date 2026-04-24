@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2026-02-28 10:30:47
+ * @LastEditTime: 2026-04-24 15:38:29
  * @FilePath: /kk_frame/src/app/managers/config_mgr.cc
  * @Description:
  * @BugList:
@@ -92,21 +92,21 @@ bool ConfigMgr::haveChange() {
 /**************************************************************************************/
 
 std::string ConfigMgr::getProductId() {
-    return mDevConf.getString(CONFIG_SECTION, "PID", "");
+    return mDevConf.getString(CONFIG_SECTION, "ProductId", "");
 }
 
 std::string ConfigMgr::getDeviceId() {
-    return mDevConf.getString(CONFIG_SECTION, "DID", "");
+    return mDevConf.getString(CONFIG_SECTION, "DeviceId", "");
 }
 
 std::string ConfigMgr::getLicense() {
-    return mDevConf.getString(CONFIG_SECTION, "LIC", "");
+    return mDevConf.getString(CONFIG_SECTION, "License", "");
 }
 
 void ConfigMgr::setDeviceConf(const std::string& _pid, const std::string& _did, const std::string& _lic) {
-    mDevConf.setValue(CONFIG_SECTION, "PID", _pid);
-    mDevConf.setValue(CONFIG_SECTION, "DID", _did);
-    mDevConf.setValue(CONFIG_SECTION, "LIC", _lic);
+    mDevConf.setValue(CONFIG_SECTION, "ProductId", _pid);
+    mDevConf.setValue(CONFIG_SECTION, "DeviceId", _did);
+    mDevConf.setValue(CONFIG_SECTION, "License", _lic);
 
     mDevConf.save(DEVCONF_FILE_PATH);
     sync(); // 立即同步
@@ -117,39 +117,39 @@ void ConfigMgr::setDeviceConf(const std::string& _pid, const std::string& _did, 
 
 /// @brief 获取屏幕亮度
 /// @return 
-int ConfigMgr::getBrightness() {
-    return mConfig.getInt(CONFIG_SECTION, "BRIGHTNESS", CONFIG_BRIGHTNESS);
+int ConfigMgr::brightness() {
+    return mConfig.getInt(CONFIG_SECTION, "brightness", CONFIG_BRIGHTNESS);
 }
 
 /// @brief 设置屏幕亮度
 /// @param value 
-void ConfigMgr::setBrightness(int value) {
-    if (value == getBrightness()) return;
-    mConfig.setValue(CONFIG_SECTION, "BRIGHTNESS", value);
+void ConfigMgr::brightness(int value) {
+    if (value == brightness()) return;
+    mConfig.setValue(CONFIG_SECTION, "brightness", value);
 }
 
 /// @brief 获取音量
 /// @return 
-int ConfigMgr::getVolume() {
-    return mConfig.getInt(CONFIG_SECTION, "VOLUME", CONFIG_VOLUME);
+int ConfigMgr::volume() {
+    return mConfig.getInt(CONFIG_SECTION, "volume", CONFIG_VOLUME);
 }
 
 /// @brief 设置音量
 /// @param value 
-void ConfigMgr::setVolume(int value) {
-    if (value == getVolume()) return;
-    mConfig.setValue(CONFIG_SECTION, "VOLUME", value);
+void ConfigMgr::volume(int value) {
+    if (value == volume()) return;
+    mConfig.setValue(CONFIG_SECTION, "volume", value);
 }
 
 /// @brief 获取自动锁屏
 /// @return 
-bool ConfigMgr::getAutoLock() {
-    return mConfig.getBool(CONFIG_SECTION, "AUTOLOCK", CONFIG_AUTOLOCK);
+bool ConfigMgr::autoLock() {
+    return mConfig.getBool(CONFIG_SECTION, "autoLock", CONFIG_AUTOLOCK);
 }
 
 /// @brief 设置自动锁屏
 /// @param value 
-void ConfigMgr::setAutoLock(bool value) {
-    if (value == getAutoLock()) return;
-    mConfig.setValue(CONFIG_SECTION, "AUTOLOCK", value);
+void ConfigMgr::autoLock(bool value) {
+    if (value == autoLock()) return;
+    mConfig.setValue(CONFIG_SECTION, "autoLock", value);
 }

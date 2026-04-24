@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-08 22:48:56
- * @LastEditTime: 2026-04-09 23:14:30
+ * @LastEditTime: 2026-04-24 15:44:52
  * @FilePath: /kk_frame/src/app/managers/http_mgr.cc
  * @Description: Http 请求管理
  * @BugList:
@@ -258,11 +258,6 @@ HttpManager::Request HttpManager::Request::CreateUpload(const std::string& url,
         request.headers.push_back(std::string("Content-Type: ") + contentType);
     }
     return request;
-}
-
-HttpManager* HttpManager::getInstance() {
-    static HttpManager instance;
-    return &instance;
 }
 
 HttpManager::HttpManager()

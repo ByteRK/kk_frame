@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2026-02-28 09:50:17
+ * @LastEditTime: 2026-04-24 15:37:19
  * @FilePath: /kk_frame/src/app/managers/config_mgr.h
  * @Description: 配置管理
  * @BugList:
@@ -41,24 +41,24 @@ private:
     bool save(bool isBackup = false) override;
     bool haveChange() override;
 
-public:
+public: // 设备配置
     std::string getProductId();  // 产品ID
     std::string getDeviceId();   // 设备ID
     std::string getLicense();    // 授权码
-    void setDeviceConf(const std::string &_pid, const std::string &_did, const std::string &_lic);
+    void        setDeviceConf(const std::string &_pid, const std::string &_did, const std::string &_lic);
 
-public:
+public: // 应用配置
     // 亮度
-    int  getBrightness();
-    void setBrightness(int value);
+    int  brightness();
+    void brightness(int value);
 
     // 音量
-    int  getVolume();
-    void setVolume(int value);
+    int  volume();
+    void volume(int value);
 
     // 自动锁屏
-    bool getAutoLock();
-    void setAutoLock(bool value);
+    bool autoLock();
+    void autoLock(bool value);
 };
 
 
