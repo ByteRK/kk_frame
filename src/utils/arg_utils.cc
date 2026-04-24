@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-29 01:23:13
- * @LastEditTime: 2026-01-29 03:10:01
+ * @LastEditTime: 2026-04-22 17:43:28
  * @FilePath: /kk_frame/src/utils/arg_utils.cc
  * @Description: 命令行参数解析工具
  * @BugList:
@@ -28,6 +28,7 @@ namespace ArgUtils {
         cxxopts::Options options(argv[0], "Pass in specific arguments to enable special functions.");
         options.add_options()
             ("demo", "demo mode", cxxopts::value<bool>(mRes.isDemo)->default_value("false"))
+            ("v,version", "only print version", cxxopts::value<bool>(mRes.version)->default_value("false"))
             ("p,page", "show any page", cxxopts::value<int>(mRes.selectPage)->default_value("0"));
         options.allow_unrecognised_options();
         std::cout << options.help() << std::endl;

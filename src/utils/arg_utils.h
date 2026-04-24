@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-29 01:21:48
- * @LastEditTime: 2026-01-29 02:32:41
+ * @LastEditTime: 2026-04-22 16:56:47
  * @FilePath: /kk_frame/src/utils/arg_utils.h
  * @Description: 命令行参数解析工具
  * @BugList:
@@ -22,6 +22,7 @@ namespace ArgUtils {
     struct ArgValues {
         bool isDemo;
         int  selectPage;
+        bool version;
     };
 
     /// @brief 获取解析结果

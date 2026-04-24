@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-04-23 16:30:55
+ * @LastEditTime: 2026-04-24 17:31:29
  * @FilePath: /kk_frame/main.cc
  * @Description: 主程序入口
  * @BugList:
@@ -10,6 +10,16 @@
  * Copyright (c) 2025 by Ricken, All Rights Reserved.
  *
 **/
+
+#if 1
+/**
+ * 如果需要不运行程序获取版本号相关信息
+ * 
+ * 直接调用 strings ./app | grep AVS: 
+ */
+#include "app_version.h"
+static const char avs[] = "AVS: " APP_VER_INFO;
+#endif
 
 #include <cdlog.h>           // 日志
 #include "custom_app.h"      // 自定义应用程序
@@ -41,10 +51,10 @@
 /// @param argv 参数列表
 /// @return 返回值
 int main(int argc, const char* argv[]) {
-    ProjectUtils::env();           // 设定环境变量（x64生效）
-    ProjectUtils::pInfo(argv[0]);  // 打印项目信息
-    ProjectUtils::pKeyMap();       // 打印项目按键映射
-    ArgUtils::parse(argc, argv);   // 解析命令行参数
+    ProjectUtils::env();              // 设定环境变量（x64生效）
+    ProjectUtils::pInfo(argc, argv);  // 打印项目信息
+    ProjectUtils::pKeyMap();          // 打印项目按键映射
+    ArgUtils::parse(argc, argv);      // 解析命令行参数
 
     /* 框架 */
     CustomApp app(argc, argv);
