@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-27 18:59:51
- * @LastEditTime: 2026-04-24 16:54:56
+ * @LastEditTime: 2026-04-24 17:04:27
  * @FilePath: /kk_frame/src/app/managers/wifi_mgr.cc
  * @Description: WIFI 管理器
  * @BugList:
@@ -192,7 +192,8 @@ void WifiMgr::load() {
         { WIFI_FILE_PATH, WIFI_FILE_BAK_PATH },
         [this, &loadingPath](const std::string& file, size_t size) {
         if (size <= 0)return false;
-        mOption.load(loadingPath);
+        mOption.load(file);
+        loadingPath = file;
         return true;
     });
 

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2026-04-24 16:57:58
+ * @LastEditTime: 2026-04-24 17:04:07
  * @FilePath: /kk_frame/src/app/managers/config_mgr.cc
  * @Description:
  * @BugList:
@@ -57,7 +57,8 @@ bool ConfigMgr::load() {
         { CONFIG_FILE_PATH, CONFIG_FILE_BAK_PATH },
         [this, &loadingPath](const std::string& file, size_t size) {
         if (size <= 0)return false;
-        mConfig.load(loadingPath);
+        mConfig.load(file);
+        loadingPath = file;
         return true;
     });
 
