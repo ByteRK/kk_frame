@@ -1,16 +1,3 @@
-###
- # @Author: Ricken
- # @Email: me@ricken.cn
- # @Date: 2025-05-03 21:12:10
- # @LastEditTime: 2025-05-28 13:20:03
- # @FilePath: /kk_frame/script/x64.sh
- # @Description: 
- # @BugList: 
- # 
- # Copyright (c) 2025 by Ricken, All Rights Reserved. 
- # 
-### 
-
 #!/bin/sh
 #set -x
 
@@ -56,13 +43,8 @@ fi
 # 切换到输出目录
 cd $OUTX64_DIR
 
-# 判断当前是否存在cdroid.pak文件
-if [ ! -f "./cdroid.pak" ]; then
-    ln -s ./src/gui/cdroid.pak ./cdroid.pak
-fi
-
 # 编译程序
-make $NAME -j33
+make $NAME -j3
 
 # 判断程序资源
 if [ ! -f "./$NAME.pak" ]; then
