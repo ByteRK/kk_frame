@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-02 17:38:07
- * @LastEditTime: 2026-04-12 16:02:48
+ * @LastEditTime: 2026-04-24 15:04:48
  * @FilePath: /kk_frame/src/app/managers/message_mgr.h
  * @Description: 消息分发器
  *
@@ -67,17 +67,11 @@ public:
     void send(int msgType, int msgValue = 0, void* msgPtr = nullptr);
 
     // 其它线程异步发送，支持延时分发
-    void post(int msgType,
-        int msgValue = 0,
-        void* msgPtr = nullptr,
-        int64_t delayMs = 0);
+    void post(int msgType, int msgValue = 0, void* msgPtr = nullptr, int64_t delayMs = 0);
 
     // 跨线程发送带所有权的数据，消息处理完成后自动释放
     template <typename T>
-    void postOwned(int msgType,
-        int msgValue,
-        std::unique_ptr<T> msgPtr,
-        int64_t delayMs = 0);
+    void postOwned(int msgType, int msgValue, std::unique_ptr<T> msgPtr, int64_t delayMs = 0);
 
     // 清除所有消息
     size_t clear();
@@ -116,11 +110,7 @@ private:
 };
 
 template <typename T>
-void MessageManager::postOwned(int msgType,
-    int msgValue,
-    std::unique_ptr<T> msgPtr,
-    int64_t delayMs) {
-
+void MessageManager::postOwned(int msgType, int msgValue, std::unique_ptr<T> msgPtr, int64_t delayMs) {
     FATAL_IF(!msgPtr, "[MessageManager] postOwned() got null payload, msgType=%d", msgType);
     FATAL_IF(delayMs < 0, "[MessageManager] postOwned() got negative delay, msgType=%d, delay=%lld",
         msgType, delayMs);

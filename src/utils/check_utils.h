@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-29 11:52:07
- * @LastEditTime: 2026-04-24 14:10:30
+ * @LastEditTime: 2026-04-24 14:29:32
  * @FilePath: /kk_frame/src/utils/check_utils.h
  * @Description: 校验相关的一些函数
  * @BugList:
@@ -15,6 +15,10 @@
 #define __CHECK_UTILS_H__
 
 #include <cstdint>
+#include <cstddef>
+
+#define MD5_SIZE       16
+#define MD5_STR_LEN    (MD5_SIZE * 2)
 
 namespace CheckUtils {
 
@@ -24,12 +28,25 @@ namespace CheckUtils {
     /// @param length 数据长度
     /// @return 校验和
     template <typename T>
-    uint64_t checkSum(const T* data, uint64_t length) {
+    uint64_t checkSum(const T* data, size_t length) {
         uint64_t sum = 0;
-        for (int i = 0; i < length; i++)
+        for (size_t i = 0; i < length; i++)
             sum += data[i];
         return sum;
     }
+
+    /// @brief 计算数据MD5校验
+    /// @param data 数据地址
+    /// @param len 数据长度
+    /// @param md5Str MD5校验结果存储空间
+    /// @return 校验结果
+    char* md5Check(const void* data, size_t len, char md5Str[MD5_STR_LEN]);
+
+    /// @brief 计算文件MD5校验
+    /// @param filePath 文件路径
+    /// @param md5Str MD5校验结果存储空间
+    /// @return 校验结果
+    char* md5Check(const char* filePath, char md5Str[MD5_STR_LEN]);
 
     /// @brief 计算异或校验
     /// @param data 数据
