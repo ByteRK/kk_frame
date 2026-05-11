@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 14:06:52
- * @LastEditTime: 2026-04-24 16:43:44
+ * @LastEditTime: 2026-05-11 23:21:52
  * @FilePath: /kk_frame/src/utils/file_utils.cc
  * @Description: 文件相关的一些函数
  * @BugList:
@@ -16,7 +16,7 @@
 #include <ghc/filesystem.hpp>
 
 void FileUtils::sync() {
-#ifdef CDROID_X64
+#ifdef PRODUCT_X64
     LOGI("-------- sync --------");
 #else
     ::sync();

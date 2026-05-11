@@ -51,7 +51,7 @@ UartClient::~UartClient() {
 
 int UartClient::init() {
 
-#ifdef CDROID_X64
+#ifdef PRODUCT_X64
     LOGI("Uart: %s-%d %p", mIp.c_str(), mPort, this);
 #else
     LOGI("Uart: %s %d-%d-%d-%d-%C %p", mUartInfo.serialPort, mUartInfo.speed, mUartInfo.flow_ctrl, mUartInfo.databits,

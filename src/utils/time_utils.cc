@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-08-22 16:52:55
- * @LastEditTime: 2026-01-29 11:33:18
+ * @LastEditTime: 2026-05-11 23:21:32
  * @FilePath: /kk_frame/src/utils/time_utils.cc
  * @Description: 时间相关的一些函数
  * @BugList:
@@ -144,13 +144,13 @@ std::string TimeUtils::getDayOnWeek(const int& day) {
 }
 
 void TimeUtils::setTime(const int64_t& timestamp) {
-#ifndef CDROID_X64
+#ifndef PRODUCT_X64
     struct timeval set_tv;
     set_tv.tv_sec = timestamp;
     set_tv.tv_usec = 0;
     settimeofday(&set_tv, NULL);
     LOGE("set time %s", getTimeFmtStr("%Y-%m-%d %H:%M:%S").c_str());
-#ifdef CDROID_SIGMA
+#ifdef PRODUCT_SIGMA
     sysCommand("hwclock --systohc");
 #endif
 #else

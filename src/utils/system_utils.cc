@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 14:40:26
- * @LastEditTime: 2026-02-10 17:18:30
+ * @LastEditTime: 2026-05-11 23:21:43
  * @FilePath: /kk_frame/src/utils/system_utils.cc
  * @Description: 系统相关的一些函数
  * @BugList:
@@ -23,7 +23,7 @@
 
 void SystemUtils::reboot() {
     ProjectUtils::saveTime(std::string(LOCAL_DATA_DIR) + "/timeCache");
-#ifndef CDROID_X64
+#ifndef PRODUCT_X64
     std::system("sync");
     std::system("reboot");
 #else
