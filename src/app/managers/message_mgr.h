@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-02 17:38:07
- * @LastEditTime: 2026-04-24 15:04:48
+ * @LastEditTime: 2026-05-11 23:04:05
  * @FilePath: /kk_frame/src/app/managers/message_mgr.h
  * @Description: 消息分发器
  *
@@ -38,12 +38,15 @@
 #define g_msg MessageManager::instance()
 #define MESSAGE_DEAL_INTERVAL 100
 
+/// @brief 消息监听基类
+/// @note 减小性能影响，注册的消息自行通过g_msg->removeAll(this);取消注册
 class MessageListener {
 public:
     virtual ~MessageListener() { }
     virtual void onMessage(int msgType, int msgValue = 0, void* msgPtr = nullptr) = 0;
 };
 
+/// @brief 消息分发器
 class MessageManager : public cdroid::EventHandler,
     public Singleton<MessageManager> {
     friend Singleton<MessageManager>;
