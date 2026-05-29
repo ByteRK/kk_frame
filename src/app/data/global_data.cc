@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2026-04-24 17:01:28
+ * @LastEditTime: 2026-05-29 17:16:27
  * @FilePath: /kk_frame/src/app/data/global_data.cc
  * @Description:
  * @BugList:
@@ -13,14 +13,22 @@
 
 #include "global_data.h"
 #include "arg_utils.h"
+#include "env_utils.h"
 #include "json_utils.h"
 #include "file_utils.h"
 #include "base_data.h"
 #include "config_info.h"
+#include "id.h"
+
 #include <unistd.h>
 #include <core/app.h>
 #include <core/systemclock.h>
 #include <cdlog.h>
+
+/**
+ * 为了触发DEMO模式使用
+**/
+#define FRAME_NAME "kk" "_frame"
 
 GlobalData::GlobalData() :
     mAppStart(cdroid::SystemClock::uptimeMillis()),
@@ -32,17 +40,13 @@ GlobalData::~GlobalData() { }
 /// @brief 初始化
 void GlobalData::init() {
     mIsFirstInit = FileUtils::check(APP_FIRST_INIT_TAG);
-    mDeviceMode = (
-        cdroid::App::getInstance().getName() == (std::string("kk") + std::string("_frame"))
-        ) ?
-        DEVICE_MODE_DEMO : DEVICE_MODE_SAMPLE;
 
-    checkenv();
-
-    if (ArgUtils::get().isDemo) // 模板演示模式
-        mDeviceMode = DEVICE_MODE_DEMO;
-    if ((mTestPage = ArgUtils::get().selectPage) != 0) // 测试模式（进入随意页面）
-        mDeviceMode = DEVICE_MODE_TEST;
+    // 检测进入的模式
+    if (cdroid::App::getInstance().getName() == FRAME_NAME) mDeviceMode = DEVICE_MODE_DEMO;
+    mDeviceMode = EnvUtils::getEnumOr<DeviceMode>("DEVICE_MODE", mDeviceMode);
+    if (ArgUtils::get().isDemo) mDeviceMode = DEVICE_MODE_DEMO;
+    if ((mTestPage = ArgUtils::get().selectPage) != PAGE_NULL) mDeviceMode = DEVICE_MODE_TEST;
+    LOGW_IF(mDeviceMode, "DEVICE_MODE: %d, TEST_PAGE: %d", mDeviceMode, mTestPage);
 
     load();
 
@@ -70,18 +74,6 @@ void GlobalData::setFirstInit(bool first) {
     std::system(command.c_str());
     mIsFirstInit = first;
     FileUtils::sync();
-}
-
-/// @brief 检查环境变量
-void GlobalData::checkenv() {
-    // 设备模式
-    if (getenv("DEV_MODE")) {
-        uint8_t devMode = atoi(getenv("DEV_MODE"));
-        if (devMode < DEVICE_MODE_MAX) {
-            mDeviceMode = devMode;
-        }
-    }
-    LOGW_IF(mDeviceMode, "DEVICE_MODE: %d", mDeviceMode);
 }
 
 /// @brief 载入本地文件
