@@ -25,6 +25,12 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     $<$<STREQUAL:${CDROID_CHIPSET},x64>:CDROID_X64>
 )
 
+# 项目宏定义
+string(TOUPPER ${PROJECT_NAME} PROJECT_NAME_UPPER)
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+    PROJECT_${PROJECT_NAME_UPPER}
+)
+
 # 项目变量定义
 set(PROJECT_LIBRARIES "")    # 项目库列表
 set(PROJECT_LIBRARY_DIR "")  # 项目库搜索路径列表
