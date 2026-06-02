@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.8)
 project(kk_frame)
 
-message(STATUS "\n\n\n\n-- ========================================")
+message(STATUS "\n\n\n\n")
+message(STATUS "========================================")
 message(STATUS "Configuring project: ${PROJECT_NAME}")
 message(STATUS "========================================")
 
