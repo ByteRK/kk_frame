@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-27 17:11:43
- * @LastEditTime: 2026-02-28 18:12:35
+ * @LastEditTime: 2026-06-03 20:34:44
  * @FilePath: /kk_frame/src/app/managers/wifi_mgr.h
  * @Description: WIFI 管理器
  * @BugList:
@@ -81,7 +81,7 @@ private:
     std::mutex                    mApsMutex;
     std::atomic<bool>             mApsChanged{ false };
 
-    WifiHal::State                mState;
+    WifiHal::State                mState{ WifiHal::State::Off };
     std::mutex                    mStateMutex;
     std::atomic<bool>             mStateChanged{ false };
 };
