@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-10 22:50:08
- * @LastEditTime: 2026-06-08 23:48:41
+ * @LastEditTime: 2026-06-09 01:31:20
  * @FilePath: /kk_frame/src/app/page/components/wind_keyboard.cc
  * @Description: 键盘组件
  * @BugList:
@@ -25,15 +25,9 @@ public:
 static CKBegister ckbegister;
 #endif
 
-WindKeyboard::WindKeyboard() {
-    mIsInit = false;
-    mIsShow = false;
-    mEnterListener = nullptr;
-    mCancelListener = nullptr;
-}
+WindKeyboard::WindKeyboard() { }
 
-WindKeyboard::~WindKeyboard() {
-}
+WindKeyboard::~WindKeyboard() { }
 
 void WindKeyboard::init(ViewGroup* parent) {
     if (mIsInit) return;

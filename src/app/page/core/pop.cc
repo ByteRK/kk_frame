@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-04 13:52:55
- * @LastEditTime: 2026-06-09 00:57:59
+ * @LastEditTime: 2026-06-09 01:37:12
  * @FilePath: /kk_frame/src/app/page/core/pop.cc
  * @Description: 弹窗基类
  * @BugList:
@@ -23,14 +23,12 @@
 PopBase::PopBase(std::string resource) :PBase(resource) {
     mPopRootView = new RelativeLayout(LayoutParams::MATCH_PARENT, LayoutParams::MATCH_PARENT);
     mPopRootView->setOnTouchListener([](View& v, MotionEvent& e) { return true; });
+    mPopRootView->setSoundEffectsEnabled(false);
     mPopRootView->addView(mRootView);
     setColor(0x99000000);      // 默认背景颜色
     setMargin(0, 0, 0, 0);     // 默认全屏
     setPadding(0, 0, 0, 0);    // 默认无内边距
     setPageDisplay(false);     // 默认不显示底层页面
-    mIsGauss = false;          // 默认不模糊背景
-    mGaussRadius = 10;         // 默认模糊半径
-    mGaussColor = 0x99000000;  // 默认模糊颜色
 
     mPageDspRunner = []() {g_window->hidePageBox();};
 }
@@ -120,7 +118,13 @@ void PopBase::setColor(int color) {
 /// @brief 设置底层页面是否显示
 /// @param show 是否显示
 void PopBase::setPageDisplay(bool show) {
+    if (mPageDisplay == show) return;
     mPageDisplay = show;
+    if (mIsAttach) {
+        getRootView()->removeCallbacks(mPageDspRunner);
+        if (mPageDisplay) g_window->showPageBox();
+        else getRootView()->postDelayed(mPageDspRunner, 500);
+    }
 }
 
 /// @brief 应用模糊背景

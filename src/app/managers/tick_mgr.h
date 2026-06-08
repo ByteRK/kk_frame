@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-12 17:08:29
- * @LastEditTime: 2026-04-24 10:19:49
+ * @LastEditTime: 2026-06-09 01:33:18
  * @FilePath: /kk_frame/src/app/managers/tick_mgr.h
  * @Description: Tick 管理器
  * @BugList:
@@ -50,14 +50,14 @@ public:
     public:
         using TickCallBack = std::function<void(int64_t)>;
     private:
-        TickCallBack mTickCB;
+        TickCallBack mTickCB{ nullptr };
     public:
         void setCallBack(TickCallBack cb) { mTickCB = cb; };
         void setTick(int64_t intervalMs) { ITickClass::setTick(intervalMs); };
         void startTick(int64_t firstDelayMs = 0) { ITickClass::startTick(firstDelayMs); };
         void stopTick() { ITickClass::stopTick(); };
     protected:
-        void onTick(int64_t now) override { mTickCB(now); };
+        void onTick(int64_t now) override { if (mTickCB)mTickCB(now); };
     };
 
 protected:

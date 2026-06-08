@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2026-06-09 01:04:30
+ * @LastEditTime: 2026-06-09 01:21:45
  * @FilePath: /kk_frame/src/app/page/core/base.h
  * @Description: 页面基类
  * @BugList:
@@ -36,13 +36,13 @@ namespace AppRid = APP_NAME::R::id;
 /// @brief 基类
 class PBase : public TickMgr::ITickClass {
 protected:
-    Looper*          mLooper = nullptr;                         // 事件循环
-    cdroid::Context* mContext = nullptr;                        // 上下文
-    LayoutInflater*  mInflater = nullptr;                       // 布局加载器
-    uint8_t          mLang = LANG_ZH_CN;                        // 语言
+    Looper*          mLooper{ nullptr };                        // 事件循环
+    cdroid::Context* mContext{ nullptr };                       // 上下文
+    LayoutInflater*  mInflater{ nullptr };                      // 布局加载器
+    uint8_t          mLang{ LANG_ZH_CN };                       // 语言
 
-    ViewGroup*       mRootView = nullptr;                       // 根节点
-    bool             mIsAttach = false;                         // 是否已经Attach
+    ViewGroup*       mRootView{ nullptr };                      // 根节点
+    bool             mIsAttach{ false };                        // 是否已经Attach
 
 public:
     PBase(std::string resource);                                // 构造函数

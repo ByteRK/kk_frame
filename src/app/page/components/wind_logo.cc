@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-25 10:31:16
- * @LastEditTime: 2026-06-09 00:24:34
+ * @LastEditTime: 2026-06-09 01:30:30
  * @FilePath: /kk_frame/src/app/page/components/wind_logo.cc
  * @Description: Logo组件
  * @BugList:
@@ -15,10 +15,7 @@
 #include "base.h"
 #include <cdlog.h>
 
-WindLogo::WindLogo() {
-    mIsInit = false;
-    mIsRunning = false;
-}
+WindLogo::WindLogo() { }
 
 WindLogo::~WindLogo() {
     mImage->removeCallbacks(mRuner);
@@ -29,7 +26,7 @@ WindLogo::~WindLogo() {
 /// @param parent 父节点
 void WindLogo::init(ViewGroup* parent) {
     if (mIsInit) return;
-    
+
     if (
         !(mImage = PBase::get<ImageView>(parent, AppRid::logo)) ||
         !(mVideo = PBase::get<VideoView>(parent, AppRid::logo_video))

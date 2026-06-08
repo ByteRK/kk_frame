@@ -18,8 +18,8 @@
 
 class WindPage {
 private:
-    PageBase*   mPage;           // 页面指针
-    ViewGroup*  mPageBox;        // 页面容器
+    PageBase*   mPage{ nullptr };       // 页面指针
+    ViewGroup*  mPageBox{ nullptr };    // 页面容器
 
 public:
     WindPage();

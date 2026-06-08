@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-25 10:23:15
- * @LastEditTime: 2026-04-24 14:09:19
+ * @LastEditTime: 2026-06-09 01:33:58
  * @FilePath: /kk_frame/src/app/page/components/wind_toast.cc
  * @Description: Toast组件
  * @BugList:
@@ -16,13 +16,6 @@
 #include <cdlog.h>
 
 WindToast::WindToast() {
-    mIsInit = false;
-    mIsRunning = false;
-    mShowListener = nullptr;
-    mDiyToastAni.start = nullptr;
-    mDiyToastAni.finish = nullptr;
-    mDiyToastAni.stop = nullptr;
-    mDiyToastAni.aniEnd = nullptr;
     mToastTicker.setTick(200);
     mToastTicker.setCallBack([this](int64_t now) { this->onTick(now); });
     mToastTicker.startTick(1000);

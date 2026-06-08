@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-08 02:48:19
- * @LastEditTime: 2026-06-09 00:32:10
+ * @LastEditTime: 2026-06-09 01:30:45
  * @FilePath: /kk_frame/src/app/page/components/wind_page.cc
  * @Description: 页面组件
  * @BugList:
@@ -13,10 +13,7 @@
 
 #include "wind_page.h"
 
-WindPage::WindPage() {
-    mPage = nullptr;
-    mPageBox = nullptr;
-}
+WindPage::WindPage() { }
 
 WindPage::~WindPage() {
     removePage();

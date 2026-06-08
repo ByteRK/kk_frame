@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-10 22:49:59
- * @LastEditTime: 2026-04-24 14:09:30
+ * @LastEditTime: 2026-06-09 01:31:00
  * @FilePath: /kk_frame/src/app/page/components/wind_keyboard.h
  * @Description: 键盘组件
  * @BugList:
@@ -28,13 +28,13 @@ public:
     DECLARE_UIEVENT(void, OnCloseListener, const std::string &text);
 
 private:
-    CKeyBoard*            mKeyBoard;       // 键盘
+    CKeyBoard*            mKeyBoard{ nullptr };       // 键盘
 
-    bool                  mIsInit;         // 是否初始化
-    bool                  mIsShow;         // 是否显示
+    bool                  mIsInit{ false };           // 是否初始化
+    bool                  mIsShow{ false };           // 是否显示
 
-    OnCloseListener       mEnterListener;  // 回调函数
-    OnCloseListener       mCancelListener; // 回调函数
+    OnCloseListener       mEnterListener{ nullptr };  // 回调函数
+    OnCloseListener       mCancelListener{ nullptr }; // 回调函数
 public:
     WindKeyboard();
     virtual ~WindKeyboard();

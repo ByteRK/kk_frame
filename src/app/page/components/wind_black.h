@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-08 02:36:51
- * @LastEditTime: 2026-06-09 00:25:11
+ * @LastEditTime: 2026-06-09 01:30:00
  * @FilePath: /kk_frame/src/app/page/components/wind_black.h
  * @Description: 息屏组件
  * @BugList:
@@ -18,13 +18,13 @@
 
 class WindBlack {
 private:
-    View*   mBlackView;         // 息屏组件
-    bool    mIsInit;            // 是否初始化
+    View*   mBlackView{ nullptr };       // 息屏组件
+    bool    mIsInit{ false };            // 是否初始化
 
 public:
     WindBlack();
     virtual ~WindBlack();
-    
+
     void init(ViewGroup* parent);
     void showBlack();
     void hideBlack();

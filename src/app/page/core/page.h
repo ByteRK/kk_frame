@@ -19,7 +19,7 @@
 /// @brief 页面基类
 class PageBase :public PBase {
 protected:
-    bool mInitUIFinish = false;     // UI是否初始化完成
+    bool mInitUIFinish{ false };    // UI是否初始化完成
 public:
     PageBase(std::string resource); // 构造函数
     virtual ~PageBase();            // 析构函数

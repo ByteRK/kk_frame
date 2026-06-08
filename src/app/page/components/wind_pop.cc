@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-08 02:48:19
- * @LastEditTime: 2026-06-09 00:31:27
+ * @LastEditTime: 2026-06-09 01:32:11
  * @FilePath: /kk_frame/src/app/page/components/wind_pop.cc
  * @Description: 弹窗组件
  * @BugList:
@@ -13,10 +13,7 @@
 
 #include "wind_pop.h"
 
-WindPop::WindPop() {
-    mPop = nullptr;
-    mPopBox = nullptr;
-}
+WindPop::WindPop() { }
 
 WindPop::~WindPop() {
     removePop();

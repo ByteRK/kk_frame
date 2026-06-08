@@ -19,14 +19,14 @@
 /// @brief 弹窗基类
 class PopBase :public PBase {
 protected:
-    ViewGroup*     mPopRootView;     // 弹窗根节点
+    ViewGroup*     mPopRootView{ nullptr };     // 弹窗根节点
 
 private:
-    bool           mIsGauss;         // 是否有模糊背景
-    int            mGaussRadius;     // 模糊背景圆角
-    int            mGaussColor;      // 模糊背景颜色
-    bool           mPageDisplay;     // 底层页面显示
-    Runnable       mPageDspRunner;   // 底层页面显示回调
+    bool           mIsGauss{ false };           // 是否有模糊背景
+    int            mGaussRadius{ 10 };          // 模糊背景圆角
+    int            mGaussColor{ 0x99000000 };   // 模糊背景颜色
+    bool           mPageDisplay{ false };       // 底层页面显示
+    Runnable       mPageDspRunner;              // 底层页面显示回调
 
 public:
     PopBase(std::string resource);   // 构造函数
