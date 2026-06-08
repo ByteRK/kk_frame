@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Description: 相关ID定义
- *               页面、弹窗、语言
+ *               页面、弹窗、消息、语言
  * 
  * Copyright (c) 2026 by Ricken, All Rights Reserved. 
  * 

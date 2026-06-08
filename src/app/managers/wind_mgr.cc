@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2026-03-02 11:49:21
+ * @LastEditTime: 2026-06-08 23:19:09
  * @FilePath: /kk_frame/src/app/managers/wind_mgr.cc
  * @Description: 页面管理类
  * @BugList:
@@ -28,22 +28,6 @@ WindMgr::~WindMgr() {
     __delete(mWindow);
 }
 
-#if ENABLE_THREAD_SAFE_MSG
-int WindMgr::checkEvents() {
-    uint64_t now = SystemClock::uptimeMillis();
-    if (now - mLastCheckMsgTime > CHECK_THREAD_SAFE_MSG_INTERVAL) {
-        mLastCheckMsgTime = now;
-        return 1;
-    }
-    return 0;
-}
-
-int WindMgr::handleEvents() {
-    dealOtherThreadMsg();
-    return 0;
-}
-#endif
-
 /// @brief 消息处理
 /// @param message 
 void WindMgr::handleMessage(Message& message) {
@@ -66,11 +50,6 @@ void WindMgr::init() {
     mAutoRecyclePageMsg.what = MSG_AUTO_RECYCLE_PAGE;
     mAutoRecyclePopMsg.what = MSG_AUTO_RECYCLE_POP;
     mInitTime = SystemClock::uptimeMillis();
-
-#if ENABLE_THREAD_SAFE_MSG
-    mLastCheckMsgTime = 0;
-    App::getInstance().addEventHandler(this);
-#endif
 
 #if OPEN_SCREENSAVER
     InputEventSource::getInstance().setScreenSaver(
@@ -132,48 +111,6 @@ bool WindMgr::showPage(int8_t page, LoadMsgBase* initData, bool updateHistory) {
     } else {
         LOGW("show page: %d x %p", page, mPageCache[page]);
         return false;
-    }
-}
-
-/// @brief 向指定页面发送基础消息
-/// @param page 页面ID
-/// @param type 消息类型
-/// @param value 消息值
-/// @param fromUiThread 是否来自UI线程
-void WindMgr::sendPageMsg(int8_t page, MSG_TYPE type, int value, bool fromUiThread) {
-    RunMsgBase msgBase;
-    msgBase.msgType = type;
-    msgBase.msgValue = value;
-    sendPageMsg(page, &msgBase, fromUiThread);
-}
-
-/// @brief 向指定页面发送消息
-/// @param page 页面ID
-/// @param msg 消息数据
-/// @param fromUiThread 是否来自UI线程
-void WindMgr::sendPageMsg(int8_t page, const RunMsgBase* msg, bool fromUiThread) {
-    if (fromUiThread) {
-        if (page == PAGE_NULL) {
-            for (auto& it : mPageCache)
-                it.second->callMsg(msg);
-        } else {
-            auto it = mPageCache.find(page);
-            if (it != mPageCache.end()) {
-                it->second->callMsg(msg);
-            }
-        }
-    } else {
-#if ENABLE_THREAD_SAFE_MSG
-        std::lock_guard<std::mutex> lock(mPageMsgCacheMutex);
-        std::unique_ptr<RunMsgBase> copy(msg->clone());
-        mPageMsgCache.push(std::make_pair((uint8_t)page, std::move(copy)));
-        if (mPageMsgCache.size() >= MAX_THREAD_SAFE_MSG_SIZE) {
-            mPageMsgCache.pop();
-            LOGE("Message cache full, discarded oldest message");
-        }
-#else
-        LOGE("sendPageMsg from other thread, but not support");
-#endif
     }
 }
 
@@ -256,44 +193,6 @@ bool WindMgr::showPop(int8_t pop, LoadMsgBase* initData, bool updateHistory) {
     } else {
         LOGW("show pop: %d x %p", pop, mPopCache[pop]);
         return false;
-    }
-}
-
-/// @brief 向指定弹窗发送基础消息
-/// @param page 弹窗ID
-/// @param type 消息类型
-/// @param value 消息值
-/// @param fromUiThread 是否来自UI线程 
-void WindMgr::sendPopMsg(int8_t page, MSG_TYPE type, int value, bool fromUiThread) {
-    RunMsgBase msgBase;
-    msgBase.msgType = type;
-    msgBase.msgValue = value;
-    sendPopMsg(page, &msgBase, fromUiThread);
-}
-
-/// @brief 向指定弹窗发送消息
-/// @param pop 弹窗ID
-/// @param msg 消息数据
-/// @param fromUiThread 是否来自UI线程
-void WindMgr::sendPopMsg(int8_t pop, const RunMsgBase* msg, bool fromUiThread) {
-    if (fromUiThread) {
-        if (mWindow->getPopType() != POP_NULL) {
-            if (pop == POP_NULL || pop == mWindow->getPopType()) {
-                mWindow->getPop()->callMsg(msg);
-            }
-        }
-    } else {
-#if ENABLE_THREAD_SAFE_MSG
-        std::lock_guard<std::mutex> lock(mPopMsgCacheMutex);
-        std::unique_ptr<RunMsgBase> copy(msg->clone());
-        mPopMsgCache.push(std::make_pair((uint8_t)pop, std::move(copy)));
-        if (mPopMsgCache.size() >= MAX_THREAD_SAFE_MSG_SIZE) {
-            mPopMsgCache.pop();
-            LOGE("Message cache full, discarded oldest message");
-        }
-#else
-        LOGE("sendPopMsg from other thread, but not support");
-#endif
     }
 }
 
@@ -611,35 +510,6 @@ void WindMgr::autoRecyclePop() {
             ++it; // 仅在未删除时移动迭代器
         }
     }
-}
-
-/// @brief 处理其它线程发送的消息
-void WindMgr::dealOtherThreadMsg() {
-#if ENABLE_THREAD_SAFE_MSG
-    std::queue<std::pair<int8_t, std::unique_ptr<RunMsgBase>>> msgCache;
-    // 检查页面消息
-    {
-        std::lock_guard<std::mutex> lock(mPageMsgCacheMutex);
-        if (!mPageMsgCache.empty()) msgCache.swap(mPageMsgCache);
-    }
-    // 处理页面消息
-    while (!msgCache.empty()) {
-        auto& msg = msgCache.front();
-        sendPageMsg(msg.first, msg.second.get(), false);
-        msgCache.pop();
-    }
-    // 检查弹窗消息
-    {
-        std::lock_guard<std::mutex> lock(mPopMsgCacheMutex);
-        if (!mPopMsgCache.empty()) msgCache.swap(mPopMsgCache);
-    }
-    // 处理弹窗消息
-    while (!msgCache.empty()) {
-        auto& msg = msgCache.front();
-        sendPopMsg(msg.first, msg.second.get(), false);
-        msgCache.pop();
-    }
-#endif
 }
 
 /// @brief 屏幕保护（休眠）

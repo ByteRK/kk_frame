@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2026-04-23 16:15:14
+ * @LastEditTime: 2026-06-08 23:14:25
  * @FilePath: /kk_frame/src/app/page/core/base.cc
  * @Description: 页面基类
  * @BugList:
@@ -64,10 +64,6 @@ void PBase::callRestoreState(const SaveMsgBase* saveMsg) {
     onRestoreState(saveMsg);
 }
 
-void PBase::callMsg(const RunMsgBase* runMsg) {
-    onMsg(runMsg);
-}
-
 void PBase::callMcu(uint8_t* data, uint8_t len) {
     onMcu(data, len);
 }
@@ -99,8 +95,6 @@ SaveMsgBase* PBase::onSaveState() {
 void PBase::onRestoreState(const SaveMsgBase* saveMsg) { }
 
 void PBase::onTick(int64_t nowMs) { }
-
-void PBase::onMsg(const RunMsgBase* runMsg) { }
 
 void PBase::onMcu(uint8_t* data, uint8_t len) { }
 

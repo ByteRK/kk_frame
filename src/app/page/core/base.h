@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2026-04-24 10:16:49
+ * @LastEditTime: 2026-06-08 23:38:20
  * @FilePath: /kk_frame/src/app/page/core/base.h
  * @Description: 页面基类
  * @BugList:
@@ -49,7 +49,7 @@ public:
     virtual ~PBase();                                           // 析构函数
 
     uint8_t getLang() const;                                    // 获取当前页面语言
-    virtual View* getRootView();                                // 获取根节点
+    virtual View* getRootView();                                // 获取根节点（支持重载，方便套壳使用）
     virtual int8_t getType() const = 0;                         // 获取页面类型
 
     virtual void callAttach();                                  // 通知页面挂载
@@ -57,7 +57,6 @@ public:
     void callLoad(LoadMsgBase* loadMsg);                        // 调用重加载
     SaveMsgBase* callSaveState();                               // 保存状态
     void callRestoreState(const SaveMsgBase* saveMsg);          // 恢复状态
-    void callMsg(const RunMsgBase* runMsg);                     // 运行时消息
     void callMcu(uint8_t* data, uint8_t len);                   // 接受电控数据
     bool callKey(int keyCode, KeyEvent& evt);                   // 接受按键事件
     void callLangChange(uint8_t lang);                          // 调用语言切换
@@ -71,7 +70,6 @@ protected:
     virtual SaveMsgBase* onSaveState();                         // 状态保存
     virtual void onRestoreState(const SaveMsgBase* saveMsg);    // 状态恢复
     virtual void onTick(int64_t nowMs) override;                // 定时器回调
-    virtual void onMsg(const RunMsgBase* runMsg);               // 运行时消息回调
     virtual void onMcu(uint8_t* data, uint8_t len);             // 电控数据回调
     virtual bool onKey(int keyCode, KeyEvent& evt);             // 按键事件回调
     virtual void onLangChange();                                // 语言切换通知回调

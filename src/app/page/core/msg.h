@@ -23,24 +23,6 @@
  *
 **/
 
-/// @brief 消息基类
-struct RunMsgBase {
-    MSG_TYPE msgType;                    // 消息类型
-    int      msgValue;                   // 消息值
-
-    virtual ~RunMsgBase() = default;
-    virtual RunMsgBase* clone() const {
-        return new RunMsgBase(*this);
-    };
-};
-template <typename T> // 偷懒用的模板
-struct RunMsgBaseT :public RunMsgBase {
-    RunMsgBase* clone() const override {
-        const T* derived = static_cast<const T*>(this);
-        return new T(*derived);
-    }
-};
-
 /// @brief 初始化消息基类
 struct LoadMsgBase {
     virtual ~LoadMsgBase() = default;
