@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-08-22 16:52:55
- * @LastEditTime: 2026-05-11 23:21:32
+ * @LastEditTime: 2026-06-08 23:04:01
  * @FilePath: /kk_frame/src/utils/time_utils.cc
  * @Description: 时间相关的一些函数
  * @BugList:
@@ -149,10 +149,8 @@ void TimeUtils::setTime(const int64_t& timestamp) {
     set_tv.tv_sec = timestamp;
     set_tv.tv_usec = 0;
     settimeofday(&set_tv, NULL);
+    syncHWClock();
     LOGE("set time %s", getTimeFmtStr("%Y-%m-%d %H:%M:%S").c_str());
-#ifdef PRODUCT_SIGMA
-    sysCommand("hwclock --systohc");
-#endif
 #else
     LOGE("set time %s", getTimeFmtStr(timestamp, "%Y-%m-%d %H:%M:%S").c_str());
 #endif
@@ -182,4 +180,10 @@ void TimeUtils::setTime(int year, int month, int day, int hour, int minute, int 
     }
     // 设置系统时间
     setTime(newTime);
+}
+
+void TimeUtils::syncHWClock() {
+#ifdef CDROID_SIGMA
+    sysCommand("hwclock --systohc");
+#endif
 }

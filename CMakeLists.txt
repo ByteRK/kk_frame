@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.8)
 project(kk_frame)
 
-message(STATUS "\n\n\n\n-- ========================================")
+message(STATUS "\n\n\n\n")
+message(STATUS "========================================")
 message(STATUS "Configuring project: ${PROJECT_NAME}")
 message(STATUS "========================================")
 
@@ -23,6 +24,12 @@ string(TOUPPER ${CDROID_CHIPSET} CDROID_CHIPSET_UPPER)
 target_compile_definitions(${PROJECT_NAME} PRIVATE
     PRODUCT_${CDROID_CHIPSET_UPPER}
     $<$<STREQUAL:${CDROID_CHIPSET},x64>:CDROID_X64>
+)
+
+# 项目宏定义
+string(TOUPPER ${PROJECT_NAME} PROJECT_NAME_UPPER)
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+    PROJECT_${PROJECT_NAME_UPPER}
 )
 
 # 项目变量定义

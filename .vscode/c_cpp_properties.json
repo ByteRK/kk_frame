@@ -11,6 +11,7 @@
                 "~/cdroid/outX64-Debug/src/gui/*"
             ],
             "defines": [
+                "__linux__",
                 "__VSCODE__",
                 "ENABLE_KEYBOARD",
                 "ENABLE_CURL"

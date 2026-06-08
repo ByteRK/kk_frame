@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-08-22 16:52:55
- * @LastEditTime: 2026-01-29 11:33:12
+ * @LastEditTime: 2026-06-03 20:06:16
  * @FilePath: /kk_frame/src/utils/time_utils.h
  * @Description: 时间相关的一些函数
  * @BugList:
@@ -99,7 +99,7 @@ namespace TimeUtils {
     std::string getDayOnWeek(const int& day);
 
     /// @brief 设置时间
-    /// @param timestamp 时间戳
+    /// @param timestamp 秒级时间戳
     void setTime(const int64_t& timestamp);
 
     /// @brief 设置时间
@@ -111,6 +111,8 @@ namespace TimeUtils {
     /// @param second 秒
     void setTime(int year, int month, int day, int hour, int minute, int second = 0);
 
+    /// @brief 同步硬件时钟
+    void syncHWClock();
 }
 
 #endif // !__TIME_UTILS_H__

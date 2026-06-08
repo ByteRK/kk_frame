@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-29 11:52:11
- * @LastEditTime: 2026-04-24 15:07:32
+ * @LastEditTime: 2026-06-03 14:46:00
  * @FilePath: /kk_frame/src/utils/check_utils.cc
  * @Description: 校验相关的一些函数
  * @BugList:
@@ -32,6 +32,8 @@ char* CheckUtils::md5Check(const void* data, size_t len, char md5Str[MD5_STR_LEN
     for (i = 0; i < 16; i++) {
         snprintf(md5Str + i * 2, 2 + 1, "%02x", md5Value[i]);
     }
+#else
+    LOGW("MD5 library is not enabled, cannot perform md5Check");
 #endif
     return md5Str;
 }
@@ -66,6 +68,8 @@ char * CheckUtils::md5Check(const char * filePath, char md5Str[MD5_STR_LEN]) {
     for (i = 0; i < MD5_SIZE; i++) {
         snprintf(md5Str + i * 2, 2 + 1, "%02x", md5_value[i]);
     }
+#else
+    LOGW("MD5 library is not enabled, cannot perform md5Check");
 #endif
     return md5Str;
 }
