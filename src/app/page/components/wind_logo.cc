@@ -42,6 +42,10 @@ void WindLogo::init(ViewGroup* parent) {
     mImage->setOnTouchListener([](View&, MotionEvent&) { return true; });
     mVideo->setOnTouchListener([](View&, MotionEvent&) { return true; });
 
+    // 消除点击声音
+    mImage->setSoundEffectsEnabled(false);
+    mVideo->setSoundEffectsEnabled(false);
+
     // 静态图LOGO回调
     mRuner = [this] {
         mImage->setVisibility(View::GONE);

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-10 22:50:08
- * @LastEditTime: 2026-04-24 14:09:43
+ * @LastEditTime: 2026-06-08 23:48:41
  * @FilePath: /kk_frame/src/app/page/components/wind_keyboard.cc
  * @Description: 键盘组件
  * @BugList:
@@ -47,6 +47,7 @@ void WindKeyboard::init(ViewGroup* parent) {
     mKeyBoard->setOnTouchListener([this](View&, MotionEvent&) {
         return true;
     });
+    mKeyBoard->setSoundEffectsEnabled(false);
     mKeyBoard->setFinishListener([this](bool isEnter, const std::string& text) {
         onKeyBoardFinish(isEnter, text);
     });
@@ -83,6 +84,8 @@ void WindKeyboard::hideKeyboard() {
     if (!isKeyboardShow()) return;
     mKeyBoard->setVisibility(View::GONE);
     mIsShow = false;
+    mEnterListener = nullptr;
+    mCancelListener = nullptr;
 }
 
 bool WindKeyboard::isKeyboardShow() {

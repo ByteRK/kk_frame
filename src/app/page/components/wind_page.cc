@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-08 02:48:19
- * @LastEditTime: 2026-04-23 11:59:32
+ * @LastEditTime: 2026-06-08 23:49:41
  * @FilePath: /kk_frame/src/app/page/components/wind_page.cc
  * @Description: 页面组件
  * @BugList:
@@ -29,6 +29,7 @@ void WindPage::init(ViewGroup* parent) {
         !(mPageBox = PBase::get<ViewGroup>(parent, AppRid::page))
         )throw std::runtime_error("WindPage init failed");
     mPageBox->setOnTouchListener([](View&, MotionEvent&) { return true; });
+    mPageBox->setSoundEffectsEnabled(false);
     mPageBox->setVisibility(View::GONE);
 }
 

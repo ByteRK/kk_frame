@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-08 02:48:19
- * @LastEditTime: 2026-04-23 11:59:11
+ * @LastEditTime: 2026-06-08 23:49:55
  * @FilePath: /kk_frame/src/app/page/components/wind_pop.cc
  * @Description: 弹窗组件
  * @BugList:
@@ -29,6 +29,7 @@ void WindPop::init(ViewGroup* parent) {
         !(mPopBox = PBase::get<ViewGroup>(parent, AppRid::pop))
         )throw std::runtime_error("WindPop init failed");
     mPopBox->setOnTouchListener([](View&, MotionEvent&) { return true; });
+    mPopBox->setSoundEffectsEnabled(false);
     mPopBox->setVisibility(View::GONE);
 }
 
