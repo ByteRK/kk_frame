@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-04-23 16:17:00
+ * @LastEditTime: 2026-06-09 00:26:26
  * @FilePath: /kk_frame/src/app/page/core/wind.h
  * @Description: 主窗口类
  * @BugList:
@@ -52,12 +52,10 @@ protected:
               getLogo() override;
     
     bool      dispatchTouchEvent(MotionEvent& evt) override;
-    bool      onKeyUp(int keyCode, KeyEvent& evt) override;
-    bool      onKeyDown(int keyCode, KeyEvent& evt) override;
+    bool      dispatchKeyEvent(KeyEvent& evt) override;
 
 private:
-    bool      onKey(int keyCode, KeyEvent& evt);
-    bool      selfKey(int keyCode, KeyEvent& evt, bool& result);
+    bool      selfKey(KeyEvent& evt);
 };
 
 #endif // !__WIND_H__

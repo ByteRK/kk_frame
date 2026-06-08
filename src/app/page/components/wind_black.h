@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-08 02:36:51
- * @LastEditTime: 2026-03-22 12:01:05
+ * @LastEditTime: 2026-06-09 00:25:11
  * @FilePath: /kk_frame/src/app/page/components/wind_black.h
  * @Description: 息屏组件
  * @BugList:
@@ -29,7 +29,7 @@ public:
     void showBlack();
     void hideBlack();
     bool isBlackShow();
-    bool onKey(int keyCode, KeyEvent& evt, bool& result);
+    bool onKey(KeyEvent& evt);
 
 private:
     bool checkInit();

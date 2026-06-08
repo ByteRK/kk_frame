@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2026-06-08 23:14:25
+ * @LastEditTime: 2026-06-09 00:30:43
  * @FilePath: /kk_frame/src/app/page/core/base.cc
  * @Description: 页面基类
  * @BugList:
@@ -68,9 +68,9 @@ void PBase::callMcu(uint8_t* data, uint8_t len) {
     onMcu(data, len);
 }
 
-bool PBase::callKey(int keyCode, KeyEvent& evt) {
-    LOGV("callKey -> keyCode:%d evt:%d", keyCode, evt.getAction());
-    return onKey(keyCode, evt);
+bool PBase::callKey(KeyEvent& evt) {
+    LOGV("callKey -> keyCode:%d evt:%d", evt.getKeyCode(), evt.getAction());
+    return onKey(evt);
 }
 
 void PBase::callLangChange(uint8_t lang) {
@@ -98,7 +98,7 @@ void PBase::onTick(int64_t nowMs) { }
 
 void PBase::onMcu(uint8_t* data, uint8_t len) { }
 
-bool PBase::onKey(int keyCode, KeyEvent& evt) {
+bool PBase::onKey(KeyEvent& evt) {
     return false;
 }
 

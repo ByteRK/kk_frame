@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-08 02:48:19
- * @LastEditTime: 2026-04-23 15:02:37
+ * @LastEditTime: 2026-06-09 00:27:04
  * @FilePath: /kk_frame/src/app/page/components/wind_pop.h
  * @Description: 弹窗组件
  * @BugList: 
@@ -33,7 +33,7 @@ public:
     void       removePop();
     void       hidePopBox();
     void       showPopBox();
-    bool       onKey(int keyCode, KeyEvent& evt, bool& result);
+    bool       onKey(KeyEvent& evt);
     
 };
 

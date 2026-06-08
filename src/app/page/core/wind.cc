@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-04-23 11:55:45
+ * @LastEditTime: 2026-06-09 00:32:27
  * @FilePath: /kk_frame/src/app/page/core/wind.cc
  * @Description: 窗口类
  * @BugList:
@@ -17,7 +17,7 @@
 /// @brief 点击时系统自动调用
 /// @param sound 音量大小(一般不用)
 static void playSound(int sound) {
-    LOGV("bi~~~~~~~~~~~~~~~~~~~~~~~~");
+    LOGI("bi~~~~~~~~~~~~~~~~~~~~~~~~");
 }
 
 /// @brief 构造以及基础内容检查
@@ -27,8 +27,7 @@ MainWindow::MainWindow() :Window(0, 0, -1, -1) {
 }
 
 /// @brief 析构
-MainWindow::~MainWindow() {
-}
+MainWindow::~MainWindow() { }
 
 /// @brief 初始化窗口
 void MainWindow::init() {
@@ -81,49 +80,25 @@ bool MainWindow::dispatchTouchEvent(MotionEvent& evt) {
     return Window::dispatchTouchEvent(evt);
 }
 
-/// @brief 键盘抬起事件（Windows层）
-/// @param keyCode 键值
+/// @brief 重载按键事件入口，方便计时最后一次触摸时间
 /// @param evt 事件
 /// @return 操作结果
-bool MainWindow::onKeyUp(int keyCode, KeyEvent& evt) {
-    return onKey(keyCode, evt) || Window::onKeyUp(keyCode, evt);
-}
-
-/// @brief 键盘按下事件（Windows层）
-/// @param keyCode 键值
-/// @param evt 事件
-/// @return 操作结果
-bool MainWindow::onKeyDown(int keyCode, KeyEvent& evt) {
-    return onKey(keyCode, evt) || Window::onKeyDown(keyCode, evt);
-}
-
-/// @brief 按键处理
-/// @param keyCode 键值
-/// @param evt 事件
-/// @return 消费结果
-bool MainWindow::onKey(int keyCode, KeyEvent& evt) {
+bool MainWindow::dispatchKeyEvent(KeyEvent & evt) {
     mLastAction = SystemClock::uptimeMillis();
-    if (keyCode == KeyEvent::KEYCODE_WINDOW)
-        return false;    // 刷新mLastAction用
-
-    bool result = false; // 消费结果(决定是否继续传递到Window)
-
-    if (
-        WindLogo::onKey(keyCode, evt, result) ||
-        WindBlack::onKey(keyCode, evt, result) ||
-        selfKey(keyCode, evt, result) ||
-        WindPop::onKey(keyCode, evt, result) ||
-        WindPage::onKey(keyCode, evt, result)
-        )return result;
-
-    return false;
+    return (
+        evt.getKeyCode() == KeyEvent::KEYCODE_WINDOW   // 刷新mLastAction用
+        || WindLogo::onKey(evt)
+        || WindBlack::onKey(evt)
+        || selfKey(evt)
+        || WindPop::onKey(evt)
+        || WindPage::onKey(evt)
+        || Window::dispatchKeyEvent(evt)
+        );
 }
 
 /// @brief 按键监听
-/// @param keyCode 键值
 /// @param evt 事件
-/// @param result 处理结果
-/// @return 是否允许下一层处理
-bool MainWindow::selfKey(int keyCode, KeyEvent& evt, bool& result) {
+/// @return 是否已消费
+bool MainWindow::selfKey(KeyEvent& evt) {
     return false;
 }

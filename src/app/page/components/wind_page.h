@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-08 02:48:19
- * @LastEditTime: 2026-04-23 15:02:29
+ * @LastEditTime: 2026-06-09 00:29:56
  * @FilePath: /kk_frame/src/app/page/components/wind_page.h
  * @Description: 页面组件
  * @BugList:
@@ -33,7 +33,7 @@ public:
     void       removePage();
     void       hidePageBox();
     void       showPageBox();
-    bool       onKey(int keyCode, KeyEvent& evt, bool& result);
+    bool       onKey(KeyEvent& evt);
     
 };
 

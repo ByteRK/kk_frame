@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-08 02:48:19
- * @LastEditTime: 2026-06-08 23:49:55
+ * @LastEditTime: 2026-06-09 00:31:27
  * @FilePath: /kk_frame/src/app/page/components/wind_pop.cc
  * @Description: 弹窗组件
  * @BugList:
@@ -82,11 +82,8 @@ void WindPop::showPopBox() {
 }
 
 /// @brief 按键监听
-/// @param keyCode 键值
 /// @param evt 事件
-/// @param result 处理结果
-/// @return 是否已消费 为true则下层不再处理
-bool WindPop::onKey(int keyCode, KeyEvent& evt, bool& result) {
-    if (!mPop) return false;
-    return (result = mPop->callKey(keyCode, evt));
+/// @return 是否已消费
+bool WindPop::onKey(KeyEvent& evt) {
+    return mPop && mPop->callKey(evt);
 }

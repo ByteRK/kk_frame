@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-08 02:37:55
- * @LastEditTime: 2026-04-24 16:09:25
+ * @LastEditTime: 2026-06-09 00:25:28
  * @FilePath: /kk_frame/src/app/page/components/wind_black.cc
  * @Description: 息屏组件
  * @BugList:
@@ -16,11 +16,9 @@
 #include "config_mgr.h"
 #include "system_utils.h"
 
-WindBlack::WindBlack() {
-}
+WindBlack::WindBlack() { }
 
-WindBlack::~WindBlack() {
-}
+WindBlack::~WindBlack() { }
 
 /// @brief 初始化
 /// @param parent 
@@ -61,16 +59,12 @@ bool WindBlack::isBlackShow() {
 }
 
 /// @brief 按键监听
-/// @param keyCode 键值
 /// @param evt 事件
-/// @param result 处理结果
-/// @return 是否已消费 为true则下层不再处理
-bool WindBlack::onKey(int keyCode, KeyEvent& evt, bool& result) {
+/// @return 是否已消费
+bool WindBlack::onKey(KeyEvent& evt) {
     if (!isBlackShow())return false;
-    if (evt.getAction() == KeyEvent::ACTION_UP) {
+    if (evt.getAction() == KeyEvent::ACTION_UP)
         hideBlack();
-        result = true;
-    }
     return true;
 }
 

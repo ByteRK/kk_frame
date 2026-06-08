@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-25 10:31:08
- * @LastEditTime: 2026-03-22 12:00:55
+ * @LastEditTime: 2026-06-09 00:24:27
  * @FilePath: /kk_frame/src/app/page/components/wind_logo.h
  * @Description: Logo组件
  * @BugList:
@@ -50,7 +50,7 @@ public:
     virtual void      hideLogo();
     virtual LOGO_INFO getLogo() = 0;
     bool              isLogoShow() const;
-    bool              onKey(int keyCode, KeyEvent& evt, bool& result);
+    bool              onKey(KeyEvent& evt);
 
 private:
     bool              checkInit();
