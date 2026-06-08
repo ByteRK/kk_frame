@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-04 13:52:55
- * @LastEditTime: 2026-03-09 17:42:13
+ * @LastEditTime: 2026-06-09 00:57:59
  * @FilePath: /kk_frame/src/app/page/core/pop.cc
  * @Description: 弹窗基类
  * @BugList:
@@ -17,9 +17,6 @@
 #include "gauss_drawable.h"
 #include "wind_mgr.h"
 #include <widget/relativelayout.h>
-
-// 静态变量定义
-std::map<int8_t, PopCreator::CallBack> PopCreator::sPop;
 
 /// @brief 构造
 /// @param resource 资源路径

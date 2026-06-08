@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-04 13:52:49
- * @LastEditTime: 2026-03-09 17:38:07
+ * @LastEditTime: 2026-06-09 00:52:59
  * @FilePath: /kk_frame/src/app/page/core/pop.h
  * @Description: 弹窗基类
  * @BugList:
@@ -50,32 +50,11 @@ private:
     void applyGauss();               // 应用模糊背景
 };
 
-/// @brief 弹窗构建器
-class PopCreator {
-protected:
-    typedef std::function<PopBase* ()> CallBack;
-    static  std::map<int8_t, CallBack>  sPop;
-public:
-    static void     add(int8_t pop_id, CallBack sink) {
-        sPop.insert(std::make_pair(pop_id, sink));
-    }
-    static PopBase* get(int8_t pop_id) {
-        auto it = sPop.find(pop_id);
-        if (it == sPop.end()) return nullptr;
-        return it->second();
-    }
-};
-
-// 弹窗注册模板
-template<typename T>
-class PopRegister {
-public:
-    PopRegister(int8_t pop) {
-        PopCreator::add(pop, []() {return new T();});
-    }
-};
-
+// 构建器标签
+struct PopCreatorTag { };
+// 弹窗构建器 
+typedef Creator<PopBase, PopCreatorTag> PopCreator;
 // 弹窗注册宏，用于简化注册，直接于.cc文件中定义
-#define POP_REGISTER(ID,CLASS) static PopRegister<CLASS> __P_R_##CLASS(ID);
+#define POP_REGISTER(ID, CLASS) static Register<PopCreator, CLASS> __POP_REG_##CLASS(ID)
 
 #endif

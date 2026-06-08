@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2026-06-09 00:53:52
+ * @LastEditTime: 2026-06-09 01:04:30
  * @FilePath: /kk_frame/src/app/page/core/base.h
  * @Description: 页面基类
  * @BugList:
@@ -34,7 +34,7 @@
 namespace AppRid = APP_NAME::R::id;
 
 /// @brief 基类
-class PBase: public TickMgr::ITickClass {
+class PBase : public TickMgr::ITickClass {
 protected:
     Looper*          mLooper = nullptr;                         // 事件循环
     cdroid::Context* mContext = nullptr;                        // 上下文
@@ -113,6 +113,41 @@ protected:
     /// @brief 设置点击事件
     void click(int id, View::OnClickListener l) {
         click(mRootView, id, l);
+    }
+};
+
+
+/*
+ *************************************** 注册机模板 ***************************************
+**/
+
+template<typename Base, typename Tag>
+class Creator {
+protected:
+    typedef std::function<Base* ()> CallBack;
+    static std::map<int8_t, CallBack>& table() {
+        static std::map<int8_t, CallBack> sTable;
+        return sTable;
+    }
+public:
+    static void add(int8_t id, CallBack sink) {
+        table()[id] = sink;   // 允许重复注册时覆盖
+        // table().insert(std::make_pair(id, sink)); // 不允许覆盖注册
+    }
+    static Base* get(int8_t id) {
+        auto it = table().find(id);
+        if (it == table().end()) return nullptr;
+        return it->second();
+    }
+};
+
+template<typename CreatorType, typename T>
+class Register {
+public:
+    Register(int8_t id) {
+        CreatorType::add(id, []() {
+            return new T();
+        });
     }
 };
 
