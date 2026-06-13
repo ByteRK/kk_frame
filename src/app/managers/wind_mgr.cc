@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2026-06-08 23:19:09
+ * @LastEditTime: 2026-06-13 23:23:15
  * @FilePath: /kk_frame/src/app/managers/wind_mgr.cc
  * @Description: 页面管理类
  * @BugList:
@@ -41,6 +41,12 @@ void WindMgr::handleMessage(Message& message) {
     }
 }
 
+/// @brief 获取主窗口
+/// @return 主窗口指针
+MainWindow * WindMgr::getWindow() {
+    return mWindow;
+}
+
 /// @brief 初始化
 void WindMgr::init() {
     mLooper = Looper::getMainLooper();
@@ -50,13 +56,6 @@ void WindMgr::init() {
     mAutoRecyclePageMsg.what = MSG_AUTO_RECYCLE_PAGE;
     mAutoRecyclePopMsg.what = MSG_AUTO_RECYCLE_POP;
     mInitTime = SystemClock::uptimeMillis();
-
-#if OPEN_SCREENSAVER
-    InputEventSource::getInstance().setScreenSaver(
-        std::bind(&WindMgr::screenSaver, this, std::placeholders::_1),
-        20
-    );
-#endif
 
     // 根据模式跳转页面
     switch (g_data->mDeviceMode) {
@@ -86,10 +85,10 @@ bool WindMgr::showPage(int8_t page, LoadMsgBase* initData, bool updateHistory) {
 
     // 判断是否允许跳转
     switch (checkCanShowPage(page)) {
-    case -1: { // 不允许跳转
+    case P_JUMP_DISABLE: { // 不允许跳转
         return false;
     }   break;
-    case 1: { // 相同页面，直接Load
+    case P_JUMP_SAME: { // 相同页面，直接Load
         mWindow->getPage()->callLoad(initData); return true;
     }   break;
     default: break;
@@ -168,10 +167,10 @@ void WindMgr::recyclePage(int8_t page) {
 bool WindMgr::showPop(int8_t pop, LoadMsgBase* initData, bool updateHistory) {
     // 判断是否允许跳转
     switch (checkCanShowPop(pop)) {
-    case -1: { // 不允许跳转
+    case P_JUMP_DISABLE: { // 不允许跳转
         return false;
     }   break;
-    case 1: { // 相同页面，直接Load
+    case P_JUMP_SAME: { // 相同页面，直接Load
         mWindow->getPop()->callLoad(initData); return true;
     }   break;
     default: break;
@@ -354,9 +353,6 @@ bool WindMgr::createPage(int8_t page) {
         std::string msg = "page[" + std::to_string(page) + "] type error";
         throw std::runtime_error(msg.c_str());
     }
-#if OPEN_SCREENSAVER
-    refreshScreenSaver();
-#endif
     mPageCache[page] = pb;
     LOGW("add new page: %d <- %p | page count=%d ", page, pb, mPageCache.size());
     return true;
@@ -364,11 +360,11 @@ bool WindMgr::createPage(int8_t page) {
 
 /// @brief 检查是否允许页面跳转
 /// @param newPage 新页面类型
-/// @return -1:不允许 0:允许 1:前后相同
-int8_t WindMgr::checkCanShowPage(int8_t newPage) {
+/// @return 跳转类型
+WindMgr::P_JUMP_TYPE WindMgr::checkCanShowPage(int8_t newPage) {
     int8_t nowPage = mWindow->getPageType();
-    if (nowPage == newPage) return 1; // 前后相同
-    return 0;
+    if (nowPage == newPage) return P_JUMP_SAME; // 前后相同
+    return P_JUMP_ENABLE;
 }
 
 /// @brief 自动回收页面
@@ -399,9 +395,6 @@ bool WindMgr::createPop(int8_t pop) {
         std::string msg = "pop[" + std::to_string(pop) + "] type error";
         throw std::runtime_error(msg.c_str());
     }
-#if OPEN_SCREENSAVER
-    refreshScreenSaver();
-#endif
     mPopCache[pop] = pb;
     LOGW("add new pop: %d <- %p | pop count=%d ", pop, pb, mPopCache.size());
     return true;
@@ -409,12 +402,12 @@ bool WindMgr::createPop(int8_t pop) {
 
 /// @brief 检查是否允许弹窗跳转
 /// @param newPop 新弹窗类型
-/// @return -1:不允许 0:允许 1:前后相同
-int8_t WindMgr::checkCanShowPop(int8_t newPop) {
+/// @return 跳转类型
+WindMgr::P_JUMP_TYPE WindMgr::checkCanShowPop(int8_t newPop) {
     int8_t nowPop = mWindow->getPopType();
-    if (nowPop > newPop) return -1;
-    if (nowPop == newPop) return 1; // 前后相同
-    return 0;
+    if (nowPop > newPop) return P_JUMP_DISABLE;
+    if (nowPop == newPop) return P_JUMP_SAME; // 前后相同
+    return P_JUMP_ENABLE;
 }
 
 /// @brief 检查页面/弹窗缓存
@@ -510,14 +503,4 @@ void WindMgr::autoRecyclePop() {
             ++it; // 仅在未删除时移动迭代器
         }
     }
-}
-
-/// @brief 屏幕保护（休眠）
-/// @param lock 解锁/上锁
-void WindMgr::screenSaver(bool lock) {
-    LOGV("WindMgr::screenSaver = %d", lock);
-    if (lock) {
-    } else {
-    }
-    InputEventSource::getInstance().closeScreenSaver();
 }
