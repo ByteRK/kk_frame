@@ -16,6 +16,7 @@
 #include "library/library_config.h"
 #include <stdlib.h>
 #include <random>
+#include <algorithm>
 
 #if PRJ_LIB_ENABLED(GAUSSIANBLUR)
 #include "gaussianblur.h"
@@ -28,22 +29,27 @@
 #endif
 
 int MathUtils::rand(int min, int max) {
+    if (min > max) std::swap(min, max);
     return min + std::rand() % (max - min + 1);
 }
 
 int MathUtils::randPlus(int min, int max) {
+    if (min > max) std::swap(min, max);
     static std::random_device rd;                   // 获取随机数种子
     static std::mt19937 gen(rd());                  // 梅森旋转算法生成随机数
     std::uniform_int_distribution<> dis(min, max);  // 设定范围
     return dis(gen);
 }
 
-uint8_t MathUtils::toU16(uint8_t h, uint8_t l) {
-    return h << 8 | l;
+uint16_t MathUtils::toU16(uint8_t h, uint8_t l) {
+    return static_cast<uint16_t>(h) << 8 | l;
 }
 
 uint32_t MathUtils::toU32(uint8_t h, uint8_t m, uint8_t l, uint8_t b) {
-    return h << 24 | m << 16 | l << 8 | b;
+    return static_cast<uint32_t>(h) << 24
+        | static_cast<uint32_t>(m) << 16
+        | static_cast<uint32_t>(l) << 8
+        | b;
 }
 
 int32_t MathUtils::rgb(uint8_t r, uint8_t g, uint8_t b) {
@@ -51,7 +57,10 @@ int32_t MathUtils::rgb(uint8_t r, uint8_t g, uint8_t b) {
 }
 
 int32_t MathUtils::rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
-    return a << 24 | r << 16 | g << 8 | b;
+    return static_cast<int32_t>(static_cast<uint32_t>(a) << 24
+        | static_cast<uint32_t>(r) << 16
+        | static_cast<uint32_t>(g) << 8
+        | b);
 }
 
 void MathUtils::gaussianBlur(uint8_t* input, int width, int height, float sigma) {

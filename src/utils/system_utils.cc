@@ -21,7 +21,11 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
+#include <sys/time.h>
 #include <fcntl.h>
+#include <cerrno>
+#include <cstdio>
+#include <cstdlib>
 
 void SystemUtils::reboot() {
     ProjectUtils::saveTime(std::string(LOCAL_DATA_DIR) + "/timeCache");
@@ -74,7 +78,7 @@ std::string SystemUtils::system(const std::string& cmd) {
     pclose(fp);
 
     // 裁剪尾部无效内容
-    StringUtils::trimRight(result);
+    result = StringUtils::trimRight(result);
 
     // 计算执行时间
     int64_t diff = TimeUtils::getTimeMSec() - start;

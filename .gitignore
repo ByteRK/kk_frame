@@ -13,3 +13,4 @@ library/*/lib_private_config.h
 
 .venv
 tmp
+dist

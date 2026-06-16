@@ -18,11 +18,16 @@
 #include <netdb.h>
 #include <sstream>
 #include <regex>
+#include <algorithm>
+#include <cctype>
+#include <cstdlib>
 
 std::string NetworkUtils::getIp(const std::string& host) {
+    if (host.empty()) return "";
+
     std::string ip_addr;
     const char* hostname = host.c_str(); // 要获取IP地址的主机名
-    struct addrinfo hints, * result;
+    struct addrinfo hints, * result = nullptr;
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;     // 支持IPv4和IPv6
@@ -47,10 +52,11 @@ std::string NetworkUtils::getIp(const std::string& host) {
             addr = &(ipv6->sin6_addr);
         }
 
-        char ip[INET6_ADDRSTRLEN];
-        inet_ntop(p->ai_family, addr, ip, sizeof(ip));
-        ip_addr = ip;
-        break;
+        char ip[INET6_ADDRSTRLEN] = { 0 };
+        if (inet_ntop(p->ai_family, addr, ip, sizeof(ip)) != nullptr) {
+            ip_addr = ip;
+            break;
+        }
 
         p = p->ai_next;
     }
@@ -75,24 +81,35 @@ int NetworkUtils::wifiSignal(float Quality, int SignalLevel) {
 }
 
 bool NetworkUtils::macToChar(const char* mac, char* macChar) {
+    if (mac == nullptr || macChar == nullptr) {
+        LOGE("Invalid MAC address buffer");
+        return false;
+    }
     if (!isValidMac(mac)) {
         LOGE("Invalid MAC address");
         return false;
     }
-    std::istringstream ss(mac);
-    std::string item;
+
+    std::string normalized(mac);
+    normalized.erase(std::remove_if(normalized.begin(), normalized.end(), [](unsigned char ch) {
+        return ch == ':' || ch == '-';
+    }), normalized.end());
+
     for (int i = 0; i < 6; ++i) {
-        if (std::getline(ss, item, ':')) {
-            macChar[i] = static_cast<uint8_t>(std::stoi(item, nullptr, 16));
-        } else {
-            LOGE("Invalid MAC address format.");
+        const std::string item = normalized.substr(static_cast<size_t>(i) * 2, 2);
+        char* end = nullptr;
+        const long value = std::strtol(item.c_str(), &end, 16);
+        if (end == item.c_str() || *end != '\0' || value < 0 || value > 0xff) {
+            LOGE("Invalid MAC address byte.");
             return false;
         }
+        macChar[i] = static_cast<char>(value);
     }
     return true;
 }
 
 bool NetworkUtils::isValidMac(const char* mac) {
+    if (mac == nullptr) return false;
     std::regex macRegex(R"((([0-9A-Fa-f]{2}[-:]){5}([0-9A-Fa-f]{2}))|(([0-9A-Fa-f]{2}){6}))");
     return std::regex_match(mac, macRegex);
 }
