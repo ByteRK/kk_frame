@@ -6,6 +6,7 @@
  * @FilePath: /kk_frame/src/class/ntp_sync.h
  * @Description: NTP时间同步类
  * @BugList:
+ *     1：系统断网/重新联网，需要自行stop再start，否则只会按照设定的间隔进行同步，不会在联网的第一时间立马同步一次
  *
  * Copyright (c) 2026 by Ricken, All Rights Reserved.
  *

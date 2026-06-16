@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-06-03 15:23:56
- * @LastEditTime: 2026-06-03 20:53:28
+ * @LastEditTime: 2026-06-16 09:30:45
  * @FilePath: /kk_frame/src/class/ntp_sync.cc
  * @Description: NTP时间同步类
  *
@@ -25,12 +25,14 @@
 
 #include <errno.h>
 
+#if PRJ_LIB_ENABLED(NTPCLIENT)
 #if defined(__cplusplus)
 extern "C" {
 #endif
 #include <ntp_client.h>
 #if defined(__cplusplus)
 }
+#endif
 #endif
 
 #define NTP_SERVER "ntp.aliyun.com"
