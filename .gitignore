@@ -14,3 +14,5 @@ library/*/lib_private_config.h
 .venv
 tmp
 dist
+cdroid_changes.patch
+project_changes.patch
