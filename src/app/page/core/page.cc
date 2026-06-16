@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-04 13:52:43
- * @LastEditTime: 2026-06-09 01:04:23
+ * @LastEditTime: 2026-06-13 23:33:46
  * @FilePath: /kk_frame/src/app/page/core/page.cc
  * @Description:
  * @BugList:
@@ -21,12 +21,6 @@ PageBase::PageBase(std::string resource) :PBase(resource) { }
 
 /// @brief 析构
 PageBase::~PageBase() { }
-
-/// @brief 是否允许自动回收
-/// @return 
-bool PageBase::canAutoRecycle() const {
-    return false;
-}
 
 /// @brief 初始化UI
 void PageBase::initUI() {

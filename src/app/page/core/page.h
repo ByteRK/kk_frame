@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-04 13:52:37
- * @LastEditTime: 2026-06-09 01:00:27
+ * @LastEditTime: 2026-06-13 23:33:39
  * @FilePath: /kk_frame/src/app/page/core/page.h
  * @Description: 页面基类
  * @BugList:
@@ -24,7 +24,6 @@ public:
     PageBase(std::string resource); // 构造函数
     virtual ~PageBase();            // 析构函数
 
-    virtual bool canAutoRecycle() const; // 是否允许自动回收
 protected:
     void initUI() override;
     virtual void getView() { };      // 获取页面指针

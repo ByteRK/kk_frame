@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2026-06-09 00:30:43
+ * @LastEditTime: 2026-06-13 23:34:13
  * @FilePath: /kk_frame/src/app/page/core/base.cc
  * @Description: 页面基类
  * @BugList:
@@ -80,6 +80,10 @@ void PBase::callLangChange(uint8_t lang) {
 
 void PBase::callCheckLight(uint8_t* left, uint8_t* right) {
     onCheckLight(left, right);
+}
+
+bool PBase::canAutoRecycle() const {
+    return true;
 }
 
 void PBase::onAttach() { }

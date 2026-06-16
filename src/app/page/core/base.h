@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2026-06-09 01:21:45
+ * @LastEditTime: 2026-06-13 23:33:52
  * @FilePath: /kk_frame/src/app/page/core/base.h
  * @Description: 页面基类
  * @BugList:
@@ -62,6 +62,8 @@ public:
     void callLangChange(uint8_t lang);                          // 调用语言切换
     void callCheckLight(uint8_t* left, uint8_t* right);         // 调用检查按键灯
 
+    virtual bool canAutoRecycle() const;                        // 是否允许自动回收
+    
 protected:
     virtual void initUI() = 0;                                  // 初始化UI
     virtual void onAttach();                                    // 挂载页面回调
