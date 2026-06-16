@@ -97,7 +97,7 @@ void PopBase::setPadding(int start, int top, int end, int bottom) {
 /// @brief 设置模糊背景
 /// @param radius 模糊半径，默认为10
 /// @param color 颜色，默认0x99000000
-void PopBase::setGauss(int radius, int color) {
+void PopBase::setGauss(int radius, uint64_t color) {
 #if defined(ENABLE_GAUSS_DRAWABLE) || defined(__VSCODE__)
     mIsGauss = true;
     mGaussRadius = radius;
@@ -110,7 +110,7 @@ void PopBase::setGauss(int radius, int color) {
 
 /// @brief 设置背景颜色
 /// @param color 颜色，默认0x99000000
-void PopBase::setColor(int color) {
+void PopBase::setColor(uint64_t color) {
     mIsGauss = false;
     mPopRootView->setBackgroundColor(color);
 }

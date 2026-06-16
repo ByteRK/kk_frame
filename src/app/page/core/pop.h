@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-04 13:52:49
- * @LastEditTime: 2026-06-09 00:52:59
+ * @LastEditTime: 2026-06-14 21:52:35
  * @FilePath: /kk_frame/src/app/page/core/pop.h
  * @Description: 弹窗基类
  * @BugList:
@@ -24,7 +24,7 @@ protected:
 private:
     bool           mIsGauss{ false };           // 是否有模糊背景
     int            mGaussRadius{ 10 };          // 模糊背景圆角
-    int            mGaussColor{ 0x99000000 };   // 模糊背景颜色
+    uint64_t       mGaussColor{ 0x99000000 };   // 模糊背景颜色
     bool           mPageDisplay{ false };       // 底层页面显示
     Runnable       mPageDspRunner;              // 底层页面显示回调
 
@@ -40,11 +40,11 @@ public:
 protected:
     void close();                    // 关闭弹窗
 
-    void setMargin(int start, int top, int end, int bottom);   // 设置外边距
-    void setPadding(int start, int top, int end, int bottom);  // 设置内边距
-    void setGauss(int radius = 10, int color = 0x99000000);    // 设置模糊背景
-    void setColor(int color = 0x99000000);                     // 设置背景色
-    void setPageDisplay(bool show);                            // 设置底层页面显示
+    void setMargin(int start, int top, int end, int bottom);      // 设置外边距
+    void setPadding(int start, int top, int end, int bottom);     // 设置内边距
+    void setGauss(int radius = 10, uint64_t color = 0x99000000);  // 设置模糊背景
+    void setColor(uint64_t color = 0x99000000);                   // 设置背景色
+    void setPageDisplay(bool show);                               // 设置底层页面显示
 
 private:
     void applyGauss();               // 应用模糊背景
