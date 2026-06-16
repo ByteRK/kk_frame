@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-06-03 15:23:56
- * @LastEditTime: 2026-06-16 09:30:45
+ * @LastEditTime: 2026-06-17 01:00:05
  * @FilePath: /kk_frame/src/class/ntp_sync.cc
  * @Description: NTP时间同步类
  *
@@ -21,6 +21,7 @@
 
 #include "ntp_sync.h"
 #include "time_utils.h"
+#include "system_utils.h"
 #include "library_config.h"
 
 #include <errno.h>
@@ -158,7 +159,7 @@ void NtpSync::onMain(int id, void* data) {
     mNtpTaskId = 0; // 重置任务ID
     if (s_NTPResult != 0) {
         int64_t seconds = s_NTPResult / 1000 + mUTC * TimeUtils::HOUR_SECONDS;
-        TimeUtils::setTime(seconds);
+        SystemUtils::setTime(seconds);
         mLastSyncMs = SystemClock::uptimeMillis();
     }
 }

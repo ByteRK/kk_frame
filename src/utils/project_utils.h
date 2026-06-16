@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:47:17
- * @LastEditTime: 2026-04-22 16:48:22
+ * @LastEditTime: 2026-06-16 23:18:23
  * @FilePath: /kk_frame/src/utils/project_utils.h
  * @Description: 项目相关的一些操作函数
  * @BugList:
@@ -32,16 +32,14 @@ namespace ProjectUtils {
     /// @brief 获取调试串口信息
     void getDebugServiceInfo(std::string& ip, int16_t& port);
 
-    /// @brief 获取德明利TP版本号
-    /// @return 
-    int getTwscTpVersion();
-
     /// @brief 保存当前时间到本地文件
     void saveTime(const std::string& filename);
 
     /// @brief 从本地文件加载时间
     /// @param filename 
     void loadTime(const std::string& filename);
+
+    
 
 } // ProjectUtils
 

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2026-04-24 17:04:07
+ * @LastEditTime: 2026-06-16 23:47:59
  * @FilePath: /kk_frame/src/app/managers/config_mgr.cc
  * @Description:
  * @BugList:
@@ -108,7 +108,7 @@ void ConfigMgr::setDeviceConf(const std::string& _pid, const std::string& _did, 
     mDevConf.setValue(CONFIG_SECTION, "License", _lic);
 
     mDevConf.save(DEVCONF_FILE_PATH);
-    sync(); // 立即同步
+    FileUtils::sync();
     LOGE("save read-only file. file=%s", DEVCONF_FILE_PATH);
 }
 

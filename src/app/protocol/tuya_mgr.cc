@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-08-01 03:03:02
- * @LastEditTime: 2026-02-06 13:43:28
+ * @LastEditTime: 2026-06-17 00:53:41
  * @FilePath: /kk_frame/src/app/protocol/tuya_mgr.cc
  * @Description:
  * @BugList:
@@ -25,7 +25,7 @@
 #include "wind_mgr.h"
 #include "global_data.h"
 #include "string_utils.h"
-#include "time_utils.h"
+#include "system_utils.h"
 
 #define TICK_TIME 50 // tick触发时间（毫秒）
 
@@ -400,7 +400,7 @@ void TuyaMgr::acceptDP(uint8_t* data, uint16_t len) {
 
 void TuyaMgr::acceptTime(uint8_t* data) {
     if (!data[0])return; // 消息错误
-    TimeUtils::setTime(data[1] + 2000, data[2], data[3], data[4], data[5], data[6]);
+    SystemUtils::setTime(data[1] + 2000, data[2], data[3], data[4], data[5], data[6]);
 }
 
 void TuyaMgr::acceptOpenWeather(uint8_t* data) {
@@ -453,7 +453,7 @@ void TuyaMgr::acceptOpenTime(uint8_t* data) {
         break;
     case 0x02:
         if (!data[1])break;
-        TimeUtils::setTime(data[2] + 2000, data[3], data[4], data[5], data[6], data[7]);
+        SystemUtils::setTime(data[2] + 2000, data[3], data[4], data[5], data[6], data[7]);
         break;
     }
 }
