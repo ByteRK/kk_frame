@@ -35,8 +35,17 @@
 
 import argparse
 from pathlib import Path
-from PIL import Image, ImageColor
+import sys
 
+# 检查 Pillow 是否安装
+try:
+    from PIL import Image, ImageColor
+except ImportError:
+    print("❌ 缺少依赖：未检测到 Pillow 模块。\n请执行以下命令安装：")
+    print("    pip install pillow")
+    print("    或者")
+    print("    sudo apt install python3-pil")
+    sys.exit(1)
 
 def parse_color(value: str):
     """
