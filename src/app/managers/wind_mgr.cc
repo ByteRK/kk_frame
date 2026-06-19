@@ -13,6 +13,7 @@
 
 #define AUTO_CLOSE true
 #define CLEAR_POP_ON_PAGE_SWITCH true
+#define RELOAD_SAME_ID_ON_SHOW true
 
 #include "wind_mgr.h"
 #include "global_data.h"
@@ -78,8 +79,11 @@ bool WindMgr::showPage(int8_t page, LoadMsgBase* initData) {
         return false;
     }   break;
     case P_JUMP_SAME: { // 相同页面，直接Load
+#if RELOAD_SAME_ID_ON_SHOW
         mWindow->getPage()->callLoad(initData);
-    }   return true;
+        return true;
+#endif
+    }   break;
     default: break;
     }
 
@@ -183,8 +187,11 @@ bool WindMgr::showPop(int8_t pop, LoadMsgBase* initData) {
         return false;
     }   break;
     case P_JUMP_SAME: { // 相同页面，直接Load
+#if RELOAD_SAME_ID_ON_SHOW
         mWindow->getPop()->callLoad(initData);
-    }   return true;
+        return true;
+#endif
+    }   break;
     default: break;
     }
 
