@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-04 13:52:55
- * @LastEditTime: 2026-06-09 01:37:12
+ * @LastEditTime: 2026-06-19 18:18:08
  * @FilePath: /kk_frame/src/app/page/core/pop.cc
  * @Description: 弹窗基类
  * @BugList:
@@ -69,7 +69,7 @@ void PopBase::callDetach() {
 /// @brief 关闭弹窗
 void PopBase::close() {
     if (g_window->getPopType() == getType())
-        g_window->removePop();
+        g_windMgr->goToPopBack();
 }
 
 /// @brief 设置边距(适用于不需要完整覆盖屏幕的情况)

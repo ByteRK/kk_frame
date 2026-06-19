@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-08-01 03:03:02
- * @LastEditTime: 2026-06-17 00:53:41
+ * @LastEditTime: 2026-06-19 18:33:43
  * @FilePath: /kk_frame/src/app/protocol/tuya_mgr.cc
  * @Description:
  * @BugList:
@@ -384,7 +384,7 @@ void TuyaMgr::acceptDP(uint8_t* data, uint16_t len) {
             if (data[TUYADP_DATA]) {
                 g_window->hideBlack();
             } else {
-                g_windMgr->showPage(PAGE_HOME);
+                g_windMgr->goToHome(false);
                 g_window->showBlack();
             }
             g_data->mTUYAPower = data[TUYADP_DATA];

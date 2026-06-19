@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-23 00:04:17
- * @LastEditTime: 2026-04-23 16:19:44
+ * @LastEditTime: 2026-06-19 18:40:11
  * @FilePath: /kk_frame/src/app/page/view/page_demo.cc
  * @Description: 框架演示主页面（建议保留）
  * @BugList:
@@ -30,6 +30,12 @@ int8_t DemoPage::getType() const {
 
 void DemoPage::setView() {
     click(AppRid::hello, [this](View& v) {
+        g_window->setKeyboardCallBack([this](const std::string &text) {
+            get<TextView>(AppRid::hello)->setText(text.empty() ? "Hello World" : text);
+            if (text == "Factory") {
+                g_windMgr->showPage(PAGE_FACTORY);
+            }
+        }, nullptr);
         g_window->showKeyboard("Factory", "Input Text~");
     });
     click(mRootView, [this](View& v) {
@@ -41,23 +47,17 @@ void DemoPage::setView() {
 
 void DemoPage::onAttach() {
     startTick();
-    g_window->setKeyboardCallBack([this](const std::string &text) {
-        get<TextView>(AppRid::hello)->setText(text.empty() ? "Hello World" : text);
-        if (text == "Factory") {
-            g_windMgr->showPage(PAGE_FACTORY);
-        }
-    }, nullptr);
 }
 
 void DemoPage::onDetach() {
     stopTick();
-    g_window->setKeyboardCallBack(nullptr, nullptr);
+    g_window->hideKeyboard();
 }
 
 void DemoPage::onTick(int64_t now) {
     if (now - g_window->mLastAction >= 120000) {
         if (now - g_window->mLastAction <= 123000)
-            g_window->removePop();
+            g_windMgr->clearPop();
         g_window->showBlack();
     }
 }
