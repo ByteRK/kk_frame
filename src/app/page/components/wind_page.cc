@@ -46,7 +46,7 @@ int8_t WindPage::getPageType() {
 /// @param page 页面指针
 /// @param initData 初始化数据
 /// @return 最新页面类型
-int8_t WindPage::showPage(PageBase* page, LoadMsgBase* initData) {
+int8_t WindPage::showPage(PageBase* page, const LoadBase* initData) {
     removePage();
     mPage = page;
     if (mPage) {

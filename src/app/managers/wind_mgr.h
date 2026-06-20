@@ -36,7 +36,7 @@ private:
     } P_JUMP_TYPE;
 
 private:
-    using HistoryNode = std::pair<int8_t, std::unique_ptr<SaveMsgBase>>;
+    using HistoryNode = std::pair<int8_t, std::unique_ptr<SaveBase>>;
 
     Looper* mLooper{ nullptr };           // 消息循环
     uint64_t mInitTime{ 0 };              // 初始化时间
@@ -60,13 +60,13 @@ public:
 
     MainWindow* getWindow();
 
-    bool showPage(int8_t page, LoadMsgBase* initData = nullptr);
-    bool replacePage(int8_t page, LoadMsgBase* initData = nullptr);
+    bool showPage(int8_t page, const LoadBase* initData = nullptr);
+    bool replacePage(int8_t page, const LoadBase* initData = nullptr);
     void recyclePage(PageBase* page);
     void recyclePage(int8_t page);
 
-    bool showPop(int8_t pop, LoadMsgBase* initData = nullptr);
-    bool replacePop(int8_t pop, LoadMsgBase* initData = nullptr);
+    bool showPop(int8_t pop, const LoadBase* initData = nullptr);
+    bool replacePop(int8_t pop, const LoadBase* initData = nullptr);
     void recyclePop(PopBase* pop);
     void recyclePop(int8_t pop);
     void clearPop();
@@ -84,7 +84,7 @@ protected:
 private:
     bool createPage(int8_t page);
     bool ensurePageCached(int8_t page);
-    bool switchPage(int8_t page, LoadMsgBase* initData, const SaveMsgBase* restoreData);
+    bool switchPage(int8_t page, const LoadBase* initData, const SaveBase* restoreData);
     bool makeCurrentPageHistory(HistoryNode* node);
     void pushPageHistory(HistoryNode&& node);
     void autoRecyclePage();
@@ -92,7 +92,7 @@ private:
 
     bool createPop(int8_t pop);
     bool ensurePopCached(int8_t pop);
-    bool switchPop(int8_t pop, LoadMsgBase* initData, const SaveMsgBase* restoreData);
+    bool switchPop(int8_t pop, const LoadBase* initData, const SaveBase* restoreData);
     bool makeCurrentPopHistory(HistoryNode* node);
     void pushPopHistory(HistoryNode&& node);
     void autoRecyclePop();

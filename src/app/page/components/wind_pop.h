@@ -29,7 +29,7 @@ public:
 
     PopBase*   getPop();
     int8_t     getPopType();
-    int8_t     showPop(PopBase* pop, LoadMsgBase* initData = nullptr);
+    int8_t     showPop(PopBase* pop, const LoadBase* initData = nullptr);
     void       removePop();
     void       hidePopBox();
     void       showPopBox();

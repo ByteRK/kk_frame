@@ -29,7 +29,7 @@ public:
 
     PageBase*  getPage();
     int8_t     getPageType();
-    int8_t     showPage(PageBase* page, LoadMsgBase* initData = nullptr);
+    int8_t     showPage(PageBase* page, const LoadBase* initData = nullptr);
     void       removePage();
     void       hidePageBox();
     void       showPageBox();

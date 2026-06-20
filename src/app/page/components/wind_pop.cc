@@ -46,7 +46,7 @@ int8_t WindPop::getPopType() {
 /// @param pop 弹窗指针
 /// @param initData 初始化数据
 /// @return 最新弹窗类型
-int8_t WindPop::showPop(PopBase* pop, LoadMsgBase* initData) {
+int8_t WindPop::showPop(PopBase* pop, const LoadBase* initData) {
     removePop();
     mPop = pop;
     if (mPop) {

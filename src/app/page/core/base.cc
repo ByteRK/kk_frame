@@ -52,16 +52,16 @@ void PBase::callDetach() {
     onDetach();
 }
 
-void PBase::callLoad(LoadMsgBase* loadMsg) {
+void PBase::callLoad(const LoadBase* loadMsg) {
     onLoad(loadMsg);
 }
 
-SaveMsgBase* PBase::callSaveState() {
-    return onSaveState();
+std::unique_ptr<SaveBase> PBase::callSave() {
+    return std::unique_ptr<SaveBase>(onSave());
 }
 
-void PBase::callRestoreState(const SaveMsgBase* saveMsg) {
-    onRestoreState(saveMsg);
+void PBase::callRestore(const SaveBase* saveMsg) {
+    onRestore(saveMsg);
 }
 
 void PBase::callMcu(uint8_t* data, uint8_t len) {
@@ -90,13 +90,13 @@ void PBase::onAttach() { }
 
 void PBase::onDetach() { }
 
-void PBase::onLoad(LoadMsgBase* loadMsg) { }
+void PBase::onLoad(const LoadBase* loadMsg) { }
 
-SaveMsgBase* PBase::onSaveState() {
+SaveBase* PBase::onSave() {
     return nullptr;
 }
 
-void PBase::onRestoreState(const SaveMsgBase* saveMsg) { }
+void PBase::onRestore(const SaveBase* saveMsg) { }
 
 void PBase::onTick(int64_t nowMs) { }
 

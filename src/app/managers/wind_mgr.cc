@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2026-06-19 19:35:22
+ * @LastEditTime: 2026-06-20 15:10:36
  * @FilePath: /kk_frame/src/app/managers/wind_mgr.cc
  * @Description: 页面管理类
  * @BugList:
@@ -65,7 +65,7 @@ void WindMgr::init() {
 /// @param page 页面ID
 /// @param initData 初始化数据
 /// @return 是否创建成功
-bool WindMgr::showPage(int8_t page, LoadMsgBase* initData) {
+bool WindMgr::showPage(int8_t page, const LoadBase* initData) {
     if (page == PAGE_NULL) return false;
 
 #if CLEAR_POP_ON_PAGE_SWITCH
@@ -105,7 +105,7 @@ bool WindMgr::showPage(int8_t page, LoadMsgBase* initData) {
 /// @param page 页面ID
 /// @param initData 初始化数据
 /// @return 是否替换成功
-bool WindMgr::replacePage(int8_t page, LoadMsgBase* initData) {
+bool WindMgr::replacePage(int8_t page, const LoadBase* initData) {
     if (page == PAGE_NULL) return false;
 
 #if CLEAR_POP_ON_PAGE_SWITCH
@@ -178,7 +178,7 @@ void WindMgr::recyclePage(int8_t page) {
 /// @brief 显示弹窗
 /// @param type 弹窗ID
 /// @return 是否显示成功
-bool WindMgr::showPop(int8_t pop, LoadMsgBase* initData) {
+bool WindMgr::showPop(int8_t pop, const LoadBase* initData) {
     if (pop == POP_NULL) return false;
 
     // 判断是否允许跳转
@@ -213,7 +213,7 @@ bool WindMgr::showPop(int8_t pop, LoadMsgBase* initData) {
 /// @param pop 弹窗ID
 /// @param initData 初始化数据
 /// @return 是否替换成功
-bool WindMgr::replacePop(int8_t pop, LoadMsgBase* initData) {
+bool WindMgr::replacePop(int8_t pop, const LoadBase* initData) {
     if (pop == POP_NULL) return false;
 
     switch (checkCanShowPop(pop)) {
@@ -305,7 +305,7 @@ void WindMgr::goToHome(bool withBundle) {
                 return pair.first == PAGE_HOME;
             });
             if (it != mPageHistory.end()) {
-                mWindow->getPage()->callRestoreState(it->second.get());
+                mWindow->getPage()->callRestore(it->second.get());
                 LOGI("restore state for home page");
             } else {
                 LOGE("home page not has history");
@@ -447,21 +447,21 @@ bool WindMgr::ensurePageCached(int8_t page) {
 /// @param initData 初始化数据
 /// @param restoreData 恢复状态数据
 /// @return 是否切换成功
-bool WindMgr::switchPage(int8_t page, LoadMsgBase* initData, const SaveMsgBase* restoreData) {
+bool WindMgr::switchPage(int8_t page, const LoadBase* initData, const SaveBase* restoreData) {
     if (!ensurePageCached(page)) return false;
 
     postAutoRecycle(true);
 
     if (mWindow->showPage(mPageCache[page], initData) == page) {
         if (restoreData) {
-            mWindow->getPage()->callRestoreState(restoreData);
+            mWindow->getPage()->callRestore(restoreData);
             LOGI("restore state for page: %d", page);
         }
         LOGI("show page: %d <- %p", page, mPageCache[page]);
         return true;
     }
 
-    LOGW("show page: %d x %p", page, mPageCache[page]);
+    LOGE("show page: %d x %p", page, mPageCache[page]);
     return false;
 }
 
@@ -472,7 +472,7 @@ bool WindMgr::makeCurrentPageHistory(HistoryNode* node) {
     int8_t page = mWindow->getPageType();
     if (page == PAGE_NULL) return false;
 
-    std::unique_ptr<SaveMsgBase> saved(mWindow->getPage()->callSaveState());
+    std::unique_ptr<SaveBase> saved(mWindow->getPage()->callSave());
     *node = std::make_pair(page, std::move(saved));
     return true;
 }
@@ -544,21 +544,21 @@ bool WindMgr::ensurePopCached(int8_t pop) {
 /// @param initData 初始化数据
 /// @param restoreData 恢复状态数据
 /// @return 是否切换成功
-bool WindMgr::switchPop(int8_t pop, LoadMsgBase* initData, const SaveMsgBase* restoreData) {
+bool WindMgr::switchPop(int8_t pop, const LoadBase* initData, const SaveBase* restoreData) {
     if (!ensurePopCached(pop)) return false;
 
     postAutoRecycle(false);
 
     if (mWindow->showPop(mPopCache[pop], initData) == pop) {
         if (restoreData) {
-            mWindow->getPop()->callRestoreState(restoreData);
+            mWindow->getPop()->callRestore(restoreData);
             LOGI("restore state for pop: %d", pop);
         }
         LOGI("show pop: %d <- %p", pop, mPopCache[pop]);
         return true;
     }
 
-    LOGW("show pop: %d x %p", pop, mPopCache[pop]);
+    LOGE("show pop: %d x %p", pop, mPopCache[pop]);
     return false;
 }
 
@@ -569,7 +569,7 @@ bool WindMgr::makeCurrentPopHistory(HistoryNode* node) {
     int8_t pop = mWindow->getPopType();
     if (pop == POP_NULL) return false;
 
-    std::unique_ptr<SaveMsgBase> saved(mWindow->getPop()->callSaveState());
+    std::unique_ptr<SaveBase> saved(mWindow->getPop()->callSave());
     *node = std::make_pair(pop, std::move(saved));
     return true;
 }
