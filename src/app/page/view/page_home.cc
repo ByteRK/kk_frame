@@ -26,7 +26,7 @@ void HomePage::onTick(int64_t now) {
     int64_t tick = SystemClock::uptimeMillis();
     if (tick - g_window->mLastAction >= 120000) {
         if (tick - g_window->mLastAction <= 123000)
-            g_window->removePop();
+            g_windMgr->clearPop();
         g_window->showBlack();
     }
 }

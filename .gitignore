@@ -10,3 +10,9 @@ fileCountCache
 
 library/library_config.h
 library/*/lib_private_config.h
+
+.venv
+tmp
+dist
+cdroid_changes.patch
+project_changes.patch

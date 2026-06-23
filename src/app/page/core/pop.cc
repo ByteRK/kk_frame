@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-04 13:52:55
- * @LastEditTime: 2026-03-09 17:42:13
+ * @LastEditTime: 2026-06-19 18:18:08
  * @FilePath: /kk_frame/src/app/page/core/pop.cc
  * @Description: 弹窗基类
  * @BugList:
@@ -18,22 +18,17 @@
 #include "wind_mgr.h"
 #include <widget/relativelayout.h>
 
-// 静态变量定义
-std::map<int8_t, PopCreator::CallBack> PopCreator::sPop;
-
 /// @brief 构造
 /// @param resource 资源路径
 PopBase::PopBase(std::string resource) :PBase(resource) {
     mPopRootView = new RelativeLayout(LayoutParams::MATCH_PARENT, LayoutParams::MATCH_PARENT);
     mPopRootView->setOnTouchListener([](View& v, MotionEvent& e) { return true; });
+    mPopRootView->setSoundEffectsEnabled(false);
     mPopRootView->addView(mRootView);
     setColor(0x99000000);      // 默认背景颜色
     setMargin(0, 0, 0, 0);     // 默认全屏
     setPadding(0, 0, 0, 0);    // 默认无内边距
     setPageDisplay(false);     // 默认不显示底层页面
-    mIsGauss = false;          // 默认不模糊背景
-    mGaussRadius = 10;         // 默认模糊半径
-    mGaussColor = 0x99000000;  // 默认模糊颜色
 
     mPageDspRunner = []() {g_window->hidePageBox();};
 }
@@ -74,7 +69,7 @@ void PopBase::callDetach() {
 /// @brief 关闭弹窗
 void PopBase::close() {
     if (g_window->getPopType() == getType())
-        g_window->removePop();
+        g_windMgr->goToPopBack();
 }
 
 /// @brief 设置边距(适用于不需要完整覆盖屏幕的情况)
@@ -102,7 +97,7 @@ void PopBase::setPadding(int start, int top, int end, int bottom) {
 /// @brief 设置模糊背景
 /// @param radius 模糊半径，默认为10
 /// @param color 颜色，默认0x99000000
-void PopBase::setGauss(int radius, int color) {
+void PopBase::setGauss(int radius, uint64_t color) {
 #if defined(ENABLE_GAUSS_DRAWABLE) || defined(__VSCODE__)
     mIsGauss = true;
     mGaussRadius = radius;
@@ -115,7 +110,7 @@ void PopBase::setGauss(int radius, int color) {
 
 /// @brief 设置背景颜色
 /// @param color 颜色，默认0x99000000
-void PopBase::setColor(int color) {
+void PopBase::setColor(uint64_t color) {
     mIsGauss = false;
     mPopRootView->setBackgroundColor(color);
 }
@@ -123,7 +118,13 @@ void PopBase::setColor(int color) {
 /// @brief 设置底层页面是否显示
 /// @param show 是否显示
 void PopBase::setPageDisplay(bool show) {
+    if (mPageDisplay == show) return;
     mPageDisplay = show;
+    if (mIsAttach) {
+        getRootView()->removeCallbacks(mPageDspRunner);
+        if (mPageDisplay) g_window->showPageBox();
+        else getRootView()->postDelayed(mPageDspRunner, 500);
+    }
 }
 
 /// @brief 应用模糊背景

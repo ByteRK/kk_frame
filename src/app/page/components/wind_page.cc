@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-08 02:48:19
- * @LastEditTime: 2026-04-23 11:59:32
+ * @LastEditTime: 2026-06-09 01:30:45
  * @FilePath: /kk_frame/src/app/page/components/wind_page.cc
  * @Description: 页面组件
  * @BugList:
@@ -13,10 +13,7 @@
 
 #include "wind_page.h"
 
-WindPage::WindPage() {
-    mPage = nullptr;
-    mPageBox = nullptr;
-}
+WindPage::WindPage() { }
 
 WindPage::~WindPage() {
     removePage();
@@ -29,6 +26,7 @@ void WindPage::init(ViewGroup* parent) {
         !(mPageBox = PBase::get<ViewGroup>(parent, AppRid::page))
         )throw std::runtime_error("WindPage init failed");
     mPageBox->setOnTouchListener([](View&, MotionEvent&) { return true; });
+    mPageBox->setSoundEffectsEnabled(false);
     mPageBox->setVisibility(View::GONE);
 }
 
@@ -48,7 +46,7 @@ int8_t WindPage::getPageType() {
 /// @param page 页面指针
 /// @param initData 初始化数据
 /// @return 最新页面类型
-int8_t WindPage::showPage(PageBase* page, LoadMsgBase* initData) {
+int8_t WindPage::showPage(PageBase* page, const LoadBase* initData) {
     removePage();
     mPage = page;
     if (mPage) {
@@ -81,11 +79,8 @@ void WindPage::showPageBox() {
 }
 
 /// @brief 按键监听
-/// @param keyCode 键值
 /// @param evt 事件
-/// @param result 处理结果
-/// @return 是否已消费 为true则下层不再处理
-bool WindPage::onKey(int keyCode, KeyEvent& evt, bool& result) {
-    if (!mPage) return false;
-    return (result = mPage->callKey(keyCode, evt));
+/// @return 是否已消费
+bool WindPage::onKey(KeyEvent& evt) {
+    return mPage && mPage->callKey(evt);
 }

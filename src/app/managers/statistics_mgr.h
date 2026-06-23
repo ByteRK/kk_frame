@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-16 09:20:32
- * @LastEditTime: 2026-01-19 18:39:13
+ * @LastEditTime: 2026-06-17 00:45:19
  * @FilePath: /kk_frame/src/app/managers/statistics_mgr.h
  * @Description: 数据统计管理
  * 
@@ -62,7 +62,6 @@ public:
     void            addDayData(StatisticsData& data);
     
 private:
-    time_t          getEndOfDay(time_t timestamp);
     void            rotateToNewDay();
     void            checkAndRotateDay(time_t current_time);
 };

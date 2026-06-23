@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-25 10:31:16
- * @LastEditTime: 2026-04-24 14:09:24
+ * @LastEditTime: 2026-06-09 01:30:30
  * @FilePath: /kk_frame/src/app/page/components/wind_logo.cc
  * @Description: Logo组件
  * @BugList:
@@ -15,10 +15,7 @@
 #include "base.h"
 #include <cdlog.h>
 
-WindLogo::WindLogo() {
-    mIsInit = false;
-    mIsRunning = false;
-}
+WindLogo::WindLogo() { }
 
 WindLogo::~WindLogo() {
     mImage->removeCallbacks(mRuner);
@@ -29,7 +26,7 @@ WindLogo::~WindLogo() {
 /// @param parent 父节点
 void WindLogo::init(ViewGroup* parent) {
     if (mIsInit) return;
-    
+
     if (
         !(mImage = PBase::get<ImageView>(parent, AppRid::logo)) ||
         !(mVideo = PBase::get<VideoView>(parent, AppRid::logo_video))
@@ -41,6 +38,10 @@ void WindLogo::init(ViewGroup* parent) {
     // 锁定点击事件
     mImage->setOnTouchListener([](View&, MotionEvent&) { return true; });
     mVideo->setOnTouchListener([](View&, MotionEvent&) { return true; });
+
+    // 消除点击声音
+    mImage->setSoundEffectsEnabled(false);
+    mVideo->setSoundEffectsEnabled(false);
 
     // 静态图LOGO回调
     mRuner = [this] {
@@ -130,11 +131,9 @@ bool WindLogo::isLogoShow() const {
 }
 
 /// @brief 按键监听
-/// @param keyCode 键值
 /// @param evt 事件
-/// @param result 处理结果
-/// @return 是否已消费 为true则下层不再处理
-bool WindLogo::onKey(int keyCode, KeyEvent& evt, bool& result) {
+/// @return 是否已消费
+bool WindLogo::onKey(KeyEvent& evt) {
     return isLogoShow(); // Logo显示时拦截按键
 }
 

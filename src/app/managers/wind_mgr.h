@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2026-02-08 00:25:07
+ * @LastEditTime: 2026-06-19 18:23:51
  * @FilePath: /kk_frame/src/app/managers/wind_mgr.h
  * @Description: 页面管理类
  * @BugList:
@@ -14,56 +14,42 @@
 #ifndef __WIND_MGR_H__
 #define __WIND_MGR_H__
 
-// 是否启用线程安全消息机制(对性能存在影响，默认关闭)
-#define ENABLE_THREAD_SAFE_MSG false
-#define MAX_THREAD_SAFE_MSG_SIZE 50         // 最大线程安全消息缓存数量
-#define CHECK_THREAD_SAFE_MSG_INTERVAL 100  // 检查消息间隔(毫秒)
-
 #include "template/singleton.h"
 #include "wind.h"
 
-#if ENABLE_THREAD_SAFE_MSG
-#include <queue>
-#include <mutex>
-#endif
-
 #define g_windMgr WindMgr::instance()
-#define g_window  g_windMgr->mWindow
+#define g_window  g_windMgr->getWindow()
 
 class WindMgr : public Singleton<WindMgr>,
-#if ENABLE_THREAD_SAFE_MSG
-    public MessageHandler, public EventHandler
-#else
-    public MessageHandler
-#endif
-{
+    public MessageHandler {
     friend class Singleton<WindMgr>;
-public:
-    MainWindow* mWindow;
-
 private:
     enum {
         MSG_AUTO_RECYCLE_PAGE,            // 自动回收无用窗口
         MSG_AUTO_RECYCLE_POP,             // 自动回收无用弹窗
     };
 
-    Looper* mLooper;                      // 消息循环
-    uint64_t mInitTime;                   // 初始化时间
+    typedef enum {
+        P_JUMP_SAME,            // 相同页面/弹窗
+        P_JUMP_ENABLE,          // 允许跳转
+        P_JUMP_DISABLE,         // 禁止跳转
+    } P_JUMP_TYPE;
+
+private:
+    using HistoryNode = std::pair<int8_t, std::unique_ptr<SaveBase>>;
+
+    Looper* mLooper{ nullptr };           // 消息循环
+    uint64_t mInitTime{ 0 };              // 初始化时间
     Message  mAutoRecyclePageMsg;         // 自动回收窗口消息定义
     Message  mAutoRecyclePopMsg;          // 自动回收弹窗消息定义
 
-#if ENABLE_THREAD_SAFE_MSG
-    uint64_t mLastCheckMsgTime;                                                  // 上次检查消息时间
-    std::mutex mPopMsgCacheMutex;                                                // 弹窗消息栈锁
-    std::mutex mPageMsgCacheMutex;                                               // 页面消息栈锁
-    std::queue<std::pair<int8_t, std::unique_ptr<RunMsgBase>>> mPopMsgCache;     // 弹窗消息栈
-    std::queue<std::pair<int8_t, std::unique_ptr<RunMsgBase>>> mPageMsgCache;    // 页面消息栈
-#endif
-    std::unordered_map<int8_t, PopBase*>  mPopCache;                             // 弹窗缓存
-    std::unordered_map<int8_t, PageBase*> mPageCache;                            // 页面缓存
+    MainWindow* mWindow{ nullptr };       // 主窗口
 
-    std::vector<std::pair<int8_t, std::unique_ptr<SaveMsgBase>>> mPopHistory;    // 弹窗历史
-    std::vector<std::pair<int8_t, std::unique_ptr<SaveMsgBase>>> mPageHistory;   // 页面历史
+    std::unordered_map<int8_t, PopBase*>  mPopCache;        // 弹窗缓存
+    std::unordered_map<int8_t, PageBase*> mPageCache;       // 页面缓存
+
+    std::vector<HistoryNode> mPopHistory;                   // 弹窗历史
+    std::vector<HistoryNode> mPageHistory;                  // 页面历史
 
 private:
     WindMgr();
@@ -72,22 +58,18 @@ public:
     ~WindMgr();
     void init();
 
-#if ENABLE_THREAD_SAFE_MSG
-    int checkEvents()override;
-    int handleEvents()override;
-#endif
-    void handleMessage(Message& message)override;
+    MainWindow* getWindow();
 
-    bool showPage(int8_t page, LoadMsgBase* initData = nullptr, bool updateHistory = true);
-    void sendPageMsg(int8_t page, MSG_TYPE type, int value = 0, bool fromUiThread = true);
-    void sendPageMsg(int8_t page, const RunMsgBase* msg, bool fromUiThread = true);
+    bool showPage(int8_t page, const LoadBase* initData = nullptr);
+    bool replacePage(int8_t page, const LoadBase* initData = nullptr);
     void recyclePage(PageBase* page);
     void recyclePage(int8_t page);
 
-    bool showPop(int8_t pop, LoadMsgBase* initData = nullptr, bool updateHistory = true);
-    void sendPopMsg(int8_t page, MSG_TYPE type, int value = 0, bool fromUiThread = true);
-    void sendPopMsg(int8_t pop, const RunMsgBase* msg, bool fromUiThread = true);
-    void hidePop();
+    bool showPop(int8_t pop, const LoadBase* initData = nullptr);
+    bool replacePop(int8_t pop, const LoadBase* initData = nullptr);
+    void recyclePop(PopBase* pop);
+    void recyclePop(int8_t pop);
+    void clearPop();
 
     void goToHome(bool withBundle = false);
     void goToPageBack();
@@ -96,23 +78,27 @@ public:
     void removePageHistory(int8_t page);
     void removePopHistory(int8_t pop);
 
+protected:
+    void handleMessage(Message& message)override;
+
 private:
     bool createPage(int8_t page);
+    bool ensurePageCached(int8_t page);
+    bool switchPage(int8_t page, const LoadBase* initData, const SaveBase* restoreData);
+    bool makeCurrentPageHistory(HistoryNode* node);
+    void pushPageHistory(HistoryNode&& node);
     void autoRecyclePage();
-    int8_t checkCanShowPage(int8_t newPage);
+    P_JUMP_TYPE checkCanShowPage(int8_t newPage);
 
     bool createPop(int8_t pop);
+    bool ensurePopCached(int8_t pop);
+    bool switchPop(int8_t pop, const LoadBase* initData, const SaveBase* restoreData);
+    bool makeCurrentPopHistory(HistoryNode* node);
+    void pushPopHistory(HistoryNode&& node);
     void autoRecyclePop();
-    int8_t checkCanShowPop(int8_t newPop);
+    P_JUMP_TYPE checkCanShowPop(int8_t newPop);
 
-    bool checkPCache(int8_t pType, bool isPage);
-    void addToHistory(bool isPage);
-    void adjustHistory(int8_t pType, bool isPage);
     void postAutoRecycle(bool isPage);
-    void dealOtherThreadMsg();
-
-private:
-    void screenSaver(bool lock);
 
 };
 

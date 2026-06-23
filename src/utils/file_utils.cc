@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 14:06:52
- * @LastEditTime: 2026-05-11 23:21:52
+ * @LastEditTime: 2026-06-23 11:48:54
  * @FilePath: /kk_frame/src/utils/file_utils.cc
  * @Description: 文件相关的一些函数
  * @BugList:
@@ -12,15 +12,14 @@
 **/
 
 #include "file_utils.h"
+#include "system_utils.h"
 #include <cdlog.h>
 #include <ghc/filesystem.hpp>
+#include <fstream>
+#include <unistd.h>
 
 void FileUtils::sync() {
-#ifdef PRODUCT_X64
-    LOGI("-------- sync --------");
-#else
-    ::sync();
-#endif
+    SystemUtils::sync();
 }
 
 bool FileUtils::have(const std::string& filePath) {
@@ -50,20 +49,27 @@ bool FileUtils::read(const std::string& filePath, std::string& content) {
 bool FileUtils::write(const std::string& filePath, const std::string& content) {
     ghc::filesystem::path path(filePath);
     if (ghc::filesystem::exists(path)) {
-        if (ghc::filesystem::is_regular_file(path)) {
-            ghc::filesystem::remove(path);
-        } else {
-            LOGE("Path is a directory: %s", filePath.c_str());
+        if (!ghc::filesystem::is_regular_file(path)) {
+            LOGE("Path is not a regular file: %s", filePath.c_str());
             return false;
         }
     }
-    std::ofstream file(filePath, std::ios::binary);
+    std::ofstream file(filePath, std::ios::binary | std::ios::trunc);
     if (!file.is_open()) {
         LOGE("Failed to create file: %s", filePath.c_str());
         return false;
     }
     file << content;
+    if (file.fail()) {
+        LOGE("Failed to write file: %s", filePath.c_str());
+        file.close();
+        return false;
+    }
     file.close();
+    if (file.fail()) {
+        LOGE("Failed to close file after write: %s", filePath.c_str());
+        return false;
+    }
     sync();
     return true;
 }

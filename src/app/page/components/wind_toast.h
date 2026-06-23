@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-25 10:22:41
- * @LastEditTime: 2026-04-24 10:18:26
+ * @LastEditTime: 2026-06-09 01:33:45
  * @FilePath: /kk_frame/src/app/page/components/wind_toast.h
  * @Description: Toast组件
  * @BugList:
@@ -23,9 +23,9 @@
 /**
  * 默认为Alpha动画，可以通过setDiyToastAni设置自定义动画
  * 另外如果自定义动画的时候，如果stop()依旧是动画的话，那么start必须调用cancel()取消动画
- * 
+ *
  * eg:
- * 
+ *
  * WindToast::TOAST_ANIMATE anim;
  * anim.start = [](View& v, int duration) {
  *     v.animate().cancel();
@@ -43,7 +43,7 @@
  *     // if (v.getTranslationY() == 118)v.setVisibility(View::GONE);
  * };
  * setDiyToastAni(anim);
- * 
+ *
 **/
 
 class WindToast {
@@ -52,38 +52,38 @@ public:
 
     DECLARE_UIEVENT(void, ToastAniListener, View&, int);
     struct TOAST_ANIMATE {
-        ToastAniListener start;   // 开始动画
-        ToastAniListener finish;  // 结束动画
-        ToastAniListener stop;    // 停止动画(手动Hide Toast)
+        ToastAniListener start{ nullptr };   // 开始动画
+        ToastAniListener finish{ nullptr };  // 结束动画
+        ToastAniListener stop{ nullptr };    // 停止动画(手动Hide Toast)
 
-        ToastAniListener aniEnd;  // View回调，已注册到Toast.animate()
+        ToastAniListener aniEnd{ nullptr };  // View回调，已注册到Toast.animate()
     };
-    
+
 private:
     typedef struct {
-        std::string text = "";            // 弹幕文本
-        int8_t      level = 0;            // 弹幕文本等级
-        bool        animate = true;       // 是否动画显示
-        bool        lock = false;         // 是否锁定
+        std::string text{ "" };            // 弹幕文本
+        int8_t      level{ 0 };            // 弹幕文本等级
+        bool        animate{ true };       // 是否动画显示
+        bool        lock{ false };         // 是否锁定
     } TOAST_TYPE;
 
 private:
-    bool              mIsInit;            // 是否初始化
-    bool              mIsRunning;         // 是否正在显示
-    Runnable          mRuner;             // 弹幕计时
-    int8_t            mLevel;             // 弹幕文本等级
-    std::queue<TOAST_TYPE> mList;         // 弹幕队列
-    OnShowToastListener    mShowListener; // 弹幕显示回调
+    bool                   mIsInit{ false };         // 是否初始化
+    bool                   mIsRunning{ false };      // 是否正在显示
+    Runnable               mRuner;                   // 弹幕计时
+    int8_t                 mLevel{ 0 };              // 弹幕文本等级
+    std::queue<TOAST_TYPE> mList;                    // 弹幕队列
+    OnShowToastListener    mShowListener{ nullptr }; // 弹幕显示回调
 
-    TextView*         mToast;             // 弹幕指针
-    ViewGroup*        mToastBox;          // 弹幕容器
-    
-    int               mDuration = 2500;   // 弹幕显示时间(ms)
-    int               mAnimatime = 600;   // 弹幕动画时间(ms)
-    TOAST_ANIMATE     mDiyToastAni;       // 自定义弹幕动画
+    TextView*         mToast{ nullptr };             // 弹幕指针
+    ViewGroup*        mToastBox{ nullptr };          // 弹幕容器
 
-    TickMgr::ITickVariable mToastTicker;  // 弹幕心跳
-    
+    int               mDuration{ 2500 };             // 弹幕显示时间(ms)
+    int               mAnimatime{ 600 };             // 弹幕动画时间(ms)
+    TOAST_ANIMATE     mDiyToastAni;                  // 自定义弹幕动画
+
+    TickMgr::ITickVariable mToastTicker;             // 弹幕心跳
+
 public:
     WindToast();
     virtual ~WindToast();

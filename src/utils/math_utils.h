@@ -35,7 +35,7 @@ namespace MathUtils {
     /// @param h 高位
     /// @param l 低位
     /// @return 结果
-    uint8_t toU16(uint8_t h, uint8_t l);
+    uint16_t toU16(uint8_t h, uint8_t l);
 
     /// @brief 将四个uint8_t类型的数据组合成一个uint32_t类型的数据
     /// @param h 高位

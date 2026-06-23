@@ -17,6 +17,11 @@
 #include <sstream>
 #include <iomanip>
 #include <cstdint>
+#include <cctype>
+#include <cstdarg>
+#include <cstdio>
+#include <cstring>
+#include <vector>
 
 
 /// @brief UTF-8字符结构体，用于统一处理
@@ -28,10 +33,11 @@ struct Utf8Char {
 
 /// @brief 获取下一个UTF-8字符的信息
 /// @param pos 当前位置指针
+/// @param remaining 剩余可读取字节数
 /// @return Utf8Char结构体，包含字符信息和有效性
-Utf8Char nextUtf8Char(const unsigned char* pos) {
+Utf8Char nextUtf8Char(const unsigned char* pos, size_t remaining) {
     Utf8Char ch = { reinterpret_cast<const char*>(pos), 1, true };
-    if (*pos == 0) {
+    if (pos == nullptr || remaining == 0 || *pos == 0) {
         ch.valid = false;
         return ch;
     }
@@ -49,6 +55,11 @@ Utf8Char nextUtf8Char(const unsigned char* pos) {
     } else {
         // 无效的UTF-8起始字节
         ch.valid = false;
+        return ch;
+    }
+    if (static_cast<size_t>(ch.length) > remaining) {
+        ch.valid = false;
+        ch.length = 1;
         return ch;
     }
     // 验证后续字节
@@ -71,6 +82,10 @@ Utf8Char nextUtf8Char(const unsigned char* pos) {
         }
     }
     return ch;
+}
+
+Utf8Char nextUtf8Char(const unsigned char* pos) {
+    return nextUtf8Char(pos, pos ? std::strlen(reinterpret_cast<const char*>(pos)) : 0);
 }
 
 
@@ -121,12 +136,23 @@ std::string StringUtils::lowerNew(const std::string& str) {
 }
 
 std::string StringUtils::format(const char* format, ...) {
-    static char fmt_str[1025];
-    va_list     args;
+    if (format == nullptr) return "";
+
+    va_list args;
     va_start(args, format);
-    vsnprintf(fmt_str, sizeof(fmt_str), format, args);
+    va_list argsCopy;
+    va_copy(argsCopy, args);
+    const int size = std::vsnprintf(nullptr, 0, format, argsCopy);
+    va_end(argsCopy);
+    if (size < 0) {
+        va_end(args);
+        return "";
+    }
+
+    std::vector<char> buffer(static_cast<size_t>(size) + 1);
+    std::vsnprintf(buffer.data(), buffer.size(), format, args);
     va_end(args);
-    return std::string(fmt_str);
+    return std::string(buffer.data(), static_cast<size_t>(size));
 }
 
 std::string StringUtils::fill(const int& num, int len, char pre) {
@@ -158,14 +184,16 @@ std::vector<std::string> StringUtils::split(const std::string& str, const char d
 std::string StringUtils::replace(const std::string& src, const std::string& oldStr, const std::string& newStr) {
     if (oldStr.empty()) return src;
     std::ostringstream result;
-    std::string::size_type pos = 0;
-    std::string::size_type length = oldStr.length();
-    while ((pos = src.find(oldStr, pos)) != std::string::npos) {
-        result << src.substr(0, pos);
+    std::string::size_type searchPos = 0;
+    std::string::size_type lastPos = 0;
+    const std::string::size_type length = oldStr.length();
+    while ((searchPos = src.find(oldStr, searchPos)) != std::string::npos) {
+        result << src.substr(lastPos, searchPos - lastPos);
         result << newStr;
-        pos += length;
+        searchPos += length;
+        lastPos = searchPos;
     }
-    result << src.substr(pos);
+    result << src.substr(lastPos);
     return result.str();
 }
 
@@ -185,6 +213,7 @@ std::string StringUtils::trimRight(std::string str) {
 }
 
 const char* StringUtils::strcasestr(const char* haystack, const char* needle) {
+    if (haystack == nullptr || needle == nullptr) return nullptr;
     if (!*needle) return haystack; // 如果 str2 为空，返回 str1
     while (*haystack) {
         const char* s1 = haystack;
@@ -210,10 +239,11 @@ void StringUtils::hexdump(const char* label, const unsigned char* buf, int len, 
 }
 
 std::string StringUtils::hexStr(const unsigned char* buf, int len, int width) {
+    if (buf == nullptr || len <= 0) return "";
     std::ostringstream oss;
     oss << std::hex << std::setfill('0'); // 设置格式
     // 计算最终字符串的长度并预留内存
-    int totalLength = len * 3 + (len / width) + 1; // 每个字节需要2个字符加空格，换行符
+    int totalLength = len * 3 + (width > 0 ? (len / width) : 0) + 1; // 每个字节需要2个字符加空格，换行符
     std::string result;
     result.reserve(totalLength);
     for (int i = 0; i < len; i++) {
@@ -226,10 +256,12 @@ std::string StringUtils::hexStr(const unsigned char* buf, int len, int width) {
 }
 
 size_t StringUtils::characterCount(const char* str, int chineseWeight) {
+    if (!str) return 0;
     size_t count = 0;
     const unsigned char* p = reinterpret_cast<const unsigned char*>(str);
+    size_t remaining = std::strlen(str);
     while (*p) {
-        Utf8Char ch = nextUtf8Char(p);
+        Utf8Char ch = nextUtf8Char(p, remaining);
         if (ch.valid) {
             // 如果字符是多字节且设置了中文权重>1，则按权重计算
             count += (ch.length > 1 && chineseWeight > 1) ? chineseWeight : 1;
@@ -238,6 +270,7 @@ size_t StringUtils::characterCount(const char* str, int chineseWeight) {
             count++;
         }
         p += ch.length;
+        remaining -= std::min(remaining, static_cast<size_t>(ch.length));
     }
     return count;
 }
@@ -246,10 +279,11 @@ std::string StringUtils::substringByChars(const char* str, size_t maxChars, int 
     if (!str || maxChars == 0) return "";
     const unsigned char* p = reinterpret_cast<const unsigned char*>(str);
     const unsigned char* start = p;
+    size_t remaining = std::strlen(str);
     size_t charCount = 0;
     size_t byteCount = 0;
     while (*p && charCount < maxChars) {
-        Utf8Char ch = nextUtf8Char(p);
+        Utf8Char ch = nextUtf8Char(p, remaining);
         // 检查添加这个字符后是否会超过限制
         size_t charWeight = (ch.length > 1 && chineseWeight > 1) ? chineseWeight : 1;
         if (charCount + charWeight > maxChars) {
@@ -258,6 +292,7 @@ std::string StringUtils::substringByChars(const char* str, size_t maxChars, int 
         charCount += charWeight;
         byteCount += ch.length;
         p += ch.length;
+        remaining -= std::min(remaining, static_cast<size_t>(ch.length));
     }
     return std::string(reinterpret_cast<const char*>(start), byteCount);
 }
@@ -268,18 +303,21 @@ std::string StringUtils::removeLastCharacter(const char* str) {
     const unsigned char* p = reinterpret_cast<const unsigned char*>(str);
     const unsigned char* lastCharStart = nullptr;
     const unsigned char* current = p;
+    size_t remaining = std::strlen(str);
 
     // 遍历找到最后一个字符的起始位置
     while (*current) {
-        Utf8Char ch = nextUtf8Char(current);
+        Utf8Char ch = nextUtf8Char(current, remaining);
         if (!ch.valid) {
             // 无效字符，跳过这个字节
             current++;
+            remaining--;
             continue;
         }
 
         lastCharStart = current;
         current += ch.length;
+        remaining -= std::min(remaining, static_cast<size_t>(ch.length));
     }
 
     // 如果没有找到有效字符或只有一个字符
@@ -304,7 +342,7 @@ void StringUtils::popLastCharacter(std::string& str) {
         const unsigned char* charStart = data + pos;
 
         // 获取当前字符信息
-        Utf8Char ch = nextUtf8Char(charStart);
+        Utf8Char ch = nextUtf8Char(charStart, len - pos);
 
         if (!ch.valid) {
             // 无效字符，跳过这个字节
@@ -337,7 +375,7 @@ void StringUtils::popLastCharacter(std::string& str) {
 
 std::string StringUtils::truncateWithLimit(const char* str, size_t maxChars, int chineseWeight, const std::string& suffix) {
     if (!str || maxChars == 0) {
-        return suffix.empty() ? "" : suffix;
+        return "";
     }
     // 先计算是否超过限制
     size_t totalChars = characterCount(str, chineseWeight);
@@ -346,16 +384,15 @@ std::string StringUtils::truncateWithLimit(const char* str, size_t maxChars, int
     }
     // 计算保留的字符数（考虑后缀）
     size_t suffixCharCount = characterCount(suffix.c_str(), chineseWeight);
-    size_t keepChars = (suffixCharCount < maxChars) ? maxChars - suffixCharCount : 1;
+    if (!suffix.empty() && suffixCharCount >= maxChars) {
+        return substringByChars(suffix.c_str(), maxChars, chineseWeight);
+    }
+
+    size_t keepChars = maxChars - suffixCharCount;
     // 获取截取部分
     std::string result = substringByChars(str, keepChars, chineseWeight);
-    // 如果截取后需要删除不完整的字符
-    if (!result.empty() && result != str) {
-        // 移除可能被截断的最后一个字符
-        result = removeLastCharacter(result.c_str());
-    }
     // 添加后缀
-    if (!suffix.empty() && keepChars > 0) {
+    if (!suffix.empty()) {
         result += suffix;
     }
     return result;

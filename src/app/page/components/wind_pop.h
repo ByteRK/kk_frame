@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-08 02:48:19
- * @LastEditTime: 2026-04-23 15:02:37
+ * @LastEditTime: 2026-06-09 01:26:07
  * @FilePath: /kk_frame/src/app/page/components/wind_pop.h
  * @Description: 弹窗组件
  * @BugList: 
@@ -18,8 +18,8 @@
 
 class WindPop {
 private:
-    PopBase*   mPop;            // 弹窗指针
-    ViewGroup* mPopBox;         // 弹窗容器
+    PopBase*   mPop{ nullptr };       // 弹窗指针
+    ViewGroup* mPopBox{ nullptr };    // 弹窗容器
 
 public:
     WindPop();
@@ -29,11 +29,11 @@ public:
 
     PopBase*   getPop();
     int8_t     getPopType();
-    int8_t     showPop(PopBase* pop, LoadMsgBase* initData = nullptr);
+    int8_t     showPop(PopBase* pop, const LoadBase* initData = nullptr);
     void       removePop();
     void       hidePopBox();
     void       showPopBox();
-    bool       onKey(int keyCode, KeyEvent& evt, bool& result);
+    bool       onKey(KeyEvent& evt);
     
 };
 

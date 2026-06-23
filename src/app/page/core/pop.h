@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-04 13:52:49
- * @LastEditTime: 2026-03-09 17:38:07
+ * @LastEditTime: 2026-06-14 21:52:35
  * @FilePath: /kk_frame/src/app/page/core/pop.h
  * @Description: 弹窗基类
  * @BugList:
@@ -19,14 +19,14 @@
 /// @brief 弹窗基类
 class PopBase :public PBase {
 protected:
-    ViewGroup*     mPopRootView;     // 弹窗根节点
+    ViewGroup*     mPopRootView{ nullptr };     // 弹窗根节点
 
 private:
-    bool           mIsGauss;         // 是否有模糊背景
-    int            mGaussRadius;     // 模糊背景圆角
-    int            mGaussColor;      // 模糊背景颜色
-    bool           mPageDisplay;     // 底层页面显示
-    Runnable       mPageDspRunner;   // 底层页面显示回调
+    bool           mIsGauss{ false };           // 是否有模糊背景
+    int            mGaussRadius{ 10 };          // 模糊背景圆角
+    uint64_t       mGaussColor{ 0x99000000 };   // 模糊背景颜色
+    bool           mPageDisplay{ false };       // 底层页面显示
+    Runnable       mPageDspRunner;              // 底层页面显示回调
 
 public:
     PopBase(std::string resource);   // 构造函数
@@ -40,42 +40,21 @@ public:
 protected:
     void close();                    // 关闭弹窗
 
-    void setMargin(int start, int top, int end, int bottom);   // 设置外边距
-    void setPadding(int start, int top, int end, int bottom);  // 设置内边距
-    void setGauss(int radius = 10, int color = 0x99000000);    // 设置模糊背景
-    void setColor(int color = 0x99000000);                     // 设置背景色
-    void setPageDisplay(bool show);                            // 设置底层页面显示
+    void setMargin(int start, int top, int end, int bottom);      // 设置外边距
+    void setPadding(int start, int top, int end, int bottom);     // 设置内边距
+    void setGauss(int radius = 10, uint64_t color = 0x99000000);  // 设置模糊背景
+    void setColor(uint64_t color = 0x99000000);                   // 设置背景色
+    void setPageDisplay(bool show);                               // 设置底层页面显示
 
 private:
     void applyGauss();               // 应用模糊背景
 };
 
-/// @brief 弹窗构建器
-class PopCreator {
-protected:
-    typedef std::function<PopBase* ()> CallBack;
-    static  std::map<int8_t, CallBack>  sPop;
-public:
-    static void     add(int8_t pop_id, CallBack sink) {
-        sPop.insert(std::make_pair(pop_id, sink));
-    }
-    static PopBase* get(int8_t pop_id) {
-        auto it = sPop.find(pop_id);
-        if (it == sPop.end()) return nullptr;
-        return it->second();
-    }
-};
-
-// 弹窗注册模板
-template<typename T>
-class PopRegister {
-public:
-    PopRegister(int8_t pop) {
-        PopCreator::add(pop, []() {return new T();});
-    }
-};
-
+// 构建器标签
+struct PopCreatorTag { };
+// 弹窗构建器 
+typedef Creator<PopBase, PopCreatorTag> PopCreator;
 // 弹窗注册宏，用于简化注册，直接于.cc文件中定义
-#define POP_REGISTER(ID,CLASS) static PopRegister<CLASS> __P_R_##CLASS(ID);
+#define POP_REGISTER(ID, CLASS) static Register<PopCreator, CLASS> __POP_REG_##CLASS(ID)
 
 #endif

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-04-23 16:17:00
+ * @LastEditTime: 2026-06-09 01:20:59
  * @FilePath: /kk_frame/src/app/page/core/wind.h
  * @Description: 主窗口类
  * @BugList:
@@ -32,11 +32,11 @@ class MainWindow :public Singleton<MainWindow>, public Window,
     friend Singleton<MainWindow>;
 
 public:
-    uint64_t          mLastAction;     // 上次用户动作时间
+    uint64_t          mLastAction{ 0 };       // 上次用户动作时间
 
 protected:
-    Context*          mContext;        // 上下文
-    ViewGroup*        mRootView;       // 根容器
+    Context*          mContext{ nullptr };    // 上下文
+    ViewGroup*        mRootView{ nullptr };   // 根容器
 
 private:
     MainWindow();
@@ -50,14 +50,12 @@ public:
 protected:
     WindLogo::LOGO_INFO
               getLogo() override;
-    
+
     bool      dispatchTouchEvent(MotionEvent& evt) override;
-    bool      onKeyUp(int keyCode, KeyEvent& evt) override;
-    bool      onKeyDown(int keyCode, KeyEvent& evt) override;
+    bool      dispatchKeyEvent(KeyEvent& evt) override;
 
 private:
-    bool      onKey(int keyCode, KeyEvent& evt);
-    bool      selfKey(int keyCode, KeyEvent& evt, bool& result);
+    bool      selfKey(KeyEvent& evt);
 };
 
 #endif // !__WIND_H__

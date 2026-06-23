@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-25 10:31:08
- * @LastEditTime: 2026-03-22 12:00:55
+ * @LastEditTime: 2026-06-09 01:27:41
  * @FilePath: /kk_frame/src/app/page/components/wind_logo.h
  * @Description: Logo组件
  * @BugList:
@@ -27,19 +27,19 @@ protected:
     } LOGO_TYPE;
 
     typedef struct {
-        std::string   path;        // 路径
-        LOGO_TYPE     type;        // 类型
-        int           duration;    // 持续时间(ms)，仅对图片生效
+        std::string   path;                   // 路径
+        LOGO_TYPE     type{ LOGO_TYPE_IMG };  // 类型
+        int           duration{ 3000 };       // 持续时间(ms)，仅对图片生效
     } LOGO_INFO;
-    
+
 private:
-    bool              mIsInit;                   // 是否初始化
-    bool              mIsRunning;                // 是否正在显示
+    bool              mIsInit{ false };          // 是否初始化
+    bool              mIsRunning{ false };       // 是否正在显示
     Runnable          mRuner;                    // 计时回调(用于图片LOGO)
     Animatable2::AnimationCallback mCallback;    // 动画回调(用于动画LOGO)
-    
-    ImageView*        mImage;                    // 图片LOGO
-    VideoView*        mVideo;                    // 视频LOGO
+
+    ImageView*        mImage{ nullptr };         // 图片LOGO
+    VideoView*        mVideo{ nullptr };         // 视频LOGO
 
 public:
     WindLogo();
@@ -50,7 +50,7 @@ public:
     virtual void      hideLogo();
     virtual LOGO_INFO getLogo() = 0;
     bool              isLogoShow() const;
-    bool              onKey(int keyCode, KeyEvent& evt, bool& result);
+    bool              onKey(KeyEvent& evt);
 
 private:
     bool              checkInit();

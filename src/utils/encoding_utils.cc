@@ -15,8 +15,12 @@
 #include <iconv.h>
 #include <vector>
 #include <sstream>
+#include <cctype>
 
 std::string EncodingUtils::convert(const std::string& input, const char* fromEncoding, const char* toEncoding) {
+    if (fromEncoding == nullptr || toEncoding == nullptr) return "";
+    if (input.empty()) return "";
+
     iconv_t cd = iconv_open(toEncoding, fromEncoding);
     if (cd == (iconv_t)-1)return "";
 
@@ -41,7 +45,9 @@ std::string EncodingUtils::hexEscapes(const std::string& input) {
     std::vector<char> bytes;
     size_t i = 0;
     while (i < input.size()) {
-        if (input[i] == '\\' && i + 3 < input.size() && input[i + 1] == 'x') {
+        if (input[i] == '\\' && i + 3 < input.size() && input[i + 1] == 'x'
+            && std::isxdigit(static_cast<unsigned char>(input[i + 2]))
+            && std::isxdigit(static_cast<unsigned char>(input[i + 3]))) {
             // 提取十六进制值（如 "e4"）
             std::string hex_str = input.substr(i + 2, 2);
             std::istringstream hex_stream(hex_str);

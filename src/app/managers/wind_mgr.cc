@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2026-03-02 11:49:21
+ * @LastEditTime: 2026-06-20 15:10:36
  * @FilePath: /kk_frame/src/app/managers/wind_mgr.cc
  * @Description: 页面管理类
  * @BugList:
@@ -12,49 +12,27 @@
 **/
 
 #define AUTO_CLOSE true
-#define OPEN_SCREENSAVER false
+#define CLEAR_POP_ON_PAGE_SWITCH true
+#define RELOAD_SAME_ID_ON_SHOW true
 
 #include "wind_mgr.h"
 #include "global_data.h"
 #include <core/app.h>
 #include <core/inputeventsource.h>
 
-WindMgr::WindMgr() {
-}
+WindMgr::WindMgr() { }
 
 WindMgr::~WindMgr() {
-    mLooper->removeMessages(this);
+    if (mLooper) mLooper->removeMessages(this);
+    recyclePop(POP_NULL);
     recyclePage(PAGE_NULL);
     __delete(mWindow);
 }
 
-#if ENABLE_THREAD_SAFE_MSG
-int WindMgr::checkEvents() {
-    uint64_t now = SystemClock::uptimeMillis();
-    if (now - mLastCheckMsgTime > CHECK_THREAD_SAFE_MSG_INTERVAL) {
-        mLastCheckMsgTime = now;
-        return 1;
-    }
-    return 0;
-}
-
-int WindMgr::handleEvents() {
-    dealOtherThreadMsg();
-    return 0;
-}
-#endif
-
-/// @brief 消息处理
-/// @param message 
-void WindMgr::handleMessage(Message& message) {
-    switch (message.what) {
-    case MSG_AUTO_RECYCLE_PAGE: {
-        autoRecyclePage();
-    }   break;
-    case MSG_AUTO_RECYCLE_POP: {
-        autoRecyclePop();
-    }   break;
-    }
+/// @brief 获取主窗口
+/// @return 主窗口指针
+MainWindow * WindMgr::getWindow() {
+    return mWindow;
 }
 
 /// @brief 初始化
@@ -67,119 +45,91 @@ void WindMgr::init() {
     mAutoRecyclePopMsg.what = MSG_AUTO_RECYCLE_POP;
     mInitTime = SystemClock::uptimeMillis();
 
-#if ENABLE_THREAD_SAFE_MSG
-    mLastCheckMsgTime = 0;
-    App::getInstance().addEventHandler(this);
-#endif
-
-#if OPEN_SCREENSAVER
-    InputEventSource::getInstance().setScreenSaver(
-        std::bind(&WindMgr::screenSaver, this, std::placeholders::_1),
-        20
-    );
-#endif
-
     // 根据模式跳转页面
     switch (g_data->mDeviceMode) {
     case DEVICE_MODE_DEMO: {
         LOGI("[TIP] now in demo mode");
-        showPage(PAGE_DEMO);
+        replacePage(PAGE_DEMO);
     }   break;
     case DEVICE_MODE_TEST: {
         LOGI("[TIP] now in test mode");
-        showPage(g_data->mTestPage);
+        replacePage(g_data->mTestPage);
     }   break;
     default: {
-        showPage(PAGE_HOME);
+        replacePage(PAGE_HOME);
     }   break;
     }
 }
 
-/// @brief 显示指定页面 (新建页面必须从此处调用)
+/// @brief 显示指定页面
 /// @param page 页面ID
 /// @param initData 初始化数据
 /// @return 是否创建成功
-bool WindMgr::showPage(int8_t page, LoadMsgBase* initData, bool updateHistory) {
+bool WindMgr::showPage(int8_t page, const LoadBase* initData) {
     if (page == PAGE_NULL) return false;
 
-    // 隐藏弹窗
-    hidePop();
+#if CLEAR_POP_ON_PAGE_SWITCH
+    // 页面切换时清理弹窗层
+    clearPop();
+#endif
 
     // 判断是否允许跳转
     switch (checkCanShowPage(page)) {
-    case -1: { // 不允许跳转
+    case P_JUMP_DISABLE: { // 不允许跳转
         return false;
     }   break;
-    case 1: { // 相同页面，直接Load
-        mWindow->getPage()->callLoad(initData); return true;
+    case P_JUMP_SAME: { // 相同页面，直接Load
+#if RELOAD_SAME_ID_ON_SHOW
+        mWindow->getPage()->callLoad(initData);
+        return true;
+#endif
     }   break;
     default: break;
     }
 
-    // 开启延迟自动回收
-    postAutoRecycle(true);
+    // 先确保目标页面可用，再保存当前页面历史，避免跳转失败污染历史。
+    if (!ensurePageCached(page)) return false;
 
-    // 检查页面是否成功构建
-    if (!checkPCache(page, true))return false;
+    HistoryNode node;
+    bool hasHistory = makeCurrentPageHistory(&node);
 
-    // 保存当前页面状态并记录历史记录
-    if (updateHistory) addToHistory(true);
-
-    // 显示新页面
-    if (mWindow->showPage(mPageCache[page], initData) == page) {
-        LOGI("show page: %d <- %p", page, mPageCache[page]);
+    if (switchPage(page, initData, nullptr)) {
+        if (hasHistory) pushPageHistory(std::move(node));
         return true;
-    } else {
-        LOGW("show page: %d x %p", page, mPageCache[page]);
-        return false;
     }
+
+    return false;
 }
 
-/// @brief 向指定页面发送基础消息
+/// @brief 替换当前页面，不写入页面历史
 /// @param page 页面ID
-/// @param type 消息类型
-/// @param value 消息值
-/// @param fromUiThread 是否来自UI线程
-void WindMgr::sendPageMsg(int8_t page, MSG_TYPE type, int value, bool fromUiThread) {
-    RunMsgBase msgBase;
-    msgBase.msgType = type;
-    msgBase.msgValue = value;
-    sendPageMsg(page, &msgBase, fromUiThread);
-}
+/// @param initData 初始化数据
+/// @return 是否替换成功
+bool WindMgr::replacePage(int8_t page, const LoadBase* initData) {
+    if (page == PAGE_NULL) return false;
 
-/// @brief 向指定页面发送消息
-/// @param page 页面ID
-/// @param msg 消息数据
-/// @param fromUiThread 是否来自UI线程
-void WindMgr::sendPageMsg(int8_t page, const RunMsgBase* msg, bool fromUiThread) {
-    if (fromUiThread) {
-        if (page == PAGE_NULL) {
-            for (auto& it : mPageCache)
-                it.second->callMsg(msg);
-        } else {
-            auto it = mPageCache.find(page);
-            if (it != mPageCache.end()) {
-                it->second->callMsg(msg);
-            }
-        }
-    } else {
-#if ENABLE_THREAD_SAFE_MSG
-        std::lock_guard<std::mutex> lock(mPageMsgCacheMutex);
-        std::unique_ptr<RunMsgBase> copy(msg->clone());
-        mPageMsgCache.push(std::make_pair((uint8_t)page, std::move(copy)));
-        if (mPageMsgCache.size() >= MAX_THREAD_SAFE_MSG_SIZE) {
-            mPageMsgCache.pop();
-            LOGE("Message cache full, discarded oldest message");
-        }
-#else
-        LOGE("sendPageMsg from other thread, but not support");
+#if CLEAR_POP_ON_PAGE_SWITCH
+    // 页面切换时清理弹窗层
+    clearPop();
 #endif
+
+    switch (checkCanShowPage(page)) {
+    case P_JUMP_DISABLE: {
+        return false;
+    }   break;
+    case P_JUMP_SAME: {
+        mWindow->getPage()->callLoad(initData);
+    }   return true;
+    default: break;
     }
+
+    return switchPage(page, initData, nullptr);
 }
 
 /// @brief 回收指定页面
 /// @param page 页面指针
 void WindMgr::recyclePage(PageBase* page) {
+    if (page == nullptr) return;
     if (mPageCache.size() == 0)return;
     auto it = std::find_if(mPageCache.begin(), mPageCache.end(), \
         [page](const std::pair<int, PageBase*>& pair) { return pair.second == page; });
@@ -228,104 +178,134 @@ void WindMgr::recyclePage(int8_t page) {
 /// @brief 显示弹窗
 /// @param type 弹窗ID
 /// @return 是否显示成功
-bool WindMgr::showPop(int8_t pop, LoadMsgBase* initData, bool updateHistory) {
+bool WindMgr::showPop(int8_t pop, const LoadBase* initData) {
+    if (pop == POP_NULL) return false;
+
     // 判断是否允许跳转
     switch (checkCanShowPop(pop)) {
-    case -1: { // 不允许跳转
+    case P_JUMP_DISABLE: { // 不允许跳转
         return false;
     }   break;
-    case 1: { // 相同页面，直接Load
-        mWindow->getPop()->callLoad(initData); return true;
+    case P_JUMP_SAME: { // 相同页面，直接Load
+#if RELOAD_SAME_ID_ON_SHOW
+        mWindow->getPop()->callLoad(initData);
+        return true;
+#endif
     }   break;
     default: break;
     }
 
-    // 开启延迟自动回收
-    postAutoRecycle(false);
+    // 先确保目标弹窗可用，再保存当前弹窗历史。
+    if (!ensurePopCached(pop)) return false;
 
-    // 检查弹窗是否成功构建
-    if (!checkPCache(pop, false))return false;
+    HistoryNode node;
+    bool hasHistory = makeCurrentPopHistory(&node);
 
-    // 保存当前弹窗状态并记录历史记录
-    if (updateHistory) addToHistory(false);
-
-    // 显示新弹窗
-    if (mWindow->showPop(mPopCache[pop], initData) == pop) {
-        LOGI("show pop: %d <- %p", pop, mPopCache[pop]);
+    if (switchPop(pop, initData, nullptr)) {
+        if (hasHistory) pushPopHistory(std::move(node));
         return true;
-    } else {
-        LOGW("show pop: %d x %p", pop, mPopCache[pop]);
-        return false;
     }
+
+    return false;
 }
 
-/// @brief 向指定弹窗发送基础消息
-/// @param page 弹窗ID
-/// @param type 消息类型
-/// @param value 消息值
-/// @param fromUiThread 是否来自UI线程 
-void WindMgr::sendPopMsg(int8_t page, MSG_TYPE type, int value, bool fromUiThread) {
-    RunMsgBase msgBase;
-    msgBase.msgType = type;
-    msgBase.msgValue = value;
-    sendPopMsg(page, &msgBase, fromUiThread);
-}
-
-/// @brief 向指定弹窗发送消息
+/// @brief 替换当前弹窗，不写入弹窗历史
 /// @param pop 弹窗ID
-/// @param msg 消息数据
-/// @param fromUiThread 是否来自UI线程
-void WindMgr::sendPopMsg(int8_t pop, const RunMsgBase* msg, bool fromUiThread) {
-    if (fromUiThread) {
-        if (mWindow->getPopType() != POP_NULL) {
-            if (pop == POP_NULL || pop == mWindow->getPopType()) {
-                mWindow->getPop()->callMsg(msg);
-            }
-        }
-    } else {
-#if ENABLE_THREAD_SAFE_MSG
-        std::lock_guard<std::mutex> lock(mPopMsgCacheMutex);
-        std::unique_ptr<RunMsgBase> copy(msg->clone());
-        mPopMsgCache.push(std::make_pair((uint8_t)pop, std::move(copy)));
-        if (mPopMsgCache.size() >= MAX_THREAD_SAFE_MSG_SIZE) {
-            mPopMsgCache.pop();
-            LOGE("Message cache full, discarded oldest message");
-        }
-#else
-        LOGE("sendPopMsg from other thread, but not support");
-#endif
+/// @param initData 初始化数据
+/// @return 是否替换成功
+bool WindMgr::replacePop(int8_t pop, const LoadBase* initData) {
+    if (pop == POP_NULL) return false;
+
+    switch (checkCanShowPop(pop)) {
+    case P_JUMP_DISABLE: {
+        return false;
+    }   break;
+    case P_JUMP_SAME: {
+        mWindow->getPop()->callLoad(initData);
+    }   return true;
+    default: break;
     }
+
+    return switchPop(pop, initData, nullptr);
 }
 
-/// @brief 隐藏弹窗
-void WindMgr::hidePop() {
-    if (mWindow->getPopType() != POP_NULL) {
-        auto saved = mWindow->getPop()->callSaveState();
-        std::unique_ptr<SaveMsgBase> copy(nullptr);
-        if (saved) copy.reset(std::move(saved));
-
-        mPopHistory.push_back(std::make_pair(mWindow->getPopType(), std::move(copy)));
+/// @brief 回收指定弹窗
+/// @param pop 弹窗指针
+void WindMgr::recyclePop(PopBase* pop) {
+    if (pop == nullptr)return;
+    if (mPopCache.size() == 0)return;
+    auto it = std::find_if(mPopCache.begin(), mPopCache.end(), \
+        [pop](const std::pair<int, PopBase*>& pair) { return pair.second == pop; });
+    if (it != mPopCache.end()) {
+        int type = it->first;
+        if (type == mWindow->getPopType())mWindow->removePop();
+        mPopCache.erase(it);
+        __delete(pop);
+        LOGW("close pop: %d <- %p | pop count=%d", type, pop, mPopCache.size());
+        return;
     }
-    mWindow->removePop();
+    LOGE("close pop but not found: %p | pop count=%d", pop, mPopCache.size());
+}
+
+/// @brief 回收指定弹窗
+/// @param pop 弹窗ID
+/// @note pop传入POP_NULL时，会回收所有弹窗
+void WindMgr::recyclePop(int8_t pop) {
+    if (mPopCache.size() == 0)return;
+
+    // 回收所有弹窗
+    if (pop == POP_NULL) {
+        if (mWindow) mWindow->removePop();
+        mPopHistory.clear();
+        std::unordered_map<int8_t, PopBase*> swapMap;
+        mPopCache.swap(swapMap);
+        for (auto& it : swapMap) {
+            LOGW("close pop: %d <- %p | pop count=%d ", it.second->getType(), it.second, swapMap.size());
+            if (it.second) delete it.second;
+        }
+        return;
+    }
+
+    // 回收指定弹窗
+    auto it = mPopCache.find(pop);
+    if (it != mPopCache.end()) {
+        PopBase* ptr = it->second;
+        if (pop == mWindow->getPopType())mWindow->removePop();
+        mPopCache.erase(it);
+        __delete(ptr);
+        LOGW("close pop: %d <- %p | pop count=%d ", pop, ptr, mPopCache.size());
+        return;
+    }
+    LOGE("close pop but not found: %d | pop count=%d", pop, mPopCache.size());
+}
+
+/// @brief 清空弹窗层
+void WindMgr::clearPop() {
+    if (mWindow) mWindow->removePop();
+    mPopHistory.clear();
     postAutoRecycle(false);
 }
 
 /// @brief 返回到首页
 /// @param withBundle 是否携带状态包 
 void WindMgr::goToHome(bool withBundle) {
-    if (mWindow->getPageType() == PAGE_HOME)return; // 防呆
+    if (mWindow->getPageType() == PAGE_HOME) {
+        clearPop();
+        mPageHistory.clear();
+        return;
+    }
     LOGI("Go to home, clear page history");
 
     // 判断能否跳转
-    if (showPage(PAGE_HOME, nullptr, false)) {
+    if (replacePage(PAGE_HOME, nullptr)) {
         if (withBundle) {
             // 寻找首页历史记录
             auto it = std::find_if(mPageHistory.begin(), mPageHistory.end(),
-                [](const std::pair<int8_t, std::unique_ptr<SaveMsgBase>>& pair) {
+                [](const HistoryNode& pair) {
                 return pair.first == PAGE_HOME;
             });
             if (it != mPageHistory.end()) {
-                mWindow->getPage()->callRestoreState(it->second.get());
+                mWindow->getPage()->callRestore(it->second.get());
                 LOGI("restore state for home page");
             } else {
                 LOGE("home page not has history");
@@ -346,61 +326,26 @@ void WindMgr::goToPageBack() {
         return;
     }
 
-#if 1
     // 获取最后一条记录的所有权
     auto node = std::move(mPageHistory.back());
     mPageHistory.pop_back();
     LOGI("go to page back: %d", node.first);
 
     // 判断能否跳转
-    if (showPage(node.first, nullptr, false)) {
-        // 可以跳转，恢复状态
-        LOGI("restore state for page: %d", node.first);
-        mWindow->getPage()->callRestoreState(node.second.get());
+    if (switchPage(node.first, nullptr, node.second.get())) {
+        LOGI("go to page back success: %d", node.first);
     } else {
         // 跳转失败，重新加入历史记录
         LOGE("goTo page failed: %d", node.first);
         mPageHistory.push_back(std::move(node));
     }
-#else
-    // 安全地 move 出最后一条记录
-    auto node = std::move(mPageHistory.back());
-    mPageHistory.pop_back();
-    int8_t pageId = node.first;
-    auto& saved = node.second; // unique_ptr<SaveMsgBase>
-
-    LOGI("go to page back: %d", pageId);
-
-    // 确保目标页面存在（先创建）
-    if (!checkPCache(pageId, true)) {
-        LOGE("failed to create page on back: %d", pageId);
-        // 恢复历史（把 node 放回）
-        mPageHistory.push_back(std::move(node));
-        goToHome(false);
-        return;
-    }
-
-    PageBase* page = mPageCache[pageId];
-
-    // 先恢复状态（在 show 之前恢复，避免闪烁）
-    if (saved) page->callRestoreState(saved.get());
-
-    // 然后显示页面
-    if (mWindow->showPage(page, nullptr) == pageId) {
-        LOGI("restore state for page: %d", pageId);
-    } else {
-        LOGE("goTo page failed: %d", pageId);
-        // 若失败，把 node 放回历史
-        mPageHistory.push_back(std::move(node));
-    }
-#endif
 }
 
 /// @brief 返回到上一个弹窗
 void WindMgr::goToPopBack() {
     if (mPopHistory.empty()) { // 没有历史记录
-        LOGW("no pop history, hide pop");
-        hidePop();
+        LOGW("no pop history, clear pop");
+        clearPop();
         return;
     }
 
@@ -409,10 +354,8 @@ void WindMgr::goToPopBack() {
     mPopHistory.pop_back();
 
     // 判断能否跳转
-    if (showPop(node.first, nullptr, false)) {
-        // 可以跳转，恢复状态
-        LOGI("restore state for pop: %d", node.first);
-        mWindow->getPop()->callRestoreState(node.second.get());
+    if (switchPop(node.first, nullptr, node.second.get())) {
+        LOGI("go to pop back success: %d", node.first);
     } else {
         // 跳转失败，重新加入历史记录
         LOGE("goTo pop failed: %d", node.first);
@@ -423,22 +366,53 @@ void WindMgr::goToPopBack() {
 /// @brief 从历史记录抹去指定页面
 /// @param page 
 void WindMgr::removePageHistory(int8_t page) {
-    auto it = std::find_if(mPageHistory.begin(), mPageHistory.end(),
-        [page](const std::pair<int8_t, std::unique_ptr<SaveMsgBase>>& pair) { return pair.first == page; });
-    if (it != mPageHistory.end()) {
-        mPageHistory.erase(it);
-        LOGI("remove page history: %d", page);
+    if (page == PAGE_NULL) {
+        mPageHistory.clear();
+        LOGI("clear page history");
+        return;
+    }
+
+    size_t oldSize = mPageHistory.size();
+    mPageHistory.erase(
+        std::remove_if(mPageHistory.begin(), mPageHistory.end(),
+            [page](const HistoryNode& pair) { return pair.first == page; }),
+        mPageHistory.end()
+    );
+    if (mPageHistory.size() != oldSize) {
+        LOGI("remove page history: %d, count=%d", page, oldSize - mPageHistory.size());
     }
 }
 
 /// @brief 从历史记录抹去指定弹窗
 /// @param pop 
 void WindMgr::removePopHistory(int8_t pop) {
-    auto it = std::find_if(mPopHistory.begin(), mPopHistory.end(),
-        [pop](const std::pair<int8_t, std::unique_ptr<SaveMsgBase>>& pair) { return pair.first == pop; });
-    if (it != mPopHistory.end()) {
-        mPopHistory.erase(it);
-        LOGI("remove pop history: %d", pop);
+    if (pop == POP_NULL) {
+        mPopHistory.clear();
+        LOGI("clear pop history");
+        return;
+    }
+
+    size_t oldSize = mPopHistory.size();
+    mPopHistory.erase(
+        std::remove_if(mPopHistory.begin(), mPopHistory.end(),
+            [pop](const HistoryNode& pair) { return pair.first == pop; }),
+        mPopHistory.end()
+    );
+    if (mPopHistory.size() != oldSize) {
+        LOGI("remove pop history: %d, count=%d", pop, oldSize - mPopHistory.size());
+    }
+}
+
+/// @brief 消息处理
+/// @param message
+void WindMgr::handleMessage(Message& message) {
+    switch (message.what) {
+    case MSG_AUTO_RECYCLE_PAGE: {
+        autoRecyclePage();
+    }   break;
+    case MSG_AUTO_RECYCLE_POP: {
+        autoRecyclePop();
+    }   break;
     }
 }
 
@@ -455,21 +429,73 @@ bool WindMgr::createPage(int8_t page) {
         std::string msg = "page[" + std::to_string(page) + "] type error";
         throw std::runtime_error(msg.c_str());
     }
-#if OPEN_SCREENSAVER
-    refreshScreenSaver();
-#endif
     mPageCache[page] = pb;
     LOGW("add new page: %d <- %p | page count=%d ", page, pb, mPageCache.size());
     return true;
 }
 
+/// @brief 确保页面已经在缓存中
+/// @param page 页面ID
+/// @return 是否存在或创建成功
+bool WindMgr::ensurePageCached(int8_t page) {
+    auto it = mPageCache.find(page);
+    return it != mPageCache.end() || createPage(page);
+}
+
+/// @brief 切换到指定页面，可选择恢复历史状态
+/// @param page 页面ID
+/// @param initData 初始化数据
+/// @param restoreData 恢复状态数据
+/// @return 是否切换成功
+bool WindMgr::switchPage(int8_t page, const LoadBase* initData, const SaveBase* restoreData) {
+    if (!ensurePageCached(page)) return false;
+
+    postAutoRecycle(true);
+
+    if (mWindow->showPage(mPageCache[page], initData) == page) {
+        if (restoreData) {
+            mWindow->getPage()->callRestore(restoreData);
+            LOGI("restore state for page: %d", page);
+        }
+        LOGI("show page: %d <- %p", page, mPageCache[page]);
+        return true;
+    }
+
+    LOGE("show page: %d x %p", page, mPageCache[page]);
+    return false;
+}
+
+/// @brief 保存当前页面状态为历史节点
+/// @param node 输出历史节点
+/// @return 是否生成历史节点
+bool WindMgr::makeCurrentPageHistory(HistoryNode* node) {
+    int8_t page = mWindow->getPageType();
+    if (page == PAGE_NULL) return false;
+
+    std::unique_ptr<SaveBase> saved(mWindow->getPage()->callSave());
+    *node = std::make_pair(page, std::move(saved));
+    return true;
+}
+
+/// @brief 推入页面历史
+/// @param node 历史节点
+void WindMgr::pushPageHistory(HistoryNode&& node) {
+    constexpr size_t MAX_HISTORY = 20;
+
+    mPageHistory.push_back(std::move(node));
+    while (mPageHistory.size() > MAX_HISTORY) mPageHistory.erase(mPageHistory.begin());
+
+    LOGI("push page[%d] to history, new history size: %d ",
+        mPageHistory.back().first, mPageHistory.size());
+}
+
 /// @brief 检查是否允许页面跳转
 /// @param newPage 新页面类型
-/// @return -1:不允许 0:允许 1:前后相同
-int8_t WindMgr::checkCanShowPage(int8_t newPage) {
+/// @return 跳转类型
+WindMgr::P_JUMP_TYPE WindMgr::checkCanShowPage(int8_t newPage) {
     int8_t nowPage = mWindow->getPageType();
-    if (nowPage == newPage) return 1; // 前后相同
-    return 0;
+    if (nowPage == newPage) return P_JUMP_SAME; // 前后相同
+    return P_JUMP_ENABLE;
 }
 
 /// @brief 自动回收页面
@@ -500,95 +526,81 @@ bool WindMgr::createPop(int8_t pop) {
         std::string msg = "pop[" + std::to_string(pop) + "] type error";
         throw std::runtime_error(msg.c_str());
     }
-#if OPEN_SCREENSAVER
-    refreshScreenSaver();
-#endif
     mPopCache[pop] = pb;
     LOGW("add new pop: %d <- %p | pop count=%d ", pop, pb, mPopCache.size());
     return true;
 }
 
-/// @brief 检查是否允许弹窗跳转
-/// @param newPop 新弹窗类型
-/// @return -1:不允许 0:允许 1:前后相同
-int8_t WindMgr::checkCanShowPop(int8_t newPop) {
-    int8_t nowPop = mWindow->getPopType();
-    if (nowPop > newPop) return -1;
-    if (nowPop == newPop) return 1; // 前后相同
-    return 0;
+/// @brief 确保弹窗已经在缓存中
+/// @param pop 弹窗ID
+/// @return 是否存在或创建成功
+bool WindMgr::ensurePopCached(int8_t pop) {
+    auto it = mPopCache.find(pop);
+    return it != mPopCache.end() || createPop(pop);
 }
 
-/// @brief 检查页面/弹窗缓存
-/// @param pType 类型
-/// @param isPage 是否为PAGE
-/// @return 是否存在
-bool WindMgr::checkPCache(int8_t pType, bool isPage) {
-    if (isPage) {
-        auto it = mPageCache.find(pType);
-        if (it == mPageCache.end() && !createPage(pType))
-            return false;
-    } else {
-        auto it = mPopCache.find(pType);
-        if (it == mPopCache.end() && !createPop(pType))
-            return false;
+/// @brief 切换到指定弹窗，可选择恢复历史状态
+/// @param pop 弹窗ID
+/// @param initData 初始化数据
+/// @param restoreData 恢复状态数据
+/// @return 是否切换成功
+bool WindMgr::switchPop(int8_t pop, const LoadBase* initData, const SaveBase* restoreData) {
+    if (!ensurePopCached(pop)) return false;
+
+    postAutoRecycle(false);
+
+    if (mWindow->showPop(mPopCache[pop], initData) == pop) {
+        if (restoreData) {
+            mWindow->getPop()->callRestore(restoreData);
+            LOGI("restore state for pop: %d", pop);
+        }
+        LOGI("show pop: %d <- %p", pop, mPopCache[pop]);
+        return true;
     }
+
+    LOGE("show pop: %d x %p", pop, mPopCache[pop]);
+    return false;
+}
+
+/// @brief 保存当前弹窗状态为历史节点
+/// @param node 输出历史节点
+/// @return 是否生成历史节点
+bool WindMgr::makeCurrentPopHistory(HistoryNode* node) {
+    int8_t pop = mWindow->getPopType();
+    if (pop == POP_NULL) return false;
+
+    std::unique_ptr<SaveBase> saved(mWindow->getPop()->callSave());
+    *node = std::make_pair(pop, std::move(saved));
     return true;
 }
 
-/// @brief 保存当前状态
-/// @param isPage 是否为PAGE
-void WindMgr::addToHistory(bool isPage) {
-    // 检查当前类型
-    int8_t pType = isPage ? mWindow->getPageType() : mWindow->getPopType();
-    if (isPage ? // 空页面不保存
-        pType == PAGE_NULL :
-        pType == POP_NULL)
-        return;
-
-    // 调整历史记录
-    adjustHistory(pType, isPage);
-
-    // 获取历史记录
-    auto history = isPage ? &mPageHistory : &mPopHistory;
-
-    // 获取当前显示内容指针
-    PBase* p = nullptr;
-    if (isPage) p = mWindow->getPage();
-    else p = mWindow->getPop();
-
-    // 生成包含当前状态信息的智能指针
-    auto saved = p->callSaveState();
-    std::unique_ptr<SaveMsgBase> copy(nullptr);
-    if (saved) copy.reset(std::move(saved));
-
-    // 加入历史记录
-    history->push_back(std::make_pair(pType, std::move(copy)));
-
+/// @brief 推入弹窗历史
+/// @param node 历史节点
+void WindMgr::pushPopHistory(HistoryNode&& node) {
     constexpr size_t MAX_HISTORY = 20;
-    if (history->size() >= MAX_HISTORY) history->erase(history->begin());
 
-    LOGI("push %s[%d] to history, new history size: %d ",
-        isPage ? "page" : "pop",
-        pType, history->size());
+    mPopHistory.push_back(std::move(node));
+    while (mPopHistory.size() > MAX_HISTORY) mPopHistory.erase(mPopHistory.begin());
+
+    LOGI("push pop[%d] to history, new history size: %d ",
+        mPopHistory.back().first, mPopHistory.size());
 }
 
-/// @brief 调整历史记录
-/// @param pType 类型
-/// @param isPage 是否为PAGE
-void WindMgr::adjustHistory(int8_t pType, bool isPage) {
-    auto history = isPage ? &mPageHistory : &mPopHistory;
-    auto pageIt = std::find_if(history->begin(), history->end(),
-        [pType](const std::pair<int8_t, std::unique_ptr<SaveMsgBase>>& pair) { return pair.first == pType; });
-    if (pageIt != history->end()) {
-        history->erase(pageIt, history->end());
-        LOGI("Adjust %s history, new history size: %d", isPage ? "page" : "pop", history->size());
-    }
+/// @brief 检查是否允许弹窗跳转
+/// @param newPop 新弹窗类型
+/// @return 跳转类型
+WindMgr::P_JUMP_TYPE WindMgr::checkCanShowPop(int8_t newPop) {
+    int8_t nowPop = mWindow->getPopType();
+    if (nowPop > newPop) return P_JUMP_DISABLE;
+    if (nowPop == newPop) return P_JUMP_SAME; // 前后相同
+    return P_JUMP_ENABLE;
 }
 
 /// @brief 检查自动回收
 /// @param isPage 是否为PAGE
 void WindMgr::postAutoRecycle(bool isPage) {
 #if AUTO_CLOSE
+    if (!mLooper) return;
     mLooper->removeMessages(this,
         isPage ? MSG_AUTO_RECYCLE_PAGE : MSG_AUTO_RECYCLE_POP
     );
@@ -611,43 +623,4 @@ void WindMgr::autoRecyclePop() {
             ++it; // 仅在未删除时移动迭代器
         }
     }
-}
-
-/// @brief 处理其它线程发送的消息
-void WindMgr::dealOtherThreadMsg() {
-#if ENABLE_THREAD_SAFE_MSG
-    std::queue<std::pair<int8_t, std::unique_ptr<RunMsgBase>>> msgCache;
-    // 检查页面消息
-    {
-        std::lock_guard<std::mutex> lock(mPageMsgCacheMutex);
-        if (!mPageMsgCache.empty()) msgCache.swap(mPageMsgCache);
-    }
-    // 处理页面消息
-    while (!msgCache.empty()) {
-        auto& msg = msgCache.front();
-        sendPageMsg(msg.first, msg.second.get(), false);
-        msgCache.pop();
-    }
-    // 检查弹窗消息
-    {
-        std::lock_guard<std::mutex> lock(mPopMsgCacheMutex);
-        if (!mPopMsgCache.empty()) msgCache.swap(mPopMsgCache);
-    }
-    // 处理弹窗消息
-    while (!msgCache.empty()) {
-        auto& msg = msgCache.front();
-        sendPopMsg(msg.first, msg.second.get(), false);
-        msgCache.pop();
-    }
-#endif
-}
-
-/// @brief 屏幕保护（休眠）
-/// @param lock 解锁/上锁
-void WindMgr::screenSaver(bool lock) {
-    LOGV("WindMgr::screenSaver = %d", lock);
-    if (lock) {
-    } else {
-    }
-    InputEventSource::getInstance().closeScreenSaver();
 }

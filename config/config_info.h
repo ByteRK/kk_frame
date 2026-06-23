@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-01-18 11:33:02
- * @LastEditTime: 2026-05-11 23:13:44
+ * @LastEditTime: 2026-06-23 11:48:31
  * @FilePath: /kk_frame/config/config_info.h
  * @Description: 项目信息
  * @BugList:
@@ -16,25 +16,34 @@
 
 /*********************** 文件信息 ***********************/
 #if defined(PRODUCT_SIGMA)
+#define LOCAL_DEV_DIR  "/appconfigs/"
 #define LOCAL_DATA_DIR "/appconfigs/"
 #elif defined(PRODUCT_RK3506)
-#define LOCAL_DATA_DIR "/userdata/app/data/"
+#define LOCAL_DEV_DIR  "/userdata/"
+#define LOCAL_DATA_DIR "/userdata/app/"
 #else
 #include "app_version.h"
+#define LOCAL_DEV_DIR  "./apps/" APP_NAME_STR "/"
 #define LOCAL_DATA_DIR "./apps/" APP_NAME_STR "/"
 #endif
-#define DEFINE_FILE_INFO(name, file) \
+
+#define DEFINE_DEV_FILE_INFO(name, file) \
     static const char* name##_FILE_NAME = #file; \
     static const char* name##_FILE_PATH = LOCAL_DATA_DIR #file; \
     static const char* name##_FILE_BAK_PATH = LOCAL_DATA_DIR #file ".bak";
 
-DEFINE_FILE_INFO(DEVCONF,    devices.xml)         // 设备配置文件
+#define DEFINE_DATA_FILE_INFO(name, file) \
+    static const char* name##_FILE_NAME = #file; \
+    static const char* name##_FILE_PATH = LOCAL_DATA_DIR #file; \
+    static const char* name##_FILE_BAK_PATH = LOCAL_DATA_DIR #file ".bak";
 
-DEFINE_FILE_INFO(APP,        app.json);           // 应用数据文件
-DEFINE_FILE_INFO(CONFIG,     config.xml);         // 配置文件名
-DEFINE_FILE_INFO(WIFI,       wifi.xml);           // WIFI配置文件名
-DEFINE_FILE_INFO(HISTORY,    history.json)        // 历史记录文件名
-DEFINE_FILE_INFO(STATISTICS, statistics.json)     // 统计文件名
+DEFINE_DEV_FILE_INFO(DEVCONF,     devices.xml)         // 设备配置文件
+
+DEFINE_DATA_FILE_INFO(APP,        app.json);           // 应用数据文件
+DEFINE_DATA_FILE_INFO(CONFIG,     config.xml);         // 配置文件名
+DEFINE_DATA_FILE_INFO(WIFI,       wifi.xml);           // WIFI配置文件名
+DEFINE_DATA_FILE_INFO(HISTORY,    history.json)        // 历史记录文件名
+DEFINE_DATA_FILE_INFO(STATISTICS, statistics.json)     // 统计文件名
 
 #define APP_FIRST_INIT_TAG "./FIRSTINIT.TAG"      // 第一次初始化标记
 

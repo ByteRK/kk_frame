@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2026-04-24 10:16:49
+ * @LastEditTime: 2026-06-20 14:49:25
  * @FilePath: /kk_frame/src/app/page/core/base.h
  * @Description: 页面基类
  * @BugList:
@@ -16,12 +16,13 @@
 
 #include "id.h"
 #include "R.h"
-#include "msg.h"
 #include "json_utils.h"
 #include "project_utils.h"
 #include "app_common.h"
 #include "app_version.h"
 #include "tick_mgr.h"
+
+#include <memory>
 
 #include <view/view.h>
 #include <view/viewgroup.h>
@@ -33,47 +34,57 @@
 
 namespace AppRid = APP_NAME::R::id;
 
-/// @brief 基类
-class PBase: public TickMgr::ITickClass {
-protected:
-    Looper*          mLooper = nullptr;                         // 事件循环
-    cdroid::Context* mContext = nullptr;                        // 上下文
-    LayoutInflater*  mInflater = nullptr;                       // 布局加载器
-    uint8_t          mLang = LANG_ZH_CN;                        // 语言
+/// @brief 页面/弹窗加载参数基类
+struct LoadBase {
+    virtual ~LoadBase() = default;
+};
 
-    ViewGroup*       mRootView = nullptr;                       // 根节点
-    bool             mIsAttach = false;                         // 是否已经Attach
+/// @brief 页面/弹窗状态保存基类
+struct SaveBase {
+    virtual ~SaveBase() = default;
+};
+
+/// @brief 页面/弹窗基类
+class PBase : public TickMgr::ITickClass {
+protected:
+    Looper*          mLooper{ nullptr };                        // 事件循环
+    cdroid::Context* mContext{ nullptr };                       // 上下文
+    LayoutInflater*  mInflater{ nullptr };                      // 布局加载器
+    uint8_t          mLang{ LANG_ZH_CN };                       // 语言
+
+    ViewGroup*       mRootView{ nullptr };                      // 根节点
+    bool             mIsAttach{ false };                        // 是否已经Attach
 
 public:
     PBase(std::string resource);                                // 构造函数
     virtual ~PBase();                                           // 析构函数
 
     uint8_t getLang() const;                                    // 获取当前页面语言
-    virtual View* getRootView();                                // 获取根节点
+    virtual View* getRootView();                                // 获取根节点（支持重载，方便套壳使用）
     virtual int8_t getType() const = 0;                         // 获取页面类型
 
     virtual void callAttach();                                  // 通知页面挂载
     virtual void callDetach();                                  // 通知页面剥离
-    void callLoad(LoadMsgBase* loadMsg);                        // 调用重加载
-    SaveMsgBase* callSaveState();                               // 保存状态
-    void callRestoreState(const SaveMsgBase* saveMsg);          // 恢复状态
-    void callMsg(const RunMsgBase* runMsg);                     // 运行时消息
+    void callLoad(const LoadBase* loadMsg);                     // 调用重加载
+    std::unique_ptr<SaveBase> callSave();                       // 保存状态
+    void callRestore(const SaveBase* saveMsg);                  // 恢复状态
     void callMcu(uint8_t* data, uint8_t len);                   // 接受电控数据
-    bool callKey(int keyCode, KeyEvent& evt);                   // 接受按键事件
+    bool callKey(KeyEvent& evt);                                // 接受按键事件
     void callLangChange(uint8_t lang);                          // 调用语言切换
     void callCheckLight(uint8_t* left, uint8_t* right);         // 调用检查按键灯
 
+    virtual bool canAutoRecycle() const;                        // 是否允许自动回收
+    
 protected:
     virtual void initUI() = 0;                                  // 初始化UI
     virtual void onAttach();                                    // 挂载页面回调
     virtual void onDetach();                                    // 剥离页面回调
-    virtual void onLoad(LoadMsgBase* loadMsg);                  // 数据加载回调
-    virtual SaveMsgBase* onSaveState();                         // 状态保存
-    virtual void onRestoreState(const SaveMsgBase* saveMsg);    // 状态恢复
+    virtual void onLoad(const LoadBase* loadMsg);               // 数据加载回调
+    virtual SaveBase* onSave();                                 // 状态保存
+    virtual void onRestore(const SaveBase* saveMsg);            // 状态恢复
     virtual void onTick(int64_t nowMs) override;                // 定时器回调
-    virtual void onMsg(const RunMsgBase* runMsg);               // 运行时消息回调
     virtual void onMcu(uint8_t* data, uint8_t len);             // 电控数据回调
-    virtual bool onKey(int keyCode, KeyEvent& evt);             // 按键事件回调
+    virtual bool onKey(KeyEvent& evt);                          // 按键事件回调
     virtual void onLangChange();                                // 语言切换通知回调
     virtual void onCheckLight(uint8_t* left, uint8_t* right);   // 检查按键灯回调
     void setLangText(TextView* v, const Json::Value& value);    // 设置语言文本
@@ -115,6 +126,41 @@ protected:
     /// @brief 设置点击事件
     void click(int id, View::OnClickListener l) {
         click(mRootView, id, l);
+    }
+};
+
+
+/*
+ *************************************** 注册机模板 ***************************************
+**/
+
+template<typename Base, typename Tag>
+class Creator {
+protected:
+    typedef std::function<Base* ()> CallBack;
+    static std::map<int8_t, CallBack>& table() {
+        static std::map<int8_t, CallBack> sTable;
+        return sTable;
+    }
+public:
+    static void add(int8_t id, CallBack sink) {
+        table()[id] = sink;   // 允许重复注册时覆盖
+        // table().insert(std::make_pair(id, sink)); // 不允许覆盖注册
+    }
+    static Base* get(int8_t id) {
+        auto it = table().find(id);
+        if (it == table().end()) return nullptr;
+        return it->second();
+    }
+};
+
+template<typename CreatorType, typename T>
+class Register {
+public:
+    Register(int8_t id) {
+        CreatorType::add(id, []() {
+            return new T();
+        });
     }
 };
 

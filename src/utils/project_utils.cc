@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:47:17
- * @LastEditTime: 2026-04-22 20:07:34
+ * @LastEditTime: 2026-06-17 00:13:45
  * @FilePath: /kk_frame/src/utils/project_utils.cc
  * @Description: 项目相关的一些操作函数
  * @BugList:
@@ -13,6 +13,7 @@
 
 #include "project_utils.h"
 #include "time_utils.h"
+#include "system_utils.h"
 #include "env_utils.h"
 
 #include "fonts_info.h"
@@ -21,8 +22,6 @@
 
 #include <gui_features.h>
 #include <sys/syscall.h>
-#include <sys/ioctl.h>
-#include <fcntl.h>
 #include <unistd.h>
 #include <fstream>
 #include <iostream>
@@ -121,26 +120,10 @@ void ProjectUtils::getDebugServiceInfo(std::string& ip, int16_t& port) {
 #endif
 }
 
-int ProjectUtils::getTwscTpVersion() {
-#ifndef PRODUCT_X64
-    return 0;
-#else
-    int fd = open("/dev/techwin_ioctl", O_RDONLY);
-    if (fd < 0) {
-        perror("open failed");
-        return -1;
-    }
-    int ret = ioctl(fd, 0xff);
-    LOG(INFO) << "getTwscTpVersion: " << ret << std::endl;
-    close(fd);
-    return ret;
-#endif
-}
-
 void ProjectUtils::saveTime(const std::string& filename) {
     std::ofstream file(filename);
     if (!file.is_open()) {
-        std::cerr << "Error opening time file." << std::endl;
+        LOGE("Error opening time file.");
         return;
     }
     time_t now = time(0);
@@ -155,7 +138,7 @@ void ProjectUtils::saveTime(const std::string& filename) {
 void ProjectUtils::loadTime(const std::string& filename) {
     std::ifstream file(filename);
     if (!file.is_open()) {
-        std::cerr << "Error opening time file." << std::endl;
+        LOGE("Error opening time file.");
         return;
     }
     std::string line;
@@ -166,7 +149,7 @@ void ProjectUtils::loadTime(const std::string& filename) {
     strptime(cstr, "Current Date and Time: %a %b %d %H:%M:%S %Y\n", &timeinfo);
     delete[] cstr;
     std::cout << "Date and Time read from file: " << asctime(&timeinfo);
-    TimeUtils::setTime(mktime(&timeinfo));
+    SystemUtils::setTime(mktime(&timeinfo));
     file.close();
 }
 

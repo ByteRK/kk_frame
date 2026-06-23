@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-16 09:20:42
- * @LastEditTime: 2026-01-20 09:05:08
+ * @LastEditTime: 2026-06-17 00:48:22
  * @FilePath: /kk_frame/src/app/managers/statistics_mgr.cc
  * @Description: 数据统计管理
  * @BugList:
@@ -15,6 +15,7 @@
 #include "config_info.h"
 #include "utils/json_utils.h"
 #include "utils/file_utils.h"
+#include "utils/time_utils.h"
 #include <cdlog.h>
 
 /************************* 输入输出交互，根据项目变动 *************************/
@@ -48,7 +49,7 @@ StatisticsMgr::StatisticsMgr() : AutoSaveItem(6000, 10000) {
     mHaveChange = false;
 
     mLastEventTime = time(nullptr);
-    mCurrentDayEnd = getEndOfDay(mLastEventTime);
+    mCurrentDayEnd = TimeUtils::getZeroTimeSec(mLastEventTime) + TimeUtils::DAY_SECONDS;
 }
 
 /// @brief 析构
@@ -184,17 +185,6 @@ void StatisticsMgr::addDayData(StatisticsData& data) {
     mHaveChange = true;
 }
 
-/// @brief 获取一天结束时间时间戳
-/// @param timestamp 时间戳
-/// @return 一天结束时间
-time_t StatisticsMgr::getEndOfDay(time_t timestamp) {
-    struct tm* tm_info = localtime(&timestamp);
-    tm_info->tm_hour = 0;
-    tm_info->tm_min = 0;
-    tm_info->tm_sec = 0;
-    return mktime(tm_info) + 24 * 3600;
-}
-
 /// @brief 移动到新的一天
 void StatisticsMgr::rotateToNewDay() {
     // 移动"今天"指针
@@ -219,7 +209,7 @@ void StatisticsMgr::rotateToNewDay() {
 void StatisticsMgr::checkAndRotateDay(time_t current_time) {
     // 如果跨天了，滚动缓冲区
     if (current_time >= mCurrentDayEnd) {
-        rotateToNewDay();                               // 切换到新的一天
-        mCurrentDayEnd = getEndOfDay(current_time);     // 更新当前天结束时间
+        rotateToNewDay();                                             // 切换到新的一天
+        mCurrentDayEnd = TimeUtils::getZeroTimeSec(current_time) + TimeUtils::DAY_SECONDS;     // 更新当前天结束时间
     }
 }

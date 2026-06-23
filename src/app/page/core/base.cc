@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2026-04-23 16:15:14
+ * @LastEditTime: 2026-06-13 23:34:13
  * @FilePath: /kk_frame/src/app/page/core/base.cc
  * @Description: 页面基类
  * @BugList:
@@ -52,29 +52,25 @@ void PBase::callDetach() {
     onDetach();
 }
 
-void PBase::callLoad(LoadMsgBase* loadMsg) {
+void PBase::callLoad(const LoadBase* loadMsg) {
     onLoad(loadMsg);
 }
 
-SaveMsgBase* PBase::callSaveState() {
-    return onSaveState();
+std::unique_ptr<SaveBase> PBase::callSave() {
+    return std::unique_ptr<SaveBase>(onSave());
 }
 
-void PBase::callRestoreState(const SaveMsgBase* saveMsg) {
-    onRestoreState(saveMsg);
-}
-
-void PBase::callMsg(const RunMsgBase* runMsg) {
-    onMsg(runMsg);
+void PBase::callRestore(const SaveBase* saveMsg) {
+    onRestore(saveMsg);
 }
 
 void PBase::callMcu(uint8_t* data, uint8_t len) {
     onMcu(data, len);
 }
 
-bool PBase::callKey(int keyCode, KeyEvent& evt) {
-    LOGV("callKey -> keyCode:%d evt:%d", keyCode, evt.getAction());
-    return onKey(keyCode, evt);
+bool PBase::callKey(KeyEvent& evt) {
+    LOGV("callKey -> keyCode:%d evt:%d", evt.getKeyCode(), evt.getAction());
+    return onKey(evt);
 }
 
 void PBase::callLangChange(uint8_t lang) {
@@ -86,25 +82,27 @@ void PBase::callCheckLight(uint8_t* left, uint8_t* right) {
     onCheckLight(left, right);
 }
 
+bool PBase::canAutoRecycle() const {
+    return true;
+}
+
 void PBase::onAttach() { }
 
 void PBase::onDetach() { }
 
-void PBase::onLoad(LoadMsgBase* loadMsg) { }
+void PBase::onLoad(const LoadBase* loadMsg) { }
 
-SaveMsgBase* PBase::onSaveState() {
+SaveBase* PBase::onSave() {
     return nullptr;
 }
 
-void PBase::onRestoreState(const SaveMsgBase* saveMsg) { }
+void PBase::onRestore(const SaveBase* saveMsg) { }
 
 void PBase::onTick(int64_t nowMs) { }
 
-void PBase::onMsg(const RunMsgBase* runMsg) { }
-
 void PBase::onMcu(uint8_t* data, uint8_t len) { }
 
-bool PBase::onKey(int keyCode, KeyEvent& evt) {
+bool PBase::onKey(KeyEvent& evt) {
     return false;
 }
 

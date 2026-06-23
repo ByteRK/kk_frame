@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-08 02:48:19
- * @LastEditTime: 2026-04-23 15:02:29
+ * @LastEditTime: 2026-06-09 00:29:56
  * @FilePath: /kk_frame/src/app/page/components/wind_page.h
  * @Description: 页面组件
  * @BugList:
@@ -18,8 +18,8 @@
 
 class WindPage {
 private:
-    PageBase*   mPage;           // 页面指针
-    ViewGroup*  mPageBox;        // 页面容器
+    PageBase*   mPage{ nullptr };       // 页面指针
+    ViewGroup*  mPageBox{ nullptr };    // 页面容器
 
 public:
     WindPage();
@@ -29,11 +29,11 @@ public:
 
     PageBase*  getPage();
     int8_t     getPageType();
-    int8_t     showPage(PageBase* page, LoadMsgBase* initData = nullptr);
+    int8_t     showPage(PageBase* page, const LoadBase* initData = nullptr);
     void       removePage();
     void       hidePageBox();
     void       showPageBox();
-    bool       onKey(int keyCode, KeyEvent& evt, bool& result);
+    bool       onKey(KeyEvent& evt);
     
 };
 

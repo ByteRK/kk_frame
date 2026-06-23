@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-12 17:08:29
- * @LastEditTime: 2026-04-24 10:27:27
+ * @LastEditTime: 2026-06-08 23:59:22
  * @FilePath: /kk_frame/src/app/managers/tick_mgr.cc
  * @Description: Tick 管理器
  * @BugList:
@@ -17,7 +17,7 @@
 #include <core/systemclock.h>
 
 namespace {
-constexpr int64_t kTickWarnCostMs = 100;
+    constexpr int64_t kTickWarnCostMs = 100;
 }
 
 /// @brief 获取当前时间戳
@@ -36,16 +36,18 @@ TickMgr::ITickClass::~ITickClass() {
 /// @brief 设置 Tick 间隔
 /// @param intervalMs 间隔时间（毫秒）
 void TickMgr::ITickClass::setTick(int64_t intervalMs) {
+    if (mTickIntervalMs == intervalMs) return;
     mTickIntervalMs = intervalMs;
+    if (g_tick->hasTick(this)) g_tick->updateInterval(this, mTickIntervalMs);
 }
 
 /// @brief 开始 Tick 任务
-/// @param firstDelayMs 首次调度延迟：-1 立即执行；0 下一轮事件循环执行；>0 延迟指定毫秒后执行
+/// @param firstDelayMs 首次调度延迟：-1 立即执行；0 下一轮事件循环执行；>0 延迟指定毫秒后执行(已经注册的任务无效)
 void TickMgr::ITickClass::startTick(int64_t firstDelayMs) {
-    if (!g_tick->hasTick(this)) {
+    if (g_tick->hasTick(this)) {
+        if (firstDelayMs < 0) g_tick->runTickNow(this);
+    } else {
         g_tick->addTick(this, mTickIntervalMs, firstDelayMs);
-    } else if (firstDelayMs < 0) {
-        g_tick->runTickNow(this);
     }
 }
 

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 14:40:26
- * @LastEditTime: 2026-05-11 23:21:43
+ * @LastEditTime: 2026-06-23 11:49:04
  * @FilePath: /kk_frame/src/utils/system_utils.cc
  * @Description: 系统相关的一些函数
  * @BugList:
@@ -20,6 +20,12 @@
 #include <cdlog.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/ioctl.h>
+#include <sys/time.h>
+#include <fcntl.h>
+#include <cerrno>
+#include <cstdio>
+#include <cstdlib>
 
 void SystemUtils::reboot() {
     ProjectUtils::saveTime(std::string(LOCAL_DATA_DIR) + "/timeCache");
@@ -27,7 +33,25 @@ void SystemUtils::reboot() {
     std::system("sync");
     std::system("reboot");
 #else
-    exit(0);
+    ::exit(0);
+#endif
+}
+
+void SystemUtils::exit() {
+    ProjectUtils::saveTime(std::string(LOCAL_DATA_DIR) + "/timeCache");
+#ifndef PRODUCT_X64
+    std::system("sync");
+    std::system("exit");
+#else
+    ::exit(0);
+#endif
+}
+
+void SystemUtils::sync() {
+#ifndef PRODUCT_X64
+    std::system("sync");
+#else
+    LOGI("-------- sync --------");
 #endif
 }
 
@@ -54,7 +78,7 @@ std::string SystemUtils::system(const std::string& cmd) {
     pclose(fp);
 
     // 裁剪尾部无效内容
-    StringUtils::trimRight(result);
+    result = StringUtils::trimRight(result);
 
     // 计算执行时间
     int64_t diff = TimeUtils::getTimeMSec() - start;
@@ -71,7 +95,7 @@ bool SystemUtils::asyncSystem(const std::string& cmd) {
     } else if (pid == 0) {
         // 子进程
         execl("/bin/sh", "sh", "-c", cmd, (char*)NULL);
-        _exit(127); // 如果 execl 失败
+        ::_exit(127); // 如果 execl 失败
     }
     // 父进程，fork() 成功
     return true;
@@ -95,7 +119,7 @@ bool SystemUtils::sysfs(const std::string& path, const std::string& value) {
 }
 
 void SystemUtils::setBrightness(int value, bool swap) {
-    value = value % 101;
+    value %= 101;
     if (swap) value = 100 - value;
 #if defined(PRODUCT_SIGMA)
 #define BRIGHTNESS_PWM_PATH "/sys/class/pwm/pwmchip0/" SYS_SCREEN_BEIGHTNESS_PWM
@@ -126,5 +150,128 @@ void SystemUtils::setBrightness(int value, bool swap) {
     system(cmd);
 #else
     LOGI("设置屏幕背光 %d | %d", value, swap);
+#endif
+}
+
+void SystemUtils::setTime(const int64_t & timestamp) {
+#ifndef PRODUCT_X64
+    timeval setTv = {};
+    setTv.tv_sec = static_cast<time_t>(timestamp);
+    setTv.tv_usec = 0;
+
+    if (settimeofday(&setTv, nullptr) != 0) {
+        LOGE("settimeofday failed, timestamp=%lld errno=%d",
+            static_cast<long long>(timestamp), errno);
+        return;
+    }
+
+    syncHWClock();
+    LOGE("set time %s", TimeUtils::getTimeFmtStr(static_cast<time_t>(timestamp), "%Y-%m-%d %H:%M:%S").c_str());
+#else
+    LOGE("set time %s", TimeUtils::getTimeFmtStr(static_cast<time_t>(timestamp), "%Y-%m-%d %H:%M:%S").c_str());
+#endif
+}
+
+void SystemUtils::setTime(int year, int month, int day, int hour, int minute, int second) {
+    if (year == 0 && month == 0 && day == 0 && hour == 0 && minute == 0 && second == 0) {
+        return;
+    }
+
+    const std::time_t currentTime = TimeUtils::getTimeSec();
+    if (currentTime == static_cast<std::time_t>(-1)) {
+        LOGE("getTimeSec failed");
+        return;
+    }
+
+    std::tm cur = {};
+    if (!TimeUtils::localTime(currentTime, cur)) {
+        LOGE("localtimeSafe failed, timestamp=%lld", static_cast<long long>(currentTime));
+        return;
+    }
+
+    if (year > 0) {
+        cur.tm_year = year - 1900;
+    }
+
+    if (month > 0) {
+        if (month > 12) {
+            LOGE("Invalid month=%d", month);
+            return;
+        }
+        cur.tm_mon = month - 1;
+    }
+
+    if (day > 0) {
+        cur.tm_mday = day;
+    }
+
+    if (hour >= 0) {
+        if (hour > 23) {
+            LOGE("Invalid hour=%d", hour);
+            return;
+        }
+        cur.tm_hour = hour;
+    }
+
+    if (minute >= 0) {
+        if (minute > 59) {
+            LOGE("Invalid minute=%d", minute);
+            return;
+        }
+        cur.tm_min = minute;
+    }
+
+    if (second >= 0) {
+        if (second > 59) {
+            LOGE("Invalid second=%d", second);
+            return;
+        }
+        cur.tm_sec = second;
+    }
+
+    const int finalYear = cur.tm_year + 1900;
+    const int finalMonth = cur.tm_mon + 1;
+    const int finalDay = cur.tm_mday;
+
+    if (!TimeUtils::isValidDate(finalYear, finalMonth, finalDay)) {
+        LOGE("Invalid date year=%d month=%d day=%d", finalYear, finalMonth, finalDay);
+        return;
+    }
+
+    if (!TimeUtils::isValidClock(cur.tm_hour, cur.tm_min, cur.tm_sec)) {
+        LOGE("Invalid time hour=%d minute=%d second=%d", cur.tm_hour, cur.tm_min, cur.tm_sec);
+        return;
+    }
+
+    cur.tm_isdst = -1;
+
+    const std::time_t newTime = std::mktime(&cur);
+    if (newTime == static_cast<std::time_t>(-1)) {
+        LOGE("mktime failed while setTime");
+        return;
+    }
+
+    setTime(static_cast<int64_t>(newTime));
+}
+
+void SystemUtils::syncHWClock() {
+#ifdef PRODUCT_SIGMA
+    asyncSystem("hwclock --systohc");
+#endif
+}
+
+int SystemUtils::getTwscTpVersion() {
+#ifndef PRODUCT_X64
+    return 0;
+#else
+    int fd = open("/dev/techwin_ioctl", O_RDONLY);
+    if (fd < 0) {
+        perror("open failed");
+        return -1;
+    }
+    int ret = ioctl(fd, 0xff);
+    LOG(INFO) << "getTwscTpVersion: " << ret << std::endl;
+    close(fd);
+    return ret;
 #endif
 }

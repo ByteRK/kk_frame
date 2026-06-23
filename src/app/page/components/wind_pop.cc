@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-08 02:48:19
- * @LastEditTime: 2026-04-23 11:59:11
+ * @LastEditTime: 2026-06-09 01:32:11
  * @FilePath: /kk_frame/src/app/page/components/wind_pop.cc
  * @Description: 弹窗组件
  * @BugList:
@@ -13,10 +13,7 @@
 
 #include "wind_pop.h"
 
-WindPop::WindPop() {
-    mPop = nullptr;
-    mPopBox = nullptr;
-}
+WindPop::WindPop() { }
 
 WindPop::~WindPop() {
     removePop();
@@ -29,6 +26,7 @@ void WindPop::init(ViewGroup* parent) {
         !(mPopBox = PBase::get<ViewGroup>(parent, AppRid::pop))
         )throw std::runtime_error("WindPop init failed");
     mPopBox->setOnTouchListener([](View&, MotionEvent&) { return true; });
+    mPopBox->setSoundEffectsEnabled(false);
     mPopBox->setVisibility(View::GONE);
 }
 
@@ -48,7 +46,7 @@ int8_t WindPop::getPopType() {
 /// @param pop 弹窗指针
 /// @param initData 初始化数据
 /// @return 最新弹窗类型
-int8_t WindPop::showPop(PopBase* pop, LoadMsgBase* initData) {
+int8_t WindPop::showPop(PopBase* pop, const LoadBase* initData) {
     removePop();
     mPop = pop;
     if (mPop) {
@@ -81,11 +79,8 @@ void WindPop::showPopBox() {
 }
 
 /// @brief 按键监听
-/// @param keyCode 键值
 /// @param evt 事件
-/// @param result 处理结果
-/// @return 是否已消费 为true则下层不再处理
-bool WindPop::onKey(int keyCode, KeyEvent& evt, bool& result) {
-    if (!mPop) return false;
-    return (result = mPop->callKey(keyCode, evt));
+/// @return 是否已消费
+bool WindPop::onKey(KeyEvent& evt) {
+    return mPop && mPop->callKey(evt);
 }

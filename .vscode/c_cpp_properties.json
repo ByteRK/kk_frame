@@ -13,6 +13,7 @@
             "defines": [
                 "__linux__",
                 "__VSCODE__",
+                "PRODUCT_X64",
                 "ENABLE_KEYBOARD",
                 "ENABLE_CURL"
             ],
