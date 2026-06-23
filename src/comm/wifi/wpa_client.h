@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-27 09:39:44
- * @LastEditTime: 2026-03-09 16:49:39
+ * @LastEditTime: 2026-06-23 17:04:32
  * @FilePath: /kk_frame/src/comm/wifi/wpa_client.h
  * @Description: wpa 客户端封装
  * @BugList:
@@ -20,7 +20,8 @@
 #include <thread>
 #include <atomic>
 
-#include "src/common.h"
+#include "check_utils.h"
+
 #ifdef __VSCODE__
 #undef ENABLE_WIFI
 #define ENABLE_WIFI 1

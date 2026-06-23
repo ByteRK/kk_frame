@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-04-24 17:31:29
+ * @LastEditTime: 2026-06-23 17:03:47
  * @FilePath: /kk_frame/main.cc
  * @Description: 主程序入口
  * @BugList:
@@ -23,7 +23,6 @@ static const char avs[] = "AVS: " APP_VER_INFO;
 
 #include <cdlog.h>           // 日志
 #include "custom_app.h"      // 自定义应用程序
-#include "src/common.h"      // 公共头文件
 
 #include "arg_utils.h"
 #include "project_utils.h"   // 项目工具集

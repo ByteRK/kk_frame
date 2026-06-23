@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-29 11:52:07
- * @LastEditTime: 2026-04-24 14:29:32
+ * @LastEditTime: 2026-06-23 17:08:40
  * @FilePath: /kk_frame/src/utils/check_utils.h
  * @Description: 校验相关的一些函数
  * @BugList:
@@ -16,11 +16,20 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <unistd.h>
 
-#define MD5_SIZE       16
-#define MD5_STR_LEN    (MD5_SIZE * 2)
+#define ENABLED(NAME)  (defined(ENABLE_##NAME) && ENABLE_##NAME == 1)  // 宏定义开关
+#define DISABLED(NAME) (!defined(ENABLE_##NAME) || ENABLE_##NAME == 0) // 宏定义开关
+
+#define FILE_SWITCH_ON(D)  (access(#D "_1", F_OK) == 0) // 文件控制开关宏
+#define FILE_SWITCH_OFF(D) (access(#D "_0", F_OK) == 0) // 文件控制开关宏
 
 namespace CheckUtils {
+
+    // MD5校验长度
+    constexpr uint8_t MD5_SIZE    = 16;
+    // MD5校验结果字符串长度
+    constexpr uint8_t MD5_STR_LEN = (MD5_SIZE * 2);
 
     /// @brief 计算校验和
     /// @tparam T 数据类型

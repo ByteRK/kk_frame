@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-28 11:40:38
- * @LastEditTime: 2026-02-28 16:36:15
+ * @LastEditTime: 2026-06-23 17:05:09
  * @FilePath: /kk_frame/src/class/wifi_adapter.h
  * @Description: WIFI适配器（UI用）
  * @BugList:
@@ -14,7 +14,8 @@
 #ifndef __WIFI_ADAPTER_H__
 #define __WIFI_ADAPTER_H__
 
-#include "src/common.h"
+#include "check_utils.h"
+
 #if ENABLED(WIFI) || defined(__VSCODE__)
 
 #include "wifi_mgr.h"
