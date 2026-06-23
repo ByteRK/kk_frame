@@ -18,10 +18,17 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <mutex>
 #include <unordered_map>
 
 #define g_memory MemoryMgr::instance()
+
+#ifndef MEMORY_MGR_THREAD_SAFE
+#define MEMORY_MGR_THREAD_SAFE 1
+#endif
+
+#if MEMORY_MGR_THREAD_SAFE
+#include <mutex>
+#endif
 
 class MemoryMgr : public Singleton<MemoryMgr> {
     friend Singleton<MemoryMgr>;
@@ -103,7 +110,9 @@ private:
     size_t  memoryCountLocked(Pool* pool) const;
 
 private:
+#if MEMORY_MGR_THREAD_SAFE
     mutable std::mutex mMutex;
+#endif
     PoolId mNextPoolId;
     std::unordered_map<PoolId, Pool*> mPools;
 };

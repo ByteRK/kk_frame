@@ -15,6 +15,12 @@
 
 #include <cstdlib>
 
+#if MEMORY_MGR_THREAD_SAFE
+#define MEMORY_MGR_LOCK() std::lock_guard<std::mutex> lock(mMutex)
+#else
+#define MEMORY_MGR_LOCK() ((void)0)
+#endif
+
 struct MemoryMgr::Chunk {
     size_t allocMem;
     Chunk* prev;
@@ -56,7 +62,7 @@ void MemoryMgr::reset() {
 }
 
 void MemoryMgr::clear() {
-    std::lock_guard<std::mutex> lock(mMutex);
+    MEMORY_MGR_LOCK();
 
     for (auto it = mPools.begin(); it != mPools.end(); ++it) {
         Pool* pool = it->second;
@@ -69,7 +75,7 @@ void MemoryMgr::clear() {
 }
 
 void MemoryMgr::destroy() {
-    std::lock_guard<std::mutex> lock(mMutex);
+    MEMORY_MGR_LOCK();
 
     for (auto it = mPools.begin(); it != mPools.end(); ++it) {
         destroyPoolLocked(it->second);
@@ -79,14 +85,14 @@ void MemoryMgr::destroy() {
 }
 
 MemoryMgr::PoolId MemoryMgr::createPool(size_t maxPoolSize, size_t poolSize) {
-    std::lock_guard<std::mutex> lock(mMutex);
+    MEMORY_MGR_LOCK();
 
     Pool* pool = createPoolLocked(maxPoolSize, poolSize);
     return pool ? pool->id : INVALID_POOL_ID;
 }
 
 bool MemoryMgr::destroyPool(PoolId poolId) {
-    std::lock_guard<std::mutex> lock(mMutex);
+    MEMORY_MGR_LOCK();
 
     auto it = mPools.find(poolId);
     if (it == mPools.end()) return false;
@@ -97,7 +103,7 @@ bool MemoryMgr::destroyPool(PoolId poolId) {
 }
 
 bool MemoryMgr::clearPool(PoolId poolId) {
-    std::lock_guard<std::mutex> lock(mMutex);
+    MEMORY_MGR_LOCK();
 
     Pool* pool = findPoolLocked(poolId);
     if (!pool) return false;
@@ -112,7 +118,7 @@ bool MemoryMgr::clearPool(PoolId poolId) {
 }
 
 bool MemoryMgr::hasPool(PoolId poolId) const {
-    std::lock_guard<std::mutex> lock(mMutex);
+    MEMORY_MGR_LOCK();
     return mPools.find(poolId) != mPools.end();
 }
 
@@ -122,7 +128,7 @@ void* MemoryMgr::alloc(PoolId poolId, size_t size) {
 
     const size_t totalNeededSize = alignSize(size + chunkHeaderSize() + chunkEndSize());
 
-    std::lock_guard<std::mutex> lock(mMutex);
+    MEMORY_MGR_LOCK();
 
     Pool* pool = findPoolLocked(poolId);
     if (!pool || totalNeededSize > pool->poolSize) return nullptr;
@@ -198,7 +204,7 @@ FIND_FREE_CHUNK:
 bool MemoryMgr::free(PoolId poolId, void* ptr) {
     if (!ptr) return false;
 
-    std::lock_guard<std::mutex> lock(mMutex);
+    MEMORY_MGR_LOCK();
 
     Pool* pool = findPoolLocked(poolId);
     if (!pool) return false;
@@ -227,42 +233,42 @@ bool MemoryMgr::free(PoolId poolId, void* ptr) {
 }
 
 bool MemoryMgr::contains(PoolId poolId, void* ptr) const {
-    std::lock_guard<std::mutex> lock(mMutex);
+    MEMORY_MGR_LOCK();
 
     Pool* pool = findPoolLocked(poolId);
     return pool ? containsLocked(pool, ptr) : false;
 }
 
 size_t MemoryMgr::maxMemory(PoolId poolId) const {
-    std::lock_guard<std::mutex> lock(mMutex);
+    MEMORY_MGR_LOCK();
 
     Pool* pool = findPoolLocked(poolId);
     return pool ? pool->maxPoolSize : 0;
 }
 
 size_t MemoryMgr::totalMemory(PoolId poolId) const {
-    std::lock_guard<std::mutex> lock(mMutex);
+    MEMORY_MGR_LOCK();
 
     Pool* pool = findPoolLocked(poolId);
     return pool ? pool->allocatedPoolSize : 0;
 }
 
 size_t MemoryMgr::usedMemory(PoolId poolId) const {
-    std::lock_guard<std::mutex> lock(mMutex);
+    MEMORY_MGR_LOCK();
 
     Pool* pool = findPoolLocked(poolId);
     return pool ? usedMemoryLocked(pool) : 0;
 }
 
 size_t MemoryMgr::progMemory(PoolId poolId) const {
-    std::lock_guard<std::mutex> lock(mMutex);
+    MEMORY_MGR_LOCK();
 
     Pool* pool = findPoolLocked(poolId);
     return pool ? progMemoryLocked(pool) : 0;
 }
 
 float MemoryMgr::usage(PoolId poolId) const {
-    std::lock_guard<std::mutex> lock(mMutex);
+    MEMORY_MGR_LOCK();
 
     Pool* pool = findPoolLocked(poolId);
     if (!pool || pool->allocatedPoolSize == 0) return 0.0f;
@@ -270,7 +276,7 @@ float MemoryMgr::usage(PoolId poolId) const {
 }
 
 float MemoryMgr::progUsage(PoolId poolId) const {
-    std::lock_guard<std::mutex> lock(mMutex);
+    MEMORY_MGR_LOCK();
 
     Pool* pool = findPoolLocked(poolId);
     if (!pool || pool->allocatedPoolSize == 0) return 0.0f;
@@ -278,14 +284,14 @@ float MemoryMgr::progUsage(PoolId poolId) const {
 }
 
 size_t MemoryMgr::memoryCount(PoolId poolId) const {
-    std::lock_guard<std::mutex> lock(mMutex);
+    MEMORY_MGR_LOCK();
 
     Pool* pool = findPoolLocked(poolId);
     return pool ? memoryCountLocked(pool) : 0;
 }
 
 size_t MemoryMgr::poolCount() const {
-    std::lock_guard<std::mutex> lock(mMutex);
+    MEMORY_MGR_LOCK();
     return mPools.size();
 }
 
@@ -485,3 +491,5 @@ size_t MemoryMgr::memoryCountLocked(Pool* pool) const {
     }
     return count;
 }
+
+#undef MEMORY_MGR_LOCK
