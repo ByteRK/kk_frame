@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-16 14:13:34
- * @LastEditTime: 2026-01-19 10:39:18
+ * @LastEditTime: 2026-06-24 18:27:07
  * @FilePath: /kk_frame/src/class/auto_save.cc
  * @Description: 自动保存类
  * @BugList:
@@ -39,8 +39,10 @@ public:
     void init();
     int  checkEvents() override;
     int  handleEvents() override;
+    bool handleItem(AutoSaveItem* autoSave, uint64_t nowTime, bool forceCheck = false);
     void add(AutoSaveItem* autoSave);
     void remove(AutoSaveItem* autoSave);
+    void triggerSave(AutoSaveItem* autoSave);
     void sort();
 };
 
@@ -60,6 +62,11 @@ AutoSaveItem::AutoSaveItem(uint32_t checkInterval, uint32_t backupInterval) :
 /// @brief 析构
 AutoSaveItem::~AutoSaveItem() {
     AutoSaveCtrl::instance()->remove(this);
+}
+
+/// @brief 立即触发保存检查
+void AutoSaveItem::triggerSave() {
+    AutoSaveCtrl::instance()->triggerSave(this);
 }
 
 /// @brief 初始化
@@ -97,30 +104,47 @@ int AutoSaveCtrl::checkEvents() {
 /// @brief 处理事件
 /// @return 
 int AutoSaveCtrl::handleEvents() {
-    int64_t nowTime = cdroid::SystemClock::uptimeMillis();
+    uint64_t nowTime = cdroid::SystemClock::uptimeMillis();
     uint8_t dealCount = 0;
     for (;;) {
+        if (mAutoSaveList.empty()) break;
         AutoSaveItem* autoSave = mAutoSaveList.front();
         uint64_t headTime = std::min(autoSave->mAutoSaveNextCheckTime, autoSave->mAutoSaveNextBackupTime);
         if (headTime > nowTime) break;
         LOGV("nowTime:%llu, autoSave:%p, nextCheckTime:%llu, nextBackupTime:%llu", nowTime, autoSave, autoSave->mAutoSaveNextCheckTime, autoSave->mAutoSaveNextBackupTime);
         dealCount++;
 
-        if (nowTime >= autoSave->mAutoSaveNextCheckTime && autoSave->haveChange()) {
-            autoSave->save();
-            FileUtils::sync();
-            autoSave->mAutoSaveNextBackupTime = nowTime + autoSave->mAutoSaveBackupInterval;
-        } else if (nowTime >= autoSave->mAutoSaveNextBackupTime) {
-            autoSave->save(true);
-            FileUtils::sync();
-            autoSave->mAutoSaveNextBackupTime = UINT64_MAX;
-        }
-        autoSave->mAutoSaveNextCheckTime = nowTime + autoSave->mAutoSaveCheckInterval;
-
+        handleItem(autoSave, nowTime);
         sort();
     }
     LOGV("dealCount:%d", dealCount);
     return dealCount;
+}
+
+/// @brief 处理单个自动保存项
+/// @param autoSave 自动保存项
+/// @param nowTime 当前时间
+/// @param forceCheck 是否立即执行检查
+/// @return 是否执行了保存
+bool AutoSaveCtrl::handleItem(AutoSaveItem* autoSave, uint64_t nowTime, bool forceCheck) {
+    if (!autoSave) {
+        LOGE("autoSave is null");
+        return false;
+    }
+
+    bool saved = false;
+    if ((forceCheck || nowTime >= autoSave->mAutoSaveNextCheckTime) && autoSave->haveChange()) {
+        saved = autoSave->save();
+        FileUtils::sync();
+        autoSave->mAutoSaveNextBackupTime = nowTime + autoSave->mAutoSaveBackupInterval;
+    } else if (nowTime >= autoSave->mAutoSaveNextBackupTime) {
+        saved = autoSave->save(true);
+        FileUtils::sync();
+        autoSave->mAutoSaveNextBackupTime = UINT64_MAX;
+    }
+    autoSave->mAutoSaveNextCheckTime = nowTime + autoSave->mAutoSaveCheckInterval;
+
+    return saved;
 }
 
 /// @brief 添加自动保存项
@@ -147,6 +171,19 @@ void AutoSaveCtrl::remove(AutoSaveItem* autoSave) {
     }
     mAutoSaveList.erase(std::remove_if(mAutoSaveList.begin(), mAutoSaveList.end(),
         [autoSave](AutoSaveItem* ptr) { return ptr == autoSave; }), mAutoSaveList.end());
+}
+
+/// @brief 立即触发保存
+/// @param autoSave 自动保存项
+void AutoSaveCtrl::triggerSave(AutoSaveItem* autoSave) {
+    if (std::find(mAutoSaveList.begin(), mAutoSaveList.end(), autoSave) == mAutoSaveList.end()) {
+        LOGE("autoSave not exists");
+        return;
+    }
+
+    uint64_t nowTime = cdroid::SystemClock::uptimeMillis();
+    handleItem(autoSave, nowTime, true);
+    sort();
 }
 
 /// @brief 排序

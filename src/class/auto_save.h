@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-16 14:03:52
- * @LastEditTime: 2026-01-19 10:28:43
+ * @LastEditTime: 2026-06-24 18:26:56
  * @FilePath: /kk_frame/src/class/auto_save.h
  * @Description: 自动保存类
  * @BugList:
@@ -17,6 +17,8 @@
 #include <stdint.h>
 
 class AutoSaveItem {
+    friend class AutoSaveCtrl;
+
 public:
     uint64_t       mAutoSaveNextCheckTime;   // 下次检查时间
     uint64_t       mAutoSaveNextBackupTime;  // 下次备份时间
@@ -27,6 +29,9 @@ public:
     AutoSaveItem(uint32_t checkInterval, uint32_t backupInterval);
     virtual ~AutoSaveItem();
 
+    void triggerSave();
+    
+protected:
     void init();
     virtual bool haveChange() = 0;
     virtual bool save(bool isBackup = false) = 0;
