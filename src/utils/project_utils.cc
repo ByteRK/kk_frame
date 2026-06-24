@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:47:17
- * @LastEditTime: 2026-06-17 00:13:45
+ * @LastEditTime: 2026-06-24 17:50:58
  * @FilePath: /kk_frame/src/utils/project_utils.cc
  * @Description: 项目相关的一些操作函数
  * @BugList:
@@ -121,35 +121,33 @@ void ProjectUtils::getDebugServiceInfo(std::string& ip, int16_t& port) {
 }
 
 void ProjectUtils::saveTime(const std::string& filename) {
-    std::ofstream file(filename);
+    std::ofstream file(filename.c_str());
     if (!file.is_open()) {
         LOGE("Error opening time file.");
         return;
     }
-    time_t now = time(0);
-    tm* timeinfo = localtime(&now);
-    file << "Current Date and Time: " << asctime(timeinfo);
+    time_t now = time(NULL);
+    file << (long long)now << std::endl;
     file.close();
-#ifndef PRODUCT_X64
-    std::system("sync");
-#endif
+    SystemUtils::sync();
 }
 
 void ProjectUtils::loadTime(const std::string& filename) {
-    std::ifstream file(filename);
+    std::ifstream file(filename.c_str());
     if (!file.is_open()) {
         LOGE("Error opening time file.");
         return;
     }
-    std::string line;
-    std::getline(file, line);
-    char* cstr = new char[line.length() + 1];
-    std::strcpy(cstr, line.c_str());
-    tm timeinfo;
-    strptime(cstr, "Current Date and Time: %a %b %d %H:%M:%S %Y\n", &timeinfo);
-    delete[] cstr;
-    std::cout << "Date and Time read from file: " << asctime(&timeinfo);
-    SystemUtils::setTime(mktime(&timeinfo));
-    file.close();
+    long long timestamp = 0;
+    if (!(file >> timestamp)) {
+        LOGE("Read timestamp failed.");
+        return;
+    }
+    if (timestamp <= 0) {
+        LOGE("Invalid timestamp: %lld", timestamp);
+        return;
+    }
+    LOGI("timestamp: %lld", timestamp);
+    SystemUtils::setTime((time_t)timestamp);
 }
 
