@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-06-09 01:20:59
+ * @LastEditTime: 2026-06-24 17:58:42
  * @FilePath: /kk_frame/src/app/page/core/wind.h
  * @Description: 主窗口类
  * @BugList:
@@ -15,6 +15,7 @@
 #define __WIND_H__
 
 #include "template/singleton.h"
+#include "tick_mgr.h"
 
 #include "wind_logo.h"
 #include "wind_black.h"
@@ -38,6 +39,11 @@ protected:
     Context*          mContext{ nullptr };    // 上下文
     ViewGroup*        mRootView{ nullptr };   // 根容器
 
+protected:
+    int64_t                mExitTime{ 0 };    // 退出时间
+    int64_t                mRebootTime{ 0 };  // 重启时间
+    TickMgr::ITickVariable mEndTicker;        // 结束心跳器
+
 private:
     MainWindow();
 
@@ -46,6 +52,10 @@ public:
 
     void  init();
     void  hideAll();
+
+    void  postExit(int64_t delay = 2000);
+    void  postReboot(int64_t delay = 2000);
+    bool  isAppWillEnd();
 
 protected:
     WindLogo::LOGO_INFO
@@ -56,6 +66,7 @@ protected:
 
 private:
     bool      selfKey(KeyEvent& evt);
+    void      endTick(int64_t now);
 };
 
 #endif // !__WIND_H__
