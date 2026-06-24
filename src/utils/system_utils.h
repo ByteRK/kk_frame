@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 14:40:21
- * @LastEditTime: 2026-06-16 23:45:12
+ * @LastEditTime: 2026-06-24 17:25:39
  * @FilePath: /kk_frame/src/utils/system_utils.h
  * @Description: 系统相关的一些函数
  * @BugList:
@@ -48,6 +48,12 @@ namespace SystemUtils {
     /// @param value 亮度值 [0-100]
     /// @param swap 是否反转亮度值
     void setBrightness(int value, bool swap = false);
+
+    /// @brief 恢复系统时间
+    void recoverTime();
+
+    /// @brief 清除时间缓存
+    void clearTimeCache();
 
     /// @brief 设置系统时间
     /// @param timestamp 秒级时间戳

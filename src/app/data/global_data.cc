@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2026-05-29 17:16:27
+ * @LastEditTime: 2026-06-24 17:29:27
  * @FilePath: /kk_frame/src/app/data/global_data.cc
  * @Description:
  * @BugList:
@@ -18,6 +18,7 @@
 #include "file_utils.h"
 #include "base_data.h"
 #include "config_info.h"
+#include "system_utils.h"
 #include "id.h"
 
 #include <unistd.h>
@@ -40,6 +41,10 @@ GlobalData::~GlobalData() { }
 /// @brief 初始化
 void GlobalData::init() {
     mIsFirstInit = FileUtils::check(APP_FIRST_INIT_TAG);
+
+    // 恢复系统时间
+    if (mIsFirstInit) SystemUtils::clearTimeCache();
+    else SystemUtils::recoverTime();
 
     // 检测进入的模式
     if (cdroid::App::getInstance().getName() == FRAME_NAME) mDeviceMode = DEVICE_MODE_DEMO;

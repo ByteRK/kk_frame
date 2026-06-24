@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 14:40:26
- * @LastEditTime: 2026-06-23 11:49:04
+ * @LastEditTime: 2026-06-24 17:36:06
  * @FilePath: /kk_frame/src/utils/system_utils.cc
  * @Description: 系统相关的一些函数
  * @BugList:
@@ -27,10 +27,12 @@
 #include <cstdio>
 #include <cstdlib>
 
+#define TIME_CACHE_FILE "timeCache"
+
 void SystemUtils::reboot() {
-    ProjectUtils::saveTime(std::string(LOCAL_DATA_DIR) + "/timeCache");
+    ProjectUtils::saveTime(std::string(LOCAL_DATA_DIR) + TIME_CACHE_FILE);
+    sync();
 #ifndef PRODUCT_X64
-    std::system("sync");
     std::system("reboot");
 #else
     ::exit(0);
@@ -38,9 +40,9 @@ void SystemUtils::reboot() {
 }
 
 void SystemUtils::exit() {
-    ProjectUtils::saveTime(std::string(LOCAL_DATA_DIR) + "/timeCache");
+    ProjectUtils::saveTime(std::string(LOCAL_DATA_DIR) + TIME_CACHE_FILE);
+    sync();
 #ifndef PRODUCT_X64
-    std::system("sync");
     std::system("exit");
 #else
     ::exit(0);
@@ -151,6 +153,16 @@ void SystemUtils::setBrightness(int value, bool swap) {
 #else
     LOGI("设置屏幕背光 %d | %d", value, swap);
 #endif
+}
+
+void SystemUtils::recoverTime() {
+    ProjectUtils::loadTime(std::string(LOCAL_DATA_DIR) + TIME_CACHE_FILE);
+}
+
+void SystemUtils::clearTimeCache() {
+    std::string cacheFile = std::string(LOCAL_DATA_DIR) + TIME_CACHE_FILE;
+    system(std::string("rm -f ") + cacheFile);
+    sync();
 }
 
 void SystemUtils::setTime(const int64_t & timestamp) {
