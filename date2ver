@@ -2,7 +2,7 @@
  # @Author: Ricken
  # @Email: me@ricken.cn
  # @Date: 2024-12-03 00:21:57
- # @LastEditTime: 2026-06-03 14:35:55
+ # @LastEditTime: 2026-06-25 01:35:49
  # @FilePath: /kk_frame/date2ver
  # @Description: 版本号生成脚本
  # @BugList: 
@@ -25,12 +25,37 @@ PROJECT_ID=001
 cd $(dirname $0) # 切换到当前脚本所在目录
 
 NAME=$(basename "$(pwd)")
+APP_NAME_UPPER=$(echo "$NAME" | tr '[:lower:]' '[:upper:]')
 GIT_VER='no_git'
 CUR_DATE="$(date +%Y%m%d)"
 CUR_DATE_FULL="$(date +"%Y-%m-%d %H:%M.%S %Z")"
 DIR_PATH="$(pwd)"
 VERSION_FILE="${DIR_PATH}/config/app_version.h"
 VERSION_INFO="${NAME}_Build_V${v1}.${v2}.${v3}.${v4}_${GIT_VER}_${CUR_DATE}"
+APP_NUM_VERSION=$((v1 * 10000 + v2 * 100 + v3))
+APP_NUM_VERSION_D=$((v1 * 1000000 + v2 * 10000 + v3 * 100 + v4))
+
+has_required_version_content() {
+    while IFS= read -r line; do
+        [ -z "$line" ] && continue
+        grep -aFx -- "$line" "$VERSION_FILE" > /dev/null 2>&1 || return 1
+    done <<EOF
+#define APP_ID              "${PROJECT_ID}"
+#define APP_NAME            ${NAME}
+#define APP_NAME_STR        "${NAME}"
+#define APP_IS_${APP_NAME_UPPER}
+#define MAJOR_VERSION       ${v1}
+#define MINOR_VERSION       ${v2}
+#define REVISE_VERSION      ${v3}
+#define BUILD_VERSION       ${v4}
+#define APP_VERSION         "$v1.$v2.$v3"
+#define APP_VERSION_D       "$v1.$v2.$v3.$v4"
+#define APP_NUM_VERSION     ${APP_NUM_VERSION}
+#define APP_NUM_VERSION_D   ${APP_NUM_VERSION_D}
+#define GIT_VERSION         "${GIT_VER}"
+EOF
+    return 0
+}
 
 # 检查当前目录是否为 Git 仓库
 if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
@@ -40,26 +65,11 @@ if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
 fi
 
 # 检查已生成的版本文件
-if [ -f ${VERSION_FILE} ]; then
-    o_name=`grep -a 'APP_NAME_STR' ${VERSION_FILE} | awk 'NR{print $3}' | sed 's/"//g'`
-    o_v1=`grep -a 'MAJOR_VERSION' ${VERSION_FILE} | awk 'NR{print $3}'`
-    o_v2=`grep -a 'MINOR_VERSION' ${VERSION_FILE} | awk 'NR{print $3}'`
-    o_v3=`grep -a 'REVISE_VERSION' ${VERSION_FILE} | awk 'NR{print $3}'`
-    o_v4=`grep -a 'BUILD_VERSION' ${VERSION_FILE} | awk 'NR{print $3}'`
-    o_GIT_VER=`grep -a 'GIT_VERSION' ${VERSION_FILE} | awk 'NR{print $3}' | sed 's/"//g'`
-    o_CUR_DATE=$(grep -a 'BUILD_DATE' ${VERSION_FILE} | sed 's/^.*"\(.*\)".*$/\1/')
-    o_VERSION_INFO=`grep -a 'APP_VER_INFO' ${VERSION_FILE} | awk 'NR{print $3}'`
-
-    if [ "$o_name" = "$NAME" ]; then
-        # 检查版本号和 Git 哈希值是否相同
-        if [ "$o_v1" = "$v1" -a "$o_v2" = "$v2" -a "$o_v3" = "$v3" -a "$o_v4" = "$v4" -a "$o_GIT_VER" = "$GIT_VER" ]; then
-            # 检查是否有本地修改
-            if ! git diff --quiet; then
-                echo $PROJECT_ID "->" $o_VERSION_INFO "->" $o_CUR_DATE
-                exit
-            fi 
-        fi
-    fi
+if [ -f "${VERSION_FILE}" ] && ! git diff --quiet && has_required_version_content; then
+    o_CUR_DATE=$(grep -a 'BUILD_DATE' "${VERSION_FILE}" | sed 's/^.*"\(.*\)".*$/\1/')
+    o_VERSION_INFO=`grep -a 'APP_VER_INFO' "${VERSION_FILE}" | awk 'NR{print $3}'`
+    echo $PROJECT_ID "->" $o_VERSION_INFO "->" $o_CUR_DATE
+    exit
 fi
 
 echo $PROJECT_ID "->" $VERSION_INFO "->" $CUR_DATE_FULL
@@ -75,23 +85,25 @@ echo "#ifndef __APP_VERSION_H__" >> $VERSION_FILE
 echo "#define __APP_VERSION_H__" >> $VERSION_FILE
 echo "" >> $VERSION_FILE
 
-echo "#define APP_ID           \"${PROJECT_ID}\"" >> $VERSION_FILE
-echo "#define APP_NAME         ${NAME}" >> $VERSION_FILE
-echo "#define APP_NAME_STR     \"${NAME}\"" >> $VERSION_FILE
-echo "#define APP_IS_$NAME" >> $VERSION_FILE
+echo "#define APP_ID              \"${PROJECT_ID}\"" >> $VERSION_FILE
+echo "#define APP_NAME            ${NAME}" >> $VERSION_FILE
+echo "#define APP_NAME_STR        \"${NAME}\"" >> $VERSION_FILE
+echo "#define APP_IS_$APP_NAME_UPPER" >> $VERSION_FILE
 echo "" >> $VERSION_FILE
 
-echo "#define MAJOR_VERSION    ${v1}" >> $VERSION_FILE
-echo "#define MINOR_VERSION    ${v2}" >> $VERSION_FILE
-echo "#define REVISE_VERSION   ${v3}" >> $VERSION_FILE
-echo "#define BUILD_VERSION    ${v4}" >> $VERSION_FILE
-echo "#define APP_VERSION      \"$v1.$v2.$v3\"" >> $VERSION_FILE
-echo "#define APP_VERSION_D    \"$v1.$v2.$v3.$v4\"" >> $VERSION_FILE
+echo "#define MAJOR_VERSION       ${v1}" >> $VERSION_FILE
+echo "#define MINOR_VERSION       ${v2}" >> $VERSION_FILE
+echo "#define REVISE_VERSION      ${v3}" >> $VERSION_FILE
+echo "#define BUILD_VERSION       ${v4}" >> $VERSION_FILE
+echo "#define APP_VERSION         \"$v1.$v2.$v3\"" >> $VERSION_FILE
+echo "#define APP_VERSION_D       \"$v1.$v2.$v3.$v4\"" >> $VERSION_FILE
+echo "#define APP_NUM_VERSION     ${APP_NUM_VERSION}" >> $VERSION_FILE
+echo "#define APP_NUM_VERSION_D   ${APP_NUM_VERSION_D}" >> $VERSION_FILE
 echo "" >> $VERSION_FILE
 
-echo "#define BUILD_DATE       \"${CUR_DATE_FULL}\"" >> $VERSION_FILE
-echo "#define APP_VER_INFO     \"${VERSION_INFO}\"" >> $VERSION_FILE
-echo "#define GIT_VERSION      \"${GIT_VER}\"" >> $VERSION_FILE
+echo "#define BUILD_DATE          \"${CUR_DATE_FULL}\"" >> $VERSION_FILE
+echo "#define APP_VER_INFO        \"${VERSION_INFO}\"" >> $VERSION_FILE
+echo "#define GIT_VERSION         \"${GIT_VER}\"" >> $VERSION_FILE
 echo "" >> $VERSION_FILE
 
 echo "#endif" >> $VERSION_FILE
