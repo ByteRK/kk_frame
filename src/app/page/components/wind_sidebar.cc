@@ -45,6 +45,20 @@ bool WindSidebar::isSidebarShow() const {
     return mSidebar->getVisibility() == View::VISIBLE;
 }
 
+/// @brief 暂存当前侧边栏开关状态
+void WindSidebar::storeSidebarState() {
+    if (!checkInit()) return;
+    mStoredShowState = isSidebarShow();
+    mHasStoredState = true;
+}
+
+/// @brief 恢复暂存的侧边栏开关状态
+void WindSidebar::restoreSidebarState() {
+    if (!checkInit() || !mHasStoredState) return;
+    if (mStoredShowState) showSidebar();
+    else hideSidebar();
+}
+
 /// @brief 初始化
 /// @param parent 
 void WindSidebar::init(ViewGroup* parent) {

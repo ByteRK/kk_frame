@@ -23,6 +23,8 @@ class WindSidebar {
 private:
     View*   mSidebar{ nullptr };         // 侧边栏组件
     bool    mIsInit{ false };            // 是否初始化
+    bool    mHasStoredState{ false };    // 是否已暂存状态
+    bool    mStoredShowState{ false };   // 暂存的显示状态
 
     TickMgr::ITickVariable mTicker;      // 定时器
 
@@ -36,6 +38,8 @@ public:
     void showSidebar();
     void hideSidebar();
     bool isSidebarShow() const;
+    void storeSidebarState();
+    void restoreSidebarState();
 
 protected:
     void init(ViewGroup* parent);
