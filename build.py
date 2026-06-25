@@ -166,26 +166,37 @@ def replace_placeholders_in_readme(new_project_name):
 
 # 替换 R.h
 def replace_r_h(new_project_name):
-    # 指定 R.h 文件路径
-    r_h_file_path = 'R.h'
+    updated_count = 0
+    found_count = 0
 
-    # 检查文件是否存在
-    if not os.path.isfile(r_h_file_path):
-        cprint(f"文件 {r_h_file_path} 不存在。", "YELLOW")
+    for root, dirs, files in os.walk('.'):
+        if 'R.h' not in files:
+            continue
+
+        found_count += 1
+        r_h_file_path = os.path.join(root, 'R.h')
+
+        try:
+            with open(r_h_file_path, 'r', encoding='utf-8') as file:
+                content = file.read()
+
+            updated_content = content.replace('kk_frame', new_project_name)
+            if updated_content == content:
+                continue
+
+            with open(r_h_file_path, 'w', encoding='utf-8') as file:
+                file.write(updated_content)
+
+            updated_count += 1
+            cprint(f"  - 已更新R.h: {os.path.relpath(r_h_file_path)}", "GREEN")
+        except Exception as e:
+            cprint(f"处理文件 {r_h_file_path} 时出错: {str(e)}", "RED")
+
+    if found_count == 0:
+        cprint("未找到 R.h 文件。", "YELLOW")
         return
 
-    # 读取文件内容
-    with open(r_h_file_path, 'r', encoding='utf-8') as file:
-        content = file.read()
-
-    # 替换指定文本
-    updated_content = content.replace('kk_frame', new_project_name)
-
-    # 将修改后的内容写回文件
-    with open(r_h_file_path, 'w', encoding='utf-8') as file:
-        file.write(updated_content)
-
-    cprint(f"已生成项目R.h", "GREEN")
+    cprint(f"已处理 R.h 文件: 找到 {found_count} 个, 更新 {updated_count} 个", "GREEN")
 
 # 替换 CMakeLists.txt
 def replace_project_name_in_cmake(new_project_name):
