@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-06-24 17:57:50
+ * @LastEditTime: 2026-06-25 11:17:09
  * @FilePath: /kk_frame/src/app/page/core/wind.cc
  * @Description: 窗口类
  * @BugList:
@@ -51,6 +51,7 @@ void MainWindow::init() {
     // 模块初始化
     WindLogo::init(mRootView);
     WindBlack::init(mRootView);
+    WindScreenSave::init(mRootView);
     WindPage::init(mRootView);
     WindPop::init(mRootView);
     WindToast::init(mRootView);
@@ -124,6 +125,7 @@ bool MainWindow::dispatchKeyEvent(KeyEvent & evt) {
         evt.getKeyCode() == KeyEvent::KEYCODE_WINDOW   // 刷新mLastAction用
         || WindLogo::onKey(evt)
         || WindBlack::onKey(evt)
+        || WindScreenSave::onKey(evt)
         || selfKey(evt)
         || WindPop::onKey(evt)
         || WindPage::onKey(evt)

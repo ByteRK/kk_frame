@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2026-06-16 23:47:59
+ * @LastEditTime: 2026-06-25 10:59:27
  * @FilePath: /kk_frame/src/app/managers/config_mgr.cc
  * @Description:
  * @BugList:
@@ -138,6 +138,19 @@ int ConfigMgr::volume() {
 void ConfigMgr::volume(int value) {
     if (value == volume()) return;
     mConfig.setValue(CONFIG_SECTION, "volume", value);
+}
+
+/// @brief 获取屏幕保护时间
+/// @return 
+int ConfigMgr::screenSaveTime() {
+    return mConfig.getInt(CONFIG_SECTION, "screenSaveTime", CONFIG_SCREEN_SAVE);
+}
+
+/// @brief 设置屏幕保护时间
+/// @param value 
+void ConfigMgr::screenSaveTime(int value) {
+    if (value == screenSaveTime()) return;
+    mConfig.setValue(CONFIG_SECTION, "screenSaveTime", value);
 }
 
 /// @brief 获取自动锁屏

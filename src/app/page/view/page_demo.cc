@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-23 00:04:17
- * @LastEditTime: 2026-06-19 18:40:11
+ * @LastEditTime: 2026-06-25 11:14:35
  * @FilePath: /kk_frame/src/app/page/view/page_demo.cc
  * @Description: 框架演示主页面（建议保留）
  * @BugList:
@@ -54,13 +54,7 @@ void DemoPage::onDetach() {
     g_window->hideKeyboard();
 }
 
-void DemoPage::onTick(int64_t now) {
-    if (now - g_window->mLastAction >= 120000) {
-        if (now - g_window->mLastAction <= 123000)
-            g_windMgr->clearPop();
-        g_window->showBlack();
-    }
-}
+void DemoPage::onTick(int64_t now) { }
 
 void DemoPage::showChineseCalendar() {
     ChineseCalendar::Result res = ChineseCalendar::get();
