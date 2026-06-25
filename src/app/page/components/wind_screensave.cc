@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-06-25 10:32:08
- * @LastEditTime: 2026-06-25 11:49:13
+ * @LastEditTime: 2026-06-25 14:23:30
  * @FilePath: /kk_frame/src/app/page/components/wind_screensave.cc
  * @Description: 屏保组件
  * @BugList:
@@ -107,7 +107,7 @@ void WindScreenSave::onTick(int64_t nowMs) {
         if (diff >= g_config->screenSaveTime() * 1000)
             showScreenSave();
     }
-    LOGI("WindScreenSave onTick diff:%.3llds -> %s", diff / 1000, toWhat);
+    LOGV("WindScreenSave onTick diff:%.3llds -> %s", diff / 1000, toWhat);
 }
 
 /// @brief 更新内容

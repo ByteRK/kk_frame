@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-23 00:04:17
- * @LastEditTime: 2026-06-25 11:14:35
+ * @LastEditTime: 2026-06-25 14:36:00
  * @FilePath: /kk_frame/src/app/page/view/page_demo.cc
  * @Description: 框架演示主页面（建议保留）
  * @BugList:
@@ -47,6 +47,7 @@ void DemoPage::setView() {
 
 void DemoPage::onAttach() {
     startTick();
+    g_window->showSidebar();
 }
 
 void DemoPage::onDetach() {
