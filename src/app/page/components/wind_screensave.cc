@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-06-25 10:32:08
- * @LastEditTime: 2026-06-25 14:45:27
+ * @LastEditTime: 2026-06-25 18:49:49
  * @FilePath: /kk_frame/src/app/page/components/wind_screensave.cc
  * @Description: 屏保组件
  * @BugList:
@@ -58,6 +58,9 @@ void WindScreenSave::init(ViewGroup* parent) {
 
     if (!(mScreenSave = PBase::get(parent, AppRid::screensave)))
         throw std::runtime_error("WindScreenSave init failed");
+
+    mScreenSave->setVisibility(View::GONE);
+
     mScreenSave->setOnClickListener([this](View& view) { hideScreenSave(); });
 
     mTimeTextView = PBase::get<TextView>(mScreenSave, AppRid::time);

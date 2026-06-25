@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-25 10:31:16
- * @LastEditTime: 2026-06-25 14:48:37
+ * @LastEditTime: 2026-06-25 18:49:05
  * @FilePath: /kk_frame/src/app/page/components/wind_logo.cc
  * @Description: Logo组件
  * @BugList:
@@ -94,6 +94,10 @@ void WindLogo::init(ViewGroup* parent) {
         LOGE("WindLogo init failed");
         return;
     }
+
+    // 隐藏LOGO
+    mImage->setVisibility(View::GONE);
+    mVideo->setVisibility(View::GONE);
 
     // 锁定点击事件
     mImage->setOnTouchListener([](View&, MotionEvent&) { return true; });

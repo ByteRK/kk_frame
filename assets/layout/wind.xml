@@ -30,11 +30,13 @@
         android:id="@+id/keyboard"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@null"/>
+        android:background="@null"
+        android:visibility="gone"/>
 
     <!-- Toast层 -->
     <include layout="@layout/module_toast"
-        android:id="@+id/toast"/>
+        android:id="@+id/toast"
+        android:visibility="gone"/>
 
     <!-- 屏保层 -->
     <include layout="@layout/screensave"
