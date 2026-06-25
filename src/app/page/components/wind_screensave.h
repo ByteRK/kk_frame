@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-08 02:36:51
- * @LastEditTime: 2026-06-25 11:41:06
+ * @LastEditTime: 2026-06-25 14:26:31
  * @FilePath: /kk_frame/src/app/page/components/wind_screensave.h
  * @Description: 屏保组件
  * @BugList:
@@ -48,6 +48,5 @@ private:
 private:
     void updateScreenSave();
 };
-
 
 #endif // !__WIND_SCREENSAVE_H__

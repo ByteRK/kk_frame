@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="86dp"
+    android:layout_height="match_parent"
+    android:background="#AA778CA3"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="@layout/wind">
+
+    <TextView
+        style="@style/font_bebas"
+        android:id="@+id/time"
+        android:layout_width="84dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="38dp"
+        android:text="00:00"
+        android:textSize="30sp"
+        android:textColor="#99FFFFFF"
+        android:gravity="center"/>
+
+    <ImageView
+        android:id="@+id/btn_1"
+        android:layout_width="84dp"
+        android:layout_height="84dp"
+        android:layout_above="@id/btn_2"
+        android:layout_marginBottom="32dp"
+        android:src="@mipmap/icon_setup"
+        android:scaleType="centerInside"
+        android:stateListAnimator="@animator/btn_click_scale_alpha"/>
+
+    <ImageView
+        android:id="@+id/btn_2"
+        android:layout_width="84dp"
+        android:layout_height="84dp"
+        android:layout_above="@id/btn_3"
+        android:layout_marginBottom="32dp"
+        android:src="@mipmap/icon_setup"
+        android:scaleType="centerInside"
+        android:stateListAnimator="@animator/btn_click_scale_alpha"/>
+
+    <ImageView
+        android:id="@+id/btn_3"
+        android:layout_width="84dp"
+        android:layout_height="84dp"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="32dp"
+        android:src="@mipmap/icon_setup"
+        android:scaleType="centerInside"
+        android:stateListAnimator="@animator/btn_click_scale_alpha"/>
+
+    <View
+        android:layout_width="2dp"
+        android:layout_height="match_parent"
+        android:layout_alignParentEnd="true"
+        android:background="#DDFFFFFF"/>
+</RelativeLayout>

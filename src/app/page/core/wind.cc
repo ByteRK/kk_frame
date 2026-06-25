@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-06-25 11:17:09
+ * @LastEditTime: 2026-06-25 14:20:26
  * @FilePath: /kk_frame/src/app/page/core/wind.cc
  * @Description: 窗口类
  * @BugList:
@@ -54,6 +54,7 @@ void MainWindow::init() {
     WindScreenSave::init(mRootView);
     WindPage::init(mRootView);
     WindPop::init(mRootView);
+    WindSidebar::init(mRootView);
     WindToast::init(mRootView);
     WindKeyboard::init(mRootView);
 

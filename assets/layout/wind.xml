@@ -13,6 +13,11 @@
         android:layout_height="match_parent"
         android:visibility="gone"/>
 
+    <!-- 侧栏层 -->
+    <include layout="@layout/module_sidebar"
+        android:id="@+id/sidebar"
+        android:visibility="gone"/>
+
     <!-- 弹窗层 -->
     <RelativeLayout
         android:id="@+id/pop"
