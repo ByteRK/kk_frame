@@ -12,7 +12,9 @@
 **/
 
 #include "tuya_mgr.h"
+#include "tuya_packet.h"
 #include <core/app.h>
+#include <core/systemclock.h>
 
 #include <iostream>
 #include <fstream>
@@ -64,17 +66,16 @@ TuyaMgr::~TuyaMgr() {
 
 int TuyaMgr::init() {
     LOGI("开始监听");
-    UartOpenReq ss;
+    UartClient::Config config;
+    config.device = "/dev/ttyS2";
+    config.baudRate = 9600;
+    config.flowControl = 0;
+    config.dataBits = 8;
+    config.stopBits = 1;
+    config.parity = 'N';
+    config.pollIntervalMs = 10;
 
-    snprintf(ss.serialPort, sizeof(ss.serialPort), "/dev/ttyS2");
-
-    ss.speed = 9600;
-    ss.flow_ctrl = 0;
-    ss.databits = 8;
-    ss.stopbits = 1;
-    ss.parity = 'N';
-
-    mUartTUYA = new UartClient(mPacket, ss, "192.168.0.113", 1144, 0, true);
+    mUartTUYA = new TuyaCommChannel(mPacket, true, config);
     mUartTUYA->init();
 
     mLastAcceptTime = 0;
@@ -83,13 +84,13 @@ int TuyaMgr::init() {
     mNetWorkConnectTime = 0;
 
     // 启动延迟一会后开始发包
-    mNextEventTime = SystemClock::uptimeMillis() + TICK_TIME * 10;
-    App::getInstance().addEventHandler(this);
+    mNextEventTime = cdroid::SystemClock::uptimeMillis() + TICK_TIME * 10;
+    cdroid::App::getInstance().addEventHandler(this);
     return 0;
 }
 
 int TuyaMgr::checkEvents() {
-    int64_t curr_tick = SystemClock::uptimeMillis();
+    int64_t curr_tick = cdroid::SystemClock::uptimeMillis();
     if (curr_tick >= mNextEventTime) {
         mNextEventTime = curr_tick + TICK_TIME;
         return 1;
@@ -98,7 +99,7 @@ int TuyaMgr::checkEvents() {
 }
 
 int TuyaMgr::handleEvents() {
-    int64_t now_tick = SystemClock::uptimeMillis();
+    int64_t now_tick = cdroid::SystemClock::uptimeMillis();
 
     if (mUartTUYA) mUartTUYA->onTick();
 
@@ -141,11 +142,11 @@ void TuyaMgr::send2MCU(uint8_t* buf, uint16_t len, uint8_t cmd) {
     snd.checkCode();    // 修改检验位
     LOG(VERBOSE) << "send to tuya. bytes=" << StringUtils::hexStr(bd->buf, bd->len);
     mUartTUYA->send(bd);
-    mLastSendTime = SystemClock::uptimeMillis();
+    mLastSendTime = cdroid::SystemClock::uptimeMillis();
 }
 
 void TuyaMgr::onCommDeal(IAck* ack) {
-    if (mLastAcceptTime == 0)mLastAcceptTime = SystemClock::uptimeMillis();
+    if (mLastAcceptTime == 0)mLastAcceptTime = cdroid::SystemClock::uptimeMillis();
 
     bool show = false;
     switch (ack->getData(TUYA_COMM)) {
@@ -204,7 +205,7 @@ void TuyaMgr::onCommDeal(IAck* ack) {
     if (!show)
         LOG(VERBOSE) << "[default]accept. bytes=" << StringUtils::hexStr(ack->mBuf, ack->mDataLen);
 
-    mLastAcceptTime = SystemClock::uptimeMillis();
+    mLastAcceptTime = cdroid::SystemClock::uptimeMillis();
 }
 
 void TuyaMgr::sendHeartBeat() {
@@ -259,7 +260,7 @@ void TuyaMgr::sendWIFIStatus(uint8_t status) {
     case 0x04:
         if (g_data->mNetWork != 0x04) {
             mIsRunConnectWork = false;
-            mNetWorkConnectTime = SystemClock::uptimeMillis();
+            mNetWorkConnectTime = cdroid::SystemClock::uptimeMillis();
         }
         g_data->mNetWork = WIFI_4;
         break;
@@ -279,14 +280,14 @@ void TuyaMgr::sendWIFIStatus(uint8_t status) {
 
 void TuyaMgr::getTuyaTime() {
     LOG(VERBOSE) << "获取涂鸦时间";
-    mLastSyncDateTime = SystemClock::uptimeMillis();
+    mLastSyncDateTime = cdroid::SystemClock::uptimeMillis();
     send2MCU(TYCOMM_GET_TIME);
 }
 
 void TuyaMgr::openTimeServe() {
     LOG(VERBOSE) << "开启涂鸦时间服务";
     uint8_t data[2] = { 0x01 ,0x01 };
-    mLastSyncDateTime = SystemClock::uptimeMillis();
+    mLastSyncDateTime = cdroid::SystemClock::uptimeMillis();
     send2MCU(data, 2, TYCOMM_OPEN_TIME);
 }
 
@@ -324,7 +325,7 @@ void TuyaMgr::sendDp() {
 
     createDp(s_SendDpBuf, count, TYDPID_POWER, TUYATYPE_BOOL, &mPower, 1);
 
-    mLastSendDiffDPTime = SystemClock::uptimeMillis();
+    mLastSendDiffDPTime = cdroid::SystemClock::uptimeMillis();
     send2MCU(s_SendDpBuf, count, TYCOMM_SEND);
 }
 
@@ -465,7 +466,7 @@ void TuyaMgr::dealOTAComm(uint8_t* data, uint16_t len) {
     }
 
     mOTALen = (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3];
-    mOTAAcceptTime = SystemClock::uptimeMillis(); // 记录接收数据的时间
+    mOTAAcceptTime = cdroid::SystemClock::uptimeMillis(); // 记录接收数据的时间
     uint8_t send[1] = { OTA_PACKAGE_LEVEL };
     send2MCU(send, 1, TYCOMM_OTA_START);
 
@@ -491,7 +492,7 @@ void TuyaMgr::dealOTAData(uint8_t* data, uint16_t len) {
         }
         LOGW("[OTA PROGRESS] %d/%d", dataOffSet + dataLen, mOTALen);
     }
-    mOTAAcceptTime = SystemClock::uptimeMillis(); // 记录接收数据的时间
+    mOTAAcceptTime = cdroid::SystemClock::uptimeMillis(); // 记录接收数据的时间
     mOTACurLen = dataOffSet + dataLen;
     send2MCU(TYCOMM_OTA_DATA);
 }

@@ -14,14 +14,19 @@
 #ifndef __CONN_MGR_H__
 #define __CONN_MGR_H__
 
-#include "packet_buffer.h"
+#include "comm/packet/packet_buffer.h"
+#include "comm/packet/packet_channel.h"
 #include "uart_client.h"
-#include "packet_handler.h"
+#include "comm/packet/packet_handler.h"
 #include "template/singleton.h"
+
+#include <core/looper.h>
 
 #define g_connMgr ConnMgr::instance()
 
-class ConnMgr : public EventHandler, public IHandler,
+typedef PacketChannel<UartClient> ConnCommChannel;
+
+class ConnMgr : public cdroid::EventHandler, public IHandler,
     public Singleton<ConnMgr>{
     friend Singleton<ConnMgr>;
 private:
@@ -30,7 +35,7 @@ private:
     int64_t          mNextSendTime;            // 下次发送时间
     int64_t          mLastAcceptTime;          // 上次接收时间
     int              mMcuUpd;                  // 电控更新标志
-    UartClient*      mUartMcu;                 // 电控串口
+    ConnCommChannel* mUartMcu;                 // 电控通讯通道
 
 protected:
     ConnMgr();

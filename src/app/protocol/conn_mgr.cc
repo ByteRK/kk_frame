@@ -12,9 +12,10 @@
 **/
 
 #include "conn_mgr.h"
+#include "mcu_packet.h"
 #include "string_utils.h"
-#include "project_utils.h"
 #include <core/app.h>
+#include <core/systemclock.h>
 
 #define TICK_TIME 100 // tick触发时间（毫秒）
 
@@ -40,29 +41,26 @@ ConnMgr::~ConnMgr() {
 
 int ConnMgr::init() {
     LOGI("ConnMgr init");
-    UartOpenReq ss;
+    UartClient::Config config;
+    config.device = "/dev/ttyS1";
+    config.baudRate = 9600;
+    config.flowControl = 0;
+    config.dataBits = 8;
+    config.stopBits = 1;
+    config.parity = 'N';
+    config.pollIntervalMs = 10;
 
-    snprintf(ss.serialPort, sizeof(ss.serialPort), "/dev/ttyS1");
-    ss.speed = 9600;
-    ss.flow_ctrl = 0;
-    ss.databits = 8;
-    ss.stopbits = 1;
-    ss.parity = 'N';
-
-    std::string debugIp;
-    short debugPort;
-    ProjectUtils::getDebugServiceInfo(debugIp, debugPort);
-    mUartMcu = new UartClient(mPacket, ss, debugIp, debugPort + BT_MCU, 0);
+    mUartMcu = new ConnCommChannel(mPacket, false, config);
     mUartMcu->init();
 
     // 启动延迟一会后开始发包
-    mNextEventTime = SystemClock::uptimeMillis() + TICK_TIME * 10;
-    App::getInstance().addEventHandler(this);
+    mNextEventTime = cdroid::SystemClock::uptimeMillis() + TICK_TIME * 10;
+    cdroid::App::getInstance().addEventHandler(this);
     return 0;
 }
 
 int ConnMgr::checkEvents() {
-    int64_t now = SystemClock::uptimeMillis();
+    int64_t now = cdroid::SystemClock::uptimeMillis();
     if (mUartMcu && mMcuUpd > 0) return 1;
     if (now >= mNextEventTime) {
         mNextEventTime = now + TICK_TIME;
@@ -86,7 +84,7 @@ int ConnMgr::handleEvents() {
 /// @brief 发送串口消息
 void ConnMgr::send2Mcu() {
     BuffData* bd = mPacket->obtain(false);
-    BtnAsk    snd(bd);
+    McuAsk    snd(bd);
 
     // TODO:设置数据
 
@@ -101,6 +99,6 @@ void ConnMgr::onCommDeal(IAck* ack) {
 
     // TODO:解析处理
 
-    mLastAcceptTime = SystemClock::uptimeMillis();
+    mLastAcceptTime = cdroid::SystemClock::uptimeMillis();
     LOG(VERBOSE) << "[<-- CONN] hex str: " << StringUtils::hexStr(ack->mBuf, ack->mDlen);
 }

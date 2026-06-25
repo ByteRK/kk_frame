@@ -14,14 +14,19 @@
 #ifndef __BTN_MGR_H__
 #define __BTN_MGR_H__
 
-#include "packet_buffer.h"
+#include "comm/packet/packet_buffer.h"
+#include "comm/packet/packet_channel.h"
 #include "uart_client.h"
-#include "packet_handler.h"
+#include "comm/packet/packet_handler.h"
 #include "template/singleton.h"
+
+#include <core/looper.h>
 
 #define g_btnMgr BtnMgr::instance()
 
-class BtnMgr : public EventHandler, public IHandler,
+typedef PacketChannel<UartClient> BtnCommChannel;
+
+class BtnMgr : public cdroid::EventHandler, public IHandler,
     public Singleton<BtnMgr> {
     friend Singleton<BtnMgr>;
 private:
@@ -30,7 +35,7 @@ private:
     int64_t          mNextSendTime;            // 下次发送时间
     int64_t          mLastAcceptTime;          // 上次接收时间
     int              mBtnUpd;                  // 按键更新标志
-    UartClient*      mUartBtn;                 // 按键串口
+    BtnCommChannel*  mUartBtn;                 // 按键通讯通道
 
 protected:
     BtnMgr();

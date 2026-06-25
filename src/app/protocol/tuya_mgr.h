@@ -14,16 +14,21 @@
 #ifndef __TUYA_MGR_H__
 #define __TUYA_MGR_H__
 
-#include "packet_buffer.h"
+#include "comm/packet/packet_buffer.h"
+#include "comm/packet/packet_channel.h"
 #include "uart_client.h"
-#include "packet_handler.h"
+#include "comm/packet/packet_handler.h"
 #include "template/singleton.h"
 
 #include "struct.h"
 
+#include <core/looper.h>
+
 #define g_tuyaMgr TuyaMgr::instance()
 
-class TuyaMgr : public EventHandler, public IHandler,
+typedef PacketChannel<UartClient> TuyaCommChannel;
+
+class TuyaMgr : public cdroid::EventHandler, public IHandler,
     public Singleton<TuyaMgr>{
     friend Singleton<TuyaMgr>;
 private: // 涂鸦数据点缓存
@@ -38,7 +43,7 @@ private:
     int64_t          mLastAcceptTime;       // 最后一次接受数据时间
     int64_t          mLastSendDiffDPTime;   // 最后一次差异上报时间
     int64_t          mLastSyncDateTime;     // 最后一次时间同步时间
-    UartClient*      mUartTUYA;             // 涂鸦服务
+    TuyaCommChannel* mUartTUYA;             // 涂鸦通讯通道
 
     bool             mIsRunConnectWork;     // 是否已完成联网
     int64_t          mNetWorkConnectTime;   // 联网成功时间

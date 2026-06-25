@@ -3,7 +3,7 @@
  * @Email: me@ricken.cn
  * @Date: 2026-02-27 09:39:44
  * @LastEditTime: 2026-06-23 17:04:32
- * @FilePath: /kk_frame/src/comm/wifi/wpa_client.h
+ * @FilePath: /kk_frame/src/wifi/wpa_client.h
  * @Description: wpa 客户端封装
  * @BugList:
  *

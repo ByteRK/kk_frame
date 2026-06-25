@@ -12,9 +12,10 @@
 **/
 
 #include "btn_mgr.h"
+#include "btn_packet.h"
 #include "string_utils.h"
-#include "project_utils.h"
 #include <core/app.h>
+#include <core/systemclock.h>
 
 #define TICK_TIME 100 // tick触发时间（毫秒）
 
@@ -40,29 +41,26 @@ BtnMgr::~BtnMgr() {
 
 int BtnMgr::init() {
     LOGI("BtnMgr init");
-    UartOpenReq ss;
+    UartClient::Config config;
+    config.device = "/dev/ttyS2";
+    config.baudRate = 9600;
+    config.flowControl = 0;
+    config.dataBits = 8;
+    config.stopBits = 1;
+    config.parity = 'N';
+    config.pollIntervalMs = 10;
 
-    snprintf(ss.serialPort, sizeof(ss.serialPort), "/dev/ttyS2");
-    ss.speed = 9600;
-    ss.flow_ctrl = 0;
-    ss.databits = 8;
-    ss.stopbits = 1;
-    ss.parity = 'N';
-
-    std::string debugIp;
-    short debugPort;
-    ProjectUtils::getDebugServiceInfo(debugIp, debugPort);
-    mUartBtn = new UartClient(mPacket, ss, debugIp, debugPort + BT_BTN, 0);
+    mUartBtn = new BtnCommChannel(mPacket, false, config);
     mUartBtn->init();
 
     // 启动延迟一会后开始发包
-    mNextEventTime = SystemClock::uptimeMillis() + TICK_TIME * 10;
-    App::getInstance().addEventHandler(this);
+    mNextEventTime = cdroid::SystemClock::uptimeMillis() + TICK_TIME * 10;
+    cdroid::App::getInstance().addEventHandler(this);
     return 0;
 }
 
 int BtnMgr::checkEvents() {
-    int64_t now = SystemClock::uptimeMillis();
+    int64_t now = cdroid::SystemClock::uptimeMillis();
     if (mUartBtn && mBtnUpd > 0) return 1;
     if (now >= mNextEventTime) {
         mNextEventTime = now + TICK_TIME;
@@ -101,6 +99,6 @@ void BtnMgr::onCommDeal(IAck* ack) {
 
     // TODO:解析处理
 
-    mLastAcceptTime = SystemClock::uptimeMillis();
+    mLastAcceptTime = cdroid::SystemClock::uptimeMillis();
     LOG(VERBOSE) << "[<-- BTN] hex str: " << StringUtils::hexStr(ack->mBuf, ack->mDlen);
 }
