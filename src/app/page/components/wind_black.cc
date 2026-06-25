@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-08 02:37:55
- * @LastEditTime: 2026-06-09 00:25:28
+ * @LastEditTime: 2026-06-25 11:28:18
  * @FilePath: /kk_frame/src/app/page/components/wind_black.cc
  * @Description: 息屏组件
  * @BugList:
@@ -15,6 +15,7 @@
 #include "base.h"
 #include "config_mgr.h"
 #include "system_utils.h"
+#include "wind_mgr.h"
 
 WindBlack::WindBlack() { }
 
@@ -48,6 +49,7 @@ void WindBlack::showBlack() {
 /// @brief 关闭息屏
 void WindBlack::hideBlack() {
     if (!checkInit() || !isBlackShow()) return;
+    g_window->hideScreenSave();
     mBlackView->setVisibility(View::GONE);
     SystemUtils::setBrightness(g_config->brightness());
 }

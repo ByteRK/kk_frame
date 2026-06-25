@@ -10,7 +10,8 @@
     <RelativeLayout
         android:id="@+id/page"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        android:layout_height="match_parent"
+        android:visibility="gone"/>
 
     <!-- 弹窗层 -->
     <RelativeLayout
@@ -29,6 +30,19 @@
     <!-- Toast层 -->
     <include layout="@layout/module_toast"
         android:id="@+id/toast"/>
+
+    <!-- 屏保层 -->
+    <include layout="@layout/screensave"
+        android:id="@+id/screensave"
+        android:visibility="gone"/>
+
+    <!-- 熄屏层 -->
+    <View
+        android:id="@+id/black"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#000000"
+        android:visibility="gone"/>
     
     <!-- LOGO层 -->
     <ImageView
@@ -44,13 +58,5 @@
         android:layout_height="480dp"
         android:videoOnly="true"
         android:oneShot="true"
-        android:visibility="gone"/>
-
-    <!-- 熄屏层 -->
-    <View
-        android:id="@+id/black"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="#000000"
         android:visibility="gone"/>
 </RelativeLayout>

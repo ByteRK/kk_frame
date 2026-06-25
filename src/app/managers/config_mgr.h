@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2026-04-24 15:37:19
+ * @LastEditTime: 2026-06-25 10:58:14
  * @FilePath: /kk_frame/src/app/managers/config_mgr.h
  * @Description: 配置管理
  * @BugList:
@@ -55,6 +55,10 @@ public: // 应用配置
     // 音量
     int  volume();
     void volume(int value);
+
+    // 屏保时间
+    int  screenSaveTime();
+    void screenSaveTime(int value);
 
     // 自动锁屏
     bool autoLock();
