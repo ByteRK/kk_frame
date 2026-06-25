@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-08 02:48:19
- * @LastEditTime: 2026-06-09 00:29:56
+ * @LastEditTime: 2026-06-25 14:47:28
  * @FilePath: /kk_frame/src/app/page/components/wind_page.h
  * @Description: 页面组件
  * @BugList:
@@ -24,17 +24,17 @@ private:
 public:
     WindPage();
     virtual ~WindPage();
-    
-    void       init(ViewGroup* parent);
 
     PageBase*  getPage();
-    int8_t     getPageType();
+    int8_t     getPageType() const;
     int8_t     showPage(PageBase* page, const LoadBase* initData = nullptr);
     void       removePage();
     void       hidePageBox();
     void       showPageBox();
+
+protected:
+    void       init(ViewGroup* parent);
     bool       onKey(KeyEvent& evt);
-    
 };
 
 #endif // !__WIND_PAGE_H__

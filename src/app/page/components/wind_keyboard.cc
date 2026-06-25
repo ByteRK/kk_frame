@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-10 22:50:08
- * @LastEditTime: 2026-06-09 01:31:20
+ * @LastEditTime: 2026-06-25 14:49:28
  * @FilePath: /kk_frame/src/app/page/components/wind_keyboard.cc
  * @Description: 键盘组件
  * @BugList:
@@ -28,6 +28,52 @@ static CKBegister ckbegister;
 WindKeyboard::WindKeyboard() { }
 
 WindKeyboard::~WindKeyboard() { }
+
+void WindKeyboard::showKeyboard(const std::string& text, const std::string& hint) {
+    if (isKeyboardShow()) return;
+#if defined(ENABLE_KEYBOARD)
+    mKeyBoard->setInputText(text);
+    mKeyBoard->setDescription(hint);
+    mKeyBoard->show();
+#else
+    LOGE("Keyboard not enabled");
+#endif
+    mIsShow = true;
+    mKeyBoard->setVisibility(View::VISIBLE);
+}
+
+void WindKeyboard::hideKeyboard() {
+    if (!isKeyboardShow()) return;
+    mKeyBoard->setVisibility(View::GONE);
+    mIsShow = false;
+    mEnterListener = nullptr;
+    mCancelListener = nullptr;
+}
+
+bool WindKeyboard::isKeyboardShow()const {
+    return mIsShow;
+}
+
+bool WindKeyboard::onKey(int keyCode, KeyEvent& evt, bool& result) {
+    if (!isKeyboardShow() || evt.getAction() != KeyEvent::ACTION_DOWN) return false;
+#if defined(ENABLE_KEYBOARD)
+    // 暂时不生效，会被editText抢占
+    mKeyBoard->onRealKey(keyCode);
+#endif
+    return false;
+}
+
+void WindKeyboard::setKeyboardMaxInputCount(int count) {
+    if (!checkInit()) return;
+#if defined(ENABLE_KEYBOARD)
+    mKeyBoard->setMaxInputCount(count);
+#endif
+}
+
+void WindKeyboard::setKeyboardCallBack(OnCloseListener enter, OnCloseListener cancel) {
+    mEnterListener = enter;
+    mCancelListener = cancel;
+}
 
 void WindKeyboard::init(ViewGroup* parent) {
     if (mIsInit) return;
@@ -59,52 +105,6 @@ void WindKeyboard::init(ViewGroup* parent) {
 #endif
 
     mIsInit = true;
-}
-
-void WindKeyboard::showKeyboard(const std::string& text, const std::string& hint) {
-    if (isKeyboardShow()) return;
-#if defined(ENABLE_KEYBOARD)
-    mKeyBoard->setInputText(text);
-    mKeyBoard->setDescription(hint);
-    mKeyBoard->show();
-#else
-    LOGE("Keyboard not enabled");
-#endif
-    mIsShow = true;
-    mKeyBoard->setVisibility(View::VISIBLE);
-}
-
-void WindKeyboard::hideKeyboard() {
-    if (!isKeyboardShow()) return;
-    mKeyBoard->setVisibility(View::GONE);
-    mIsShow = false;
-    mEnterListener = nullptr;
-    mCancelListener = nullptr;
-}
-
-bool WindKeyboard::isKeyboardShow() {
-    return mIsShow;
-}
-
-bool WindKeyboard::onKey(int keyCode, KeyEvent& evt, bool& result) {
-    if (!isKeyboardShow() || evt.getAction() != KeyEvent::ACTION_DOWN) return false;
-#if defined(ENABLE_KEYBOARD)
-    // 暂时不生效，会被editText抢占
-    mKeyBoard->onRealKey(keyCode);
-#endif
-    return false;
-}
-
-void WindKeyboard::setKeyboardMaxInputCount(int count) {
-    if (!checkInit()) return;
-#if defined(ENABLE_KEYBOARD)
-    mKeyBoard->setMaxInputCount(count);
-#endif
-}
-
-void WindKeyboard::setKeyboardCallBack(OnCloseListener enter, OnCloseListener cancel) {
-    mEnterListener = enter;
-    mCancelListener = cancel;
 }
 
 bool WindKeyboard::checkInit() {

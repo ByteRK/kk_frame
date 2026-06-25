@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-25 10:31:08
- * @LastEditTime: 2026-06-09 01:27:41
+ * @LastEditTime: 2026-06-25 14:48:08
  * @FilePath: /kk_frame/src/app/page/components/wind_logo.h
  * @Description: Logo组件
  * @BugList:
@@ -45,11 +45,13 @@ public:
     WindLogo();
     virtual ~WindLogo();
 
-    void              init(ViewGroup* parent);
     virtual void      showLogo();
     virtual void      hideLogo();
     virtual LOGO_INFO getLogo() = 0;
     bool              isLogoShow() const;
+
+protected:
+    void              init(ViewGroup* parent);
     bool              onKey(KeyEvent& evt);
 
 private:

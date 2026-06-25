@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-25 10:31:16
- * @LastEditTime: 2026-06-09 01:30:30
+ * @LastEditTime: 2026-06-25 14:48:37
  * @FilePath: /kk_frame/src/app/page/components/wind_logo.cc
  * @Description: Logo组件
  * @BugList:
@@ -20,54 +20,6 @@ WindLogo::WindLogo() { }
 WindLogo::~WindLogo() {
     mImage->removeCallbacks(mRuner);
     mVideo->over();
-}
-
-/// @brief 初始化Logo
-/// @param parent 父节点
-void WindLogo::init(ViewGroup* parent) {
-    if (mIsInit) return;
-
-    if (
-        !(mImage = PBase::get<ImageView>(parent, AppRid::logo)) ||
-        !(mVideo = PBase::get<VideoView>(parent, AppRid::logo_video))
-        ) {
-        LOGE("WindLogo init failed");
-        return;
-    }
-
-    // 锁定点击事件
-    mImage->setOnTouchListener([](View&, MotionEvent&) { return true; });
-    mVideo->setOnTouchListener([](View&, MotionEvent&) { return true; });
-
-    // 消除点击声音
-    mImage->setSoundEffectsEnabled(false);
-    mVideo->setSoundEffectsEnabled(false);
-
-    // 静态图LOGO回调
-    mRuner = [this] {
-        mImage->setVisibility(View::GONE);
-        AnimatedImageDrawable* drawable = dynamic_cast<AnimatedImageDrawable*>(mImage->getDrawable());
-        if (drawable) drawable->stop();
-        mIsRunning = false;
-    };
-    // 动图LOGO回调
-    mCallback.onAnimationStart = nullptr;
-    mCallback.onAnimationEnd = [this](Drawable&) {
-        mImage->setVisibility(View::GONE);
-        mIsRunning = false;
-    };
-    // 视频LOGO回调
-    mVideo->setOnTouchListener([this](View& v, MotionEvent& evt) { return true; });
-    mVideo->setOnPlayStatusChange([this](View& v, int dutation, int progress, int status) {
-        LOGE("video play status = %d", status);
-        if (status == VideoView::VS_OVER) {
-            mVideo->setVisibility(View::GONE);
-            mVideo->over();
-            mIsRunning = false;
-        }
-    });
-
-    mIsInit = true;
 }
 
 /// @brief 显示Logo
@@ -128,6 +80,54 @@ void WindLogo::hideLogo() {
 /// @return 是否显示
 bool WindLogo::isLogoShow() const {
     return mIsRunning;
+}
+
+/// @brief 初始化Logo
+/// @param parent 父节点
+void WindLogo::init(ViewGroup* parent) {
+    if (mIsInit) return;
+
+    if (
+        !(mImage = PBase::get<ImageView>(parent, AppRid::logo)) ||
+        !(mVideo = PBase::get<VideoView>(parent, AppRid::logo_video))
+        ) {
+        LOGE("WindLogo init failed");
+        return;
+    }
+
+    // 锁定点击事件
+    mImage->setOnTouchListener([](View&, MotionEvent&) { return true; });
+    mVideo->setOnTouchListener([](View&, MotionEvent&) { return true; });
+
+    // 消除点击声音
+    mImage->setSoundEffectsEnabled(false);
+    mVideo->setSoundEffectsEnabled(false);
+
+    // 静态图LOGO回调
+    mRuner = [this] {
+        mImage->setVisibility(View::GONE);
+        AnimatedImageDrawable* drawable = dynamic_cast<AnimatedImageDrawable*>(mImage->getDrawable());
+        if (drawable) drawable->stop();
+        mIsRunning = false;
+    };
+    // 动图LOGO回调
+    mCallback.onAnimationStart = nullptr;
+    mCallback.onAnimationEnd = [this](Drawable&) {
+        mImage->setVisibility(View::GONE);
+        mIsRunning = false;
+    };
+    // 视频LOGO回调
+    mVideo->setOnTouchListener([this](View& v, MotionEvent& evt) { return true; });
+    mVideo->setOnPlayStatusChange([this](View& v, int dutation, int progress, int status) {
+        LOGE("video play status = %d", status);
+        if (status == VideoView::VS_OVER) {
+            mVideo->setVisibility(View::GONE);
+            mVideo->over();
+            mIsRunning = false;
+        }
+    });
+
+    mIsInit = true;
 }
 
 /// @brief 按键监听

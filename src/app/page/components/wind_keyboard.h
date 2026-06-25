@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-10 22:49:59
- * @LastEditTime: 2026-06-09 01:31:00
+ * @LastEditTime: 2026-06-25 14:48:57
  * @FilePath: /kk_frame/src/app/page/components/wind_keyboard.h
  * @Description: 键盘组件
  * @BugList:
@@ -39,14 +39,16 @@ public:
     WindKeyboard();
     virtual ~WindKeyboard();
 
-    void         init(ViewGroup* parent);
     virtual void showKeyboard(const std::string& text = "", const std::string& hint = "");
     virtual void hideKeyboard();
-    bool         isKeyboardShow();
-    bool         onKey(int keyCode, KeyEvent& evt, bool& result);
+    bool         isKeyboardShow() const;
 
     void         setKeyboardMaxInputCount(int count);
     void         setKeyboardCallBack(OnCloseListener enter, OnCloseListener cancel);
+
+protected:
+    void         init(ViewGroup* parent);
+    bool         onKey(int keyCode, KeyEvent& evt, bool& result);
 
 private:
     bool         checkInit();
