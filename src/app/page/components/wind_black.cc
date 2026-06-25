@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-08 02:37:55
- * @LastEditTime: 2026-06-25 11:28:18
+ * @LastEditTime: 2026-06-25 14:50:01
  * @FilePath: /kk_frame/src/app/page/components/wind_black.cc
  * @Description: 息屏组件
  * @BugList:
@@ -21,24 +21,6 @@ WindBlack::WindBlack() { }
 
 WindBlack::~WindBlack() { }
 
-/// @brief 初始化
-/// @param parent 
-void WindBlack::init(ViewGroup* parent) {
-    if (mIsInit) return;
-
-    if (!(mBlackView = PBase::get(parent, AppRid::black)))
-        throw std::runtime_error("WindBlack init failed");
-
-    // 获取节点
-    mBlackView->setVisibility(View::GONE);
-    mBlackView->setOnClickListener([this](View& view) { hideBlack(); });
-
-    // 初始化亮度
-    SystemUtils::setBrightness(g_config->brightness());
-
-    mIsInit = true;
-}
-
 /// @brief 显示息屏
 void WindBlack::showBlack() {
     if (!checkInit() || isBlackShow()) return;
@@ -56,8 +38,26 @@ void WindBlack::hideBlack() {
 
 /// @brief 检查当前是否显示
 /// @return 是否显示
-bool WindBlack::isBlackShow() {
+bool WindBlack::isBlackShow()const {
     return mBlackView->getVisibility() == View::VISIBLE;
+}
+
+/// @brief 初始化
+/// @param parent 
+void WindBlack::init(ViewGroup* parent) {
+    if (mIsInit) return;
+
+    if (!(mBlackView = PBase::get(parent, AppRid::black)))
+        throw std::runtime_error("WindBlack init failed");
+
+    // 获取节点
+    mBlackView->setVisibility(View::GONE);
+    mBlackView->setOnClickListener([this](View& view) { hideBlack(); });
+
+    // 初始化亮度
+    SystemUtils::setBrightness(g_config->brightness());
+
+    mIsInit = true;
 }
 
 /// @brief 按键监听

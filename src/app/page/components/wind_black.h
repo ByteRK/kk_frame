@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-08 02:36:51
- * @LastEditTime: 2026-06-09 01:30:00
+ * @LastEditTime: 2026-06-25 14:49:56
  * @FilePath: /kk_frame/src/app/page/components/wind_black.h
  * @Description: 息屏组件
  * @BugList:
@@ -25,10 +25,12 @@ public:
     WindBlack();
     virtual ~WindBlack();
 
-    void init(ViewGroup* parent);
     void showBlack();
     void hideBlack();
-    bool isBlackShow();
+    bool isBlackShow() const;
+
+protected:
+    void init(ViewGroup* parent);
     bool onKey(KeyEvent& evt);
 
 private:

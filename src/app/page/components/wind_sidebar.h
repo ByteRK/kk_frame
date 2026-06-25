@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-06-25 14:05:16
- * @LastEditTime: 2026-06-25 14:26:27
+ * @LastEditTime: 2026-06-25 14:42:55
  * @FilePath: /kk_frame/src/app/page/components/wind_sidebar.h
  * @Description: 侧边栏组件
  * @BugList:
@@ -33,10 +33,12 @@ public:
     WindSidebar();
     virtual ~WindSidebar();
 
-    void init(ViewGroup* parent);
     void showSidebar();
     void hideSidebar();
-    bool isSidebarShow();
+    bool isSidebarShow() const;
+
+protected:
+    void init(ViewGroup* parent);
 
 private:
     bool checkInit();

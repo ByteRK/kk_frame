@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-25 10:22:41
- * @LastEditTime: 2026-06-09 01:33:45
+ * @LastEditTime: 2026-06-25 14:44:06
  * @FilePath: /kk_frame/src/app/page/components/wind_toast.h
  * @Description: Toast组件
  * @BugList:
@@ -87,11 +87,13 @@ private:
 public:
     WindToast();
     virtual ~WindToast();
-    void init(ViewGroup* parent);
     void showToast(std::string text);
     void showToast(std::string text, int8_t level, bool keepNow = false, bool animate = true, bool lock = false);
     void hideToast();
     bool isToastShow() const;
+
+protected:
+    void init(ViewGroup* parent);
 
     void setToastDuration(int duration);
     void setToastAnimatime(int animatime);

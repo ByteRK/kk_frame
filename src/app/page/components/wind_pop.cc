@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-08 02:48:19
- * @LastEditTime: 2026-06-09 01:32:11
+ * @LastEditTime: 2026-06-25 14:46:26
  * @FilePath: /kk_frame/src/app/page/components/wind_pop.cc
  * @Description: 弹窗组件
  * @BugList:
@@ -19,17 +19,6 @@ WindPop::~WindPop() {
     removePop();
 }
 
-/// @brief 初始化
-/// @param parent 父指针 
-void WindPop::init(ViewGroup* parent) {
-    if (
-        !(mPopBox = PBase::get<ViewGroup>(parent, AppRid::pop))
-        )throw std::runtime_error("WindPop init failed");
-    mPopBox->setOnTouchListener([](View&, MotionEvent&) { return true; });
-    mPopBox->setSoundEffectsEnabled(false);
-    mPopBox->setVisibility(View::GONE);
-}
-
 /// @brief 获取当前弹窗指针
 /// @return 弹窗指针
 PopBase* WindPop::getPop() {
@@ -38,7 +27,7 @@ PopBase* WindPop::getPop() {
 
 /// @brief 获取当前弹窗类型
 /// @return 弹窗类型
-int8_t WindPop::getPopType() {
+int8_t WindPop::getPopType() const {
     return mPop ? mPop->getType() : POP_NULL;
 }
 
@@ -76,6 +65,17 @@ void WindPop::hidePopBox() {
 /// @brief 显示弹窗盒子
 void WindPop::showPopBox() {
     mPopBox->setVisibility(View::VISIBLE);
+}
+
+/// @brief 初始化
+/// @param parent 父指针 
+void WindPop::init(ViewGroup* parent) {
+    if (
+        !(mPopBox = PBase::get<ViewGroup>(parent, AppRid::pop))
+        )throw std::runtime_error("WindPop init failed");
+    mPopBox->setOnTouchListener([](View&, MotionEvent&) { return true; });
+    mPopBox->setSoundEffectsEnabled(false);
+    mPopBox->setVisibility(View::GONE);
 }
 
 /// @brief 按键监听

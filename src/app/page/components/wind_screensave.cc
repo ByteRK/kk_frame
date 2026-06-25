@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-06-25 10:32:08
- * @LastEditTime: 2026-06-25 14:23:30
+ * @LastEditTime: 2026-06-25 14:45:27
  * @FilePath: /kk_frame/src/app/page/components/wind_screensave.cc
  * @Description: 屏保组件
  * @BugList:
@@ -23,22 +23,6 @@ WindScreenSave::WindScreenSave() {
 
 WindScreenSave::~WindScreenSave() {
     mTicker.stopTick();
-}
-
-/// @brief 初始化
-/// @param parent 
-void WindScreenSave::init(ViewGroup* parent) {
-    if (mIsInit) return;
-
-    if (!(mScreenSave = PBase::get(parent, AppRid::screensave)))
-        throw std::runtime_error("WindScreenSave init failed");
-    mScreenSave->setOnClickListener([this](View& view) { hideScreenSave(); });
-
-    mTimeTextView = PBase::get<TextView>(mScreenSave, AppRid::time);
-
-    mTicker.startTick(2000);
-
-    mIsInit = true;
 }
 
 /// @brief 启停屏保
@@ -63,8 +47,24 @@ void WindScreenSave::hideScreenSave() {
 
 /// @brief 是否在显示屏保
 /// @return 
-bool WindScreenSave::isScreenSaveShow() {
+bool WindScreenSave::isScreenSaveShow() const {
     return mScreenSave->getVisibility() == View::VISIBLE;
+}
+
+/// @brief 初始化
+/// @param parent 
+void WindScreenSave::init(ViewGroup* parent) {
+    if (mIsInit) return;
+
+    if (!(mScreenSave = PBase::get(parent, AppRid::screensave)))
+        throw std::runtime_error("WindScreenSave init failed");
+    mScreenSave->setOnClickListener([this](View& view) { hideScreenSave(); });
+
+    mTimeTextView = PBase::get<TextView>(mScreenSave, AppRid::time);
+
+    mTicker.startTick(2000);
+
+    mIsInit = true;
 }
 
 /// @brief 处理按键事件
