@@ -27,7 +27,7 @@ namespace TimeUtils {
     static constexpr int64_t HOUR_MSEC   = 1000 * HOUR_SECONDS;     // 小时毫秒数
     static constexpr int64_t DAY_MSEC    = 1000 * DAY_SECONDS;      // 天毫秒数
 
-    /// @brief 判断当前是否为闰年
+    /// @brief 判断指定年份是否为闰年
     /// @param year 年份
     /// @return true or false
     bool isLeapYear(int year);
@@ -46,13 +46,29 @@ namespace TimeUtils {
     /// @return true 有效时间，false 无效时间
     bool isValidClock(int hour, int minute, int second);
 
-    /// @brief 获取当前本地时间戳
-    /// @param timestamp 秒级时间戳
-    /// @return 本地时间
-    /// @note 不带结果判断
-    std::tm localTime(const std::time_t& timestamp);
+    /// @brief 将指定日期时间转换为秒级时间戳
+    /// @param year 年份
+    /// @param month 月份，范围 1-12
+    /// @param day 日期
+    /// @param hour 小时
+    /// @param minute 分钟
+    /// @param second 秒
+    /// @return 秒级时间戳，失败返回 -1
+    /// @note 输入按本地时区解释
+    time_t makeTime(int year, int month, int day, int hour, int minute, int second);
 
     /// @brief 获取当前本地时间
+    /// @return 本地时间
+    /// @note 转换失败时返回 1970-01-01 00:00:00 GMT
+    std::tm localTime();
+
+    /// @brief 获取指定时间戳对应的本地时间
+    /// @param timestamp 秒级时间戳
+    /// @return 本地时间
+    /// @note 转换失败时返回 1970-01-01 00:00:00 GMT
+    std::tm localTime(const std::time_t& timestamp);
+
+    /// @brief 获取指定时间戳对应的本地时间
     /// @param timestamp 秒级时间戳
     /// @param out 本地时间
     /// @return true or false
@@ -66,6 +82,7 @@ namespace TimeUtils {
     /// @param hour 时，可传 nullptr
     /// @param minute 分，可传 nullptr
     /// @param second 秒，可传 nullptr
+    /// @note 时间转换失败时输出 1970-01-01 00:00:00 GMT
     void getTime(int* year, int* month, int* day, int* hour, int* minute, int* second);
 
     /// @brief 判断指定秒级时间戳是否为本地今天
@@ -73,8 +90,14 @@ namespace TimeUtils {
     /// @return true or false
     bool isToday(const time_t& timestamp);
 
+    /// @brief 判断两个秒级时间戳是否为同一本地日期
+    /// @param lhs 第一个秒级时间戳
+    /// @param rhs 第二个秒级时间戳
+    /// @return true or false，时间转换失败返回 false
+    bool isSameDay(const time_t& lhs, const time_t& rhs);
+
     /// @brief 获取秒级时间戳
-    /// @return 秒级时间戳
+    /// @return 秒级时间戳，失败返回 -1
     time_t getTimeSec();
 
     /// @brief 获取毫秒级时间戳
@@ -90,6 +113,11 @@ namespace TimeUtils {
     /// @return 秒级时间戳，失败返回 0
     time_t getZeroTimeSec(const time_t& timestamp);
 
+    /// @brief 获取指定时间戳所在日期的下一天本地 0 点时间戳
+    /// @param timestamp 秒级时间戳
+    /// @return 秒级时间戳，失败返回 0
+    time_t getNextZeroTimeSec(const time_t& timestamp);
+
     /// @brief 获取本地日期整数
     /// @return yyyymmdd，例如 20260619，失败返回 0
     int getTodayDate();
@@ -99,8 +127,17 @@ namespace TimeUtils {
     /// @return yyyymmdd，例如 20260619，失败返回 0
     int getDate(const time_t& timestamp);
 
+    /// @brief 获取今天是星期几
+    /// @return 0 表示星期日，6 表示星期六
+    int getTodayDayOnWeek();
+
+    /// @brief 获取指定时间戳是星期几
+    /// @param timestamp 秒级时间戳
+    /// @return 0 表示星期日，6 表示星期六，失败返回 -1
+    int getDayOnWeek(const time_t& timestamp);
+
     /// @brief 获取时间字符串 [%H:%M]
-    /// @return 时间字符串
+    /// @return 时间字符串，失败返回空字符串
     std::string getTimeStr();
 
     /// @brief 获取当前格式化本地时间
@@ -137,11 +174,15 @@ namespace TimeUtils {
     /// @brief 获取指定年份指定月份的最大天数
     /// @param year 年
     /// @param month 月，范围 1-12
-    /// @return 最大天数，参数非法返回 0
+    /// @return 最大天数，month 非法返回 0
     int getMaxDay(int year, int month);
 
+    /// @brief 获取今天的星期文本
+    /// @return 星期几文本
+    std::string getDayOnWeek();
+
     /// @brief 获取星期文本
-    /// @param day 星期几，0 表示星期日
+    /// @param day 星期索引，0 表示星期日，按模 7 归一化
     /// @return 星期几文本
     std::string getDayOnWeek(const int& day);
 }
