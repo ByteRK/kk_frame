@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 01:53:51
- * @LastEditTime: 2026-06-26 10:50:35
+ * @LastEditTime: 2026-06-26 11:43:43
  * @FilePath: /kk_frame/src/utils/cdroid_utils.cc
  * @Description: Cdroid相关的一些函数
  * @BugList:
@@ -37,6 +37,12 @@ void CdroidUtils::analogInput(int code, int value) {
     i.value = value;
     i.device = INJECTDEV_KEY;
     InputInjectEvents(&i, 1, 1);
+}
+
+void CdroidUtils::setFilterBitmap(View * view, bool filter) {
+    if (!view) return;
+    ImageView* iv = dynamic_cast<ImageView*>(view);
+    if (iv) setFilterBitmap(iv->getDrawable(), filter);
 }
 
 void CdroidUtils::setFilterBitmap(cdroid::Drawable* drawable, bool filter) {
