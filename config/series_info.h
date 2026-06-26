@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-01-18 11:33:02
- * @LastEditTime: 2026-03-18 22:59:55
+ * @LastEditTime: 2026-06-25 23:42:04
  * @FilePath: /kk_frame/config/series_info.h
  * @Description: 项目硬件参数
  * @BugList: 
@@ -23,7 +23,7 @@
 #define CPU_BRAND    "Sigmstar"
 
 // screen config
-#define SCREEN_WIDTH   800
+#define SCREEN_WIDTH   1280
 #define SCREEN_HEIGHT  480
 #define SCREEN_SIZE    TO_STR(SCREEN_WIDTH) "*" TO_STR(SCREEN_HEIGHT)
 

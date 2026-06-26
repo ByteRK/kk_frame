@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 01:53:51
- * @LastEditTime: 2026-02-08 00:58:28
+ * @LastEditTime: 2026-06-26 10:50:35
  * @FilePath: /kk_frame/src/utils/cdroid_utils.cc
  * @Description: Cdroid相关的一些函数
  * @BugList:
@@ -14,6 +14,9 @@
 #include "cdroid_utils.h"
 #include <cdinput.h>
 #include <core/inputeventsource.h>
+
+#include <gui/drawables/statelistdrawable.h>
+#include <gui/drawables/levellistdrawable.h>
 
 void CdroidUtils::sendKey(int code, bool down) {
     analogInput(code, down ? 1 : 0);
@@ -34,6 +37,23 @@ void CdroidUtils::analogInput(int code, int value) {
     i.value = value;
     i.device = INJECTDEV_KEY;
     InputInjectEvents(&i, 1, 1);
+}
+
+void CdroidUtils::setFilterBitmap(cdroid::Drawable* drawable, bool filter) {
+    if (!drawable) return;
+    cdroid::StateListDrawable* d = dynamic_cast<cdroid::StateListDrawable*>(drawable);
+    if (d) {
+        for (int i = 0; i < d->getStateCount(); i++)
+            setFilterBitmap(d->getStateDrawable(i), filter);
+    } else {
+        cdroid::LevelListDrawable* l = dynamic_cast<cdroid::LevelListDrawable*>(drawable);
+        if (l) {
+            for (int i = 0; i < l->getChildCount(); i++)
+                setFilterBitmap(l->getChild(i), filter);
+        } else {
+            drawable->setFilterBitmap(true);
+        }
+    }
 }
 
 void CdroidUtils::refreshScreenSaver() {

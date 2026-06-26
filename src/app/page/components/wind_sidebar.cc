@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-06-25 14:05:21
- * @LastEditTime: 2026-06-25 14:43:04
+ * @LastEditTime: 2026-06-25 18:50:41
  * @FilePath: /kk_frame/src/app/page/components/wind_sidebar.cc
  * @Description: 侧边栏组件
  * @BugList:
@@ -45,6 +45,20 @@ bool WindSidebar::isSidebarShow() const {
     return mSidebar->getVisibility() == View::VISIBLE;
 }
 
+/// @brief 暂存当前侧边栏开关状态
+void WindSidebar::storeSidebarState() {
+    if (!checkInit()) return;
+    mStoredShowState = isSidebarShow();
+    mHasStoredState = true;
+}
+
+/// @brief 恢复暂存的侧边栏开关状态
+void WindSidebar::restoreSidebarState() {
+    if (!checkInit() || !mHasStoredState) return;
+    if (mStoredShowState) showSidebar();
+    else hideSidebar();
+}
+
 /// @brief 初始化
 /// @param parent 
 void WindSidebar::init(ViewGroup* parent) {
@@ -52,6 +66,9 @@ void WindSidebar::init(ViewGroup* parent) {
 
     if (!(mSidebar = PBase::get(parent, AppRid::sidebar)))
         throw std::runtime_error("WindSidebar init failed");
+
+    mSidebar->setVisibility(View::GONE);
+
     mSidebar->setOnTouchListener([](View&, MotionEvent&) { return true; });
     mSidebar->setSoundEffectsEnabled(false);
 

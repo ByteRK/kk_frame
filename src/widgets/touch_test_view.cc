@@ -97,71 +97,52 @@ void TouchTestView::rebuildLayout() {
     int contentW = getWidth() - mPadding.left - mPadding.right;
     int contentH = getHeight() - mPadding.top - mPadding.bottom;
 
-    int innerW = (contentW - 2 * mCfg.blockW) / (mCfg.horCount - 2);
-    int innerH = (contentH - 2 * mCfg.blockH) / (mCfg.verCount - 2);
+    assert(contentW > 0 && contentH > 0);
 
-    assert(innerW > 0 && innerH > 0);
+    std::vector<int> cols(mCfg.horCount + 1);
+    std::vector<int> rows(mCfg.verCount + 1);
 
-    int x = mPadding.left;
-    int y = mPadding.top;
+    for (int i = 0;i <= mCfg.horCount;i++)
+        cols[i] = mPadding.left + contentW * i / mCfg.horCount;
+    for (int i = 0;i <= mCfg.verCount;i++)
+        rows[i] = mPadding.top + contentH * i / mCfg.verCount;
+
+    auto pushCell = [this, &cols, &rows](int col, int row) {
+        mBlocks.push_back({
+            cols[col],
+            rows[row],
+            cols[col + 1] - cols[col],
+            rows[row + 1] - rows[row],
+            });
+    };
+
+    int midCol = mCfg.horCount / 2;
+    int midRow = mCfg.verCount / 2;
 
     // 上横
-    mBlocks.push_back({ x,y,mCfg.blockW,mCfg.blockH });
-    for (int i = 0;i < mCfg.horCount - 2;i++) {
-        x += (i == 0 ? mCfg.blockW : innerW);
-        mBlocks.push_back({ x,y,innerW,mCfg.blockH });
-    }
-    x += innerW;
-    mBlocks.push_back({ x,y,mCfg.blockW,mCfg.blockH });
+    for (int col = 0;col < mCfg.horCount;col++)
+        pushCell(col, 0);
 
     // 右竖
-    for (int i = 0;i < mCfg.verCount - 2;i++) {
-        y += (i == 0 ? mCfg.blockH : innerH);
-        mBlocks.push_back({ x,y,mCfg.blockW,innerH });
-    }
-    y += innerH;
-    mBlocks.push_back({ x,y,mCfg.blockW,mCfg.blockH });
+    for (int row = 1;row < mCfg.verCount;row++)
+        pushCell(mCfg.horCount - 1, row);
 
     // 下横
-    for (int i = 0;i < mCfg.horCount - 2;i++) {
-        x -= innerW;
-        mBlocks.push_back({ x,y,innerW,mCfg.blockH });
-    }
-    x -= mCfg.blockW;
-    mBlocks.push_back({ x,y,mCfg.blockW,mCfg.blockH });
+    for (int col = mCfg.horCount - 2;col >= 0;col--)
+        pushCell(col, mCfg.verCount - 1);
 
     // 左竖
-    for (int i = 0;i < mCfg.verCount - 2;i++) {
-        y -= innerH;
-        mBlocks.push_back({ x,y,mCfg.blockW,innerH });
-    }
+    for (int row = mCfg.verCount - 2;row > 0;row--)
+        pushCell(0, row);
 
     // 中横
-    {
-        int midRow = (mCfg.verCount - 3) / 2;
-        int yMid = mPadding.top + mCfg.blockH + midRow * innerH;
-        int x = mPadding.left + mCfg.blockW;
-
-        for (int i = 0;i < mCfg.horCount - 2;i++) {
-            mBlocks.push_back({ x,yMid,innerW,mCfg.blockH });
-            x += innerW;
-        }
-    }
+    for (int col = 1;col < mCfg.horCount - 1;col++)
+        pushCell(col, midRow);
 
     // 中竖
-    {
-        int midCol = (mCfg.horCount - 3) / 2;
-        int xMid = mPadding.left + mCfg.blockW + midCol * innerW;
-        int y = mPadding.top + mCfg.blockH;
-
-        for (int i = 0;i < mCfg.verCount - 2;i++) {
-            if (i == (mCfg.verCount - 3) / 2) {
-                y += innerH;
-                continue;
-            }
-            mBlocks.push_back({ xMid,y,mCfg.blockW,innerH });
-            y += innerH;
-        }
+    for (int row = 1;row < mCfg.verCount - 1;row++) {
+        if (row == midRow) continue;
+        pushCell(midCol, row);
     }
 
     mActiveCount = 0;

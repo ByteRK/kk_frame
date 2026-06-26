@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-22 12:32:19
- * @LastEditTime: 2026-04-23 14:56:32
+ * @LastEditTime: 2026-06-26 00:09:23
  * @FilePath: /kk_frame/src/app/page/view/page_factory.h
  * @Description: 工厂界面
  * @BugList:
@@ -45,6 +45,7 @@ protected:
     void getView() override;
     void setView() override;
     void onAttach() override;
+    void onDetach() override;
 
 private:
     void setFactoryMenu();

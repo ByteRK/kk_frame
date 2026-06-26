@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-22 12:32:26
- * @LastEditTime: 2026-04-24 11:40:35
+ * @LastEditTime: 2026-06-26 00:09:28
  * @FilePath: /kk_frame/src/app/page/view/page_factory.cc
  * @Description:
  * @BugList:
@@ -46,6 +46,13 @@ void PageFactory::onAttach() {
         mCurPage = FACTORY_MENU;
     }
     mFlipper->setDisplayedChild(mCurPage);
+
+    g_window->storeSidebarState();
+    g_window->hideSidebar();
+}
+
+void PageFactory::onDetach() {
+    g_window->restoreSidebarState();
 }
 
 void PageFactory::setFactoryMenu() {
