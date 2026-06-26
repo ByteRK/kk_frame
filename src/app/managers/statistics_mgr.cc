@@ -49,7 +49,7 @@ StatisticsMgr::StatisticsMgr() : AutoSaveItem(6000, 10000) {
     mHaveChange = false;
 
     mLastEventTime = time(nullptr);
-    mCurrentDayEnd = TimeUtils::getZeroTimeSec(mLastEventTime) + TimeUtils::DAY_SECONDS;
+    mCurrentDayEnd = TimeUtils::getNextZeroTimeSec(mLastEventTime);
 }
 
 /// @brief 析构
@@ -210,6 +210,6 @@ void StatisticsMgr::checkAndRotateDay(time_t current_time) {
     // 如果跨天了，滚动缓冲区
     if (current_time >= mCurrentDayEnd) {
         rotateToNewDay();                                             // 切换到新的一天
-        mCurrentDayEnd = TimeUtils::getZeroTimeSec(current_time) + TimeUtils::DAY_SECONDS;     // 更新当前天结束时间
+        mCurrentDayEnd = TimeUtils::getNextZeroTimeSec(current_time);     // 更新当前天结束时间
     }
 }

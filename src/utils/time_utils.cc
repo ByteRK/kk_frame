@@ -21,6 +21,16 @@
 #include <sys/time.h>
 
 namespace {
+    /// @brief 获取 Unix epoch 对应的格林时间
+    std::tm getMinGreenwichTime() {
+        std::tm time = {};
+        time.tm_year = 70;
+        time.tm_mon = 0;
+        time.tm_mday = 1;
+        time.tm_wday = 4;
+        return time;
+    }
+
     /// @brief 按 fmt 格式化已经转换好的 tm
     std::string formatTm(const std::tm& tmTime, const char* fmt) {
         if (fmt == nullptr || *fmt == '\0') {
@@ -78,10 +88,41 @@ bool TimeUtils::isValidClock(int hour, int minute, int second) {
         && second >= 0 && second <= 59;
 }
 
+time_t TimeUtils::makeTime(int year, int month, int day, int hour, int minute, int second) {
+    if (!isValidDate(year, month, day) || !isValidClock(hour, minute, second)) {
+        LOGE("invalid date time %d-%d-%d %d:%d:%d", year, month, day, hour, minute, second);
+        return static_cast<time_t>(-1);
+    }
+
+    std::tm tmTime = {};
+    tmTime.tm_year = year - 1900;
+    tmTime.tm_mon = month - 1;
+    tmTime.tm_mday = day;
+    tmTime.tm_hour = hour;
+    tmTime.tm_min = minute;
+    tmTime.tm_sec = second;
+    tmTime.tm_isdst = -1;
+
+    const std::time_t timestamp = std::mktime(&tmTime);
+    if (timestamp == static_cast<std::time_t>(-1)) {
+        LOGE("mktime failed while makeTime");
+    }
+
+    return timestamp;
+}
+
+std::tm TimeUtils::localTime() {
+    const std::time_t now = getTimeSec();
+    if (now == static_cast<std::time_t>(-1)) {
+        return getMinGreenwichTime();
+    }
+
+    return localTime(now);
+}
+
 std::tm TimeUtils::localTime(const std::time_t & timestamp) {
     std::tm out = {};
-    localTime(timestamp, out);
-    return out;
+    return localTime(timestamp, out) ? out : getMinGreenwichTime();
 }
 
 bool TimeUtils::localTime(const std::time_t & timestamp, std::tm & out) {
@@ -93,17 +134,7 @@ bool TimeUtils::localTime(const std::time_t & timestamp, std::tm & out) {
 }
 
 void TimeUtils::getTime(int* year, int* month, int* day, int* hour, int* minute, int* second) {
-    const std::time_t t = getTimeSec();
-    if (t == static_cast<std::time_t>(-1)) {
-        LOGE("getTimeSec failed");
-        return;
-    }
-
-    std::tm cur = {};
-    if (!localTime(t, cur)) {
-        LOGE("localTime failed, timestamp=%lld", static_cast<long long>(t));
-        return;
-    }
+    const std::tm cur = localTime();
 
     if (year)   *year = cur.tm_year + 1900;
     if (month)  *month = cur.tm_mon + 1;
@@ -120,20 +151,20 @@ bool TimeUtils::isToday(const time_t& timestamp) {
         return false;
     }
 
-    std::tm nowTm = {};
-    std::tm targetTm = {};
+    return isSameDay(now, timestamp);
+}
 
-    if (!localTime(now, nowTm)) {
-        LOGE("localTime now failed, timestamp=%lld", static_cast<long long>(now));
+bool TimeUtils::isSameDay(const time_t& lhs, const time_t& rhs) {
+    std::tm lhsTm = {};
+    std::tm rhsTm = {};
+
+    if (!localTime(lhs, lhsTm) || !localTime(rhs, rhsTm)) {
+        LOGE("localTime failed, lhs=%lld rhs=%lld",
+            static_cast<long long>(lhs), static_cast<long long>(rhs));
         return false;
     }
 
-    if (!localTime(timestamp, targetTm)) {
-        LOGE("localTime target failed, timestamp=%lld", static_cast<long long>(timestamp));
-        return false;
-    }
-
-    return nowTm.tm_year == targetTm.tm_year && nowTm.tm_yday == targetTm.tm_yday;
+    return lhsTm.tm_year == rhsTm.tm_year && lhsTm.tm_yday == rhsTm.tm_yday;
 }
 
 time_t TimeUtils::getTimeSec() {
@@ -180,6 +211,28 @@ time_t TimeUtils::getZeroTimeSec(const time_t & timestamp) {
     return zero;
 }
 
+time_t TimeUtils::getNextZeroTimeSec(const time_t& timestamp) {
+    std::tm tmTime = {};
+    if (!localTime(timestamp, tmTime)) {
+        LOGE("localTime failed, timestamp=%lld", static_cast<long long>(timestamp));
+        return 0;
+    }
+
+    tmTime.tm_mday += 1;
+    tmTime.tm_hour = 0;
+    tmTime.tm_min = 0;
+    tmTime.tm_sec = 0;
+    tmTime.tm_isdst = -1;
+
+    const std::time_t nextZero = std::mktime(&tmTime);
+    if (nextZero == static_cast<std::time_t>(-1)) {
+        LOGE("mktime failed while getNextZeroTimeSec");
+        return 0;
+    }
+
+    return nextZero;
+}
+
 int TimeUtils::getTodayDate() {
     const std::time_t now = getTimeSec();
     if (now == static_cast<std::time_t>(-1)) {
@@ -200,6 +253,21 @@ int TimeUtils::getDate(const time_t& timestamp) {
     return (tmTime.tm_year + 1900) * 10000
         + (tmTime.tm_mon + 1) * 100
         + tmTime.tm_mday;
+}
+
+int TimeUtils::getTodayDayOnWeek() {
+    const std::tm tmTime = localTime();
+    return tmTime.tm_wday;
+}
+
+int TimeUtils::getDayOnWeek(const time_t& timestamp) {
+    std::tm tmTime = {};
+    if (!localTime(timestamp, tmTime)) {
+        LOGE("localTime failed, timestamp=%lld", static_cast<long long>(timestamp));
+        return -1;
+    }
+
+    return tmTime.tm_wday;
 }
 
 std::string TimeUtils::getTimeStr() {
@@ -270,6 +338,11 @@ int TimeUtils::getMaxDay(int year, int month) {
     }
 
     return days[month - 1];
+}
+
+std::string TimeUtils::getDayOnWeek() {
+    const int day = getTodayDayOnWeek();
+    return day < 0 ? std::string() : getDayOnWeek(day);
 }
 
 std::string TimeUtils::getDayOnWeek(const int& day) {
