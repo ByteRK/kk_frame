@@ -2,7 +2,7 @@
  * @Author: xialc
  * @Email: 
  * @Date: 2026-01-27 11:27:25
- * @LastEditTime: 2026-01-27 13:50:17
+ * @LastEditTime: 2026-06-30 00:58:33
  * @FilePath: /kk_frame/src/widgets/gauss_view.h
  * @Description: 模糊视图
  * @BugList: 
@@ -11,7 +11,9 @@
  * 
 **/
 
-#if defined(ENABLE_GAUSS_VIEW) || defined(__VSCODE__)
+#include "quick_define.h"
+
+#if ENABLED(GAUSS_VIEW) || defined(__VSCODE__)
 
 #include <view/view.h>
 

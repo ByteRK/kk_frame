@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2026-06-29 16:15:56
+ * @LastEditTime: 2026-06-30 01:00:15
  * @FilePath: /kk_frame/src/app/managers/wind_mgr.cc
  * @Description: 页面管理类
  * @BugList:
@@ -428,10 +428,8 @@ bool WindMgr::createPage(int8_t page) {
         LOGE("can not create page: %d", page);
         return false;
     }
-    if (page != pb->getType()) { // 防呆
-        std::string msg = "page[" + std::to_string(page) + "] type error";
-        throw std::runtime_error(msg.c_str());
-    }
+    const int8_t actualType = pb->getType();
+    FailFast(page != actualType, "page[%d] type error: actual=%d", page, actualType);
     mPageCache[page] = pb;
     LOGW("add new page: %d <- %p | page count=%d ", page, pb, mPageCache.size());
     return true;
@@ -525,10 +523,8 @@ bool WindMgr::createPop(int8_t pop) {
         LOGE("can not create pop: %d", pop);
         return false;
     }
-    if (pop != pb->getType()) { // 防呆
-        std::string msg = "pop[" + std::to_string(pop) + "] type error";
-        throw std::runtime_error(msg.c_str());
-    }
+    const int8_t actualType = pb->getType();
+    FailFast(pop != actualType, "pop[%d] type error: actual=%d", pop, actualType);
     mPopCache[pop] = pb;
     LOGW("add new pop: %d <- %p | pop count=%d ", pop, pb, mPopCache.size());
     return true;

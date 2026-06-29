@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-10 22:49:59
- * @LastEditTime: 2026-06-25 14:48:57
+ * @LastEditTime: 2026-06-30 00:58:01
  * @FilePath: /kk_frame/src/app/page/components/wind_keyboard.h
  * @Description: 键盘组件
  * @BugList:
@@ -15,8 +15,9 @@
 #define __WIND_KEYBOARD_H__
 
 #include <view/viewgroup.h>
+#include "quick_define.h"
 
-#if defined(ENABLE_KEYBOARD)
+#if ENABLED(KEYBOARD)
 #include "cKeyBoard.h"
 #else
 #include <widget/textview.h>

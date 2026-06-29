@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-08 22:48:56
- * @LastEditTime: 2026-04-24 16:09:07
+ * @LastEditTime: 2026-06-30 00:37:16
  * @FilePath: /kk_frame/src/app/managers/http_mgr.h
  * @Description: Http 请求管理
  * @BugList:
@@ -30,7 +30,9 @@
 
 #include "template/singleton.h"
 
-#if defined(ENABLE_CURL)
+#include "quick_define.h"
+
+#if ENABLED(CURL)
 #include <curl/curl.h>
 #else
 typedef int   CURLcode;

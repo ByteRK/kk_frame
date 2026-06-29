@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-06-29 16:15:37
+ * @LastEditTime: 2026-06-30 01:01:02
  * @FilePath: /kk_frame/src/app/page/core/wind.cc
  * @Description: 窗口类
  * @BugList:
@@ -42,11 +42,9 @@ void MainWindow::init() {
     mContext = getContext();
 
     // 检查根容器并获取节点
-    if (
-        !(mRootView = dynamic_cast<ViewGroup*>(LayoutInflater::from(mContext)->inflate("@layout/wind", this)))
-        ) {
-        throw std::runtime_error("MainWindow View Tree Error");
-    }
+    mRootView = dynamic_cast<ViewGroup*>(
+        LayoutInflater::from(mContext)->inflate("@layout/wind", this));
+    FailFast(mRootView == nullptr, "MainWindow View Tree Error");
 
     // 模块初始化
     WindLogo::init(mRootView);

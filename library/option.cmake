@@ -17,7 +17,7 @@ set(USE_FASTGAUSSIANBLUR ON)      # Enable fastGaussianBlur library
 set(USE_GAUSSFILTER ON)           # Enable gaussFilter library
 set(USE_GAUSSIANBLUR ON)          # Enable gaussianblur library
 
-set(USE_MD5 ON)                   # Enable md5 library
+set(USE_MD5 OFF)                  # Enable md5 library
 
 
 if(CDROID_CHIPSET STREQUAL x64)

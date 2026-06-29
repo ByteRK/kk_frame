@@ -28,8 +28,9 @@
  * 
 */
 
+#include "quick_define.h"
 
-#if defined(ENABLE_GAUSS_DRAWABLE) || defined(__VSCODE__)
+#if ENABLED(GAUSS_DRAWABLE) || defined(__VSCODE__)
 
 #ifndef __GAUSS_DRAWABLE_H__
 #define __GAUSS_DRAWABLE_H__

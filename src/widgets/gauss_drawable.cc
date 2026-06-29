@@ -2,7 +2,7 @@
  * @Author: cy
  * @Email: 964028708@qq.com
  * @Date: 2025-05-16 14:52:37
- * @LastEditTime: 2026-01-27 19:00:34
+ * @LastEditTime: 2026-06-30 01:02:33
  * @FilePath: /kk_frame/src/widgets/gauss_drawable.cc
  * @Description: 高斯模糊
  * @BugList:1、不使用fromview的方法，待测试
@@ -12,9 +12,10 @@
  * 
 */
 
-#if defined(ENABLE_GAUSS_DRAWABLE) || defined(__VSCODE__)
-
 #include "gauss_drawable.h"
+
+#if ENABLED(GAUSS_DRAWABLE) || defined(__VSCODE__)
+
 #include "utils/math_utils.h"
 #include <cdlog.h>
 #include <random>

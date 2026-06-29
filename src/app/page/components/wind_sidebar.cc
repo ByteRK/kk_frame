@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-06-25 14:05:21
- * @LastEditTime: 2026-06-25 18:50:41
+ * @LastEditTime: 2026-06-30 01:00:48
  * @FilePath: /kk_frame/src/app/page/components/wind_sidebar.cc
  * @Description: 侧边栏组件
  * @BugList:
@@ -64,8 +64,8 @@ void WindSidebar::restoreSidebarState() {
 void WindSidebar::init(ViewGroup* parent) {
     if (mIsInit) return;
 
-    if (!(mSidebar = PBase::get(parent, AppRid::sidebar)))
-        throw std::runtime_error("WindSidebar init failed");
+    mSidebar = PBase::get(parent, AppRid::sidebar);
+    FailFast(mSidebar == nullptr, "WindSidebar init failed");
 
     mSidebar->setVisibility(View::GONE);
 

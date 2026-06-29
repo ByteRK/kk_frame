@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-08 02:48:19
- * @LastEditTime: 2026-06-25 18:49:19
+ * @LastEditTime: 2026-06-30 01:00:37
  * @FilePath: /kk_frame/src/app/page/components/wind_page.cc
  * @Description: 页面组件
  * @BugList:
@@ -70,9 +70,8 @@ void WindPage::showPageBox() {
 /// @brief 初始化
 /// @param parent 父指针 
 void WindPage::init(ViewGroup* parent) {
-    if (
-        !(mPageBox = PBase::get<ViewGroup>(parent, AppRid::page))
-        )throw std::runtime_error("WindPage init failed");
+    mPageBox = PBase::get<ViewGroup>(parent, AppRid::page);
+    FailFast(mPageBox == nullptr, "WindPage init failed");
 
     mPageBox->setVisibility(View::GONE);
 

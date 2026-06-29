@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-08 02:48:19
- * @LastEditTime: 2026-06-25 18:49:33
+ * @LastEditTime: 2026-06-30 00:16:25
  * @FilePath: /kk_frame/src/app/page/components/wind_pop.cc
  * @Description: 弹窗组件
  * @BugList:
@@ -70,9 +70,8 @@ void WindPop::showPopBox() {
 /// @brief 初始化
 /// @param parent 父指针 
 void WindPop::init(ViewGroup* parent) {
-    if (
-        !(mPopBox = PBase::get<ViewGroup>(parent, AppRid::pop))
-        )throw std::runtime_error("WindPop init failed");
+    mPopBox = PBase::get<ViewGroup>(parent, AppRid::pop);
+    FailFast(mPopBox == nullptr, "WindPop init failed");
 
     mPopBox->setVisibility(View::GONE);
 

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-16 16:03:05
- * @LastEditTime: 2026-03-19 00:10:11
+ * @LastEditTime: 2026-06-30 00:57:06
  * @FilePath: /kk_frame/library/keyboard/cKeyBoard.cc
  * @Description: 输入法 CDROID 版
  * @BugList:
@@ -14,6 +14,7 @@
 #include "cKeyBoard.h"
 #include "string_utils.h"
 #include "custom_app.h"
+#include "quick_define.h"
 
 #include "keyboard_en.h"
 #include "keyboard_cn.h"
@@ -103,7 +104,7 @@ void CKeyBoard::init() {
     if (mIsInit)return;
 
     CustomApp* app = __dc(CustomApp, &CustomApp::getInstance());
-    if (!app) throw std::runtime_error("main.cc must use CustomApp to replace cdroid::App !!!");
+    FailFast(!app, "main.cc must use CustomApp to replace cdroid::App !!!");
 
     if (!app->checkPackage("keyboard"))
         app->addPackage("./" PROJECT_NAME "_keyboard.pak", "keyboard");

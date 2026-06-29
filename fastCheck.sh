@@ -2,7 +2,7 @@
  # @Author: Ricken
  # @Email: me@ricken.cn
  # @Date: 2026-06-17 01:21:46
- # @LastEditTime: 2026-06-17 01:26:47
+ # @LastEditTime: 2026-06-30 01:27:44
  # @FilePath: /kk_frame/fastCheck.sh
  # @Description: 快速编译检验脚本
  # @BugList: 
@@ -71,7 +71,7 @@ cd $OUT_DIR
 make $NAME -j8
 
 # 拷贝文件
-cp $OUT_DIR/apps/$NAME/$NAME*               $PACKAGE_DIR/
+cp $OUT_DIR/apps/$NAME/$NAME*                  $PACKAGE_DIR/
 cp $OUT_DIR/src/gui/cdroid.pak                 $PACKAGE_DIR/
 cp $OUT_DIR/src/gui/libcdroid.so               $PACKAGE_DIR/
 cp $OUT_DIR/src/porting/$PRODUCT/libtvhal.so   $PACKAGE_DIR/

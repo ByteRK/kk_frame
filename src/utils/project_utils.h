@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:47:17
- * @LastEditTime: 2026-06-16 23:18:23
+ * @LastEditTime: 2026-06-30 00:31:20
  * @FilePath: /kk_frame/src/utils/project_utils.h
  * @Description: 项目相关的一些操作函数
  * @BugList:
@@ -14,6 +14,8 @@
 #ifndef __PROJECT_UTILS_H__
 #define __PROJECT_UTILS_H__
 
+#include <cstdio>
+#include <cstdlib>
 #include <string>
 #include <stdint.h>
 
@@ -38,8 +40,6 @@ namespace ProjectUtils {
     /// @brief 从本地文件加载时间
     /// @param filename 
     void loadTime(const std::string& filename);
-
-    
 
 } // ProjectUtils
 

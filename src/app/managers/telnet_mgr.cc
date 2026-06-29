@@ -11,6 +11,7 @@
 **/
 
 #include "telnet_mgr.h"
+#include "quick_define.h"
 
 #include <core/systemclock.h>
 #include <cdlog.h>
@@ -35,25 +36,6 @@
 
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL 0
-#endif
-
-#if 1
-#define FailFast(condition, fmt, ...)   \
-    do {                                \
-        if(condition){                  \
-            LOGE(fmt, ##__VA_ARGS__);   \
-            std::abort();               \
-        }                               \
-    } while (0)
-#else
-#define FailFast(condition, fmt, ...)                                                   \
-    do {                                                                                \
-        if (condition) {                                                                \
-            std::fprintf(stderr, "[TelnetManager][FATAL] " fmt "\n", ##__VA_ARGS__);   \
-            std::fflush(stderr);                                                        \
-            std::abort();                                                               \
-        }                                                                               \
-    } while (0)
 #endif
 
 namespace {
