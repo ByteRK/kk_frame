@@ -23,6 +23,10 @@
 #include <view/view.h>
 #include <stdint.h>
 
+#ifndef WIFI_ADAPTER_CLICK_MATCH_BSSID
+#define WIFI_ADAPTER_CLICK_MATCH_BSSID 0
+#endif
+
 /////////////////////////////////////////////////////////////////////////////////////
 
 /// @brief WIFI适配器基类
@@ -36,6 +40,7 @@ public:
 
     class Interface {
     public:
+        virtual ~Interface() = default;
         virtual void   flushEnd() { };
         virtual void   onClickItem(View* v, WifiHal::ApInfo* apInfo) { };
         virtual View*  loadItemLayout(int type) = 0;
@@ -43,7 +48,7 @@ public:
     };
 
 public:
-    // 获取适配器
+    // 设置适配器的页面接口，传入 nullptr 解除绑定
     void setParent(Interface* parent);
 
     // 设置已连接的WIFI的显示方式
@@ -78,10 +83,13 @@ public:
     void  clear();
 
 protected:
+    void  onStateChanged() override;
     void  onScanResult() override;
 
     int   getCount() const override;
     void* getItem(int position) const override;
+    int   getItemViewType(int position) const override;
+    int   getViewTypeCount() const override;
     View* getView(int position, View* convertView, ViewGroup* parent) override;
 };
 
@@ -101,6 +109,7 @@ public:
     void  clear();
 
 protected:
+    void                      onStateChanged() override;
     void                      onScanResult() override;
 
     WifiHal::ApInfo*          getItem(int position);
