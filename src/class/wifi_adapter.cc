@@ -161,7 +161,12 @@ View* WifiAdapter::getView(int position, View* convertView, ViewGroup* parent) {
 
         auto iterator = std::find_if(mApInfoList.begin(), mApInfoList.end(),
             [&bssid, &ssid](const WifiHal::ApInfo& ap) {
-                return bssid.empty() ? ap.ssid == ssid : ap.bssid == bssid;
+                if (ap.ssid != ssid) return false;
+#if WIFI_ADAPTER_CLICK_MATCH_BSSID
+                return ap.bssid == bssid;
+#else
+                return true;
+#endif
             });
         if (iterator == mApInfoList.end()) {
             LOGW("clicked AP no longer exists. bssid=%s ssid=%s", bssid.c_str(), ssid.c_str());

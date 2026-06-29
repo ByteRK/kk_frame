@@ -23,6 +23,10 @@
 #include <view/view.h>
 #include <stdint.h>
 
+#ifndef WIFI_ADAPTER_CLICK_MATCH_BSSID
+#define WIFI_ADAPTER_CLICK_MATCH_BSSID 0
+#endif
+
 /////////////////////////////////////////////////////////////////////////////////////
 
 /// @brief WIFI适配器基类
