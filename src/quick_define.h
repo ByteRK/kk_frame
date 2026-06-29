@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-06-30 00:51:44
- * @LastEditTime: 2026-06-30 00:54:47
+ * @LastEditTime: 2026-06-30 01:11:06
  * @FilePath: /kk_frame/src/quick_define.h
  * @Description: 一些快速操作定义
  * @BugList:
@@ -13,6 +13,10 @@
 
 #ifndef __QUICK_DEFINE_H__
 #define __QUICK_DEFINE_H__
+
+#include <cstdio>
+#include <cstdlib>
+#include <unistd.h>
 
 /// @brief 释放内存
 /// @tparam T
@@ -49,13 +53,13 @@ void __delete(T*& p) {
 #define DISABLED(NAME) (!defined(ENABLE_##NAME) || ENABLE_##NAME == 0)
 #endif
 
-#ifndef FILE_SWITCH
+#ifndef FILE_SWITCH_ON
 /// @brief 文件控制开关宏
-#define FILE_SWITCH_ON(D)  (access(#D "_1", F_OK) == 0)
+#define FILE_SWITCH_ON(D)  (::access(#D "_1", F_OK) == 0)
 #endif
-#ifndef FILE_SWITCH
+#ifndef FILE_SWITCH_OFF
 /// @brief 文件控制开关宏
-#define FILE_SWITCH_OFF(D) (access(#D "_0", F_OK) == 0)
+#define FILE_SWITCH_OFF(D) (::access(#D "_0", F_OK) == 0)
 #endif
 
 #endif // __QUICK_DEFINE_H__
