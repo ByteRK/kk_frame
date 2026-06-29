@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-11-24 09:40:23
- * @LastEditTime: 2026-04-24 14:07:13
+ * @LastEditTime: 2026-06-30 00:31:25
  * @FilePath: /kk_frame/src/app/app_common.h
  * @Description: 项目通用头文件
  * @BugList:
@@ -72,17 +72,10 @@
 **/
 #include <cdlog.h>
 
-
-/// @brief 释放内存
-/// @tparam T 
-/// @param p 
-template<typename T>
-void __delete(T*& p) {
-    if (p) { delete p; p = nullptr; }
-}
-
-/// @brief 动态转换
-#define __dc(T, p) dynamic_cast<T*>(p)
+/**
+ * 快速操作定义
+**/
+#include "quick_define.h"
 
 #endif // __APP_COMMON_H__
 

@@ -13,7 +13,6 @@
 
 #include "wind_toast.h"
 #include "base.h"
-#include "project_utils.h"
 #include <cdlog.h>
 
 WindToast::WindToast() {

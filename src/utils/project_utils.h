@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:47:17
- * @LastEditTime: 2026-06-30 00:06:55
+ * @LastEditTime: 2026-06-30 00:31:20
  * @FilePath: /kk_frame/src/utils/project_utils.h
  * @Description: 项目相关的一些操作函数
  * @BugList:
@@ -18,17 +18,6 @@
 #include <cstdlib>
 #include <string>
 #include <stdint.h>
-
-/// @brief 条件成立时记录错误并立即终止进程
-#define FailFast(condition, fmt, ...)                                               \
-    do {                                                                            \
-        if (condition) {                                                            \
-            std::fprintf(stderr, "[FailFast][%s:%d] " fmt "\n",                     \
-                __FILE__, __LINE__, ##__VA_ARGS__);                                 \
-            std::fflush(stderr);                                                    \
-            std::abort();                                                           \
-        }                                                                           \
-    } while (0)
 
 namespace ProjectUtils {
 

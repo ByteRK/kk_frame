@@ -12,7 +12,6 @@
 **/
 
 #include "wind_pop.h"
-#include "project_utils.h"
 
 WindPop::WindPop() { }
 

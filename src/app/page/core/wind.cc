@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-06-30 00:20:25
+ * @LastEditTime: 2026-06-30 01:01:02
  * @FilePath: /kk_frame/src/app/page/core/wind.cc
  * @Description: 窗口类
  * @BugList:
@@ -12,7 +12,6 @@
 **/
 
 #include "wind.h"
-#include "project_utils.h"
 #include "system_utils.h"
 #include <core/app.h>
 

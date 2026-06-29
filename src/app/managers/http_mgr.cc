@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-08 22:48:56
- * @LastEditTime: 2026-04-24 15:44:52
+ * @LastEditTime: 2026-06-30 01:00:01
  * @FilePath: /kk_frame/src/app/managers/http_mgr.cc
  * @Description: Http 请求管理
  * @BugList:
@@ -12,7 +12,6 @@
 **/
 
 #include "http_mgr.h"
-#include "project_utils.h"
 
 #include <core/systemclock.h>
 #include <cdlog.h>
@@ -66,7 +65,7 @@ struct HttpManager::RequestContext {
 
     ~RequestContext() {
         if (headerList != nullptr) {
-#if defined(ENABLE_CURL)
+#if ENABLED(CURL)
             curl_slist_free_all(headerList);
 #endif
             headerList = nullptr;
@@ -256,7 +255,7 @@ HttpManager::~HttpManager() {
 }
 
 void HttpManager::initializeCurlGlobal() {
-#if defined(ENABLE_CURL)
+#if ENABLED(CURL)
     std::lock_guard<std::mutex> lock(sCurlGlobalMutex);
     if (sCurlGlobalRefCount == 0) {
         const CURLcode rc = curl_global_init(CURL_GLOBAL_DEFAULT);
@@ -269,7 +268,7 @@ void HttpManager::initializeCurlGlobal() {
 }
 
 void HttpManager::cleanupCurlGlobal() {
-#if defined(ENABLE_CURL)
+#if ENABLED(CURL)
     std::lock_guard<std::mutex> lock(sCurlGlobalMutex);
     FailFast(sCurlGlobalRefCount <= 0, "invalid curl global ref count");
     --sCurlGlobalRefCount;
@@ -341,7 +340,7 @@ void HttpManager::validateRequestOrDie(const Request& request) {
 void HttpManager::init(cdroid::Looper* mainLooper,
     size_t maxWorkerCount,
     long workerIdleExitMs) {
-#if defined(ENABLE_CURL)
+#if ENABLED(CURL)
     std::lock_guard<std::mutex> lifecycleLock(mLifecycleMutex);
     FailFast(mInitialized.load(), "HttpManager::init called twice");
 
@@ -371,7 +370,7 @@ void HttpManager::init(cdroid::Looper* mainLooper,
 }
 
 void HttpManager::shutdown() {
-#if defined(ENABLE_CURL)
+#if ENABLED(CURL)
     std::lock_guard<std::mutex> lifecycleLock(mLifecycleMutex);
     if (!mInitialized.load()) {
         return;
@@ -427,7 +426,7 @@ bool HttpManager::isInitialized() const {
 }
 
 HttpManager::RequestId HttpManager::submit(const Request& request) {
-#if defined(ENABLE_CURL)
+#if ENABLED(CURL)
     FailFast(!mInitialized.load(), "HttpManager is not initialized, call init() first");
 
     validateRequestOrDie(request);
@@ -450,7 +449,7 @@ HttpManager::RequestId HttpManager::submit(const Request& request) {
 }
 
 bool HttpManager::cancel(RequestId requestId) {
-#if defined(ENABLE_CURL)
+#if ENABLED(CURL)
     FailFast(!mInitialized.load(), "HttpManager is not initialized, call init() first");
 
     std::shared_ptr<RequestContext> cancelledContext;
@@ -494,7 +493,7 @@ bool HttpManager::cancel(RequestId requestId) {
 }
 
 size_t HttpManager::cancelByTag(const std::string& tag) {
-#if defined(ENABLE_CURL)
+#if ENABLED(CURL)
     FailFast(!mInitialized.load(), "HttpManager is not initialized, call init() first");
 
     if (tag.empty()) {
@@ -539,7 +538,7 @@ size_t HttpManager::cancelByTag(const std::string& tag) {
 }
 
 void HttpManager::cancelAll() {
-#if defined(ENABLE_CURL)
+#if ENABLED(CURL)
     if (!mInitialized.load()) {
         return;
     }
@@ -570,7 +569,7 @@ void HttpManager::cancelAll() {
 }
 
 size_t HttpManager::pendingCount() const {
-#if defined(ENABLE_CURL)
+#if ENABLED(CURL)
     if (!mInitialized.load()) {
         return 0;
     }
@@ -582,7 +581,7 @@ size_t HttpManager::pendingCount() const {
 }
 
 size_t HttpManager::runningCount() const {
-#if defined(ENABLE_CURL)
+#if ENABLED(CURL)
     if (!mInitialized.load()) {
         return 0;
     }
@@ -594,7 +593,7 @@ size_t HttpManager::runningCount() const {
 }
 
 size_t HttpManager::requestCount() const {
-#if defined(ENABLE_CURL)
+#if ENABLED(CURL)
     if (!mInitialized.load()) {
         return 0;
     }
@@ -606,7 +605,7 @@ size_t HttpManager::requestCount() const {
 }
 
 bool HttpManager::contains(RequestId requestId) const {
-#if defined(ENABLE_CURL)
+#if ENABLED(CURL)
     if (!mInitialized.load()) {
         return false;
     }
@@ -797,7 +796,7 @@ void HttpManager::workerLoop() {
 }
 
 void HttpManager::executeRequest(const std::shared_ptr<RequestContext>& requestContext) {
-#if defined(ENABLE_CURL)
+#if ENABLED(CURL)
     CURL* easy = curl_easy_init();
     FailFast(easy == nullptr,
         "curl_easy_init failed, requestId=%llu",

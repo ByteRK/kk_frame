@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2026-06-20 14:49:25
+ * @LastEditTime: 2026-06-30 01:00:58
  * @FilePath: /kk_frame/src/app/page/core/base.h
  * @Description: 页面基类
  * @BugList:
@@ -17,7 +17,6 @@
 #include "id.h"
 #include "R.h"
 #include "json_utils.h"
-#include "project_utils.h"
 #include "app_common.h"
 #include "app_version.h"
 #include "tick_mgr.h"

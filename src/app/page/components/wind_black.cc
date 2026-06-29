@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-08 02:37:55
- * @LastEditTime: 2026-06-30 00:16:25
+ * @LastEditTime: 2026-06-30 01:00:26
  * @FilePath: /kk_frame/src/app/page/components/wind_black.cc
  * @Description: 息屏组件
  * @BugList:
@@ -14,7 +14,6 @@
 #include "wind_black.h"
 #include "base.h"
 #include "config_mgr.h"
-#include "project_utils.h"
 #include "system_utils.h"
 #include "wind_mgr.h"
 

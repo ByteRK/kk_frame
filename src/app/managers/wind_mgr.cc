@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2026-06-30 00:16:25
+ * @LastEditTime: 2026-06-30 01:00:15
  * @FilePath: /kk_frame/src/app/managers/wind_mgr.cc
  * @Description: 页面管理类
  * @BugList:
@@ -17,7 +17,6 @@
 
 #include "wind_mgr.h"
 #include "global_data.h"
-#include "project_utils.h"
 #include <core/app.h>
 #include <core/inputeventsource.h>
 

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-10 22:50:08
- * @LastEditTime: 2026-06-30 00:16:25
+ * @LastEditTime: 2026-06-30 01:00:33
  * @FilePath: /kk_frame/src/app/page/components/wind_keyboard.cc
  * @Description: 键盘组件
  * @BugList:
@@ -13,9 +13,8 @@
 
 #include "wind_keyboard.h"
 #include "base.h"
-#include "project_utils.h"
 
-#if !defined(ENABLE_KEYBOARD)
+#if DISABLED(KEYBOARD)
 // 兜底策略，防止XML解析失败
 class CKBegister {
 public:
@@ -32,7 +31,7 @@ WindKeyboard::~WindKeyboard() { }
 
 void WindKeyboard::showKeyboard(const std::string& text, const std::string& hint) {
     if (isKeyboardShow()) return;
-#if defined(ENABLE_KEYBOARD)
+#if ENABLED(KEYBOARD)
     mKeyBoard->setInputText(text);
     mKeyBoard->setDescription(hint);
     mKeyBoard->show();
@@ -57,7 +56,7 @@ bool WindKeyboard::isKeyboardShow()const {
 
 bool WindKeyboard::onKey(int keyCode, KeyEvent& evt, bool& result) {
     if (!isKeyboardShow() || evt.getAction() != KeyEvent::ACTION_DOWN) return false;
-#if defined(ENABLE_KEYBOARD)
+#if ENABLED(KEYBOARD)
     // 暂时不生效，会被editText抢占
     mKeyBoard->onRealKey(keyCode);
 #endif
@@ -66,7 +65,7 @@ bool WindKeyboard::onKey(int keyCode, KeyEvent& evt, bool& result) {
 
 void WindKeyboard::setKeyboardMaxInputCount(int count) {
     if (!checkInit()) return;
-#if defined(ENABLE_KEYBOARD)
+#if ENABLED(KEYBOARD)
     mKeyBoard->setMaxInputCount(count);
 #endif
 }
@@ -84,7 +83,7 @@ void WindKeyboard::init(ViewGroup* parent) {
 
     mKeyBoard->setVisibility(View::GONE);
 
-#if defined(ENABLE_KEYBOARD)
+#if ENABLED(KEYBOARD)
     mKeyBoard->setOnTouchListener([this](View&, MotionEvent&) {
         return true;
     });

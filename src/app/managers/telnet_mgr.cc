@@ -11,7 +11,7 @@
 **/
 
 #include "telnet_mgr.h"
-#include "project_utils.h"
+#include "quick_define.h"
 
 #include <core/systemclock.h>
 #include <cdlog.h>

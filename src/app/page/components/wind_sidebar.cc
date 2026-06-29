@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-06-25 14:05:21
- * @LastEditTime: 2026-06-30 00:16:25
+ * @LastEditTime: 2026-06-30 01:00:48
  * @FilePath: /kk_frame/src/app/page/components/wind_sidebar.cc
  * @Description: 侧边栏组件
  * @BugList:
@@ -12,7 +12,6 @@
 **/
 
 #include "wind_sidebar.h"
-#include "project_utils.h"
 #include "wind_mgr.h"
 #include "time_utils.h"
 #include <widget/imageview.h>

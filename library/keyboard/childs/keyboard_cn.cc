@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-17 14:15:07
- * @LastEditTime: 2026-03-18 23:32:14
+ * @LastEditTime: 2026-06-30 00:57:43
  * @FilePath: /kk_frame/library/keyboard/childs/keyboard_cn.cc
  * @Description:
  * @BugList:
@@ -14,7 +14,7 @@
 #include "keyboard_cn.h"
 #include "config_info.h"
 
-#if defined(ENABLE_KEYBOARD_PINYIN)
+#if ENABLED(KEYBOARD_PINYIN)
 #include <pinyinime.h>
 #include <utils/textutils.h>
 #include <unistd.h>
@@ -122,7 +122,7 @@ void Keyboard_CN::onBindViewHolder(RecyclerView::ViewHolder& holder, int positio
 
 void Keyboard_CN::pinyinOpen() {
     if (mPinyinhandle) return;
-#if defined(ENABLE_KEYBOARD_PINYIN)
+#if ENABLED(KEYBOARD_PINYIN)
     if (access(PINYIN_DAT_PATH "dict_pinyin.dat", F_OK) != 0) LOGE("pinyin dat[%s] file not exist", PINYIN_DAT_PATH "dict_pinyin.dat");
     if (access(PINYIN_DAT_PATH "user.dat", F_OK) != 0) LOGE("pinyin dat[%s] file not exist", PINYIN_DAT_PATH "user.dat");
 
@@ -135,7 +135,7 @@ void Keyboard_CN::pinyinOpen() {
 
 void Keyboard_CN::pinyinClose() {
     if (!mPinyinhandle) return;
-#if defined(ENABLE_KEYBOARD_PINYIN)
+#if ENABLED(KEYBOARD_PINYIN)
     ime_pinyin::im_close_decoder(mPinyinhandle);
     mPinyinhandle = nullptr;
 #endif
@@ -143,7 +143,7 @@ void Keyboard_CN::pinyinClose() {
 
 void Keyboard_CN::pinyinAdd(const char* pinyin) {
     std::string nowPinyin = mPinyin->getText();
-#if defined(ENABLE_KEYBOARD_PINYIN)
+#if ENABLED(KEYBOARD_PINYIN)
     if (nowPinyin.empty()) {
         ime_pinyin::im_flush_cache(mPinyinhandle);
         ime_pinyin::im_reset_search(mPinyinhandle);
@@ -167,7 +167,7 @@ void Keyboard_CN::pinyinDel() {
         return;
     }
     nowPinyin.pop_back();
-#if defined(ENABLE_KEYBOARD_PINYIN)
+#if ENABLED(KEYBOARD_PINYIN)
     pinyinSearch(nowPinyin);
 #else
     mPinyin->setText(nowPinyin);
@@ -179,7 +179,7 @@ void Keyboard_CN::pinyinDel() {
 }
 
 void Keyboard_CN::pinyinSearch(const std::string& pinyin) {
-#if defined(ENABLE_KEYBOARD_PINYIN)
+#if ENABLED(KEYBOARD_PINYIN)
 
 #define MAX_CANDIDATE_SIZE 80
 #define MAX_CANDIDATE_BUFF 128

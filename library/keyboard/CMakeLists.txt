@@ -81,6 +81,7 @@ if(LIB_SOURCES)
 
         ${LIB_CDROID_INCLUDE_PATHS}   # 为了获取CDROID组件
         
+        ${APP_ROOT_DIR}/src           # 为了获取quick_define.h
         ${APP_ROOT_DIR}/config        # 为了获取文件路径LOCAL_DATA_DIR
         ${APP_ROOT_DIR}/src/utils     # 为了获取utils
         ${APP_ROOT_DIR}/src/class     # 为了获取CustomApp

@@ -14,7 +14,6 @@
 #include "wind_screensave.h"
 #include "wind_mgr.h"
 #include "config_mgr.h"
-#include "project_utils.h"
 #include "time_utils.h"
 
 WindScreenSave::WindScreenSave() {

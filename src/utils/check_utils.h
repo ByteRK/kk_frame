@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-29 11:52:07
- * @LastEditTime: 2026-06-29 23:28:00
+ * @LastEditTime: 2026-06-30 00:28:18
  * @FilePath: /kk_frame/src/utils/check_utils.h
  * @Description: 校验相关的一些函数
  * @BugList:
@@ -17,12 +17,6 @@
 #include <cstdint>
 #include <cstddef>
 #include <unistd.h>
-
-#define ENABLED(NAME)  (defined(ENABLE_##NAME) && ENABLE_##NAME == 1)  // 宏定义开关
-#define DISABLED(NAME) (!defined(ENABLE_##NAME) || ENABLE_##NAME == 0) // 宏定义开关
-
-#define FILE_SWITCH_ON(D)  (access(#D "_1", F_OK) == 0) // 文件控制开关宏
-#define FILE_SWITCH_OFF(D) (access(#D "_0", F_OK) == 0) // 文件控制开关宏
 
 namespace CheckUtils {
 

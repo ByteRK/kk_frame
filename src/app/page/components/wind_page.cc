@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-08 02:48:19
- * @LastEditTime: 2026-06-30 00:16:25
+ * @LastEditTime: 2026-06-30 01:00:37
  * @FilePath: /kk_frame/src/app/page/components/wind_page.cc
  * @Description: 页面组件
  * @BugList:
@@ -12,7 +12,6 @@
 **/
 
 #include "wind_page.h"
-#include "project_utils.h"
 
 WindPage::WindPage() { }
 

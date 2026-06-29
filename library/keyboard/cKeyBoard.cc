@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-16 16:03:05
- * @LastEditTime: 2026-06-30 00:10:52
+ * @LastEditTime: 2026-06-30 00:57:06
  * @FilePath: /kk_frame/library/keyboard/cKeyBoard.cc
  * @Description: 输入法 CDROID 版
  * @BugList:
@@ -13,8 +13,8 @@
 
 #include "cKeyBoard.h"
 #include "string_utils.h"
-#include "project_utils.h"
 #include "custom_app.h"
+#include "quick_define.h"
 
 #include "keyboard_en.h"
 #include "keyboard_cn.h"

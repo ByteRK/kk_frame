@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-08-01 03:03:02
- * @LastEditTime: 2026-06-30 00:16:25
+ * @LastEditTime: 2026-06-30 01:01:25
  * @FilePath: /kk_frame/src/app/protocol/tuya_mgr.cc
  * @Description:
  * @BugList:
@@ -24,7 +24,6 @@
 #include "conn_mgr.h"
 #include "wind_mgr.h"
 #include "global_data.h"
-#include "project_utils.h"
 #include "string_utils.h"
 #include "system_utils.h"
 

@@ -2,7 +2,7 @@
  * @Author: xialc
  * @Email: 
  * @Date: 2026-01-27 11:27:25
- * @LastEditTime: 2026-01-27 11:43:58
+ * @LastEditTime: 2026-06-30 01:02:56
  * @FilePath: /kk_frame/src/widgets/gauss_view.cc
  * @Description: 毛玻璃效果
  * @BugList: 
@@ -11,9 +11,10 @@
  * 
 **/
 
-#if defined(ENABLE_GAUSS_VIEW) || defined(__VSCODE__)
-
 #include "gauss_view.h"
+
+#if ENABLED(GAUSS_VIEW) || defined(__VSCODE__)
+
 #include "utils/math_utils.h"
 #include <core/windowmanager.h>
 typedef unsigned char uchar;
