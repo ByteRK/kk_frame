@@ -28,14 +28,14 @@
 #endif
 
 #define DEFINE_DEV_FILE_INFO(name, file) \
-    static const char* name##_FILE_NAME = #file; \
-    static const char* name##_FILE_PATH = LOCAL_DATA_DIR #file; \
-    static const char* name##_FILE_BAK_PATH = LOCAL_DATA_DIR #file ".bak";
+    static constexpr const char* name##_FILE_NAME = #file; \
+    static constexpr const char* name##_FILE_PATH = LOCAL_DEV_DIR #file; \
+    static constexpr const char* name##_FILE_BAK_PATH = LOCAL_DEV_DIR #file ".bak";
 
 #define DEFINE_DATA_FILE_INFO(name, file) \
-    static const char* name##_FILE_NAME = #file; \
-    static const char* name##_FILE_PATH = LOCAL_DATA_DIR #file; \
-    static const char* name##_FILE_BAK_PATH = LOCAL_DATA_DIR #file ".bak";
+    static constexpr const char* name##_FILE_NAME = #file; \
+    static constexpr const char* name##_FILE_PATH = LOCAL_DATA_DIR #file; \
+    static constexpr const char* name##_FILE_BAK_PATH = LOCAL_DATA_DIR #file ".bak";
 
 DEFINE_DEV_FILE_INFO(DEVCONF,     devices.xml)         // 设备配置文件
 
