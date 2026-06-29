@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2026-06-20 15:10:36
+ * @LastEditTime: 2026-06-29 16:15:56
  * @FilePath: /kk_frame/src/app/managers/wind_mgr.cc
  * @Description: 页面管理类
  * @BugList:
@@ -44,6 +44,9 @@ void WindMgr::init() {
     mAutoRecyclePageMsg.what = MSG_AUTO_RECYCLE_PAGE;
     mAutoRecyclePopMsg.what = MSG_AUTO_RECYCLE_POP;
     mInitTime = SystemClock::uptimeMillis();
+
+    // 显示LOGO
+    mWindow->showLogo();
 
     // 根据模式跳转页面
     switch (g_data->mDeviceMode) {
