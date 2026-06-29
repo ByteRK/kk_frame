@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-08 02:37:55
- * @LastEditTime: 2026-06-25 14:50:01
+ * @LastEditTime: 2026-06-30 00:16:25
  * @FilePath: /kk_frame/src/app/page/components/wind_black.cc
  * @Description: 息屏组件
  * @BugList:
@@ -14,6 +14,7 @@
 #include "wind_black.h"
 #include "base.h"
 #include "config_mgr.h"
+#include "project_utils.h"
 #include "system_utils.h"
 #include "wind_mgr.h"
 
@@ -47,8 +48,8 @@ bool WindBlack::isBlackShow()const {
 void WindBlack::init(ViewGroup* parent) {
     if (mIsInit) return;
 
-    if (!(mBlackView = PBase::get(parent, AppRid::black)))
-        throw std::runtime_error("WindBlack init failed");
+    mBlackView = PBase::get(parent, AppRid::black);
+    FailFast(mBlackView == nullptr, "WindBlack init failed");
 
     // 获取节点
     mBlackView->setVisibility(View::GONE);

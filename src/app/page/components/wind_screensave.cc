@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-06-25 10:32:08
- * @LastEditTime: 2026-06-25 18:49:49
+ * @LastEditTime: 2026-06-30 00:16:25
  * @FilePath: /kk_frame/src/app/page/components/wind_screensave.cc
  * @Description: 屏保组件
  * @BugList:
@@ -14,6 +14,7 @@
 #include "wind_screensave.h"
 #include "wind_mgr.h"
 #include "config_mgr.h"
+#include "project_utils.h"
 #include "time_utils.h"
 
 WindScreenSave::WindScreenSave() {
@@ -56,8 +57,8 @@ bool WindScreenSave::isScreenSaveShow() const {
 void WindScreenSave::init(ViewGroup* parent) {
     if (mIsInit) return;
 
-    if (!(mScreenSave = PBase::get(parent, AppRid::screensave)))
-        throw std::runtime_error("WindScreenSave init failed");
+    mScreenSave = PBase::get(parent, AppRid::screensave);
+    FailFast(mScreenSave == nullptr, "WindScreenSave init failed");
 
     mScreenSave->setVisibility(View::GONE);
 

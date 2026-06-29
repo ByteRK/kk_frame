@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-10 22:50:08
- * @LastEditTime: 2026-06-25 14:49:28
+ * @LastEditTime: 2026-06-30 00:16:25
  * @FilePath: /kk_frame/src/app/page/components/wind_keyboard.cc
  * @Description: 键盘组件
  * @BugList:
@@ -13,6 +13,7 @@
 
 #include "wind_keyboard.h"
 #include "base.h"
+#include "project_utils.h"
 
 #if !defined(ENABLE_KEYBOARD)
 // 兜底策略，防止XML解析失败
@@ -78,8 +79,8 @@ void WindKeyboard::setKeyboardCallBack(OnCloseListener enter, OnCloseListener ca
 void WindKeyboard::init(ViewGroup* parent) {
     if (mIsInit) return;
 
-    if (!(mKeyBoard = PBase::get<CKeyBoard>(parent, AppRid::keyboard)))
-        throw std::runtime_error("WindKeyboard init failed");
+    mKeyBoard = PBase::get<CKeyBoard>(parent, AppRid::keyboard);
+    FailFast(mKeyBoard == nullptr, "WindKeyboard init failed");
 
     mKeyBoard->setVisibility(View::GONE);
 

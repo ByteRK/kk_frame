@@ -12,6 +12,7 @@
 **/
 
 #include "http_mgr.h"
+#include "project_utils.h"
 
 #include <core/systemclock.h>
 #include <cdlog.h>
@@ -26,27 +27,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <thread>
-
-#if 1
-/// @brief FailFast 检查函数
-#define FailFast(condition, fmt, ...)   \
-    do {                                \
-        if(condition){                  \
-            LOGE(fmt, ##__VA_ARGS__);   \
-            std::abort();               \
-        }                               \
-    } while (0)
-#else
-/// @brief FailFast 检查函数
-#define FailFast(condition, fmt, ...)                                               \
-    do {                                                                            \
-        if (condition) {                                                            \
-            std::fprintf(stderr, "[HttpManager][FATAL] " fmt "\n", ##__VA_ARGS__);  \
-            std::fflush(stderr);                                                    \
-            std::abort();                                                           \
-        }                                                                           \
-    } while (0)
-#endif
 
 std::mutex HttpManager::sCurlGlobalMutex;
 size_t HttpManager::sCurlGlobalRefCount = 0;

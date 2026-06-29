@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-25 10:23:15
- * @LastEditTime: 2026-06-25 14:44:28
+ * @LastEditTime: 2026-06-30 00:16:25
  * @FilePath: /kk_frame/src/app/page/components/wind_toast.cc
  * @Description: Toast组件
  * @BugList:
@@ -13,6 +13,7 @@
 
 #include "wind_toast.h"
 #include "base.h"
+#include "project_utils.h"
 #include <cdlog.h>
 
 WindToast::WindToast() {
@@ -83,14 +84,12 @@ bool WindToast::isToastShow() const {
 void WindToast::init(ViewGroup* parent) {
     if (mIsInit) return;
 
-    if (
-        !(mToastBox = PBase::get<ViewGroup>(parent, AppRid::toast))
-        ) throw std::runtime_error("WindToast init failed");
+    mToastBox = PBase::get<ViewGroup>(parent, AppRid::toast);
+    FailFast(mToastBox == nullptr, "WindToast init failed");
 
     // 获取节点
-    if (
-        !(mToast = PBase::get<TextView>(mToastBox, AppRid::toast_text))
-        ) throw std::runtime_error("WindToast toast_text init failed");
+    mToast = PBase::get<TextView>(mToastBox, AppRid::toast_text);
+    FailFast(mToast == nullptr, "WindToast toast_text init failed");
 
     // 初始化Toast
     mRuner = [this] {

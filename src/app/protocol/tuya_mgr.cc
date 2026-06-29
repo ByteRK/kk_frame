@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-08-01 03:03:02
- * @LastEditTime: 2026-06-19 18:33:43
+ * @LastEditTime: 2026-06-30 00:16:25
  * @FilePath: /kk_frame/src/app/protocol/tuya_mgr.cc
  * @Description:
  * @BugList:
@@ -24,6 +24,7 @@
 #include "conn_mgr.h"
 #include "wind_mgr.h"
 #include "global_data.h"
+#include "project_utils.h"
 #include "string_utils.h"
 #include "system_utils.h"
 
@@ -239,7 +240,9 @@ void TuyaMgr::sendSetConnectMode(uint8_t mode) {
     std::string version{ APP_VERSION };
     int count = 0;
     for (char c : version)if (c == '.')count++;
-    if (count != 2)throw std::runtime_error("APP_VERSION 格式错误!!! 涂鸦版本号必须为x.x.x");
+    FailFast(count != 2,
+        "APP_VERSION 格式错误，涂鸦版本号必须为 x.x.x，当前值：%s",
+        version.c_str());
 
     std::string str = "{\"p\":\"cdwan0nqtmbyqvx3\",\"v\":\"" + version + "\",\"m\":" + std::to_string(mode % 10) + "}";
     LOGE("[tuyaConfig] -> %s", str.c_str());
