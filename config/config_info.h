@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-01-18 11:33:02
- * @LastEditTime: 2026-06-25 11:00:07
+ * @LastEditTime: 2026-06-29 15:33:59
  * @FilePath: /kk_frame/config/config_info.h
  * @Description: 项目信息
  * @BugList:
@@ -45,7 +45,7 @@ DEFINE_DATA_FILE_INFO(WIFI,       wifi.xml);           // WIFI配置文件名
 DEFINE_DATA_FILE_INFO(HISTORY,    history.json)        // 历史记录文件名
 DEFINE_DATA_FILE_INFO(STATISTICS, statistics.json)     // 统计文件名
 
-#define APP_FIRST_INIT_TAG "./FIRSTINIT.TAG"      // 第一次初始化标记
+#define APP_INITIALIZED_TAG "./INITIALIZED.TAG"        // 已完成首次初始化标记
 
 /*********************** 默认设置 ***********************/
 

@@ -40,7 +40,7 @@ GlobalData::~GlobalData() { }
 
 /// @brief 初始化
 void GlobalData::init() {
-    mIsFirstInit = FileUtils::check(APP_FIRST_INIT_TAG);
+    mIsFirstInit = !FileUtils::check(APP_INITIALIZED_TAG);
 
     // 恢复系统时间
     if (mIsFirstInit) SystemUtils::clearTimeCache();
@@ -70,12 +70,12 @@ void GlobalData::reset() {
     LOGE("global_data factory reset.");
 }
 
-/// @brief 设置首次初始化标记
-/// @param first true:首次初始化 false:非首次初始化
+/// @brief 设置首次初始化状态
+/// @param first true:删除已初始化标记 false:创建已初始化标记
 void GlobalData::setFirstInit(bool first) {
     std::string command;
-    command += first ? "touch " : "rm ";
-    command += APP_FIRST_INIT_TAG;
+    command += first ? "rm -f " : "touch ";
+    command += APP_INITIALIZED_TAG;
     std::system(command.c_str());
     mIsFirstInit = first;
     FileUtils::sync();
