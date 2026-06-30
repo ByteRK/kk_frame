@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2026-06-30 01:00:58
+ * @LastEditTime: 2026-06-30 15:22:53
  * @FilePath: /kk_frame/src/app/page/core/base.h
  * @Description: 页面基类
  * @BugList:
@@ -67,12 +67,11 @@ public:
     void callLoad(const LoadBase* loadMsg);                     // 调用重加载
     std::unique_ptr<SaveBase> callSave();                       // 保存状态
     void callRestore(const SaveBase* saveMsg);                  // 恢复状态
-    void callMcu(uint8_t* data, uint8_t len);                   // 接受电控数据
     bool callKey(KeyEvent& evt);                                // 接受按键事件
     void callLangChange(uint8_t lang);                          // 调用语言切换
-    void callCheckLight(uint8_t* left, uint8_t* right);         // 调用检查按键灯
 
     virtual bool canAutoRecycle() const;                        // 是否允许自动回收
+    virtual void sendPrivateMsg(int32_t what, void* data = nullptr); // 发送私有消息
     
 protected:
     virtual void initUI() = 0;                                  // 初始化UI
@@ -82,10 +81,8 @@ protected:
     virtual SaveBase* onSave();                                 // 状态保存
     virtual void onRestore(const SaveBase* saveMsg);            // 状态恢复
     virtual void onTick(int64_t nowMs) override;                // 定时器回调
-    virtual void onMcu(uint8_t* data, uint8_t len);             // 电控数据回调
     virtual bool onKey(KeyEvent& evt);                          // 按键事件回调
     virtual void onLangChange();                                // 语言切换通知回调
-    virtual void onCheckLight(uint8_t* left, uint8_t* right);   // 检查按键灯回调
     void setLangText(TextView* v, const Json::Value& value);    // 设置语言文本
 
 public:
