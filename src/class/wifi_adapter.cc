@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-28 11:40:38
- * @LastEditTime: 2026-02-28 17:15:22
+ * @LastEditTime: 2026-06-30 14:29:40
  * @FilePath: /kk_frame/src/class/wifi_adapter.cc
  * @Description: WIFI适配器（UI用）
  * @BugList:
@@ -24,13 +24,19 @@
 
 void B_WifiAdapter::setParent(Interface* parent) {
     mInterface = parent;
-    if (mInterface) onScanResult();
+    if (!mInterface) return;
+    // 首次绑定时获取快照；重复绑定直接复用缓存，避免无效加锁。
+    if (!mSourceApListInitialized) refreshApList(true);
+    dispatchApListChanged();
 }
 
 void B_WifiAdapter::setConnectedDisplay(CONNECTED_DISPLAY type) {
     if (mConnectedItemDisplay == type) return;
     mConnectedItemDisplay = type;
-    onScanResult();
+    // 显示策略变化只需重新处理原始缓存；无缓存且已绑定时才读取 WifiMgr。
+    if (mSourceApListInitialized) processApList();
+    else if (mInterface) refreshApList(true);
+    dispatchApListChanged();
 }
 
 int B_WifiAdapter::speedLevel(int ms) {
@@ -69,13 +75,28 @@ int B_WifiAdapter::signalLevel(int val) {
 void B_WifiAdapter::onStateChanged() {
     if (g_wifi->getState() != WifiHal::State::Off) return;
 
-    mApInfoList.clear();
+    clearApList(true);
     if (mInterface) mInterface->flushEnd();
 }
 
 void B_WifiAdapter::onScanResult() {
-    if (g_wifi->getState() == WifiHal::State::Off) mApInfoList.clear();
-    else g_wifi->getAps(mApInfoList);
+    refreshApList(true);
+    dispatchApListChanged();
+}
+
+void B_WifiAdapter::refreshApList(bool reloadSource) {
+    if (reloadSource) {
+        mSourceApInfoList.clear();
+        if (g_wifi->getState() != WifiHal::State::Off) {
+            g_wifi->getAps(mSourceApInfoList);
+        }
+        mSourceApListInitialized = true;
+    }
+    processApList();
+}
+
+void B_WifiAdapter::processApList() {
+    mApInfoList = mSourceApInfoList;
     if (mConnectedItemDisplay != DISPLAY_TYPE_KEEP) { // 非保持原列表
         auto iterator = std::find_if(mApInfoList.begin(), mApInfoList.end(), [](const WifiHal::ApInfo& ap) {
             return ap.connected;
@@ -90,7 +111,18 @@ void B_WifiAdapter::onScanResult() {
             }
         }
     }
-    if (mInterface)mInterface->flushEnd();
+}
+
+void B_WifiAdapter::clearApList(bool sourceInitialized) {
+    mSourceApInfoList.clear();
+    mApInfoList.clear();
+    mSourceApListInitialized = sourceInitialized;
+}
+
+void B_WifiAdapter::dispatchApListChanged() {
+    if (!mInterface) return;
+    mInterface->flushEnd();
+    notifyApListChanged();
 }
 
 WifiAdapter::WifiAdapter() {
@@ -102,18 +134,17 @@ WifiAdapter::~WifiAdapter() {
 }
 
 void WifiAdapter::clear() {
-    mApInfoList.clear();
-    notifyDataSetChanged();
+    clearApList(false);
+    if (mInterface) notifyDataSetChanged();
 }
 
 void WifiAdapter::onStateChanged() {
     const size_t oldCount = mApInfoList.size();
     B_WifiAdapter::onStateChanged();
-    if (mApInfoList.size() != oldCount) notifyDataSetChanged();
+    if (mInterface && mApInfoList.size() != oldCount) notifyDataSetChanged();
 }
 
-void WifiAdapter::onScanResult() {
-    B_WifiAdapter::onScanResult();
+void WifiAdapter::notifyApListChanged() {
     notifyDataSetChanged();
 }
 
@@ -174,7 +205,7 @@ View* WifiAdapter::getView(int position, View* convertView, ViewGroup* parent) {
         }
 
         mInterface->onClickItem(&v, &*iterator);
-    });
+        });
 
     return convertView;
 }
@@ -189,18 +220,17 @@ WifiRecycleAdapter::~WifiRecycleAdapter() {
 }
 
 void WifiRecycleAdapter::clear() {
-    mApInfoList.clear();
-    notifyDataSetChanged();
+    clearApList(false);
+    if (mInterface) notifyDataSetChanged();
 }
 
 void WifiRecycleAdapter::onStateChanged() {
     const size_t oldCount = mApInfoList.size();
     B_WifiAdapter::onStateChanged();
-    if (mApInfoList.size() != oldCount) notifyDataSetChanged();
+    if (mApInfoList.size() != oldCount && mInterface) notifyDataSetChanged();
 }
 
-void WifiRecycleAdapter::onScanResult() {
-    B_WifiAdapter::onScanResult();
+void WifiRecycleAdapter::notifyApListChanged() {
     notifyDataSetChanged();
 }
 
@@ -249,7 +279,7 @@ void WifiRecycleAdapter::onBindViewHolder(RecyclerView::ViewHolder& holder, int 
     RecyclerView::ViewHolder* h_ptr = &holder;
     itemView->setOnClickListener([this, h_ptr](View& v) {
         onClickItem(&v, h_ptr);
-    });
+        });
 }
 
 void WifiRecycleAdapter::onClickItem(View* v, RecyclerView::ViewHolder* holder) {
