@@ -21,6 +21,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <atomic>
+#include <memory>
 
 class WifiHal {
 public:
@@ -68,6 +69,9 @@ public:
         int scan_min_interval_ms    = 15000; // SCAN最小间隔
         int reconn_fail_before_scan = 3;     // 连续连失败N次后触发SCAN
 
+        // x64 模拟扫描结果的返回延迟
+        int x64_scan_delay_ms = 1000;
+
         // DHCP 命令
         std::string dhcp_cmd   = "udhcpc -i wlan0 -n -q";
         std::string ifup_cmd   = "ifconfig wlan0 up";
@@ -104,6 +108,9 @@ private:
 
     // wpa event
     void onWpaEvent(const std::string& msg);
+#ifdef PRODUCT_X64
+    void onX64ScanResultTimer();
+#endif
 
     // helpers
     void setState(State s, const std::string& reason);
@@ -124,6 +131,10 @@ private:
     void reconnectThread();
 
 private:
+#ifdef PRODUCT_X64
+    class X64ScanResultTimer;
+#endif
+
     Options   mOpt;
     Callbacks mCb;
 
@@ -131,6 +142,10 @@ private:
     State mState{ State::Off };
 
     WpaClient mWpa;
+
+#ifdef PRODUCT_X64
+    std::unique_ptr<X64ScanResultTimer> mX64ScanResultTimer;
+#endif
 
     // 记住上一次“可自动重连”的目标
     std::string       mLastSsid;
