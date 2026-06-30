@@ -24,13 +24,19 @@
 
 void B_WifiAdapter::setParent(Interface* parent) {
     mInterface = parent;
-    if (mInterface) onScanResult();
+    if (!mInterface) return;
+    // 首次绑定时获取快照；重复绑定直接复用缓存，避免无效加锁。
+    if (!mSourceApListInitialized) refreshApList(true);
+    dispatchApListChanged();
 }
 
 void B_WifiAdapter::setConnectedDisplay(CONNECTED_DISPLAY type) {
     if (mConnectedItemDisplay == type) return;
     mConnectedItemDisplay = type;
-    if (mInterface) onScanResult();
+    // 显示策略变化只需重新处理原始缓存；无缓存且已绑定时才读取 WifiMgr。
+    if (mSourceApListInitialized) processApList();
+    else if (mInterface) refreshApList(true);
+    dispatchApListChanged();
 }
 
 int B_WifiAdapter::speedLevel(int ms) {
@@ -69,17 +75,32 @@ int B_WifiAdapter::signalLevel(int val) {
 void B_WifiAdapter::onStateChanged() {
     if (g_wifi->getState() != WifiHal::State::Off) return;
 
-    mApInfoList.clear();
+    clearApList(true);
     if (mInterface) mInterface->flushEnd();
 }
 
 void B_WifiAdapter::onScanResult() {
-    if (g_wifi->getState() == WifiHal::State::Off) mApInfoList.clear();
-    else g_wifi->getAps(mApInfoList);
+    refreshApList(true);
+    dispatchApListChanged();
+}
+
+void B_WifiAdapter::refreshApList(bool reloadSource) {
+    if (reloadSource) {
+        mSourceApInfoList.clear();
+        if (g_wifi->getState() != WifiHal::State::Off) {
+            g_wifi->getAps(mSourceApInfoList);
+        }
+        mSourceApListInitialized = true;
+    }
+    processApList();
+}
+
+void B_WifiAdapter::processApList() {
+    mApInfoList = mSourceApInfoList;
     if (mConnectedItemDisplay != DISPLAY_TYPE_KEEP) { // 非保持原列表
-        auto iterator = std::find_if(mApInfoList.begin(), mApInfoList.end(), [ ](const WifiHal::ApInfo& ap) {
+        auto iterator = std::find_if(mApInfoList.begin(), mApInfoList.end(), [](const WifiHal::ApInfo& ap) {
             return ap.connected;
-            });
+        });
         if (iterator != mApInfoList.end()) {
             if (mConnectedItemDisplay == DISPLAY_TYPE_TOP) { // 置顶
                 WifiHal::ApInfo connectedAp = *iterator;
@@ -90,7 +111,18 @@ void B_WifiAdapter::onScanResult() {
             }
         }
     }
-    if (mInterface)mInterface->flushEnd();
+}
+
+void B_WifiAdapter::clearApList(bool sourceInitialized) {
+    mSourceApInfoList.clear();
+    mApInfoList.clear();
+    mSourceApListInitialized = sourceInitialized;
+}
+
+void B_WifiAdapter::dispatchApListChanged() {
+    if (!mInterface) return;
+    mInterface->flushEnd();
+    notifyApListChanged();
 }
 
 WifiAdapter::WifiAdapter() {
@@ -102,7 +134,7 @@ WifiAdapter::~WifiAdapter() {
 }
 
 void WifiAdapter::clear() {
-    mApInfoList.clear();
+    clearApList(false);
     if (mInterface) notifyDataSetChanged();
 }
 
@@ -112,9 +144,8 @@ void WifiAdapter::onStateChanged() {
     if (mInterface && mApInfoList.size() != oldCount) notifyDataSetChanged();
 }
 
-void WifiAdapter::onScanResult() {
-    B_WifiAdapter::onScanResult();
-    if (mInterface) notifyDataSetChanged();
+void WifiAdapter::notifyApListChanged() {
+    notifyDataSetChanged();
 }
 
 int WifiAdapter::getCount() const {
@@ -189,7 +220,7 @@ WifiRecycleAdapter::~WifiRecycleAdapter() {
 }
 
 void WifiRecycleAdapter::clear() {
-    mApInfoList.clear();
+    clearApList(false);
     if (mInterface) notifyDataSetChanged();
 }
 
@@ -199,9 +230,8 @@ void WifiRecycleAdapter::onStateChanged() {
     if (mApInfoList.size() != oldCount && mInterface) notifyDataSetChanged();
 }
 
-void WifiRecycleAdapter::onScanResult() {
-    B_WifiAdapter::onScanResult();
-    if (mInterface) notifyDataSetChanged();
+void WifiRecycleAdapter::notifyApListChanged() {
+    notifyDataSetChanged();
 }
 
 WifiHal::ApInfo* WifiRecycleAdapter::getItem(int position) {
