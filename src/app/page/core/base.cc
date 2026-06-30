@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2026-06-13 23:34:13
+ * @LastEditTime: 2026-06-30 15:23:19
  * @FilePath: /kk_frame/src/app/page/core/base.cc
  * @Description: 页面基类
  * @BugList:
@@ -64,10 +64,6 @@ void PBase::callRestore(const SaveBase* saveMsg) {
     onRestore(saveMsg);
 }
 
-void PBase::callMcu(uint8_t* data, uint8_t len) {
-    onMcu(data, len);
-}
-
 bool PBase::callKey(KeyEvent& evt) {
     LOGV("callKey -> keyCode:%d evt:%d", evt.getKeyCode(), evt.getAction());
     return onKey(evt);
@@ -78,12 +74,12 @@ void PBase::callLangChange(uint8_t lang) {
     onLangChange();
 }
 
-void PBase::callCheckLight(uint8_t* left, uint8_t* right) {
-    onCheckLight(left, right);
-}
-
 bool PBase::canAutoRecycle() const {
     return true;
+}
+
+void PBase::sendPrivateMsg(int32_t what, void * data) {
+    LOGI("sendPrivateMsg -> what:%d", what);
 }
 
 void PBase::onAttach() { }
@@ -100,15 +96,11 @@ void PBase::onRestore(const SaveBase* saveMsg) { }
 
 void PBase::onTick(int64_t nowMs) { }
 
-void PBase::onMcu(uint8_t* data, uint8_t len) { }
-
 bool PBase::onKey(KeyEvent& evt) {
     return false;
 }
 
 void PBase::onLangChange() { }
-
-void PBase::onCheckLight(uint8_t* left, uint8_t* right) { }
 
 void PBase::setLangText(TextView* v, const Json::Value& value) {
     if (v == nullptr) LOGE("TextView is nullptr");
