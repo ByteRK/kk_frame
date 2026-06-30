@@ -15,9 +15,9 @@
 
 #include "packet_base.h"
 
-#include <list>
 #include <stdlib.h>
 #include <string>
+#include <vector>
 
 /**
  * @brief 数据包缓存池及协议编解码器的统一入口。
@@ -26,13 +26,25 @@
  * 类内部持有并负责销毁发送解析器 mSND、接收解析器 mRCV 和已回收缓存。
  */
 class IPacketBuffer {
+public:
+    static constexpr size_t DEFAULT_MAX_CACHE_COUNT = 16;
+
 protected:
-    std::list<BuffData*> mBuffs;
+    std::vector<BuffData*> mBuffs; // 已回收缓存池
+    size_t mMaxCacheCount{ DEFAULT_MAX_CACHE_COUNT };
     IAsk* mSND{ nullptr };
     IAck* mRCV{ nullptr };
 
 public:
     virtual ~IPacketBuffer();
+
+    /**
+     * @brief 设置最多保留的空闲缓存数量，超出部分会告警并释放。
+     * @param count 最大缓存数量；设置为 0 表示不保留空闲缓存。
+     */
+    void setMaxCacheCount(size_t count);
+    /** @brief 返回当前设置的最大空闲缓存数量。 */
+    size_t maxCacheCount() const;
 
     /**
      * @brief 取得一个清空后的数据包缓存。
@@ -75,12 +87,13 @@ public:
     /** @brief 优先复用类型和容量匹配的缓存，否则分配新缓存。 */
     BuffData* obtain(bool receive = true, uint16_t dataLen = 0) override {
         const uint16_t len = static_cast<uint16_t>((receive ? Ack::BUF_LEN : Ask::MIN_LEN) + dataLen);
-        for (auto it = mBuffs.begin(); it != mBuffs.end(); ++it) {
-            BuffData* bf = *it;
+        for (size_t i = 0; i < mBuffs.size(); ++i) {
+            BuffData* bf = mBuffs[i];
             if (bf->type == T && bf->slen == len) {
                 bf->len = 0;
                 memset(bf->buf, 0, bf->slen);
-                mBuffs.erase(it);
+                mBuffs[i] = mBuffs.back();
+                mBuffs.pop_back();
                 return bf;
             }
         }

@@ -12,6 +12,8 @@
 
 #include "packet_buffer.h"
 
+#include <cdlog.h>
+
 #include <iomanip>
 #include <sstream>
 #include <stdlib.h>
@@ -29,8 +31,33 @@ IPacketBuffer::~IPacketBuffer() {
     mRCV = nullptr;
 }
 
+void IPacketBuffer::setMaxCacheCount(size_t count) {
+    mMaxCacheCount = count;
+    if (mBuffs.size() <= mMaxCacheCount) {
+        return;
+    }
+
+    LOGW("Packet buffer cache exceeds limit. cached=%zu max=%zu",
+        mBuffs.size(), mMaxCacheCount);
+    while (mBuffs.size() > mMaxCacheCount) {
+        free(mBuffs.back());
+        mBuffs.pop_back();
+    }
+}
+
+size_t IPacketBuffer::maxCacheCount() const {
+    return mMaxCacheCount;
+}
+
 void IPacketBuffer::recycle(BuffData* buf) {
     if (buf == nullptr) {
+        return;
+    }
+
+    if (mBuffs.size() >= mMaxCacheCount) {
+        LOGW("Packet buffer cache exceeds limit. cached=%zu max=%zu",
+            mBuffs.size() + 1, mMaxCacheCount);
+        free(buf);
         return;
     }
 
