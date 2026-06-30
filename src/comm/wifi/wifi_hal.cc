@@ -30,11 +30,12 @@
 #ifdef PRODUCT_X64
 #include "timer_mgr.h"
 
-class WifiHal::X64ScanResultTimer : public TimerMgr::ITimer {
+class WifiHal::X64DelayTimer : public TimerMgr::ITimer {
 public:
-    explicit X64ScanResultTimer(WifiHal* owner) : mOwner(owner) { }
+    explicit X64DelayTimer(const std::function<void()>& callback)
+        : mCallback(callback) { }
 
-    ~X64ScanResultTimer() {
+    ~X64DelayTimer() {
         cancel();
     }
 
@@ -56,14 +57,12 @@ public:
     void onTimer(uint32_t id, size_t, uint32_t) override {
         if (id != mTimerId) return;
         mTimerId = 0;
-        if (mOwner && mOwner->state() != State::Off) {
-            mOwner->onX64ScanResultTimer();
-        }
+        if (mCallback) mCallback();
     }
 
 private:
-    WifiHal* mOwner{ nullptr };
-    uint32_t mTimerId{ 0 };
+    std::function<void()> mCallback;
+    uint32_t              mTimerId{ 0 };
 };
 #endif // PRODUCT_X64
 
@@ -102,7 +101,12 @@ static WpaClient::Options MakeWpaOpt(const WifiHal::Options& opt) {
 WifiHal::WifiHal(const Options& opt)
     : mOpt(opt), mWpa(MakeWpaOpt(opt)) {
 #ifdef PRODUCT_X64
-    mX64ScanResultTimer.reset(new X64ScanResultTimer(this));
+    mX64ScanResultTimer.reset(new X64DelayTimer([this]() {
+        onX64ScanResultTimer();
+    }));
+    mX64ConnectResultTimer.reset(new X64DelayTimer([this]() {
+        onX64ConnectResultTimer();
+    }));
 #endif
 }
 
@@ -112,7 +116,15 @@ WifiHal::~WifiHal() {
 
 #ifdef PRODUCT_X64
 void WifiHal::onX64ScanResultTimer() {
-    onWpaEvent("CTRL-EVENT-SCAN-RESULTS ");
+    if (state() != State::Off) {
+        onWpaEvent("CTRL-EVENT-SCAN-RESULTS ");
+    }
+}
+
+void WifiHal::onX64ConnectResultTimer() {
+    if (state() == State::Connecting) {
+        setState(State::IpReady, "dhcp ok ip=127.0.0.1");
+    }
 }
 #endif
 
@@ -152,6 +164,7 @@ void WifiHal::disable() {
     cancelReconnect();
 #ifdef PRODUCT_X64
     if (mX64ScanResultTimer) mX64ScanResultTimer->cancel();
+    if (mX64ConnectResultTimer) mX64ConnectResultTimer->cancel();
 #endif
     if (state() == State::Off) return;
     setState(State::Off, "wifi disabled");
@@ -209,7 +222,11 @@ bool WifiHal::connect(const std::string& ssid, const std::string& psk) {
     //     return false;
     // }
 #else
-    setState(State::IpReady, std::string("dhcp ok ip=127.0.0.1"));
+    if (!mX64ConnectResultTimer ||
+        !mX64ConnectResultTimer->schedule(mOpt.x64_connect_delay_ms)) {
+        setState(State::Disconnected, "schedule connect result failed");
+        return false;
+    }
 #endif
     return true;
 #else
@@ -222,6 +239,9 @@ bool WifiHal::disconnect() {
 #if ENABLED(WIFI)
     mUserDisconnect.store(true);
     cancelReconnect();
+#ifdef PRODUCT_X64
+    if (mX64ConnectResultTimer) mX64ConnectResultTimer->cancel();
+#endif
     std::string reply;
     bool ok = runCmd("DISCONNECT", &reply);
     setState(State::Disconnected, ok ? "user disconnect" : "DISCONNECT cmd failed");

@@ -69,8 +69,9 @@ public:
         int scan_min_interval_ms    = 15000; // SCAN最小间隔
         int reconn_fail_before_scan = 3;     // 连续连失败N次后触发SCAN
 
-        // x64 模拟扫描结果的返回延迟
-        int x64_scan_delay_ms = 1000;
+        // x64 模拟操作的返回延迟
+        int x64_scan_delay_ms    = 1000;
+        int x64_connect_delay_ms = 1000;
 
         // DHCP 命令
         std::string dhcp_cmd   = "udhcpc -i wlan0 -n -q";
@@ -110,6 +111,7 @@ private:
     void onWpaEvent(const std::string& msg);
 #ifdef PRODUCT_X64
     void onX64ScanResultTimer();
+    void onX64ConnectResultTimer();
 #endif
 
     // helpers
@@ -132,7 +134,7 @@ private:
 
 private:
 #ifdef PRODUCT_X64
-    class X64ScanResultTimer;
+    class X64DelayTimer;
 #endif
 
     Options   mOpt;
@@ -144,7 +146,8 @@ private:
     WpaClient mWpa;
 
 #ifdef PRODUCT_X64
-    std::unique_ptr<X64ScanResultTimer> mX64ScanResultTimer;
+    std::unique_ptr<X64DelayTimer> mX64ScanResultTimer;
+    std::unique_ptr<X64DelayTimer> mX64ConnectResultTimer;
 #endif
 
     // 记住上一次“可自动重连”的目标
