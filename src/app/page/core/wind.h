@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-06-25 14:19:47
+ * @LastEditTime: 2026-06-30 17:44:54
  * @FilePath: /kk_frame/src/app/page/core/wind.h
  * @Description: 主窗口类
  * @BugList:
@@ -38,8 +38,9 @@ public:
     uint64_t          mLastAction{ 0 };       // 上次用户动作时间
 
 protected:
-    Context*          mContext{ nullptr };    // 上下文
-    ViewGroup*        mRootView{ nullptr };   // 根容器
+    Context*          mContext{ nullptr };      // 上下文
+    ViewGroup*        mRootView{ nullptr };     // 根容器
+    View*             mRegularLayer{ nullptr }; // 常规视图
 
 protected:
     int64_t                mExitTime{ 0 };    // 退出时间
@@ -54,6 +55,8 @@ public:
 
     void  init();
     void  hideAll();
+
+    View* getRegularLayer();
 
     void  postExit(int64_t delay = 2000);
     void  postReboot(int64_t delay = 2000);
