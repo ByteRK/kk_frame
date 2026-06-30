@@ -20,7 +20,7 @@
 - [ ] Define safe TCP socket ownership during send/close. Both TCP implementations copy an fd under lock and send after releasing the lock, allowing close and fd reuse to race with transmission.
 - [ ] Serialize TCP writes or provide an explicit single-writer contract. Concurrent partial writes can interleave protocol frames, and blocking sockets currently allow `send()` to stall the caller without a timeout.
 - [ ] Give `PacketChannel<TcpServer>` independent decoder state per client and preserve the client id through packet dispatch. The current shared decoder can combine bytes from different clients and cannot route business replies to their source.
-- [ ] Widen and bounds-check `IAsk::setData()` length/offset parameters. The current `uint8_t` length silently truncates Tuya payload copies larger than 255 bytes even though callers and buffer allocation use `uint16_t` lengths.
+- [x] Widen and bounds-check `IAsk::setData()` length/offset parameters. Offsets and lengths now use `size_t`, bulk input is const, and invalid or out-of-range writes are rejected with `LOGE` diagnostics. Verified with `./fastCheck.sh`.
 
 ### Medium Priority
 

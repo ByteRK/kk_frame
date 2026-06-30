@@ -13,6 +13,9 @@
 #ifndef __PACKET_BASE_H__
 #define __PACKET_BASE_H__
 
+#include <cdlog.h>
+
+#include <stddef.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -48,16 +51,48 @@ public:
         }
     }
 
-    /** @brief 在数据区指定偏移写入一个字节。调用前必须已通过 parse() 绑定缓存。 */
-    virtual void setData(uint8_t pos, uint8_t data) {
+    /** @brief 在数据区指定偏移写入一个字节；缓存未绑定或偏移越界时不写入。 */
+    virtual void setData(size_t pos, uint8_t data) {
+        if (mBf == nullptr) {
+            LOGE("IAsk setData failed: packet buffer is null");
+            return;
+        }
+        if (mBf->slen <= 0) {
+            LOGE("IAsk setData failed: invalid capacity=%d", mBf->slen);
+            return;
+        }
+        if (pos >= static_cast<size_t>(mBf->slen)) {
+            LOGE("IAsk setData out of bounds. pos=%zu capacity=%d", pos, mBf->slen);
+            return;
+        }
         mBf->buf[pos] = data;
     }
 
-    /** @brief 从 data 复制 len 字节到数据区指定偏移。 */
-    virtual void setData(uint8_t* data, uint8_t pos, uint8_t len) {
-        if (data && len > 0) {
-            memcpy(mBf->buf + pos, data, len);
+    /** @brief 从 data 复制 len 字节到数据区指定偏移；范围越界时不写入。 */
+    virtual void setData(const uint8_t* data, size_t pos, size_t len) {
+        if (len == 0) {
+            return;
         }
+        if (mBf == nullptr) {
+            LOGE("IAsk setData failed: packet buffer is null");
+            return;
+        }
+        if (mBf->slen <= 0) {
+            LOGE("IAsk setData failed: invalid capacity=%d", mBf->slen);
+            return;
+        }
+        if (data == nullptr) {
+            LOGE("IAsk setData failed: source data is null. pos=%zu len=%zu", pos, len);
+            return;
+        }
+
+        const size_t capacity = static_cast<size_t>(mBf->slen);
+        if (pos > capacity || len > capacity - pos) {
+            LOGE("IAsk setData out of bounds. pos=%zu len=%zu capacity=%zu",
+                pos, len, capacity);
+            return;
+        }
+        memcpy(mBf->buf + pos, data, len);
     }
 
     /** @brief 按具体协议计算并写入发送包校验值。 */
