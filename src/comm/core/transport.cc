@@ -47,7 +47,7 @@ int Transport::initEventDispatcher(cdroid::Looper* mainLooper) {
 
     const int addResult = mMainLooper->addFd(
         mWakeFd, 0, cdroid::Looper::EVENT_INPUT, onWake, this);
-    if (addResult == 0) {
+    if (addResult < 0) {
         LOGE("Transport addFd failed. fd=%d", mWakeFd);
         close(mWakeFd);
         mWakeFd = -1;

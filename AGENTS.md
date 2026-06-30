@@ -14,8 +14,8 @@
 ### High Priority
 
 - [x] Make `PacketChannel::onRecv()` continue from the decoder's reported consumption so one transport read can deliver multiple packets. Protocol parsers remain responsible for reporting their true per-packet consumption; `BtnAck` and `McuAck` apply their fixed-length correction locally, similar to `TuyaAck`. Verified with joined/split packet tests and `./fastCheck.sh`.
-- [ ] Make `TuyaAck` reject and recover from impossible declared lengths. A valid header with a length greater than `BUF_LEN - MIN_LEN` currently fills the receive buffer and permanently wedges the decoder because future `add()` calls return zero.
-- [ ] Fix `Transport::initEventDispatcher()` failure detection. `Looper::addFd()` returns `-1` on failure, while the current code checks only for zero and can report an unusable dispatcher as ready.
+- [x] Application-layer responsibility: validate and recover from impossible packet lengths in concrete protocol parsers such as `TuyaAck`. Do not add protocol-specific length policy to the communication layer.
+- [x] Fix `Transport::initEventDispatcher()` failure detection. Negative `Looper::addFd()` results now trigger eventfd cleanup and initialization failure. Verified with `./fastCheck.sh`.
 - [ ] Make `TcpClient::stop()` able to interrupt DNS lookup, connection establishment, and reconnect delay. The socket is not published until blocking `connect()` succeeds, so `stop()` can block indefinitely in `join()`.
 - [ ] Define safe TCP socket ownership during send/close. Both TCP implementations copy an fd under lock and send after releasing the lock, allowing close and fd reuse to race with transmission.
 - [ ] Serialize TCP writes or provide an explicit single-writer contract. Concurrent partial writes can interleave protocol frames, and blocking sockets currently allow `send()` to stall the caller without a timeout.
