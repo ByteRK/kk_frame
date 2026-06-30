@@ -18,6 +18,10 @@
 #include <sstream>
 #include <stdlib.h>
 
+IPacketBuffer::IPacketBuffer() {
+    mBuffs.reserve(DEFAULT_MAX_CACHE_COUNT);
+}
+
 IPacketBuffer::~IPacketBuffer() {
     for (BuffData* bf : mBuffs) {
         free(bf);
@@ -33,6 +37,10 @@ IPacketBuffer::~IPacketBuffer() {
 
 void IPacketBuffer::setMaxCacheCount(size_t count) {
     mMaxCacheCount = count;
+    if (count > mBuffs.capacity()) {
+        mBuffs.reserve(count);
+    }
+
     if (mBuffs.size() <= mMaxCacheCount) {
         return;
     }

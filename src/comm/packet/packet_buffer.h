@@ -36,6 +36,8 @@ protected:
     IAck* mRCV{ nullptr };
 
 public:
+    /** @brief 创建缓存池并按默认最大缓存数量预留指针空间。 */
+    IPacketBuffer();
     virtual ~IPacketBuffer();
 
     /**
