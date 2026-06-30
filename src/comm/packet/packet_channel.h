@@ -68,8 +68,7 @@ public:
         LOG(VERBOSE) << "packet channel recv len:" << totalLen
             << " hex:" << StringUtils::hexStr(data, totalLen);
 
-        const int consumed = mPacketBuff->add(
-            mCurrRecv, const_cast<uint8_t*>(data), totalLen);
+        const int consumed = mPacketBuff->add(mCurrRecv, data, totalLen);
         if (consumed <= 0 || !mPacketBuff->complete(mCurrRecv)) {
             return consumed;
         }

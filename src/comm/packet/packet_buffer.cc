@@ -74,7 +74,7 @@ void IPacketBuffer::recycle(BuffData* buf) {
     mBuffs.push_back(buf);
 }
 
-int IPacketBuffer::add(BuffData* buf, uint8_t* inBuf, int len) {
+int IPacketBuffer::add(BuffData* buf, const uint8_t* inBuf, int len) {
     if (buf == nullptr || inBuf == nullptr || len <= 0 || mRCV == nullptr) {
         return 0;
     }

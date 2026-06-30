@@ -85,7 +85,7 @@ public:
     }
 
     /** @brief 追加输入字节，返回本次实际消费的输入长度。 */
-    virtual int  add(uint8_t* bf, int len) = 0;
+    virtual int  add(const uint8_t* bf, int len) = 0;
     /** @brief 判断当前缓存是否已包含一个完整数据包。 */
     virtual bool complete() = 0;
     /** @brief 校验当前完整数据包是否合法。 */
@@ -119,7 +119,7 @@ public:
     uint16_t mDataLen{ 0 };
 
 protected:
-    void addData(const uint16_t maxLen, uint8_t* data, int dataLen, int& rlen) {
+    void addData(const uint16_t maxLen, const uint8_t* data, int dataLen, int& rlen) {
         if (maxLen - mDlen >= dataLen - rlen) {
             memcpy(mBuf + mDlen, data + rlen, dataLen - rlen);
             mDlen += dataLen - rlen;

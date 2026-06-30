@@ -57,7 +57,7 @@ public:
     /** @brief 清空缓存并放回池中；传入 nullptr 时无操作。 */
     virtual void recycle(BuffData* buf);
     /** @brief 将输入字节追加到接收缓存，返回实际消费的输入长度。 */
-    virtual int add(BuffData* buf, uint8_t* inBuf, int len);
+    virtual int add(BuffData* buf, const uint8_t* inBuf, int len);
     /** @brief 判断接收缓存是否已经组成完整数据包。 */
     virtual bool complete(BuffData* buf);
     /** @brief 比较两个缓存的协议类型、有效长度和数据内容是否完全一致。 */

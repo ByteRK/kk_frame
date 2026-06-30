@@ -51,7 +51,7 @@ public:
     McuAck() { }
     McuAck(BuffData* buf) { parse(buf); }
 
-    int add(uint8_t* bf, int len) override {
+    int add(const uint8_t* bf, int len) override {
         int rlen = 0;
         while (mDlen < BUF_LEN && rlen < len) {
             addData(BUF_LEN, bf, len, rlen);
