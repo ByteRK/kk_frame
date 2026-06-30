@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-25 10:23:15
- * @LastEditTime: 2026-06-30 00:16:25
+ * @LastEditTime: 2026-06-30 16:52:08
  * @FilePath: /kk_frame/src/app/page/components/wind_toast.cc
  * @Description: Toast组件
  * @BugList:
@@ -13,7 +13,6 @@
 
 #include "wind_toast.h"
 #include "base.h"
-#include <cdlog.h>
 
 WindToast::WindToast() {
     mToastTicker.setTick(200);

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-06-30 01:01:02
+ * @LastEditTime: 2026-06-30 18:00:06
  * @FilePath: /kk_frame/src/app/page/core/wind.cc
  * @Description: 窗口类
  * @BugList:
@@ -46,6 +46,10 @@ void MainWindow::init() {
         LayoutInflater::from(mContext)->inflate("@layout/wind", this));
     FailFast(mRootView == nullptr, "MainWindow View Tree Error");
 
+    // 获取常规视图层
+    mRegularLayer = mRootView->findViewById(AppRid::regular_layer);
+    FailFast(mRegularLayer == nullptr, "MainWindow Regular Layer Error");
+
     // 模块初始化
     WindLogo::init(mRootView);
     WindBlack::init(mRootView);
@@ -65,6 +69,12 @@ void MainWindow::hideAll() {
     hidePopBox();
     hideToast();
     hideBlack();
+}
+
+/// @brief 获取常规视图层
+/// @return 
+View* MainWindow::getRegularLayer() {
+    return mRegularLayer;
 }
 
 /// @brief 退出计时
