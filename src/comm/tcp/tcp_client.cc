@@ -15,17 +15,37 @@
 #include <cdlog.h>
 
 #include <arpa/inet.h>
+#include <chrono>
 #include <errno.h>
+#include <fcntl.h>
+#include <memory>
 #include <netdb.h>
 #include <poll.h>
 #include <stdio.h>
 #include <string.h>
+#include <system_error>
 #include <sys/socket.h>
 #include <unistd.h>
 
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL 0
 #endif
+
+namespace {
+
+constexpr int RESOLVE_WAIT_SLICE_MS = 50;
+constexpr int CONNECT_POLL_SLICE_MS = 100;
+
+struct ResolveState {
+    std::mutex lock;
+    std::condition_variable condition;
+    bool done{ false };
+    bool abandoned{ false };
+    int error{ 0 };
+    addrinfo* result{ nullptr };
+};
+
+}
 
 TcpClient::TcpClient(const std::string& host, uint16_t port)
     : mSock(-1),
@@ -60,6 +80,10 @@ int TcpClient::init() {
             mConfig.host.c_str(), mConfig.port);
         return -1;
     }
+    if (mConfig.reconnectDelayMs < 0) {
+        LOGE("TcpClient init failed. reconnectDelayMs=%d", mConfig.reconnectDelayMs);
+        return -2;
+    }
     return initEventDispatcher();
 }
 
@@ -84,6 +108,7 @@ void TcpClient::stop() {
     }
 
     mRunning.store(false);
+    mStopCondition.notify_all();
     closeSocket();
 
     if (mThread.joinable()) {
@@ -150,7 +175,7 @@ void TcpClient::threadLoop() {
     while (mRunning.load()) {
         const int fd = connectServer();
         if (fd < 0) {
-            poll(nullptr, 0, mConfig.reconnectDelayMs);
+            waitForReconnectDelay();
             continue;
         }
 
@@ -200,36 +225,130 @@ void TcpClient::threadLoop() {
         }
 
         if (mRunning.load()) {
-            poll(nullptr, 0, mConfig.reconnectDelayMs);
+            waitForReconnectDelay();
         }
     }
 }
 
 int TcpClient::connectServer() {
-    addrinfo hints;
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-
     char portText[16];
     snprintf(portText, sizeof(portText), "%u", mConfig.port);
 
+    const std::shared_ptr<ResolveState> resolveState = std::make_shared<ResolveState>();
+    const std::string host = mConfig.host;
+    const std::string service = portText;
+    try {
+        std::thread resolver([resolveState, host, service]() {
+            addrinfo hints;
+            memset(&hints, 0, sizeof(hints));
+            hints.ai_family = AF_UNSPEC;
+            hints.ai_socktype = SOCK_STREAM;
+
+            addrinfo* resolved = nullptr;
+            const int error = getaddrinfo(host.c_str(), service.c_str(), &hints, &resolved);
+            bool abandoned = false;
+            {
+                std::lock_guard<std::mutex> lock(resolveState->lock);
+                abandoned = resolveState->abandoned;
+                if (!abandoned) {
+                    resolveState->error = error;
+                    resolveState->result = resolved;
+                    resolveState->done = true;
+                }
+            }
+
+            if (abandoned && resolved != nullptr) {
+                freeaddrinfo(resolved);
+            }
+            resolveState->condition.notify_one();
+        });
+        resolver.detach();
+    } catch (const std::system_error& e) {
+        LOGE("TcpClient resolver thread failed. err=%s", e.what());
+        return -1;
+    }
+
     addrinfo* result = nullptr;
-    int rc = getaddrinfo(mConfig.host.c_str(), portText, &hints, &result);
-    if (rc != 0) {
+    int resolveError = 0;
+    {
+        std::unique_lock<std::mutex> lock(resolveState->lock);
+        while (!resolveState->done && mRunning.load()) {
+            resolveState->condition.wait_for(
+                lock, std::chrono::milliseconds(RESOLVE_WAIT_SLICE_MS));
+        }
+
+        if (!resolveState->done) {
+            resolveState->abandoned = true;
+            return -1;
+        }
+
+        resolveError = resolveState->error;
+        result = resolveState->result;
+        resolveState->result = nullptr;
+    }
+
+    if (resolveError != 0) {
         LOGE("TcpClient getaddrinfo failed. host=%s port=%u err=%s",
-            mConfig.host.c_str(), mConfig.port, gai_strerror(rc));
+            mConfig.host.c_str(), mConfig.port, gai_strerror(resolveError));
+        if (result != nullptr) {
+            freeaddrinfo(result);
+        }
+        return -1;
+    }
+    if (result == nullptr) {
+        LOGE("TcpClient getaddrinfo returned no address. host=%s port=%u",
+            mConfig.host.c_str(), mConfig.port);
         return -1;
     }
 
     int fd = -1;
     for (addrinfo* it = result; it != nullptr; it = it->ai_next) {
+        if (!mRunning.load()) {
+            break;
+        }
+
         fd = socket(it->ai_family, it->ai_socktype, it->ai_protocol);
         if (fd < 0) {
             continue;
         }
 
-        if (connect(fd, it->ai_addr, it->ai_addrlen) == 0) {
+        const int originalFlags = fcntl(fd, F_GETFL, 0);
+        if (originalFlags < 0 || fcntl(fd, F_SETFL, originalFlags | O_NONBLOCK) != 0) {
+            close(fd);
+            fd = -1;
+            continue;
+        }
+
+        bool connected = connect(fd, it->ai_addr, it->ai_addrlen) == 0;
+        if (!connected && errno == EINPROGRESS) {
+            while (mRunning.load()) {
+                pollfd pfd;
+                pfd.fd = fd;
+                pfd.events = POLLOUT;
+                pfd.revents = 0;
+
+                const int ready = poll(&pfd, 1, CONNECT_POLL_SLICE_MS);
+                if (ready < 0 && errno == EINTR) {
+                    continue;
+                }
+                if (ready <= 0) {
+                    if (ready < 0) {
+                        break;
+                    }
+                    continue;
+                }
+
+                int socketError = 0;
+                socklen_t errorLen = sizeof(socketError);
+                if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &socketError, &errorLen) == 0 &&
+                    socketError == 0) {
+                    connected = true;
+                }
+                break;
+            }
+        }
+
+        if (connected && mRunning.load() && fcntl(fd, F_SETFL, originalFlags) == 0) {
             break;
         }
 
@@ -239,6 +358,17 @@ int TcpClient::connectServer() {
 
     freeaddrinfo(result);
     return fd;
+}
+
+void TcpClient::waitForReconnectDelay() {
+    if (!mRunning.load() || mConfig.reconnectDelayMs == 0) {
+        return;
+    }
+
+    std::unique_lock<std::mutex> lock(mStopLock);
+    mStopCondition.wait_for(lock,
+        std::chrono::milliseconds(mConfig.reconnectDelayMs),
+        [this]() { return !mRunning.load(); });
 }
 
 void TcpClient::closeSocket() {

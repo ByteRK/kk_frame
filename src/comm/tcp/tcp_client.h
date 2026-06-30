@@ -16,6 +16,7 @@
 #include "transport.h"
 
 #include <atomic>
+#include <condition_variable>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -34,7 +35,7 @@ public:
         std::string host;
         /** @brief 服务端端口，必须大于 0。 */
         uint16_t port{ 0 };
-        /** @brief 连接失败或断开后的重试间隔，单位毫秒。 */
+        /** @brief 连接失败或断开后的重试间隔，单位毫秒，必须大于等于 0。 */
         int reconnectDelayMs{ 2000 };
         /** @brief 单次接收使用的缓存大小；为 0 时使用 4096 字节。 */
         size_t readBufferSize{ 4096 };
@@ -53,7 +54,7 @@ public:
     int init() override;
     /** @brief 启动连接和接收线程；连接失败时按配置持续重试。 */
     bool start() override;
-    /** @brief 停止重连、关闭套接字、等待线程退出并释放事件分发器。 */
+    /** @brief 中止解析、连接和重连等待，关闭套接字并释放事件分发器。 */
     void stop() override;
     /** @brief 与服务端 TCP 连接已经建立时返回 true。 */
     bool isConnected() const override;
@@ -68,6 +69,7 @@ protected:
 private:
     void threadLoop();
     int connectServer();
+    void waitForReconnectDelay();
     void closeSocket();
     ssize_t sendAll(int fd, const uint8_t* data, size_t len);
 
@@ -78,6 +80,8 @@ private:
     std::thread mThread;
     std::atomic<bool> mRunning;
     std::atomic<bool> mConnected;
+    std::mutex mStopLock;
+    std::condition_variable mStopCondition;
     TransportHandler* mHandler;
 };
 
