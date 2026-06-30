@@ -13,7 +13,7 @@
 
 ### High Priority
 
-- [ ] Fix fixed-length packet framing in `BtnAck` and `McuAck`: one input chunk can contain multiple frames, but the current parser consumes the whole chunk, validates only the first frame, then clears the buffer and loses trailing frames.
+- [x] Make `PacketChannel::onRecv()` continue from the decoder's reported consumption so one transport read can deliver multiple packets. Protocol parsers remain responsible for reporting their true per-packet consumption; `BtnAck` and `McuAck` apply their fixed-length correction locally, similar to `TuyaAck`. Verified with joined/split packet tests and `./fastCheck.sh`.
 - [ ] Make `TuyaAck` reject and recover from impossible declared lengths. A valid header with a length greater than `BUF_LEN - MIN_LEN` currently fills the receive buffer and permanently wedges the decoder because future `add()` calls return zero.
 - [ ] Fix `Transport::initEventDispatcher()` failure detection. `Looper::addFd()` returns `-1` on failure, while the current code checks only for zero and can report an unusable dispatcher as ready.
 - [ ] Make `TcpClient::stop()` able to interrupt DNS lookup, connection establishment, and reconnect delay. The socket is not published until blocking `connect()` succeeds, so `stop()` can block indefinitely in `join()`.

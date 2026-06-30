@@ -58,55 +58,44 @@ public:
         mCurrRecv = nullptr;
     }
 
-    /** @brief 输入一段原始字节流，返回本次从输入中消费的字节数。 */
+    /** @brief 推进一次数据包解析，返回本次从输入中消费的字节数。 */
     int onBytes(const uint8_t* data, size_t len) {
         if (mPacketBuff == nullptr || mCurrRecv == nullptr || data == nullptr || len == 0) {
             return 0;
         }
 
-        int offset = 0;
         const int totalLen = static_cast<int>(len);
         LOG(VERBOSE) << "packet channel recv len:" << totalLen
             << " hex:" << StringUtils::hexStr(data, totalLen);
 
-        while (offset < totalLen) {
-            int consumed = mPacketBuff->add(
-                mCurrRecv,
-                const_cast<uint8_t*>(data) + offset,
-                totalLen - offset);
-            if (consumed <= 0) {
-                break;
-            }
-            offset += consumed;
-
-            if (!mPacketBuff->complete(mCurrRecv)) {
-                break;
-            }
-
-            LOG(VERBOSE) << "packet complete:" << StringUtils::hexStr(mCurrRecv->buf, mCurrRecv->len);
-            ++mRecvCount;
-
-            if (mPacketBuff->check(mCurrRecv)) {
-                mCheckErrorCount = 0;
-                if (mEnableRepeatAccept || !mPacketBuff->compare(mCurrRecv, mLastRecv)) {
-                    IAck* ack = mPacketBuff->ack(mCurrRecv);
-                    g_packetMgr->onCommand(ack);
-
-                    mLastRecv->len = mCurrRecv->len;
-                    memcpy(mLastRecv->buf, mCurrRecv->buf, mCurrRecv->len);
-                }
-            } else {
-                ++mCheckErrorCount;
-                LOGE("packet check failed. len=%d check_fail=%d",
-                    mCurrRecv->len, mCheckErrorCount);
-                StringUtils::hexdump("packet channel check failed",
-                    mCurrRecv->buf, mCurrRecv->len, 100);
-            }
-
-            mCurrRecv->len = 0;
+        const int consumed = mPacketBuff->add(
+            mCurrRecv, const_cast<uint8_t*>(data), totalLen);
+        if (consumed <= 0 || !mPacketBuff->complete(mCurrRecv)) {
+            return consumed;
         }
 
-        return offset;
+        LOG(VERBOSE) << "packet complete:" << StringUtils::hexStr(mCurrRecv->buf, mCurrRecv->len);
+        ++mRecvCount;
+
+        if (mPacketBuff->check(mCurrRecv)) {
+            mCheckErrorCount = 0;
+            if (mEnableRepeatAccept || !mPacketBuff->compare(mCurrRecv, mLastRecv)) {
+                IAck* ack = mPacketBuff->ack(mCurrRecv);
+                g_packetMgr->onCommand(ack);
+
+                mLastRecv->len = mCurrRecv->len;
+                memcpy(mLastRecv->buf, mCurrRecv->buf, mCurrRecv->len);
+            }
+        } else {
+            ++mCheckErrorCount;
+            LOGE("packet check failed. len=%d check_fail=%d",
+                mCurrRecv->len, mCheckErrorCount);
+            StringUtils::hexdump("packet channel check failed",
+                mCurrRecv->buf, mCurrRecv->len, 100);
+        }
+
+        mCurrRecv->len = 0;
+        return consumed;
     }
 
     /** @brief 返回累计识别出的完整数据包数量，包括校验失败的数据包。 */
@@ -231,9 +220,19 @@ public:
         LOGW("PacketChannel disconnected. id=%d", id);
     }
 
-    /** @brief 将底层原始字节交给流式解码器；当前数据包分发不保留来源 id。 */
+    /** @brief 按解码器返回的消费长度持续处理原始字节；当前数据包分发不保留来源 id。 */
     void onRecv(const uint8_t* data, size_t len, int /*id*/ = -1) override {
-        mDecoder.onBytes(data, len);
+        size_t offset = 0;
+        while (offset < len) {
+            const size_t remaining = len - offset;
+            const int consumed = mDecoder.onBytes(data + offset, remaining);
+            if (consumed <= 0 || static_cast<size_t>(consumed) > remaining) {
+                LOGE("PacketChannel decoder invalid consumption. consumed=%d remain=%zu",
+                    consumed, remaining);
+                break;
+            }
+            offset += static_cast<size_t>(consumed);
+        }
     }
 
     /** @brief 记录最近一次底层通讯错误。 */

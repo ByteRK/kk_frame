@@ -58,6 +58,11 @@ public:
             if (!checkHead(mHeadList, 2))findHead(mHeadList, 2);
             *mPlen = mDlen;
         }
+        if (checkHead(mHeadList, 2) && mDlen > MIN_LEN) {
+            rlen -= mDlen - MIN_LEN;
+            mDlen = MIN_LEN;
+            *mPlen = mDlen;
+        }
         LOG(VERBOSE) << "mDlen:" << mDlen << " Bytes=" << StringUtils::hexStr(mBuf, mDlen);
         return rlen;
     }
