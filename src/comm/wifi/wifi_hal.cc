@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstring>
+#include <random>
 #include <sys/ioctl.h>
 #include <net/if.h>
 #include <arpa/inet.h>
@@ -25,6 +26,45 @@
 #include <cstring>
 #include <cdlog.h>
 #include <core/systemclock.h>
+
+#ifdef PRODUCT_X64
+#include "timer_mgr.h"
+
+class WifiHal::X64DelayTimer : public TimerMgr::ITimer {
+public:
+    explicit X64DelayTimer(const std::function<void()>& callback)
+        : mCallback(callback) { }
+
+    ~X64DelayTimer() {
+        cancel();
+    }
+
+    bool schedule(int64_t delayMs) {
+        cancel();
+        const uint32_t safeDelayMs = static_cast<uint32_t>(
+            std::max<int64_t>(delayMs, 10));
+        mTimerId = g_timer->addTimer(safeDelayMs, this, 0, 1);
+        return mTimerId != 0;
+    }
+
+    void cancel() {
+        if (mTimerId != 0) {
+            g_timer->delTimer(mTimerId);
+            mTimerId = 0;
+        }
+    }
+
+    void onTimer(uint32_t id, size_t, uint32_t) override {
+        if (id != mTimerId) return;
+        mTimerId = 0;
+        if (mCallback) mCallback();
+    }
+
+private:
+    std::function<void()> mCallback;
+    uint32_t              mTimerId{ 0 };
+};
+#endif // PRODUCT_X64
 
 static bool GetIpv4(const std::string& ifname, std::string& outIp) {
     outIp.clear();
@@ -60,11 +100,33 @@ static WpaClient::Options MakeWpaOpt(const WifiHal::Options& opt) {
 
 WifiHal::WifiHal(const Options& opt)
     : mOpt(opt), mWpa(MakeWpaOpt(opt)) {
+#ifdef PRODUCT_X64
+    mX64ScanResultTimer.reset(new X64DelayTimer([this]() {
+        onX64ScanResultTimer();
+    }));
+    mX64ConnectResultTimer.reset(new X64DelayTimer([this]() {
+        onX64ConnectResultTimer();
+    }));
+#endif
 }
 
 WifiHal::~WifiHal() {
     disable();
 }
+
+#ifdef PRODUCT_X64
+void WifiHal::onX64ScanResultTimer() {
+    if (state() != State::Off) {
+        onWpaEvent("CTRL-EVENT-SCAN-RESULTS ");
+    }
+}
+
+void WifiHal::onX64ConnectResultTimer() {
+    if (state() == State::Connecting) {
+        setState(State::IpReady, "dhcp ok ip=127.0.0.1");
+    }
+}
+#endif
 
 void WifiHal::setCallbacks(const Callbacks& cb) {
     std::lock_guard<std::mutex> lk(mMtx);
@@ -100,6 +162,10 @@ bool WifiHal::enable() {
 void WifiHal::disable() {
 #if ENABLED(WIFI)
     cancelReconnect();
+#ifdef PRODUCT_X64
+    if (mX64ScanResultTimer) mX64ScanResultTimer->cancel();
+    if (mX64ConnectResultTimer) mX64ConnectResultTimer->cancel();
+#endif
     if (state() == State::Off) return;
     setState(State::Off, "wifi disabled");
     mWpa.stopMonitor();
@@ -124,7 +190,8 @@ bool WifiHal::scan() {
         return false;
     }
 #ifdef PRODUCT_X64
-    onWpaEvent(WPA_EVENT_SCAN_RESULTS);
+    if (!mX64ScanResultTimer) return false;
+    if (!mX64ScanResultTimer->schedule(mOpt.x64_scan_delay_ms)) return false;
 #endif
     return true;
 #else
@@ -155,7 +222,11 @@ bool WifiHal::connect(const std::string& ssid, const std::string& psk) {
     //     return false;
     // }
 #else
-    setState(State::IpReady, std::string("dhcp ok ip=127.0.0.1"));
+    if (!mX64ConnectResultTimer ||
+        !mX64ConnectResultTimer->schedule(mOpt.x64_connect_delay_ms)) {
+        setState(State::Disconnected, "schedule connect result failed");
+        return false;
+    }
 #endif
     return true;
 #else
@@ -168,6 +239,9 @@ bool WifiHal::disconnect() {
 #if ENABLED(WIFI)
     mUserDisconnect.store(true);
     cancelReconnect();
+#ifdef PRODUCT_X64
+    if (mX64ConnectResultTimer) mX64ConnectResultTimer->cancel();
+#endif
     std::string reply;
     bool ok = runCmd("DISCONNECT", &reply);
     setState(State::Disconnected, ok ? "user disconnect" : "DISCONNECT cmd failed");
@@ -397,22 +471,66 @@ bool WifiHal::startDhcp() {
 bool WifiHal::parseScanResults(std::vector<ApInfo>& out) {
     out.clear();
 
+#ifdef PRODUCT_X64
+    static const int frequencies[] = {
+        2412, 2437, 2462, 5180, 5200, 5220, 5745, 5765, 5785
+    };
+    std::vector<std::string> ssids = {
+        "Ricken_5G", "Home_WiFi", "Office_AP", "Guest_Network",
+        "CDROID_Lab", "Coffee_Free", "LivingRoom", "IoT_Network",
+        "ChinaNet-5G", "CMCC-WEB", "TP-Link_2.4G", "Xiaomi_5G",
+        "HUAWEI-Home", "DIRECT-Printer", "AndroidAP", "kk_frame"
+    };
+
+    static thread_local std::mt19937 engine(std::random_device{}());
+    std::shuffle(ssids.begin(), ssids.end(), engine);
+
+    std::string connectedSsid;
+    if (state() == State::IpReady) {
+        std::lock_guard<std::mutex> lk(mMtx);
+        connectedSsid = mLastSsid;
+    }
+
+    std::uniform_int_distribution<int> countDist(5, 10);
+    std::uniform_int_distribution<int> frequencyDist(
+        0, static_cast<int>(sizeof(frequencies) / sizeof(frequencies[0])) - 1);
+    std::uniform_int_distribution<int> signalDist(-90, -30);
+    std::uniform_int_distribution<int> encryptionDist(0, 4);
+    std::uniform_int_distribution<int> byteDist(0, 255);
+    const size_t targetCount = static_cast<size_t>(countDist(engine));
+
+    auto appendAp = [&](const std::string& ssid) {
+        unsigned int mac[6];
+        for (auto& byte : mac) byte = static_cast<unsigned int>(byteDist(engine));
+        mac[0] = (mac[0] & 0xfcU) | 0x02U; // locally administered unicast address
+
+        char bssid[18];
+        std::snprintf(bssid, sizeof(bssid), "%02x:%02x:%02x:%02x:%02x:%02x",
+            mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+
+        ApInfo ap;
+        ap.bssid = bssid;
+        ap.ssid = ssid;
+        ap.freq = frequencies[frequencyDist(engine)];
+        ap.signal = signalDist(engine);
+        ap.encrypted = encryptionDist(engine) != 0;
+        ap.connected = !connectedSsid.empty() && ssid == connectedSsid;
+        out.push_back(ap);
+    };
+
+    // Keep the active network visible when subsequent scans randomize the list.
+    if (!connectedSsid.empty()) appendAp(connectedSsid);
+    for (const auto& ssid : ssids) {
+        if (out.size() >= targetCount) break;
+        if (ssid != connectedSsid) appendAp(ssid);
+    }
+    return true;
+#else
     // SCAN_RESULTS 输出类似：
     // bssid / frequency / signal level / flags / ssid
     // fa:be:81:c3:dc:30       2462    -40     [WPA2-PSK-CCMP][WPS][ESS][P2P]  Ricken
     std::string reply;
-#ifndef PRODUCT_X64
     if (!runCmd("SCAN_RESULTS", &reply)) return false;
-#else
-    reply =
-        "bssid / frequency / signal level / flags / ssid\n"
-        "fa:be:81:c3:dc:30\t2462\t-40\t[WPA2-PSK-CCMP][WPS][ESS][P2P]\tTest1\n"
-        "00:1f:33:9d:3e:3c\t2462\t-44\t[P2P]\tTest2\n"
-        "00:1f:33:9d:3e:3d\t2462\t-44\t[WPA2-PSK-CCMP][WPS][ESS][P2P]\tTest3\n"
-        "00:1f:33:9d:3e:3e\t2462\t-44\t[WPA2-PSK-CCMP][WPS][ESS][P2P]\tTest4\n"
-        "00:1f:33:9d:3e:3f\t2462\t-44\t[WPA2-PSK-CCMP][WPS][ESS][P2P]\tTest5\n"
-        "00:1f:33:9d:3e:40\t2462\t-44\t[WPA2-PSK-CCMP][WPS][ESS][P2P]\tTest6\n";
-#endif
 
     std::istringstream iss(reply);
     std::string line;
@@ -464,6 +582,7 @@ bool WifiHal::parseScanResults(std::vector<ApInfo>& out) {
     }
 
     return true;
+#endif // PRODUCT_X64
 }
 
 void WifiHal::scheduleReconnect(const std::string& reason) {
