@@ -24,8 +24,18 @@
 #include "string_utils.h"
 #include <utility>
 
+/**
+ * @brief 将任意分段的原始字节流还原为业务数据包。
+ *
+ * 解码器通过 IPacketBuffer 调用具体协议解析器，完成包判定、校验、可选去重，并将
+ * 合法数据包交给全局 IHandlerManager。packetBuff 的生命周期必须长于本对象。
+ */
 class PacketStreamDecoder {
 public:
+    /**
+     * @param packetBuff 具体协议的数据包缓存和解析器，不接管其生命周期。
+     * @param enableRepeatAccept true 允许连续分发内容完全相同的数据包。
+     */
     PacketStreamDecoder(IPacketBuffer* packetBuff, bool enableRepeatAccept)
         : mPacketBuff(packetBuff),
           mLastRecv(nullptr),
@@ -48,6 +58,7 @@ public:
         mCurrRecv = nullptr;
     }
 
+    /** @brief 输入一段原始字节流，返回本次从输入中消费的字节数。 */
     int onBytes(const uint8_t* data, size_t len) {
         if (mPacketBuff == nullptr || mCurrRecv == nullptr || data == nullptr || len == 0) {
             return 0;
@@ -98,10 +109,12 @@ public:
         return offset;
     }
 
+    /** @brief 返回累计识别出的完整数据包数量，包括校验失败的数据包。 */
     int64_t recvCount() const {
         return mRecvCount;
     }
 
+    /** @brief 返回自最近一次校验成功后连续校验失败的数据包数量。 */
     int checkErrorCount() const {
         return mCheckErrorCount;
     }
@@ -115,9 +128,21 @@ private:
     int mCheckErrorCount;
 };
 
+/**
+ * @brief 将统一原始通讯接口适配为业务数据包通道。
+ *
+ * TransportType 只需符合 Transport 的公开接口即可，因此业务管理类可以通过替换
+ * 模板类型和构造参数在 UART、TCP 客户端或 TCP 服务端之间切换。
+ *
+ * @tparam TransportType 实际使用的底层通讯类型。
+ */
 template <typename TransportType>
 class PacketChannel : public TransportHandler {
 public:
+    /**
+     * @brief 构造数据包通道，并将剩余参数转发给 TransportType 构造函数。
+     * @param packetBuff 具体协议缓存，不接管其生命周期，必须长于本对象。
+     */
     template <typename... Args>
     PacketChannel(IPacketBuffer* packetBuff, bool enableRepeatAccept, Args&&... args)
         : mPacketBuff(packetBuff),
@@ -132,6 +157,7 @@ public:
         mTransport.stop();
     }
 
+    /** @brief 初始化并启动底层通道，成功返回 0。 */
     int init() {
         int rc = mTransport.init();
         if (rc != 0) {
@@ -140,30 +166,41 @@ public:
         return mTransport.start() ? 0 : -1;
     }
 
+    /** @brief 启动底层通道，适用于已经单独完成初始化的场景。 */
     bool start() {
         return mTransport.start();
     }
 
+    /** @brief 停止底层通道。 */
     void stop() {
         mTransport.stop();
     }
 
+    /** @brief 驱动底层周期任务；UART 接收依赖上层周期调用此接口。 */
     void onTick() {
         mTransport.onTick();
     }
 
+    /** @brief 返回底层通道当前是否可用，与 isConnected() 语义相同。 */
     bool isOk() const {
         return mTransport.isConnected();
     }
 
+    /** @brief 返回底层通道当前是否可用。 */
     bool isConnected() const {
         return mTransport.isConnected();
     }
 
+    /** @brief 直接透传原始字节，不执行数据包编码或回收操作。 */
     ssize_t send(const uint8_t* data, size_t len, int id = -1) {
         return mTransport.send(data, len, id);
     }
 
+    /**
+     * @brief 发送已编码数据包，并在发送尝试结束后自动回收 ask。
+     * @return 全部字节发送成功返回 0，否则返回 -1。
+     * @note packetBuff 有效时，无论连接或发送结果如何，调用后 ask 均不再归调用者所有。
+     */
     int send(BuffData* ask, int id = -1) {
         if (ask == nullptr || mPacketBuff == nullptr) {
             return -1;
@@ -184,41 +221,48 @@ public:
         return result;
     }
 
+    /** @brief 接收底层连接事件；服务端 id 表示具体客户端。 */
     void onConnected(int id = -1) override {
         LOGI("PacketChannel connected. id=%d", id);
     }
 
+    /** @brief 接收底层断开事件；服务端 id 表示具体客户端。 */
     void onDisconnected(int id = -1) override {
         LOGW("PacketChannel disconnected. id=%d", id);
     }
 
+    /** @brief 将底层原始字节交给流式解码器；当前数据包分发不保留来源 id。 */
     void onRecv(const uint8_t* data, size_t len, int /*id*/ = -1) override {
         mDecoder.onBytes(data, len);
     }
 
+    /** @brief 记录最近一次底层通讯错误。 */
     void onError(int err) override {
         mLastError = err;
         LOGE("PacketChannel error. err=%d", err);
     }
 
+    /** @brief 返回累计完整发送成功的数据包数量。 */
     int64_t sendCount() const {
         return mSendCount;
     }
 
+    /** @brief 返回累计识别出的完整接收包数量。 */
     int64_t recvCount() const {
         return mDecoder.recvCount();
     }
 
+    /** @brief 返回最近一次底层通讯错误码，尚未出错时为 0。 */
     int lastError() const {
         return mLastError;
     }
 
 private:
-    IPacketBuffer* mPacketBuff;
-    TransportType mTransport;
-    PacketStreamDecoder mDecoder;
-    int64_t mSendCount;
-    int mLastError;
+    IPacketBuffer*      mPacketBuff;  // 通讯数据缓存
+    TransportType       mTransport;   // 通讯通道
+    PacketStreamDecoder mDecoder;     // 解包器
+    int64_t             mSendCount;   // 发送统计
+    int                 mLastError;   // 最后一次错误码
 };
 
 #endif // !__PACKET_CHANNEL_H__

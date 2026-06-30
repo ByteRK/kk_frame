@@ -16,13 +16,24 @@
 #include <stddef.h>
 #include <stdint.h>
 
+/**
+ * @brief 原始通讯事件回调接口。
+ *
+ * 回调由具体 Transport 分发。TCP 实现会将工作线程事件切换到 init() 所在线程的
+ * Looper 中再回调；UART 实现则在调用 start()/stop()/onTick() 的线程中同步回调。
+ * 回调参数中的数据只在本次 onRecv() 调用期间有效，如需异步使用必须自行复制。
+ */
 class TransportHandler {
 public:
     virtual ~TransportHandler() { }
 
+    /** @brief 通讯通道已建立；服务端的 id 为客户端标识，其他通道通常为 -1。 */
     virtual void onConnected(int id = -1) { }
+    /** @brief 通讯通道已断开；服务端的 id 为客户端标识，其他通道通常为 -1。 */
     virtual void onDisconnected(int id = -1) { }
+    /** @brief 收到原始字节流，数据尚未进行粘包、拆包或协议校验。 */
     virtual void onRecv(const uint8_t* data, size_t len, int id = -1) = 0;
+    /** @brief 通讯过程中发生错误，err 通常为系统 errno。 */
     virtual void onError(int err) { }
 };
 
