@@ -15,6 +15,8 @@
 
 #include "transport.h"
 
+#include <mutex>
+#include <set>
 #include <string>
 
 /**
@@ -73,12 +75,17 @@ protected:
 private:
     int openDevice();
     int configureDevice(int fd);
+    void releaseDeviceClaim();
     ssize_t writeAll(const uint8_t* data, size_t len);
 
 private:
+    static std::mutex sDeviceLock;
+    static std::set<std::string> sUsedDevices;
+
     Config mConfig;
     int mFd;
     bool mRunning;
+    bool mDeviceClaimed;
     int64_t mLastPollMs;
     TransportHandler* mHandler;
 };

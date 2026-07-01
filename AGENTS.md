@@ -35,7 +35,7 @@
 
 ### Integration Checks Before Re-enabling UART Managers
 
-- [ ] Resolve the `/dev/ttyS2` conflict: `BtnMgr` and `TuyaMgr` currently open and consume the same serial device independently.
+- [x] Prevent duplicate UART device initialization. `UartClient` now tracks claimed device paths in a process-wide mutex-protected set and calls `FailFast` when a second instance initializes the same device; failed initialization and `stop()` release the claim. Verified with `./fastCheck.sh`.
 - [ ] Propagate `PacketChannel::init()` failures from `ConnMgr`, `BtnMgr`, and `TuyaMgr` instead of scheduling inactive channels and returning success.
 - [ ] Make manager initialization idempotent and clean up owned packet buffers, registered handlers, channels, and application event handlers consistently.
 - [ ] Keep in mind that all three UART manager initializers are currently commented out in `main.cc`; packet/UART fixes need targeted tests because the default startup path does not exercise them.

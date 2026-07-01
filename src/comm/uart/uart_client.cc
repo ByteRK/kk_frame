@@ -15,6 +15,7 @@
 #include <cdlog.h>
 #include <core/systemclock.h>
 
+#include <cstdlib>
 #include <errno.h>
 #include <fcntl.h>
 #include <poll.h>
@@ -22,6 +23,14 @@
 #include <termios.h>
 #include <unistd.h>
 #include <vector>
+
+#define FailFast(condition, fmt, ...)   \
+    do {                                \
+        if (condition) {                \
+            LOGE(fmt, ##__VA_ARGS__);   \
+            std::abort();               \
+        }                               \
+    } while (0)
 
 namespace {
 
@@ -56,10 +65,14 @@ speed_t baudToTermios(int baudRate) {
 
 }
 
+std::mutex UartClient::sDeviceLock;
+std::set<std::string> UartClient::sUsedDevices;
+
 UartClient::UartClient(const Config& config)
     : mConfig(config),
       mFd(-1),
       mRunning(false),
+      mDeviceClaimed(false),
       mLastPollMs(0),
       mHandler(nullptr) {
 }
@@ -82,14 +95,24 @@ int UartClient::init() {
         return 0;
     }
 
+    {
+        std::lock_guard<std::mutex> lock(sDeviceLock);
+        const bool inserted = sUsedDevices.insert(mConfig.device).second;
+        FailFast(!inserted, "UartClient device already in use. device=%s",
+            mConfig.device.c_str());
+        mDeviceClaimed = true;
+    }
+
     mFd = openDevice();
     if (mFd < 0) {
+        releaseDeviceClaim();
         return -2;
     }
 
     if (configureDevice(mFd) != 0) {
         close(mFd);
         mFd = -1;
+        releaseDeviceClaim();
         return -3;
     }
 
@@ -122,16 +145,19 @@ bool UartClient::start() {
 }
 
 void UartClient::stop() {
-    if (mRunning) {
-        mRunning = false;
-        Event ev;
-        ev.type = Event::DISCONNECTED;
-        sendEvent(ev);
-    }
+    const bool notifyDisconnected = mRunning;
+    mRunning = false;
 
     if (mFd >= 0) {
         close(mFd);
         mFd = -1;
+    }
+    releaseDeviceClaim();
+
+    if (notifyDisconnected) {
+        Event ev;
+        ev.type = Event::DISCONNECTED;
+        sendEvent(ev);
     }
 }
 
@@ -326,6 +352,16 @@ int UartClient::configureDevice(int fd) {
     }
 
     return 0;
+}
+
+void UartClient::releaseDeviceClaim() {
+    if (!mDeviceClaimed) {
+        return;
+    }
+
+    std::lock_guard<std::mutex> lock(sDeviceLock);
+    sUsedDevices.erase(mConfig.device);
+    mDeviceClaimed = false;
 }
 
 ssize_t UartClient::writeAll(const uint8_t* data, size_t len) {
