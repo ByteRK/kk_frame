@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-22 12:32:19
- * @LastEditTime: 2026-06-26 00:09:23
+ * @LastEditTime: 2026-07-01 14:51:28
  * @FilePath: /kk_frame/src/app/page/view/page_factory.h
  * @Description: 工厂界面
  * @BugList:
@@ -22,6 +22,7 @@ class PageFactory :public PageBase {
 private:
     typedef enum {
         FACTORY_MENU = 0,  // 菜单页
+        FACTORY_INFO,      // 信息页
         FACTORY_TOUCH,     // 触摸测试页
         FACTORY_COLOR,     // 颜色测试页
         FACTORY_SWITCH,    // 开关功能页
@@ -49,6 +50,7 @@ protected:
 
 private:
     void setFactoryMenu();
+    void setFactoryInfo();
     void setFactoryTouch();
     void setFactoryColor();
     void setFactorySwitch();

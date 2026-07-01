@@ -13,6 +13,10 @@
             android:columnCount="6"
             android:padding="10dp">
             <Button
+                android:id="@+id/to_info"
+                style="@style/factory_menu_btn"
+                android:text="项目信息"/>
+            <Button
                 android:id="@+id/to_touch"
                 style="@style/factory_menu_btn"
                 android:text="触摸测试"/>
@@ -29,6 +33,44 @@
                 style="@style/factory_menu_btn"
                 android:text="结束测试"/>
         </GridLayout>
+
+        <TextView
+            android:id="@+id/cdroid"
+            style="@style/font_medium"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginBottom="8dp"
+            android:gravity="center"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:text="Power By Cdroid [https://gitee.com/houstudio/Cdroid]"/>
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/info_test"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <TextView
+            android:id="@+id/info"
+            style="@style/font_medium"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:layout_marginStart="10dp"
+            android:textColor="#636e72"
+            android:textSize="20sp"
+            android:text="Project Info"/>
+        
+        <Button
+            android:id="@+id/exit"
+            style="@style/factory_menu_btn"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentEnd="true"
+            android:layout_margin="20dp"
+            android:text="完成"/>
     </RelativeLayout>
 
     <TouchTestView
