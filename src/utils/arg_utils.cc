@@ -19,12 +19,33 @@
 namespace ArgUtils {
     // 静态解析结果
     static ArgValues mRes;
+    // 原始命令行参数
+    static std::vector<std::string> mRawArgs;
+    // 拼接后的完整命令行参数
+    static std::string mRawString;
 
     const ArgValues& get() {
         return mRes;
     }
 
+    const std::vector<std::string>& getRaw() {
+        return mRawArgs;
+    }
+
+    const std::string& getRawString() {
+        return mRawString;
+    }
+
     void parse(int argc, const char* argv[]) {
+        mRawArgs.clear();
+        mRawArgs.reserve(argc);
+        mRawString.clear();
+        for (int i = 0; i < argc; ++i) {
+            mRawArgs.emplace_back(argv[i]);
+            if (i > 0) mRawString += ' ';
+            mRawString += argv[i];
+        }
+
         cxxopts::Options options(argv[0], "Pass in specific arguments to enable special functions.");
         options.add_options()
             ("demo", "demo mode", cxxopts::value<bool>(mRes.isDemo)->default_value("false"))

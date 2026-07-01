@@ -15,6 +15,7 @@
 #define __ARG_UTILS_H__
 
 #include <string>
+#include <vector>
 
 namespace ArgUtils {
 
@@ -28,6 +29,14 @@ namespace ArgUtils {
     /// @brief 获取解析结果
     /// @return 只读解析结果结构体
     const ArgValues& get();
+
+    /// @brief 获取原始命令行参数
+    /// @return 只读原始命令行参数列表
+    const std::vector<std::string>& getRaw();
+
+    /// @brief 获取拼接后的完整命令行参数字符串
+    /// @return 只读完整命令行参数字符串
+    const std::string& getRawString();
     
     /// @brief 命令行参数解析
     /// @param argc 命令行参数个数
