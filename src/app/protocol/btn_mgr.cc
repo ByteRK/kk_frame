@@ -109,6 +109,10 @@ int BtnMgr::handleEvents() {
 /// @brief 发送串口消息
 void BtnMgr::send2Btn() {
     BuffData* bd = mPacket->obtain(false);
+    if (bd == nullptr) {
+        LOGE("BtnMgr packet allocation failed");
+        return;
+    }
     BtnAsk    snd(bd);
 
     // TODO:设置数据

@@ -15,6 +15,7 @@
 
 #include "packet_base.h"
 
+#include <limits>
 #include <stdlib.h>
 #include <string>
 #include <vector>
@@ -53,7 +54,7 @@ public:
      * @param receive true 创建接收缓存，false 创建发送缓存。
      * @param dataLen 在协议基础长度之外追加的可变数据长度。
      */
-    virtual BuffData* obtain(bool receive = true, uint16_t dataLen = 0) = 0;
+    virtual BuffData* obtain(bool receive = true, size_t dataLen = 0) = 0;
     /** @brief 清空缓存并放回池中；传入 nullptr 时无操作。 */
     virtual void recycle(BuffData* buf);
     /** @brief 将输入字节追加到接收缓存，返回实际消费的输入长度。 */
@@ -87,8 +88,17 @@ public:
     }
 
     /** @brief 优先复用类型和容量匹配的缓存，否则分配新缓存。 */
-    BuffData* obtain(bool receive = true, uint16_t dataLen = 0) override {
-        const uint16_t len = static_cast<uint16_t>((receive ? Ack::BUF_LEN : Ask::MIN_LEN) + dataLen);
+    BuffData* obtain(bool receive = true, size_t dataLen = 0) override {
+        const size_t baseLen = receive ? static_cast<size_t>(Ack::BUF_LEN)
+                                       : static_cast<size_t>(Ask::MIN_LEN);
+        const size_t maxLen = static_cast<size_t>(std::numeric_limits<short>::max());
+        if (baseLen == 0 || baseLen > maxLen || dataLen > maxLen - baseLen) {
+            LOGE("Packet buffer length out of range. receive=%d base=%zu data=%zu max=%zu",
+                receive, baseLen, dataLen, maxLen);
+            return nullptr;
+        }
+
+        const short len = static_cast<short>(baseLen + dataLen);
         for (size_t i = 0; i < mBuffs.size(); ++i) {
             BuffData* bf = mBuffs[i];
             if (bf->type == T && bf->slen == len) {
@@ -100,11 +110,15 @@ public:
             }
         }
 
-        BuffData* bf = static_cast<BuffData*>(calloc(1, sizeof(BuffData) + len));
+        BuffData* bf = static_cast<BuffData*>(
+            calloc(1, sizeof(BuffData) + static_cast<size_t>(len)));
+        if (bf == nullptr) {
+            LOGE("Packet buffer allocation failed. len=%d", len);
+            return nullptr;
+        }
         bf->type = T;
         bf->slen = len;
         bf->len = 0;
-        memset(bf->buf, 0, bf->slen);
         return bf;
     }
 };

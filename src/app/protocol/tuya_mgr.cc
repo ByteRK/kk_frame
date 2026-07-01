@@ -155,6 +155,10 @@ void TuyaMgr::send2MCU(uint8_t cmd) {
 
 void TuyaMgr::send2MCU(uint8_t* buf, uint16_t len, uint8_t cmd) {
     BuffData* bd = mPacket->obtain(false, len);
+    if (bd == nullptr) {
+        LOGE("TuyaMgr packet allocation failed. data_len=%u cmd=%u", len, cmd);
+        return;
+    }
     TuyaAsk   snd(bd);
 
     snd.setData(TUYA_VERSION, 0x03);
