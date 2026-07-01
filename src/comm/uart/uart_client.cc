@@ -34,6 +34,8 @@
 
 namespace {
 
+constexpr short UART_POLL_ERROR_EVENTS = POLLERR | POLLHUP | POLLNVAL;
+
 speed_t baudToTermios(int baudRate) {
     switch (baudRate) {
     case 300: return B300;
@@ -192,7 +194,22 @@ void UartClient::onTick() {
         return;
     }
 
-    if (ready == 0 || (pfd.revents & POLLIN) == 0) {
+    if (ready == 0) {
+        return;
+    }
+
+    if ((pfd.revents & UART_POLL_ERROR_EVENTS) != 0) {
+        int error = EIO;
+        if ((pfd.revents & POLLNVAL) != 0) {
+            error = EBADF;
+        } else if ((pfd.revents & POLLHUP) != 0) {
+            error = ENODEV;
+        }
+        disconnectOnDeviceError(error, pfd.revents);
+        return;
+    }
+
+    if ((pfd.revents & POLLIN) == 0) {
         return;
     }
 
@@ -219,6 +236,10 @@ void UartClient::onTick() {
         Event ev;
         ev.type = Event::ERROR;
         ev.error = errno;
+        if (errno == EIO || errno == ENODEV || errno == EBADF) {
+            disconnectOnDeviceError(errno, 0);
+            return;
+        }
         sendEvent(ev);
         break;
     }
@@ -364,6 +385,33 @@ void UartClient::releaseDeviceClaim() {
     std::lock_guard<std::mutex> lock(sDeviceLock);
     sUsedDevices.erase(mConfig.device);
     mDeviceClaimed = false;
+}
+
+void UartClient::disconnectOnDeviceError(int error, short revents) {
+    const bool notifyDisconnected = mRunning;
+    mRunning = false;
+
+    LOGE("UartClient device error. device=%s errno=%d err=%s revents=0x%x",
+        mConfig.device.c_str(), error, strerror(error), revents);
+
+    if (mFd >= 0) {
+        close(mFd);
+        mFd = -1;
+    }
+    releaseDeviceClaim();
+
+    Event errorEvent;
+    errorEvent.type = Event::ERROR;
+    errorEvent.error = error;
+    if (!sendEvent(errorEvent)) {
+        return;
+    }
+
+    if (notifyDisconnected) {
+        Event disconnected;
+        disconnected.type = Event::DISCONNECTED;
+        sendEvent(disconnected);
+    }
 }
 
 ssize_t UartClient::writeAll(const uint8_t* data, size_t len) {

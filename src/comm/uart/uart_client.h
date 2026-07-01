@@ -76,6 +76,7 @@ private:
     int openDevice();
     int configureDevice(int fd);
     void releaseDeviceClaim();
+    void disconnectOnDeviceError(int error, short revents);
     ssize_t writeAll(const uint8_t* data, size_t len);
 
 private:
