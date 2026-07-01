@@ -85,6 +85,10 @@ void Transport::shutdownEventDispatcher() {
     cancelEventDispatch();
 }
 
+void Transport::flushEventDispatch() {
+    handleEvents();
+}
+
 bool Transport::isEventDispatcherReady() const {
     return mWakeFd >= 0 && mMainLooper != nullptr;
 }

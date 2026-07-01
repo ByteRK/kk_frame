@@ -124,6 +124,7 @@ void TcpClient::stop() {
         Event ev;
         ev.type = Event::DISCONNECTED;
         postEvent(ev);
+        flushEventDispatch();
     }
 
     shutdownEventDispatcher();

@@ -25,7 +25,7 @@
 ### Medium Priority
 
 - [x] Correct the Tuya real-frame-length expression in `TuyaAck::add()`. The two payload-length bytes are combined first and `MIN_LEN` is then added, so low-byte carries cannot be lost through operator precedence. Verified with `./fastCheck.sh`.
-- [ ] Preserve lifecycle callbacks during explicit TCP shutdown. `stop()` posts disconnect events and immediately calls `shutdownEventDispatcher()`, which clears those events before normal Looper delivery.
+- [x] Preserve lifecycle callbacks during explicit TCP shutdown. TCP `stop()` now flushes queued events after posting the disconnect event and before shutting down the dispatcher, so explicit shutdown does not clear the lifecycle callback before delivery. Verified with `./fastCheck.sh`.
 - [x] Bound and backpressure `Transport`'s event queue. The queue defaults to 256 events, producers wait up to 100 ms for space, and sustained overload is dropped with a cumulative counter and rate-limited diagnostics. Verified with `./fastCheck.sh`.
 - [x] Replace the TCP server's `select()`/`FD_SET` usage with a dynamically sized `pollfd` list. Client `POLLERR`, `POLLHUP`, and `POLLNVAL` events also enter the existing error/disconnect cleanup path. Verified with `./fastCheck.sh`.
 - [ ] Handle UART `POLLERR`, `POLLHUP`, and `POLLNVAL`; the current polling path only checks `POLLIN` and can leave a failed or removed device reported as connected.

@@ -99,6 +99,8 @@ protected:
     int initEventDispatcher(cdroid::Looper* mainLooper = nullptr);
     /** @brief 注销 eventfd、清空待处理事件并释放分发资源。 */
     void shutdownEventDispatcher();
+    /** @brief 立即分发当前已经排队的事件，用于关闭前保留生命周期回调。 */
+    void flushEventDispatch();
     /** @brief 返回跨线程事件分发器是否已经可用。 */
     bool isEventDispatcherReady() const;
     /** @brief 使当前批次尚未分发的事件失效，并清空排队事件。 */
