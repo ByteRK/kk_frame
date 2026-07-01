@@ -60,7 +60,9 @@ public:
         }
         // 裁剪真实数据长度，避免数据包拼接导致遗漏
         if (checkHead(mHeadList, 2) && mDlen > MIN_LEN) {
-            uint16_t realLen = (mBuf[4] << 8) | mBuf[5] + MIN_LEN;
+            const int payloadLen =
+                (static_cast<int>(mBuf[4]) << 8) | mBuf[5];
+            const int realLen = payloadLen + MIN_LEN;
             if (mDlen > realLen) {
                 rlen -= (mDlen - realLen);
                 rlen = rlen < 0 ? 0 : rlen;

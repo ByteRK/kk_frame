@@ -14,13 +14,11 @@
 
 #include <cdlog.h>
 
-#include <algorithm>
 #include <arpa/inet.h>
 #include <chrono>
 #include <errno.h>
 #include <poll.h>
 #include <string.h>
-#include <sys/select.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <vector>
@@ -175,10 +173,6 @@ void TcpServer::dispatchEvent(const Event& ev) {
 
 void TcpServer::threadLoop() {
     while (mRunning.load()) {
-        fd_set readFds;
-        FD_ZERO(&readFds);
-
-        int maxFd = -1;
         std::map<int, int> clients;
         int listenSock = -1;
         {
@@ -191,17 +185,30 @@ void TcpServer::threadLoop() {
             break;
         }
 
-        FD_SET(listenSock, &readFds);
-        maxFd = listenSock;
+        std::vector<pollfd> pollFds;
+        std::vector<int> clientIds;
+        pollFds.reserve(clients.size() + 1);
+        clientIds.reserve(clients.size());
+
+        pollfd listenPollFd;
+        listenPollFd.fd = listenSock;
+        listenPollFd.events = POLLIN;
+        listenPollFd.revents = 0;
+        pollFds.push_back(listenPollFd);
+
         for (const auto& client : clients) {
-            FD_SET(client.second, &readFds);
-            maxFd = std::max(maxFd, client.second);
+            pollfd clientPollFd;
+            clientPollFd.fd = client.second;
+            clientPollFd.events = POLLIN;
+            clientPollFd.revents = 0;
+            pollFds.push_back(clientPollFd);
+            clientIds.push_back(client.first);
         }
 
-        timeval timeout;
-        timeout.tv_sec = 0;
-        timeout.tv_usec = 500 * 1000;
-        int ready = select(maxFd + 1, &readFds, nullptr, nullptr, &timeout);
+        const int ready = poll(pollFds.data(), pollFds.size(), 500);
+        if (!mRunning.load()) {
+            break;
+        }
         if (ready < 0) {
             if (errno == EINTR) {
                 continue;
@@ -216,7 +223,7 @@ void TcpServer::threadLoop() {
             continue;
         }
 
-        if (FD_ISSET(listenSock, &readFds)) {
+        if ((pollFds.front().revents & POLLIN) != 0) {
             int fd = accept(listenSock, nullptr, nullptr);
             if (fd >= 0) {
                 int clientId = 0;
@@ -234,14 +241,30 @@ void TcpServer::threadLoop() {
         }
 
         std::vector<uint8_t> buffer(mConfig.readBufferSize > 0 ? mConfig.readBufferSize : 4096);
-        for (const auto& client : clients) {
-            const int clientId = client.first;
-            const int fd = client.second;
-            if (!FD_ISSET(fd, &readFds)) {
+        for (size_t i = 0; i < clientIds.size(); ++i) {
+            const int clientId = clientIds[i];
+            const int fd = pollFds[i + 1].fd;
+            const short revents = pollFds[i + 1].revents;
+            if ((revents & (POLLIN | POLLERR | POLLHUP | POLLNVAL)) == 0) {
                 continue;
             }
 
-            ssize_t n = recv(fd, buffer.data(), buffer.size(), 0);
+            ssize_t n = 0;
+            int socketError = 0;
+            if ((revents & POLLIN) != 0) {
+                n = recv(fd, buffer.data(), buffer.size(), 0);
+                if (n < 0) {
+                    socketError = errno;
+                }
+            } else if ((revents & POLLNVAL) != 0) {
+                socketError = EBADF;
+            } else if ((revents & POLLERR) != 0) {
+                socklen_t errorLen = sizeof(socketError);
+                if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &socketError, &errorLen) != 0) {
+                    socketError = errno;
+                }
+            }
+
             if (n > 0) {
                 Event ev;
                 ev.type = Event::DATA;
@@ -251,14 +274,14 @@ void TcpServer::threadLoop() {
                 continue;
             }
 
-            if (n < 0 && errno == EINTR) {
+            if (n < 0 && socketError == EINTR) {
                 continue;
             }
-            if (n < 0) {
+            if (socketError != 0) {
                 Event ev;
                 ev.type = Event::ERROR;
                 ev.id = clientId;
-                ev.error = errno;
+                ev.error = socketError;
                 postEvent(ev);
             }
 
