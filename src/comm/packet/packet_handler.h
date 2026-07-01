@@ -24,6 +24,14 @@ public:
     virtual ~IHandler() { }
     /** @brief 处理已完成校验和解析的接收包；不接管 ack 生命周期。 */
     virtual void onCommDeal(IAck* ack) = 0;
+    /**
+     * @brief 处理带来源标识的接收包；默认兼容既有单连接处理器。
+     * @param id TCP 服务端客户端标识，其他通道为 -1。
+     */
+    virtual void onCommDeal(IAck* ack, int id) {
+        (void)id;
+        onCommDeal(ack);
+    }
 };
 
 #define g_packetMgr IHandlerManager::ins()
@@ -51,8 +59,8 @@ public:
     bool addHandler(int cmd, IHandler* hd);
     /** @brief 从所有命令下移除指定处理器。 */
     void removeHandler(IHandler* hd);
-    /** @brief 根据 ack->getType() 将数据包同步分发给已注册处理器。 */
-    void onCommand(IAck* ack);
+    /** @brief 根据 ack->getType() 将数据包及来源标识同步分发给已注册处理器。 */
+    void onCommand(IAck* ack, int id = -1);
 
 private:
     std::map<int, handlers> mHandlers;

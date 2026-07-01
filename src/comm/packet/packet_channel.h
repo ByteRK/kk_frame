@@ -19,6 +19,15 @@
 
 #include <cdlog.h>
 
+/** @brief 设为 1 时按客户端 ID 隔离解码状态；默认仅接受单个客户端 ID。 */
+#ifndef PACKET_CHANNEL_ENABLE_MULTI_ID
+#define PACKET_CHANNEL_ENABLE_MULTI_ID 0
+#endif
+
+#if PACKET_CHANNEL_ENABLE_MULTI_ID
+#include <map>
+#include <memory>
+#endif
 #include <stddef.h>
 #include <stdint.h>
 #include "string_utils.h"
@@ -59,7 +68,7 @@ public:
     }
 
     /** @brief 推进一次数据包解析，返回本次从输入中消费的字节数。 */
-    int onBytes(const uint8_t* data, size_t len) {
+    int onBytes(const uint8_t* data, size_t len, int id = -1) {
         if (mPacketBuff == nullptr || mCurrRecv == nullptr || data == nullptr || len == 0) {
             return 0;
         }
@@ -80,7 +89,7 @@ public:
             mCheckErrorCount = 0;
             if (mEnableRepeatAccept || !mPacketBuff->compare(mCurrRecv, mLastRecv)) {
                 IAck* ack = mPacketBuff->ack(mCurrRecv);
-                g_packetMgr->onCommand(ack);
+                g_packetMgr->onCommand(ack, id);
 
                 mLastRecv->len = mCurrRecv->len;
                 memcpy(mLastRecv->buf, mCurrRecv->buf, mCurrRecv->len);
@@ -136,7 +145,13 @@ public:
         : mPacketBuff(packetBuff),
           mTransport(std::forward<Args>(args)...),
           mDecoder(packetBuff, enableRepeatAccept),
+#if PACKET_CHANNEL_ENABLE_MULTI_ID
+          mEnableRepeatAccept(enableRepeatAccept),
+#else
+          mSingleClientId(-1),
+#endif
           mSendCount(0),
+          mRecvCount(0),
           mLastError(0) {
         mTransport.setHandler(this);
     }
@@ -211,23 +226,58 @@ public:
 
     /** @brief 接收底层连接事件；服务端 id 表示具体客户端。 */
     void onConnected(int id = -1) override {
+#if PACKET_CHANNEL_ENABLE_MULTI_ID
+        if (id >= 0) {
+            ensureDecoder(id);
+        }
+#else
+        if (!acceptSingleId(id, "connected")) {
+            return;
+        }
+#endif
         LOGI("PacketChannel connected. id=%d", id);
     }
 
     /** @brief 接收底层断开事件；服务端 id 表示具体客户端。 */
     void onDisconnected(int id = -1) override {
+#if PACKET_CHANNEL_ENABLE_MULTI_ID
+        if (id >= 0) {
+            mClientDecoders.erase(id);
+        }
+#else
+        if (!acceptSingleId(id, "disconnected")) {
+            return;
+        }
+        if (id >= 0) {
+            mSingleClientId = -1;
+        }
+#endif
         LOGW("PacketChannel disconnected. id=%d", id);
     }
 
-    /** @brief 按解码器返回的消费长度持续处理原始字节；当前数据包分发不保留来源 id。 */
-    void onRecv(const uint8_t* data, size_t len, int /*id*/ = -1) override {
+    /** @brief 按来源选择独立解码器，并按消费长度持续处理原始字节。 */
+    void onRecv(const uint8_t* data, size_t len, int id = -1) override {
+#if PACKET_CHANNEL_ENABLE_MULTI_ID
+        PacketStreamDecoder* decoder = id >= 0 ? ensureDecoder(id) : &mDecoder;
+#else
+        if (!acceptSingleId(id, "data")) {
+            return;
+        }
+        PacketStreamDecoder* decoder = &mDecoder;
+#endif
+        if (decoder == nullptr) {
+            return;
+        }
+
         size_t offset = 0;
         while (offset < len) {
             const size_t remaining = len - offset;
-            const int consumed = mDecoder.onBytes(data + offset, remaining);
+            const int64_t recvCountBefore = decoder->recvCount();
+            const int consumed = decoder->onBytes(data + offset, remaining, id);
+            mRecvCount += decoder->recvCount() - recvCountBefore;
             if (consumed <= 0 || static_cast<size_t>(consumed) > remaining) {
-                LOGE("PacketChannel decoder invalid consumption. consumed=%d remain=%zu",
-                    consumed, remaining);
+                LOGE("PacketChannel decoder invalid consumption. id=%d consumed=%d remain=%zu",
+                    id, consumed, remaining);
                 break;
             }
             offset += static_cast<size_t>(consumed);
@@ -247,7 +297,7 @@ public:
 
     /** @brief 返回累计识别出的完整接收包数量。 */
     int64_t recvCount() const {
-        return mDecoder.recvCount();
+        return mRecvCount;
     }
 
     /** @brief 返回最近一次底层通讯错误码，尚未出错时为 0。 */
@@ -256,10 +306,50 @@ public:
     }
 
 private:
+#if PACKET_CHANNEL_ENABLE_MULTI_ID
+    PacketStreamDecoder* ensureDecoder(int id) {
+        auto it = mClientDecoders.find(id);
+        if (it != mClientDecoders.end()) {
+            return it->second.get();
+        }
+
+        std::unique_ptr<PacketStreamDecoder> decoder(
+            new PacketStreamDecoder(mPacketBuff, mEnableRepeatAccept));
+        PacketStreamDecoder* result = decoder.get();
+        mClientDecoders[id] = std::move(decoder);
+        return result;
+    }
+#else
+    bool acceptSingleId(int id, const char* event) {
+        if (id < 0) {
+            return true;
+        }
+        if (mSingleClientId < 0) {
+            mSingleClientId = id;
+            return true;
+        }
+        if (mSingleClientId == id) {
+            return true;
+        }
+
+        LOGE("PacketChannel unexpected client id in single-id mode. event=%s expected=%d actual=%d",
+            event, mSingleClientId, id);
+        return false;
+    }
+#endif
+
+private:
     IPacketBuffer*      mPacketBuff;  // 通讯数据缓存
     TransportType       mTransport;   // 通讯通道
-    PacketStreamDecoder mDecoder;     // 解包器
+    PacketStreamDecoder mDecoder;     // 无客户端标识通道的解包器
+#if PACKET_CHANNEL_ENABLE_MULTI_ID
+    bool                mEnableRepeatAccept; // 是否允许连续重复包
+    std::map<int, std::unique_ptr<PacketStreamDecoder>> mClientDecoders; // 客户端解包器
+#else
+    int                 mSingleClientId; // 单客户端模式当前接受的客户端 ID
+#endif
     int64_t             mSendCount;   // 发送统计
+    int64_t             mRecvCount;   // 接收统计
     int                 mLastError;   // 最后一次错误码
 };
 

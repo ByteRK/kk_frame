@@ -18,7 +18,7 @@
 IHandlerManager::IHandlerManager() {
 }
 
-void IHandlerManager::onCommand(IAck* ack) {
+void IHandlerManager::onCommand(IAck* ack, int id) {
     if (ack == nullptr) {
         return;
     }
@@ -33,7 +33,7 @@ void IHandlerManager::onCommand(IAck* ack) {
 
     for (IHandler* hd : it->second) {
         if (hd != nullptr) {
-            hd->onCommDeal(ack);
+            hd->onCommDeal(ack, id);
         }
     }
 }

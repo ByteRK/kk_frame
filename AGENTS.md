@@ -19,7 +19,7 @@
 - [x] Make `TcpClient::stop()` able to interrupt DNS lookup, connection establishment, and reconnect delay. DNS waits are isolated from client lifetime, connect uses nonblocking polling with stop checks, and reconnect delay is condition-variable driven. Verified with `./fastCheck.sh`.
 - [x] Define safe TCP socket ownership during send/close. Both TCP implementations now hold a send lock from fd lookup through the complete write, and every close path takes the same lock before invalidating or closing published sockets. Verified with `./fastCheck.sh`.
 - [x] Serialize TCP writes and bound their duration. Complete writes are serialized per transport, use nonblocking sends with an absolute configurable timeout (`sendTimeoutMs`, default 1000 ms), and return the partial byte count on timeout or failure. Verified with `./fastCheck.sh`.
-- [ ] Give `PacketChannel<TcpServer>` independent decoder state per client and preserve the client id through packet dispatch. The current shared decoder can combine bytes from different clients and cannot route business replies to their source.
+- [x] Guard `PacketChannel<TcpServer>` against cross-client decoder contamination and preserve the client id through packet dispatch. The default single-id mode rejects unexpected ids with `LOGE`; defining `PACKET_CHANNEL_ENABLE_MULTI_ID=1` creates and releases independent decoders per client. `IHandler` provides a backward-compatible source-aware callback overload. Verified with `./fastCheck.sh`.
 - [x] Widen and bounds-check `IAsk::setData()` length/offset parameters. Offsets and lengths now use `size_t`, bulk input is const, and invalid or out-of-range writes are rejected with `LOGE` diagnostics. Verified with `./fastCheck.sh`.
 
 ### Medium Priority
