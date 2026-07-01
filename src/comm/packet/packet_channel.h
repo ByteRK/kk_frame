@@ -53,8 +53,8 @@ public:
           mRecvCount(0),
           mCheckErrorCount(0) {
         if (mPacketBuff != nullptr) {
-            mLastRecv = mPacketBuff->obtain(true);
-            mCurrRecv = mPacketBuff->obtain(true);
+            mLastRecv = mPacketBuff->obtain(0, true);
+            mCurrRecv = mPacketBuff->obtain(0, true);
             if (mLastRecv == nullptr || mCurrRecv == nullptr) {
                 LOGE("PacketStreamDecoder receive buffer allocation failed");
                 mPacketBuff->recycle(mLastRecv);

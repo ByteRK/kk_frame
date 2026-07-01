@@ -108,7 +108,7 @@ int BtnMgr::handleEvents() {
 
 /// @brief 发送串口消息
 void BtnMgr::send2Btn() {
-    BuffData* bd = mPacket->obtain(false);
+    BuffData* bd = mPacket->obtain();
     if (bd == nullptr) {
         LOGE("BtnMgr packet allocation failed");
         return;

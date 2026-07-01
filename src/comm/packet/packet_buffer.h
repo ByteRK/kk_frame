@@ -51,10 +51,10 @@ public:
 
     /**
      * @brief 取得一个清空后的数据包缓存。
-     * @param receive true 创建接收缓存，false 创建发送缓存。
      * @param dataLen 在协议基础长度之外追加的可变数据长度。
+     * @param receive true 创建接收缓存，false 创建发送缓存。
      */
-    virtual BuffData* obtain(bool receive = true, size_t dataLen = 0) = 0;
+    virtual BuffData* obtain(size_t dataLen = 0, bool receive = false) = 0;
     /** @brief 清空缓存并放回池中；传入 nullptr 时无操作。 */
     virtual void recycle(BuffData* buf);
     /** @brief 将输入字节追加到接收缓存，返回实际消费的输入长度。 */
@@ -88,7 +88,7 @@ public:
     }
 
     /** @brief 优先复用类型和容量匹配的缓存，否则分配新缓存。 */
-    BuffData* obtain(bool receive = true, size_t dataLen = 0) override {
+    BuffData* obtain(size_t dataLen = 0, bool receive = false) override {
         const size_t baseLen = receive ? static_cast<size_t>(Ack::BUF_LEN)
                                        : static_cast<size_t>(Ask::MIN_LEN);
         const size_t maxLen = static_cast<size_t>(std::numeric_limits<short>::max());

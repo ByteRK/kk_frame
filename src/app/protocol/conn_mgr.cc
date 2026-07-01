@@ -108,7 +108,7 @@ int ConnMgr::handleEvents() {
 
 /// @brief 发送串口消息
 void ConnMgr::send2Mcu() {
-    BuffData* bd = mPacket->obtain(false);
+    BuffData* bd = mPacket->obtain();
     if (bd == nullptr) {
         LOGE("ConnMgr packet allocation failed");
         return;
