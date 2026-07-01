@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <arpa/inet.h>
+#include <chrono>
 #include <errno.h>
 #include <poll.h>
 #include <string.h>
@@ -36,6 +37,7 @@ TcpServer::TcpServer(uint16_t port)
     mConfig.port = port;
     mConfig.backlog = 8;
     mConfig.readBufferSize = 4096;
+    mConfig.sendTimeoutMs = 1000;
 }
 
 TcpServer::TcpServer(const Config& config)
@@ -58,6 +60,10 @@ int TcpServer::init() {
     if (mConfig.port == 0) {
         LOGE("TcpServer init failed. port is zero");
         return -1;
+    }
+    if (mConfig.sendTimeoutMs <= 0) {
+        LOGE("TcpServer init failed. sendTimeoutMs=%d", mConfig.sendTimeoutMs);
+        return -2;
     }
     return initEventDispatcher();
 }
@@ -119,6 +125,7 @@ ssize_t TcpServer::send(const uint8_t* data, size_t len, int id) {
         return -1;
     }
 
+    std::lock_guard<std::mutex> sendLock(mSendLock);
     int fd = -1;
     {
         std::lock_guard<std::mutex> lock(mSocketLock);
@@ -256,6 +263,7 @@ void TcpServer::threadLoop() {
             }
 
             {
+                std::lock_guard<std::mutex> sendLock(mSendLock);
                 std::lock_guard<std::mutex> lock(mSocketLock);
                 auto it = mClients.find(clientId);
                 if (it != mClients.end()) {
@@ -306,6 +314,7 @@ int TcpServer::createListenSocket() {
 }
 
 void TcpServer::closeAllSockets() {
+    std::lock_guard<std::mutex> sendLock(mSendLock);
     std::map<int, int> clients;
     int listenSock = -1;
     {
@@ -327,9 +336,17 @@ void TcpServer::closeAllSockets() {
 }
 
 ssize_t TcpServer::sendAll(int fd, const uint8_t* data, size_t len) {
+    const auto deadline = std::chrono::steady_clock::now() +
+        std::chrono::milliseconds(mConfig.sendTimeoutMs);
     size_t written = 0;
     while (written < len) {
-        ssize_t n = ::send(fd, data + written, len - written, MSG_NOSIGNAL);
+        if (std::chrono::steady_clock::now() >= deadline) {
+            LOGE("TcpServer send timeout. written=%zu total=%zu", written, len);
+            break;
+        }
+
+        ssize_t n = ::send(fd, data + written, len - written,
+            MSG_NOSIGNAL | MSG_DONTWAIT);
         if (n > 0) {
             written += static_cast<size_t>(n);
             continue;
@@ -339,8 +356,27 @@ ssize_t TcpServer::sendAll(int fd, const uint8_t* data, size_t len) {
             continue;
         }
         if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-            poll(nullptr, 0, 10);
-            continue;
+            const auto remaining = std::chrono::duration_cast<std::chrono::milliseconds>(
+                deadline - std::chrono::steady_clock::now()).count();
+            if (remaining <= 0) {
+                LOGE("TcpServer send timeout. written=%zu total=%zu", written, len);
+                break;
+            }
+
+            pollfd pfd;
+            pfd.fd = fd;
+            pfd.events = POLLOUT;
+            pfd.revents = 0;
+            const int ready = poll(&pfd, 1, static_cast<int>(remaining));
+            if (ready > 0 && (pfd.revents & POLLOUT) != 0) {
+                continue;
+            }
+            if (ready < 0 && errno == EINTR) {
+                continue;
+            }
+            if (ready == 0) {
+                LOGE("TcpServer send timeout. written=%zu total=%zu", written, len);
+            }
         }
         break;
     }

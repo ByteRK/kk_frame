@@ -39,6 +39,8 @@ public:
         int reconnectDelayMs{ 2000 };
         /** @brief 单次接收使用的缓存大小；为 0 时使用 4096 字节。 */
         size_t readBufferSize{ 4096 };
+        /** @brief 一次完整发送的总超时，单位毫秒，必须大于 0。 */
+        int sendTimeoutMs{ 1000 };
     };
 
 public:
@@ -75,6 +77,7 @@ private:
 
 private:
     Config mConfig;
+    std::mutex mSendLock;
     mutable std::mutex mSocketLock;
     int mSock;
     std::thread mThread;

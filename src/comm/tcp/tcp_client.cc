@@ -56,6 +56,7 @@ TcpClient::TcpClient(const std::string& host, uint16_t port)
     mConfig.port = port;
     mConfig.reconnectDelayMs = 2000;
     mConfig.readBufferSize = 4096;
+    mConfig.sendTimeoutMs = 1000;
 }
 
 TcpClient::TcpClient(const Config& config)
@@ -83,6 +84,10 @@ int TcpClient::init() {
     if (mConfig.reconnectDelayMs < 0) {
         LOGE("TcpClient init failed. reconnectDelayMs=%d", mConfig.reconnectDelayMs);
         return -2;
+    }
+    if (mConfig.sendTimeoutMs <= 0) {
+        LOGE("TcpClient init failed. sendTimeoutMs=%d", mConfig.sendTimeoutMs);
+        return -3;
     }
     return initEventDispatcher();
 }
@@ -133,6 +138,7 @@ ssize_t TcpClient::send(const uint8_t* data, size_t len, int /*id*/) {
         return -1;
     }
 
+    std::lock_guard<std::mutex> sendLock(mSendLock);
     int fd = -1;
     {
         std::lock_guard<std::mutex> lock(mSocketLock);
@@ -372,6 +378,7 @@ void TcpClient::waitForReconnectDelay() {
 }
 
 void TcpClient::closeSocket() {
+    std::lock_guard<std::mutex> sendLock(mSendLock);
     int fd = -1;
     {
         std::lock_guard<std::mutex> lock(mSocketLock);
@@ -386,9 +393,17 @@ void TcpClient::closeSocket() {
 }
 
 ssize_t TcpClient::sendAll(int fd, const uint8_t* data, size_t len) {
+    const auto deadline = std::chrono::steady_clock::now() +
+        std::chrono::milliseconds(mConfig.sendTimeoutMs);
     size_t written = 0;
     while (written < len) {
-        ssize_t n = ::send(fd, data + written, len - written, MSG_NOSIGNAL);
+        if (std::chrono::steady_clock::now() >= deadline) {
+            LOGE("TcpClient send timeout. written=%zu total=%zu", written, len);
+            break;
+        }
+
+        ssize_t n = ::send(fd, data + written, len - written,
+            MSG_NOSIGNAL | MSG_DONTWAIT);
         if (n > 0) {
             written += static_cast<size_t>(n);
             continue;
@@ -398,8 +413,27 @@ ssize_t TcpClient::sendAll(int fd, const uint8_t* data, size_t len) {
             continue;
         }
         if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-            poll(nullptr, 0, 10);
-            continue;
+            const auto remaining = std::chrono::duration_cast<std::chrono::milliseconds>(
+                deadline - std::chrono::steady_clock::now()).count();
+            if (remaining <= 0) {
+                LOGE("TcpClient send timeout. written=%zu total=%zu", written, len);
+                break;
+            }
+
+            pollfd pfd;
+            pfd.fd = fd;
+            pfd.events = POLLOUT;
+            pfd.revents = 0;
+            const int ready = poll(&pfd, 1, static_cast<int>(remaining));
+            if (ready > 0 && (pfd.revents & POLLOUT) != 0) {
+                continue;
+            }
+            if (ready < 0 && errno == EINTR) {
+                continue;
+            }
+            if (ready == 0) {
+                LOGE("TcpClient send timeout. written=%zu total=%zu", written, len);
+            }
         }
         break;
     }

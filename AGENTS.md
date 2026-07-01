@@ -17,8 +17,8 @@
 - [x] Application-layer responsibility: validate and recover from impossible packet lengths in concrete protocol parsers such as `TuyaAck`. Do not add protocol-specific length policy to the communication layer.
 - [x] Fix `Transport::initEventDispatcher()` failure detection. Negative `Looper::addFd()` results now trigger eventfd cleanup and initialization failure. Verified with `./fastCheck.sh`.
 - [x] Make `TcpClient::stop()` able to interrupt DNS lookup, connection establishment, and reconnect delay. DNS waits are isolated from client lifetime, connect uses nonblocking polling with stop checks, and reconnect delay is condition-variable driven. Verified with `./fastCheck.sh`.
-- [ ] Define safe TCP socket ownership during send/close. Both TCP implementations copy an fd under lock and send after releasing the lock, allowing close and fd reuse to race with transmission.
-- [ ] Serialize TCP writes or provide an explicit single-writer contract. Concurrent partial writes can interleave protocol frames, and blocking sockets currently allow `send()` to stall the caller without a timeout.
+- [x] Define safe TCP socket ownership during send/close. Both TCP implementations now hold a send lock from fd lookup through the complete write, and every close path takes the same lock before invalidating or closing published sockets. Verified with `./fastCheck.sh`.
+- [x] Serialize TCP writes and bound their duration. Complete writes are serialized per transport, use nonblocking sends with an absolute configurable timeout (`sendTimeoutMs`, default 1000 ms), and return the partial byte count on timeout or failure. Verified with `./fastCheck.sh`.
 - [ ] Give `PacketChannel<TcpServer>` independent decoder state per client and preserve the client id through packet dispatch. The current shared decoder can combine bytes from different clients and cannot route business replies to their source.
 - [x] Widen and bounds-check `IAsk::setData()` length/offset parameters. Offsets and lengths now use `size_t`, bulk input is const, and invalid or out-of-range writes are rejected with `LOGE` diagnostics. Verified with `./fastCheck.sh`.
 
