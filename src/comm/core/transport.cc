@@ -14,13 +14,24 @@
 
 #include <cdlog.h>
 
+#include <chrono>
 #include <errno.h>
 #include <string.h>
 #include <sys/eventfd.h>
 #include <unistd.h>
 
+namespace {
+
+constexpr int EVENT_QUEUE_WAIT_TIMEOUT_MS = 100;
+
+}
+
+constexpr size_t Transport::DEFAULT_MAX_PENDING_EVENT_COUNT;
+
 Transport::Transport()
-    : mMainLooper(nullptr),
+    : mMaxPendingEventCount(DEFAULT_MAX_PENDING_EVENT_COUNT),
+      mDroppedEventCount(0),
+      mMainLooper(nullptr),
       mWakeFd(-1) {
 }
 
@@ -70,9 +81,12 @@ void Transport::shutdownEventDispatcher() {
 
     mMainLooper = nullptr;
 
-    std::lock_guard<std::mutex> lock(mEventLock);
-    std::queue<Event> empty;
-    mEvents.swap(empty);
+    {
+        std::lock_guard<std::mutex> lock(mEventLock);
+        std::queue<Event> empty;
+        mEvents.swap(empty);
+    }
+    mEventSpace.notify_all();
 }
 
 bool Transport::isEventDispatcherReady() const {
@@ -90,6 +104,7 @@ int Transport::handleEvents() {
         std::lock_guard<std::mutex> lock(mEventLock);
         mEvents.swap(events);
     }
+    mEventSpace.notify_all();
 
     while (!events.empty()) {
         dispatchEvent(events.front());
@@ -99,11 +114,48 @@ int Transport::handleEvents() {
     return 1;
 }
 
-void Transport::postEvent(const Event& ev) {
+void Transport::setMaxPendingEventCount(size_t count) {
     {
         std::lock_guard<std::mutex> lock(mEventLock);
-        mEvents.push(ev);
+        mMaxPendingEventCount = count > 0 ? count : DEFAULT_MAX_PENDING_EVENT_COUNT;
     }
+    mEventSpace.notify_all();
+}
+
+size_t Transport::maxPendingEventCount() const {
+    std::lock_guard<std::mutex> lock(mEventLock);
+    return mMaxPendingEventCount;
+}
+
+size_t Transport::droppedEventCount() const {
+    std::lock_guard<std::mutex> lock(mEventLock);
+    return mDroppedEventCount;
+}
+
+void Transport::postEvent(const Event& ev) {
+    size_t droppedCount = 0;
+    size_t queueLimit = 0;
+    {
+        std::unique_lock<std::mutex> lock(mEventLock);
+        const bool hasSpace = mEventSpace.wait_for(lock,
+            std::chrono::milliseconds(EVENT_QUEUE_WAIT_TIMEOUT_MS),
+            [this]() { return mEvents.size() < mMaxPendingEventCount; });
+        if (!hasSpace) {
+            droppedCount = ++mDroppedEventCount;
+            queueLimit = mMaxPendingEventCount;
+        } else {
+            mEvents.push(ev);
+        }
+    }
+
+    if (droppedCount > 0) {
+        if (droppedCount == 1 || (droppedCount & (droppedCount - 1)) == 0) {
+            LOGE("Transport event queue full. dropped=%zu limit=%zu type=%d id=%d",
+                droppedCount, queueLimit, static_cast<int>(ev.type), ev.id);
+        }
+        return;
+    }
+
     wakeMainThread();
 }
 

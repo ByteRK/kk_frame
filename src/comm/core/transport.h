@@ -17,8 +17,9 @@
 
 #include <core/looper.h>
 
-#include <queue>
+#include <condition_variable>
 #include <mutex>
+#include <queue>
 #include <stdint.h>
 #include <sys/types.h>
 #include <vector>
@@ -31,6 +32,8 @@
  */
 class Transport : public cdroid::EventHandler {
 public:
+    static constexpr size_t DEFAULT_MAX_PENDING_EVENT_COUNT = 256;
+
     /** @brief 跨线程投递时使用的内部事件载体。 */
     struct Event {
         /** @brief 通道级事件和 TCP 服务端客户端级事件。 */
@@ -80,6 +83,13 @@ public:
     /** @brief 在 Looper 所在线程中取出并分发全部待处理事件。 */
     int handleEvents() override;
 
+    /** @brief 设置待分发事件数量上限；传入 0 时恢复默认值。 */
+    void setMaxPendingEventCount(size_t count);
+    /** @brief 返回当前待分发事件数量上限。 */
+    size_t maxPendingEventCount() const;
+    /** @brief 返回因队列持续满载而丢弃的累计事件数量。 */
+    size_t droppedEventCount() const;
+
 protected:
     /**
      * @brief 初始化基于 eventfd 的跨线程事件分发器。
@@ -105,7 +115,10 @@ private:
 
 private:
     mutable std::mutex mEventLock;
+    std::condition_variable mEventSpace;
     std::queue<Event> mEvents;
+    size_t mMaxPendingEventCount;
+    size_t mDroppedEventCount;
     cdroid::Looper* mMainLooper;
     int mWakeFd;
 };

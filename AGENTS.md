@@ -26,7 +26,7 @@
 
 - [ ] Correct the Tuya real-frame-length expression in `TuyaAck::add()` so header length and `MIN_LEN` are added with explicit parentheses; the current precedence fails when the low byte addition carries.
 - [ ] Preserve lifecycle callbacks during explicit TCP shutdown. `stop()` posts disconnect events and immediately calls `shutdownEventDispatcher()`, which clears those events before normal Looper delivery.
-- [ ] Bound or backpressure `Transport`'s event queue so a stalled Looper or sustained receive load cannot grow memory without limit.
+- [x] Bound and backpressure `Transport`'s event queue. The queue defaults to 256 events, producers wait up to 100 ms for space, and sustained overload is dropped with a cumulative counter and rate-limited diagnostics. Verified with `./fastCheck.sh`.
 - [ ] Replace or guard the TCP server's `select()`/`FD_SET` usage. An accepted fd at or above `FD_SETSIZE` causes out-of-bounds writes.
 - [ ] Handle UART `POLLERR`, `POLLHUP`, and `POLLNVAL`; the current polling path only checks `POLLIN` and can leave a failed or removed device reported as connected.
 - [ ] Validate packet-buffer allocation lengths before narrowing them into signed `short` fields, check allocation failure, and prevent negative or wrapped lengths from reaching `memset`, `memcmp`, or transport sends.
