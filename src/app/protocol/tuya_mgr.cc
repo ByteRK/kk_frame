@@ -53,18 +53,30 @@ TuyaMgr::TuyaMgr() {
     mLastSendTime = 0;
     mLastSyncDateTime = 0;
     mLastSendDiffDPTime = 0;
-
-    g_packetMgr->addHandler(BT_TUYA, this);
+    mInitialized = false;
 }
 
 TuyaMgr::~TuyaMgr() {
+    if (mInitialized) {
+        cdroid::App::getInstance().removeEventHandler(this);
+        g_packetMgr->removeHandler(this);
+        mInitialized = false;
+    }
     if (mUartTUYA) {
         delete mUartTUYA;
         mUartTUYA = nullptr;
     }
+    if (mPacket) {
+        delete mPacket;
+        mPacket = nullptr;
+    }
 }
 
 int TuyaMgr::init() {
+    if (mInitialized) {
+        return 0;
+    }
+
     LOGI("开始监听");
     UartClient::Config config;
     config.device = "/dev/ttyS2";
@@ -75,8 +87,19 @@ int TuyaMgr::init() {
     config.parity = 'N';
     config.pollIntervalMs = 10;
 
-    mUartTUYA = new TuyaCommChannel(mPacket, true, config);
-    mUartTUYA->init();
+    TuyaCommChannel* channel = new TuyaCommChannel(mPacket, true, config);
+    const int rc = channel->init();
+    if (rc != 0) {
+        LOGE("TuyaMgr channel init failed. rc=%d", rc);
+        delete channel;
+        return rc;
+    }
+    if (!g_packetMgr->addHandler(BT_TUYA, this)) {
+        LOGE("TuyaMgr packet handler registration failed");
+        delete channel;
+        return -4;
+    }
+    mUartTUYA = channel;
 
     mLastAcceptTime = 0;
 
@@ -86,6 +109,7 @@ int TuyaMgr::init() {
     // 启动延迟一会后开始发包
     mNextEventTime = cdroid::SystemClock::uptimeMillis() + TICK_TIME * 10;
     cdroid::App::getInstance().addEventHandler(this);
+    mInitialized = true;
     return 0;
 }
 

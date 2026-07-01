@@ -28,18 +28,30 @@ ConnMgr::ConnMgr() {
     mLastAcceptTime = cdroid::SystemClock::uptimeMillis();
     mMcuUpd = 0;
     mUartMcu = nullptr;
-
-    g_packetMgr->addHandler(BT_MCU, this);
+    mInitialized = false;
 }
 
 ConnMgr::~ConnMgr() {
+    if (mInitialized) {
+        cdroid::App::getInstance().removeEventHandler(this);
+        g_packetMgr->removeHandler(this);
+        mInitialized = false;
+    }
     if (mUartMcu) {
         delete mUartMcu;
         mUartMcu = nullptr;
     }
+    if (mPacket) {
+        delete mPacket;
+        mPacket = nullptr;
+    }
 }
 
 int ConnMgr::init() {
+    if (mInitialized) {
+        return 0;
+    }
+
     LOGI("ConnMgr init");
     UartClient::Config config;
     config.device = "/dev/ttyS1";
@@ -50,12 +62,25 @@ int ConnMgr::init() {
     config.parity = 'N';
     config.pollIntervalMs = 10;
 
-    mUartMcu = new ConnCommChannel(mPacket, false, config);
-    mUartMcu->init();
+    ConnCommChannel* channel = new ConnCommChannel(mPacket, false, config);
+    const int rc = channel->init();
+    if (rc != 0) {
+        LOGE("ConnMgr channel init failed. rc=%d", rc);
+        delete channel;
+        return rc;
+    }
+    if (!g_packetMgr->addHandler(BT_MCU, this)) {
+        LOGE("ConnMgr packet handler registration failed");
+        delete channel;
+        return -4;
+    }
+    mUartMcu = channel;
 
     // 启动延迟一会后开始发包
+    mLastAcceptTime = cdroid::SystemClock::uptimeMillis();
     mNextEventTime = cdroid::SystemClock::uptimeMillis() + TICK_TIME * 10;
     cdroid::App::getInstance().addEventHandler(this);
+    mInitialized = true;
     return 0;
 }
 

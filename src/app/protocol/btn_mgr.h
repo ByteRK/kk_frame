@@ -36,6 +36,7 @@ private:
     int64_t          mLastAcceptTime;          // 上次接收时间
     int              mBtnUpd;                  // 按键更新标志
     BtnCommChannel*  mUartBtn;                 // 按键通讯通道
+    bool             mInitialized;             // 初始化完成标志
 
 protected:
     BtnMgr();

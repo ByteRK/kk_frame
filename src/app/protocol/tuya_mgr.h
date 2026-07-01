@@ -44,6 +44,7 @@ private:
     int64_t          mLastSendDiffDPTime;   // 最后一次差异上报时间
     int64_t          mLastSyncDateTime;     // 最后一次时间同步时间
     TuyaCommChannel* mUartTUYA;             // 涂鸦通讯通道
+    bool             mInitialized;          // 初始化完成标志
 
     bool             mIsRunConnectWork;     // 是否已完成联网
     int64_t          mNetWorkConnectTime;   // 联网成功时间

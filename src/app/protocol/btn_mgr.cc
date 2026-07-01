@@ -28,18 +28,30 @@ BtnMgr::BtnMgr() {
     mLastAcceptTime = cdroid::SystemClock::uptimeMillis();
     mBtnUpd = 0;
     mUartBtn = nullptr;
-
-    g_packetMgr->addHandler(BT_BTN, this);
+    mInitialized = false;
 }
 
 BtnMgr::~BtnMgr() {
+    if (mInitialized) {
+        cdroid::App::getInstance().removeEventHandler(this);
+        g_packetMgr->removeHandler(this);
+        mInitialized = false;
+    }
     if (mUartBtn) {
         delete mUartBtn;
         mUartBtn = nullptr;
     }
+    if (mPacket) {
+        delete mPacket;
+        mPacket = nullptr;
+    }
 }
 
 int BtnMgr::init() {
+    if (mInitialized) {
+        return 0;
+    }
+
     LOGI("BtnMgr init");
     UartClient::Config config;
     config.device = "/dev/ttyS2";
@@ -50,12 +62,25 @@ int BtnMgr::init() {
     config.parity = 'N';
     config.pollIntervalMs = 10;
 
-    mUartBtn = new BtnCommChannel(mPacket, false, config);
-    mUartBtn->init();
+    BtnCommChannel* channel = new BtnCommChannel(mPacket, false, config);
+    const int rc = channel->init();
+    if (rc != 0) {
+        LOGE("BtnMgr channel init failed. rc=%d", rc);
+        delete channel;
+        return rc;
+    }
+    if (!g_packetMgr->addHandler(BT_BTN, this)) {
+        LOGE("BtnMgr packet handler registration failed");
+        delete channel;
+        return -4;
+    }
+    mUartBtn = channel;
 
     // 启动延迟一会后开始发包
+    mLastAcceptTime = cdroid::SystemClock::uptimeMillis();
     mNextEventTime = cdroid::SystemClock::uptimeMillis() + TICK_TIME * 10;
     cdroid::App::getInstance().addEventHandler(this);
+    mInitialized = true;
     return 0;
 }
 
