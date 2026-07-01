@@ -31,10 +31,15 @@ void IHandlerManager::onCommand(IAck* ack, int id) {
         return;
     }
 
-    for (IHandler* hd : it->second) {
-        if (hd != nullptr) {
-            hd->onCommDeal(ack, id);
+    const int type = ack->getType();
+    const handlers snapshot = it->second;
+    for (IHandler* hd : snapshot) {
+        auto current = mHandlers.find(type);
+        if (hd == nullptr || current == mHandlers.end() ||
+            std::find(current->second.begin(), current->second.end(), hd) == current->second.end()) {
+            continue;
         }
+        hd->onCommDeal(ack, id);
     }
 }
 

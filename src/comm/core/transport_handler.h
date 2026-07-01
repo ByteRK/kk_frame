@@ -22,6 +22,8 @@
  * 回调由具体 Transport 分发。TCP 实现会将工作线程事件切换到 init() 所在线程的
  * Looper 中再回调；UART 实现则在调用 start()/stop()/onTick() 的线程中同步回调。
  * 回调参数中的数据只在本次 onRecv() 调用期间有效，如需异步使用必须自行复制。
+ * 回调中允许调用通道的 stop()，当前回调返回后剩余待分发事件会被取消。禁止在
+ * 回调中直接销毁 Transport、PacketChannel 或当前 handler；销毁必须延迟到回调返回后。
  */
 class TransportHandler {
 public:

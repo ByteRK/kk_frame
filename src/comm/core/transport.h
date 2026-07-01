@@ -17,6 +17,7 @@
 
 #include <core/looper.h>
 
+#include <atomic>
 #include <condition_variable>
 #include <mutex>
 #include <queue>
@@ -100,11 +101,13 @@ protected:
     void shutdownEventDispatcher();
     /** @brief 返回跨线程事件分发器是否已经可用。 */
     bool isEventDispatcherReady() const;
+    /** @brief 使当前批次尚未分发的事件失效，并清空排队事件。 */
+    void cancelEventDispatch();
 
     /** @brief 将事件加入队列，并唤醒 Looper 线程后异步分发。 */
     void postEvent(const Event& ev);
-    /** @brief 在当前调用线程立即同步分发事件。 */
-    void sendEvent(const Event& ev);
+    /** @brief 在当前线程同步分发；回调触发取消或停止时返回 false。 */
+    bool sendEvent(const Event& ev);
     /** @brief 由派生类将内部事件转换为 TransportHandler 回调。 */
     virtual void dispatchEvent(const Event& ev) = 0;
 
@@ -119,6 +122,7 @@ private:
     std::queue<Event> mEvents;
     size_t mMaxPendingEventCount;
     size_t mDroppedEventCount;
+    std::atomic<uint64_t> mDispatchGeneration;
     cdroid::Looper* mMainLooper;
     int mWakeFd;
 };

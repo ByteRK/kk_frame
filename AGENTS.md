@@ -30,8 +30,8 @@
 - [ ] Replace or guard the TCP server's `select()`/`FD_SET` usage. An accepted fd at or above `FD_SETSIZE` causes out-of-bounds writes.
 - [ ] Handle UART `POLLERR`, `POLLHUP`, and `POLLNVAL`; the current polling path only checks `POLLIN` and can leave a failed or removed device reported as connected.
 - [ ] Validate packet-buffer allocation lengths before narrowing them into signed `short` fields, check allocation failure, and prevent negative or wrapped lengths from reaching `memset`, `memcmp`, or transport sends.
-- [ ] Decide and document callback reentrancy rules. Stopping or destroying a transport from a callback can leave already-swapped local events dispatching after shutdown.
-- [ ] Make handler dispatch robust if a callback adds or removes handlers; mutating the current handler vector during range iteration can invalidate iterators.
+- [x] Define and enforce callback reentrancy rules. Calling `stop()` from a callback invalidates the remaining event batch; UART synchronous receive also exits immediately. Direct destruction of a Transport, PacketChannel, or current handler inside its callback is forbidden and documented as requiring deferred destruction. Verified with `./fastCheck.sh`.
+- [x] Make handler dispatch robust if callbacks add or remove handlers. Dispatch iterates a snapshot, rechecks registration before each callback, applies additions from the next packet, and skips handlers removed during the current packet. Verified with `./fastCheck.sh`.
 
 ### Integration Checks Before Re-enabling UART Managers
 

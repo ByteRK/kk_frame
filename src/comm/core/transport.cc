@@ -31,6 +31,7 @@ constexpr size_t Transport::DEFAULT_MAX_PENDING_EVENT_COUNT;
 Transport::Transport()
     : mMaxPendingEventCount(DEFAULT_MAX_PENDING_EVENT_COUNT),
       mDroppedEventCount(0),
+      mDispatchGeneration(0),
       mMainLooper(nullptr),
       mWakeFd(-1) {
 }
@@ -81,12 +82,7 @@ void Transport::shutdownEventDispatcher() {
 
     mMainLooper = nullptr;
 
-    {
-        std::lock_guard<std::mutex> lock(mEventLock);
-        std::queue<Event> empty;
-        mEvents.swap(empty);
-    }
-    mEventSpace.notify_all();
+    cancelEventDispatch();
 }
 
 bool Transport::isEventDispatcherReady() const {
@@ -99,6 +95,7 @@ int Transport::checkEvents() {
 }
 
 int Transport::handleEvents() {
+    const uint64_t generation = mDispatchGeneration.load();
     std::queue<Event> events;
     {
         std::lock_guard<std::mutex> lock(mEventLock);
@@ -109,9 +106,22 @@ int Transport::handleEvents() {
     while (!events.empty()) {
         dispatchEvent(events.front());
         events.pop();
+        if (mDispatchGeneration.load() != generation) {
+            break;
+        }
     }
 
     return 1;
+}
+
+void Transport::cancelEventDispatch() {
+    {
+        std::lock_guard<std::mutex> lock(mEventLock);
+        ++mDispatchGeneration;
+        std::queue<Event> empty;
+        mEvents.swap(empty);
+    }
+    mEventSpace.notify_all();
 }
 
 void Transport::setMaxPendingEventCount(size_t count) {
@@ -159,8 +169,10 @@ void Transport::postEvent(const Event& ev) {
     wakeMainThread();
 }
 
-void Transport::sendEvent(const Event& ev) {
+bool Transport::sendEvent(const Event& ev) {
+    const uint64_t generation = mDispatchGeneration.load();
     dispatchEvent(ev);
+    return mDispatchGeneration.load() == generation;
 }
 
 int Transport::onWake(int fd, int /*events*/, void* context) {

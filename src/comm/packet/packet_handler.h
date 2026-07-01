@@ -41,6 +41,8 @@ public:
  *
  * 同一命令可注册多个不同处理器，同一处理器不能对同一命令重复注册。
  * 当前实现不提供内部并发保护，注册、移除和分发应在同一业务线程执行。
+ * 分发期间新增的处理器从下一包开始生效；移除后本轮剩余回调不会再调用该处理器。
+ * 处理器对象只能在 removeHandler() 返回后销毁。
  */
 class IHandlerManager {
     typedef std::vector<IHandler*> handlers;

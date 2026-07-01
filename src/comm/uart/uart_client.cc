@@ -140,13 +140,13 @@ bool UartClient::start() {
 
     Event ev;
     ev.type = Event::CONNECTED;
-    sendEvent(ev);
-    return true;
+    return sendEvent(ev) && mRunning;
 }
 
 void UartClient::stop() {
     const bool notifyDisconnected = mRunning;
     mRunning = false;
+    cancelEventDispatch();
 
     if (mFd >= 0) {
         close(mFd);
@@ -203,7 +203,9 @@ void UartClient::onTick() {
             Event ev;
             ev.type = Event::DATA;
             ev.data.assign(buffer.begin(), buffer.begin() + n);
-            sendEvent(ev);
+            if (!sendEvent(ev)) {
+                return;
+            }
             if (static_cast<size_t>(n) < buffer.size()) {
                 break;
             }
