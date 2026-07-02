@@ -22,7 +22,8 @@
 
 class BtnAsk : public IAsk {
 public:
-    constexpr static uint16_t MIN_LEN = 18;
+    /// @brief 不含可变载荷的发送包基础长度；按钮协议发送包为固定长度。
+    constexpr static uint16_t BASE_LEN = 18;
 
 public:
     BtnAsk() { }
@@ -41,8 +42,10 @@ public:
 
 class BtnAck : public IAck {
 public:
-    constexpr static uint16_t BUF_LEN = 0xFF;
-    constexpr static uint8_t MIN_LEN = 9;
+    /// @brief 接收缓存容量上限。
+    constexpr static uint16_t BUFFER_CAPACITY = 0xFF;
+    /// @brief 按钮协议固定完整包长度，包含校验字节。
+    constexpr static uint16_t FRAME_LEN = 9;
 
 private:
     uint8_t mHeadList[2] = { 0xAA, 0x12 };
@@ -68,7 +71,7 @@ protected:
     const uint8_t* head() const override { return mHeadList; }
     uint16_t headLength() const override { return sizeof(mHeadList); }
     uint16_t lengthReadySize() const override { return headLength(); }
-    int32_t expectedLength() const override { return MIN_LEN; }
+    int32_t expectedLength() const override { return FRAME_LEN; }
 };
 
 #endif // !__BTN_PACKET_H__

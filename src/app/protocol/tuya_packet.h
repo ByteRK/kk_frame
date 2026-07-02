@@ -22,7 +22,8 @@
 
 class TuyaAsk : public IAsk {
 public:
-    constexpr static uint16_t MIN_LEN = 7;
+    /// @brief 不含可变载荷的发送包基础长度。
+    constexpr static uint16_t BASE_LEN = 7;
 
 public:
     TuyaAsk() { }
@@ -41,8 +42,12 @@ public:
 
 class TuyaAck : public IAck {
 public:
-    constexpr static uint16_t BUF_LEN = 0x466;
-    constexpr static uint8_t MIN_LEN = 7;
+    /// @brief 接收缓存容量上限，即允许解析的最大完整包长度。
+    constexpr static uint16_t BUFFER_CAPACITY = 0x466;
+    /// @brief 除可变载荷外的固定帧开销，包含包头、控制字段和校验字节。
+    constexpr static uint16_t FRAME_OVERHEAD = 7;
+    /// @brief 能够读取载荷长度字段时所需的最小缓存长度。
+    constexpr static uint16_t LENGTH_READY_LEN = 6;
 
 private:
     uint8_t mHeadList[2] = { 0x55, 0xAA };
@@ -67,12 +72,12 @@ public:
 protected:
     const uint8_t* head() const override { return mHeadList; }
     uint16_t headLength() const override { return sizeof(mHeadList); }
-    uint16_t lengthReadySize() const override { return 6; }
+    uint16_t lengthReadySize() const override { return LENGTH_READY_LEN; }
 
     int32_t expectedLength() const override {
         const uint16_t payloadLen =
             (static_cast<uint16_t>(mBuf[4]) << 8) | mBuf[5];
-        return static_cast<int32_t>(payloadLen) + MIN_LEN;
+        return static_cast<int32_t>(payloadLen) + FRAME_OVERHEAD;
     }
 };
 

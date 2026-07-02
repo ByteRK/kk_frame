@@ -77,8 +77,8 @@ public:
 /**
  * @brief 绑定具体协议类型、发送包类型和接收包类型的缓存实现。
  * @tparam T 写入 BuffData::type 的协议标识。
- * @tparam Ask IAsk 的具体发送编码类型。
- * @tparam Ack IAck 的具体接收解析类型。
+ * @tparam Ask IAsk 的具体发送编码类型，需提供 BASE_LEN。
+ * @tparam Ack IAck 的具体接收解析类型，需提供 BUFFER_CAPACITY。
  */
 template <int16_t T, typename Ask, typename Ack>
 class IPacketBufferT : public IPacketBuffer {
@@ -90,14 +90,14 @@ public:
 
     /** @brief 优先复用类型和容量匹配的缓存，否则分配新缓存。 */
     BuffData* obtain(uint16_t dataLen = 0, bool receive = false) override {
-        const uint16_t baseLen = receive ? Ack::BUF_LEN : Ask::MIN_LEN;
-        if (baseLen == 0 || dataLen > UINT16_MAX - baseLen) {
+        const uint16_t baseCapacity = receive ? Ack::BUFFER_CAPACITY : Ask::BASE_LEN;
+        if (baseCapacity == 0 || dataLen > UINT16_MAX - baseCapacity) {
             LOGE("Packet buffer length out of range. receive=%d base=%u data=%u max=%u",
-                receive, baseLen, dataLen, UINT16_MAX);
+                receive, baseCapacity, dataLen, UINT16_MAX);
             return nullptr;
         }
 
-        const uint16_t len = baseLen + dataLen;
+        const uint16_t len = baseCapacity + dataLen;
         for (size_t i = 0; i < mBuffs.size(); ++i) {
             BuffData* bf = mBuffs[i];
             if (bf->type == T && bf->slen == len) {

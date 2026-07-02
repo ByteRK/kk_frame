@@ -22,7 +22,8 @@
 
 class McuAsk : public IAsk {
 public:
-    constexpr static uint16_t MIN_LEN = 23;
+    /// @brief 不含可变载荷的发送包基础长度；MCU 协议发送包为固定长度。
+    constexpr static uint16_t BASE_LEN = 23;
 
 public:
     McuAsk() { }
@@ -41,8 +42,10 @@ public:
 
 class McuAck : public IAck {
 public:
-    constexpr static uint16_t BUF_LEN = 0xFF;
-    constexpr static uint8_t MIN_LEN = 36;
+    /// @brief 接收缓存容量上限。
+    constexpr static uint16_t BUFFER_CAPACITY = 0xFF;
+    /// @brief MCU 协议固定完整包长度，包含校验字节。
+    constexpr static uint16_t FRAME_LEN = 36;
 
 private:
     uint8_t mHeadList[2] = { 0xA5, 0x5A };
@@ -68,7 +71,7 @@ protected:
     const uint8_t* head() const override { return mHeadList; }
     uint16_t headLength() const override { return sizeof(mHeadList); }
     uint16_t lengthReadySize() const override { return headLength(); }
-    int32_t expectedLength() const override { return MIN_LEN; }
+    int32_t expectedLength() const override { return FRAME_LEN; }
 };
 
 #endif // !__MCU_PACKET_H__
