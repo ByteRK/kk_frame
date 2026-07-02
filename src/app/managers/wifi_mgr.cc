@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-27 18:59:51
- * @LastEditTime: 2026-04-24 17:04:27
+ * @LastEditTime: 2026-07-02 13:43:38
  * @FilePath: /kk_frame/src/app/managers/wifi_mgr.cc
  * @Description: WIFI 管理器
  * @BugList:
@@ -67,6 +67,10 @@ void WifiMgr::addListener(WiFiListener* listener) {
 
 void WifiMgr::removeListener(WiFiListener* listener) {
     mListeners.erase(listener);
+}
+
+bool WifiMgr::isConnected() {
+    return getState() == WifiHal::State::IpReady;
 }
 
 WifiHal::State WifiMgr::getState() {
@@ -158,7 +162,7 @@ int WifiMgr::handleEvents() {
 
     if (mStateChanged.load()) { // 状态改变
         mStateChanged.store(false);
-        if (getState() == WifiHal::State::IpReady)
+        if (isConnected())
             updateResultAfterConnected();
         for (auto& cb : mListeners)
             cb->onStateChanged();

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-27 17:11:43
- * @LastEditTime: 2026-06-03 20:34:44
+ * @LastEditTime: 2026-07-02 13:43:33
  * @FilePath: /kk_frame/src/app/managers/wifi_mgr.h
  * @Description: WIFI 管理器
  * @BugList:
@@ -44,6 +44,7 @@ public:
     void           addListener(WiFiListener* listener);
     void           removeListener(WiFiListener* listener);
 
+    bool           isConnected();
     WifiHal::State getState();
     void           getAps(std::vector<WifiHal::ApInfo>& aps);
 
