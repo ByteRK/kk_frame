@@ -51,34 +51,8 @@ public:
     TuyaAck() { }
     TuyaAck(BuffData* buf) { parse(buf); }
 
-    int add(const uint8_t* bf, int len) override {
-        int rlen = 0;
-        while (mDlen < BUF_LEN && rlen < len) {
-            addData(BUF_LEN, bf, len, rlen);
-            if (!checkHead(mHeadList, 2))findHead(mHeadList, 2);
-            *mPlen = mDlen;
-        }
-        // 裁剪真实数据长度，避免数据包拼接导致遗漏
-        if (checkHead(mHeadList, 2) && mDlen > MIN_LEN) {
-            const int payloadLen =
-                (static_cast<int>(mBuf[4]) << 8) | mBuf[5];
-            const int realLen = payloadLen + MIN_LEN;
-            if (mDlen > realLen) {
-                rlen -= (mDlen - realLen);
-                rlen = rlen < 0 ? 0 : rlen;
-            }
-        }
-        LOG(VERBOSE) << "mDlen:" << mDlen << " Bytes=" << StringUtils::hexStr(mBuf, mDlen);
-        return rlen;
-    }
-
-    bool complete() override {
-        if (!checkHead(mHeadList, 2))return false;
-        return (mDlen >= MIN_LEN) && (mDlen >= (mBuf[4] << 8 | mBuf[5]) + MIN_LEN);
-    }
-
     bool check() override {
-        mDataLen = (mBuf[4] << 8 | mBuf[5]) + MIN_LEN;
+        if (!complete()) return false;
         uint8_t sum = mBuf[mDataLen - 1];
         uint8_t realSum = CheckUtils::checkSum(mBuf, mDataLen - 1) & 0xFF;
         bool res = sum == realSum;
@@ -88,6 +62,20 @@ public:
 
     int getType() override {
         return BT_TUYA;
+    }
+
+protected:
+    const uint8_t* head() const override { return mHeadList; }
+    uint16_t headLength() const override { return sizeof(mHeadList); }
+    uint16_t lengthReadySize() const override { return 6; }
+
+    int32_t expectedLength() const override {
+        if (mPacket == nullptr || mPacket->len < 6) {
+            return 0;
+        }
+        const uint16_t payloadLen =
+            (static_cast<uint16_t>(mBuf[4]) << 8) | mBuf[5];
+        return static_cast<int32_t>(payloadLen) + MIN_LEN;
     }
 };
 

@@ -51,29 +51,8 @@ public:
     BtnAck() { }
     BtnAck(BuffData* buf) { parse(buf); }
 
-    int add(const uint8_t* bf, int len) override {
-        int rlen = 0;
-        while (mDlen < BUF_LEN && rlen < len) {
-            addData(BUF_LEN, bf, len, rlen);
-            if (!checkHead(mHeadList, 2))findHead(mHeadList, 2);
-            *mPlen = mDlen;
-        }
-        if (checkHead(mHeadList, 2) && mDlen > MIN_LEN) {
-            rlen -= mDlen - MIN_LEN;
-            mDlen = MIN_LEN;
-            *mPlen = mDlen;
-        }
-        LOG(VERBOSE) << "mDlen:" << mDlen << " Bytes=" << StringUtils::hexStr(mBuf, mDlen);
-        return rlen;
-    }
-
-    bool complete() override {
-        if (!checkHead(mHeadList, 2))return false;
-        return mDlen >= MIN_LEN;
-    }
-
     bool check() override {
-        mDataLen = MIN_LEN;
+        if (!complete()) return false;
         uint8_t sum = mBuf[mDataLen - 1];
         uint8_t realSum = CheckUtils::checkSum(mBuf, mDataLen - 1) & 0xFF;
         bool res = sum == realSum;
@@ -84,6 +63,12 @@ public:
     int getType() override {
         return BT_BTN;
     }
+
+protected:
+    const uint8_t* head() const override { return mHeadList; }
+    uint16_t headLength() const override { return sizeof(mHeadList); }
+    uint16_t lengthReadySize() const override { return headLength(); }
+    int32_t expectedLength() const override { return MIN_LEN; }
 };
 
 #endif // !__BTN_PACKET_H__

@@ -128,5 +128,5 @@ void ConnMgr::onCommDeal(const IAck* ack) {
     // TODO:解析处理
 
     mLastAcceptTime = cdroid::SystemClock::uptimeMillis();
-    LOG(VERBOSE) << "[<-- CONN] hex str: " << StringUtils::hexStr(ack->mBuf, ack->mDlen);
+    LOG(VERBOSE) << "[<-- CONN] hex str: " << StringUtils::hexStr(ack->mBuf, ack->mDataLen);
 }

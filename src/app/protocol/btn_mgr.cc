@@ -128,5 +128,5 @@ void BtnMgr::onCommDeal(const IAck* ack) {
     // TODO:解析处理
 
     mLastAcceptTime = cdroid::SystemClock::uptimeMillis();
-    LOG(VERBOSE) << "[<-- BTN] hex str: " << StringUtils::hexStr(ack->mBuf, ack->mDlen);
+    LOG(VERBOSE) << "[<-- BTN] hex str: " << StringUtils::hexStr(ack->mBuf, ack->mDataLen);
 }
