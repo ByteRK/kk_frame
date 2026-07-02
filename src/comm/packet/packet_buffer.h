@@ -17,7 +17,6 @@
 
 #include <cdlog.h>
 
-#include <limits>
 #include <stdlib.h>
 #include <string>
 #include <vector>
@@ -56,7 +55,7 @@ public:
      * @param dataLen 在协议基础长度之外追加的可变数据长度。
      * @param receive true 创建接收缓存，false 创建发送缓存。
      */
-    virtual BuffData* obtain(size_t dataLen = 0, bool receive = false) = 0;
+    virtual BuffData* obtain(uint16_t dataLen = 0, bool receive = false) = 0;
     /** @brief 清空缓存并放回池中；传入 nullptr 时无操作。 */
     virtual void recycle(BuffData* buf);
     /** @brief 将输入字节追加到接收缓存，返回实际消费的输入长度。 */
@@ -81,7 +80,7 @@ public:
  * @tparam Ask IAsk 的具体发送编码类型。
  * @tparam Ack IAck 的具体接收解析类型。
  */
-template <int T, typename Ask, typename Ack>
+template <int16_t T, typename Ask, typename Ack>
 class IPacketBufferT : public IPacketBuffer {
 public:
     IPacketBufferT() {
@@ -90,17 +89,15 @@ public:
     }
 
     /** @brief 优先复用类型和容量匹配的缓存，否则分配新缓存。 */
-    BuffData* obtain(size_t dataLen = 0, bool receive = false) override {
-        const size_t baseLen = receive ? static_cast<size_t>(Ack::BUF_LEN)
-            : static_cast<size_t>(Ask::MIN_LEN);
-        const size_t maxLen = static_cast<size_t>(std::numeric_limits<short>::max());
-        if (baseLen == 0 || baseLen > maxLen || dataLen > maxLen - baseLen) {
-            LOGE("Packet buffer length out of range. receive=%d base=%zu data=%zu max=%zu",
-                receive, baseLen, dataLen, maxLen);
+    BuffData* obtain(uint16_t dataLen = 0, bool receive = false) override {
+        const uint16_t baseLen = receive ? Ack::BUF_LEN : Ask::MIN_LEN;
+        if (baseLen == 0 || dataLen > UINT16_MAX - baseLen) {
+            LOGE("Packet buffer length out of range. receive=%d base=%u data=%u max=%u",
+                receive, baseLen, dataLen, UINT16_MAX);
             return nullptr;
         }
 
-        const short len = static_cast<short>(baseLen + dataLen);
+        const uint16_t len = baseLen + dataLen;
         for (size_t i = 0; i < mBuffs.size(); ++i) {
             BuffData* bf = mBuffs[i];
             if (bf->type == T && bf->slen == len) {
@@ -113,7 +110,7 @@ public:
         }
 
         BuffData* bf = static_cast<BuffData*>(
-            calloc(1, sizeof(BuffData) + static_cast<size_t>(len)));
+            calloc(1, sizeof(BuffData) + len));
         if (bf == nullptr) {
             LOGE("Packet buffer allocation failed. len=%d", len);
             return nullptr;

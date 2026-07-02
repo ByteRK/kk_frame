@@ -20,10 +20,10 @@
 #pragma pack(1)
 /// @brief 收发数据包
 typedef struct {
-    short   type;    // 包类型
-    short   len;     // 数据长度
-    short   slen;    // 数据区容量
-    uint8_t buf[1];  // 数据区指针
+    int16_t  type;    // 包类型
+    uint16_t len;     // 数据长度
+    uint16_t slen;    // 数据区容量
+    uint8_t  buf[1];  // 数据区指针
 } BuffData;
 #pragma pack()
 
@@ -43,10 +43,10 @@ public:
 /// @brief 收包解码器
 class IAck {
 public:
-    uint8_t* mBuf{ nullptr };   // 接收缓存数据区首地址
-    short*   mPlen{ nullptr };  // 数据包长度位指针(用于将有效长度同步到外部数据包)
-    short    mDlen{ 0 };        // 接收缓存中当前已有的字节数
-    uint16_t mDataLen{ 0 };     // 当前完整协议包总长度（含校验字节）
+    uint8_t* mBuf{ nullptr };    // 接收缓存数据区首地址
+    uint16_t* mPlen{ nullptr };  // 数据包长度位指针(用于将有效长度同步到外部数据包)
+    uint16_t  mDlen{ 0 };        // 接收缓存中当前已有的字节数
+    uint16_t mDataLen{ 0 };      // 当前完整协议包总长度（含校验字节）
 
 public:
     virtual ~IAck() { }
