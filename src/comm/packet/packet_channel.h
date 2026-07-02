@@ -1,9 +1,10 @@
 /*
  * @Author: Ricken
  * @Email: me@ricken.cn
- * @Date: 2026-06-26
+ * @Date: 2026-07-01 22:42:41
+ * @LastEditTime: 2026-07-02 02:16:13
  * @FilePath: /kk_frame/src/comm/packet/packet_channel.h
- * @Description: Application packet channel adapter
+ * @Description: 数据包处理管道
  * @BugList:
  *
  * Copyright (c) 2026 by Ricken, All Rights Reserved.
@@ -14,13 +15,14 @@
 #define __PACKET_CHANNEL_H__
 
 #include "packet_buffer.h"
-#include "packet_handler.h"
 #include "transport_handler.h"
 
 #include <cdlog.h>
 
-/** @brief 设为 1 时按客户端 ID 隔离解码状态；默认仅接受单个客户端 ID。 */
 #ifndef PACKET_CHANNEL_ENABLE_MULTI_ID
+/// @brief 多客户端处理机制开关
+/// @note 开启后，onRecv 中的 id 参数将有效，且激活独立解码器机制
+/// @note 否则 id 参数将被忽略
 #define PACKET_CHANNEL_ENABLE_MULTI_ID 0
 #endif
 
@@ -30,178 +32,111 @@
 #endif
 #include <stddef.h>
 #include <stdint.h>
-#include "string_utils.h"
 #include <utility>
 
-/**
- * @brief 将任意分段的原始字节流还原为业务数据包。
- *
- * 解码器通过 IPacketBuffer 调用具体协议解析器，完成包判定、校验、可选去重，并将
- * 合法数据包交给全局 IHandlerManager。packetBuff 的生命周期必须长于本对象。
- */
+/// @brief 数据流解码工具
 class PacketStreamDecoder {
-public:
-    /**
-     * @param packetBuff 具体协议的数据包缓存和解析器，不接管其生命周期。
-     * @param enableRepeatAccept true 允许连续分发内容完全相同的数据包。
-     */
-    PacketStreamDecoder(IPacketBuffer* packetBuff, bool enableRepeatAccept)
-        : mPacketBuff(packetBuff),
-          mLastRecv(nullptr),
-          mCurrRecv(nullptr),
-          mEnableRepeatAccept(enableRepeatAccept),
-          mRecvCount(0),
-          mCheckErrorCount(0) {
-        if (mPacketBuff != nullptr) {
-            mLastRecv = mPacketBuff->obtain(0, true);
-            mCurrRecv = mPacketBuff->obtain(0, true);
-            if (mLastRecv == nullptr || mCurrRecv == nullptr) {
-                LOGE("PacketStreamDecoder receive buffer allocation failed");
-                mPacketBuff->recycle(mLastRecv);
-                mPacketBuff->recycle(mCurrRecv);
-                mLastRecv = nullptr;
-                mCurrRecv = nullptr;
-            }
-        }
-    }
-
-    ~PacketStreamDecoder() {
-        if (mPacketBuff != nullptr) {
-            mPacketBuff->recycle(mLastRecv);
-            mPacketBuff->recycle(mCurrRecv);
-        }
-        mLastRecv = nullptr;
-        mCurrRecv = nullptr;
-    }
-
-    /** @brief 推进一次数据包解析，返回本次从输入中消费的字节数。 */
-    int onBytes(const uint8_t* data, size_t len, int id = -1) {
-        if (mPacketBuff == nullptr || mCurrRecv == nullptr || data == nullptr || len == 0) {
-            return 0;
-        }
-
-        const int totalLen = static_cast<int>(len);
-        LOG(VERBOSE) << "packet channel recv len:" << totalLen
-            << " hex:" << StringUtils::hexStr(data, totalLen);
-
-        const int consumed = mPacketBuff->add(mCurrRecv, data, totalLen);
-        if (consumed <= 0 || !mPacketBuff->complete(mCurrRecv)) {
-            return consumed;
-        }
-
-        LOG(VERBOSE) << "packet complete:" << StringUtils::hexStr(mCurrRecv->buf, mCurrRecv->len);
-        ++mRecvCount;
-
-        if (mPacketBuff->check(mCurrRecv)) {
-            mCheckErrorCount = 0;
-            if (mEnableRepeatAccept || !mPacketBuff->compare(mCurrRecv, mLastRecv)) {
-                IAck* ack = mPacketBuff->ack(mCurrRecv);
-                g_packetMgr->onCommand(ack, id);
-
-                mLastRecv->len = mCurrRecv->len;
-                memcpy(mLastRecv->buf, mCurrRecv->buf, mCurrRecv->len);
-            }
-        } else {
-            ++mCheckErrorCount;
-            LOGE("packet check failed. len=%d check_fail=%d",
-                mCurrRecv->len, mCheckErrorCount);
-            StringUtils::hexdump("packet channel check failed",
-                mCurrRecv->buf, mCurrRecv->len, 100);
-        }
-
-        mCurrRecv->len = 0;
-        return consumed;
-    }
-
-    /** @brief 返回累计识别出的完整数据包数量，包括校验失败的数据包。 */
-    int64_t recvCount() const {
-        return mRecvCount;
-    }
-
-    /** @brief 返回自最近一次校验成功后连续校验失败的数据包数量。 */
-    int checkErrorCount() const {
-        return mCheckErrorCount;
-    }
-
 private:
-    IPacketBuffer* mPacketBuff;
-    BuffData* mLastRecv;
-    BuffData* mCurrRecv;
-    bool mEnableRepeatAccept;
-    int64_t mRecvCount;
-    int mCheckErrorCount;
+    IPacketBuffer* mPacketBuff;            // 解码器指针(带缓存管理)
+    BuffData*      mLastRecv{ nullptr };   // 上次数据包
+    BuffData*      mCurrRecv{ nullptr };   // 当前数据包
+    bool           mEnableRepeatAccept;    // 同包去重开关
+    int64_t        mRecvCount{ 0 };        // 接收整包计数
+    int            mCheckErrorCount{ 0 };  // 错误包计数
+
+public:
+    PacketStreamDecoder(IPacketBuffer* packetBuff, bool enableRepeatAccept);
+    ~PacketStreamDecoder();
+    int     onBytes(const uint8_t* data, size_t len, int id = -1);
+    int64_t recvCount() const;
+    int     checkErrorCount() const;
+
 };
 
-/**
- * @brief 将统一原始通讯接口适配为业务数据包通道。
- *
- * TransportType 只需符合 Transport 的公开接口即可，因此业务管理类可以通过替换
- * 模板类型和构造参数在 UART、TCP 客户端或 TCP 服务端之间切换。
- *
- * @tparam TransportType 实际使用的底层通讯类型。
- */
+/// @brief 数据管道 Transport -> PacketStreamDecoder
+/// @tparam 数据源类型(Transport派生)
 template <typename TransportType>
 class PacketChannel : public TransportHandler {
+private:
+#if PACKET_CHANNEL_ENABLE_MULTI_ID
+    typedef std::unique_ptr<PacketStreamDecoder> ClientDecoder; // 客户端数据流解码类
+#endif
+    TransportType                mTransport;              // 通讯数据通道
+    IPacketBuffer*               mPacketBuff;             // 解码器指针
+    PacketStreamDecoder          mDecoder;                // 默认数据流解码工具
+#if PACKET_CHANNEL_ENABLE_MULTI_ID
+    bool                         mEnableRepeatAccept;     // 是否允许连续重复包
+    std::map<int, ClientDecoder> mClientDecoders;         // 分客户端数据流解码工具
+#else
+    int                          mSingleClientId{ -1 };   // 唯一客户端 ID
+#endif
+    int64_t                      mSendCount{ 0 };         // 发送统计
+    int64_t                      mRecvCount{ 0 };         // 接收统计
+    int                          mLastError{ 0 };         // 最后一次错误码
+
 public:
-    /**
-     * @brief 构造数据包通道，并将剩余参数转发给 TransportType 构造函数。
-     * @param packetBuff 具体协议缓存，不接管其生命周期，必须长于本对象。
-     */
+    /// @brief 构造数据管道，并将剩余参数转发给 TransportType 构造函数
+    /// @tparam ...Args 
+    /// @param packetBuff 数据包缓存管理器
+    /// @param enableRepeatAccept 是否允许连续重复包
+    /// @param ...args TransportType 构造函数参数
     template <typename... Args>
     PacketChannel(IPacketBuffer* packetBuff, bool enableRepeatAccept, Args&&... args)
         : mPacketBuff(packetBuff),
-          mTransport(std::forward<Args>(args)...),
-          mDecoder(packetBuff, enableRepeatAccept),
+        mDecoder(packetBuff, enableRepeatAccept),
 #if PACKET_CHANNEL_ENABLE_MULTI_ID
-          mEnableRepeatAccept(enableRepeatAccept),
-#else
-          mSingleClientId(-1),
+        mEnableRepeatAccept(enableRepeatAccept),
 #endif
-          mSendCount(0),
-          mRecvCount(0),
-          mLastError(0) {
+        mTransport(std::forward<Args>(args)...) {
         mTransport.setHandler(this);
     }
 
+    /// @brief 析构数据管道，并停止底层通道
     ~PacketChannel() {
         mTransport.stop();
     }
 
-    /** @brief 初始化并启动底层通道，成功返回 0。 */
+    /// @brief 初始化并启动底层通道
+    /// @return 0 成功
     int init() {
         int rc = mTransport.init();
-        if (rc != 0) {
-            return rc;
-        }
+        if (rc != 0) return rc;
         return mTransport.start() ? 0 : -1;
     }
 
-    /** @brief 启动底层通道，适用于已经单独完成初始化的场景。 */
+    /// @brief 启动底层通道
+    /// @return true 成功
     bool start() {
         return mTransport.start();
     }
 
-    /** @brief 停止底层通道。 */
+    /// @brief 停止底层通道
     void stop() {
         mTransport.stop();
     }
 
-    /** @brief 驱动底层周期任务；UART 接收依赖上层周期调用此接口。 */
+    /// @brief 底层通道周期任务
     void onTick() {
         mTransport.onTick();
     }
 
-    /** @brief 返回底层通道当前是否可用，与 isConnected() 语义相同。 */
+    /// @brief 可用状态返回
+    /// @return true 可用
     bool isOk() const {
         return mTransport.isConnected();
     }
 
-    /** @brief 返回底层通道当前是否可用。 */
+    /// @brief 获取底层通道连接状态
+    /// @return true 已连接
     bool isConnected() const {
         return mTransport.isConnected();
     }
 
-    /** @brief 直接透传原始字节，不执行数据包编码或回收操作。 */
+    /// @brief 原始数据发送
+    /// @param data 数据
+    /// @param len 数据长度
+    /// @param id 客户端 id
+    /// @return 实际发送长度
     ssize_t send(const uint8_t* data, size_t len, int id = -1) {
         return mTransport.send(data, len, id);
     }
@@ -291,23 +226,27 @@ public:
         }
     }
 
-    /** @brief 记录最近一次底层通讯错误。 */
+    /// @brief 记录最近一次通道错误
+    /// @param err 错误码
     void onError(int err) override {
         mLastError = err;
         LOGE("PacketChannel error. err=%d", err);
     }
 
-    /** @brief 返回累计完整发送成功的数据包数量。 */
+    /// @brief 返回累计发送包数量
+    /// @return 累计发送包数量
     int64_t sendCount() const {
         return mSendCount;
     }
 
-    /** @brief 返回累计识别出的完整接收包数量。 */
+    /// @brief 返回累计接收完整包数量
+    /// @return 累计接收完整包数量
     int64_t recvCount() const {
         return mRecvCount;
     }
 
-    /** @brief 返回最近一次底层通讯错误码，尚未出错时为 0。 */
+    /// @brief 返回最近一次通道错误
+    /// @return 最近一次通道错误
     int lastError() const {
         return mLastError;
     }
@@ -344,20 +283,6 @@ private:
         return false;
     }
 #endif
-
-private:
-    IPacketBuffer*      mPacketBuff;  // 通讯数据缓存
-    TransportType       mTransport;   // 通讯通道
-    PacketStreamDecoder mDecoder;     // 无客户端标识通道的解包器
-#if PACKET_CHANNEL_ENABLE_MULTI_ID
-    bool                mEnableRepeatAccept; // 是否允许连续重复包
-    std::map<int, std::unique_ptr<PacketStreamDecoder>> mClientDecoders; // 客户端解包器
-#else
-    int                 mSingleClientId; // 单客户端模式当前接受的客户端 ID
-#endif
-    int64_t             mSendCount;   // 发送统计
-    int64_t             mRecvCount;   // 接收统计
-    int                 mLastError;   // 最后一次错误码
 };
 
 #endif // !__PACKET_CHANNEL_H__

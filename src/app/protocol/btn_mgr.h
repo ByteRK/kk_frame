@@ -14,10 +14,10 @@
 #ifndef __BTN_MGR_H__
 #define __BTN_MGR_H__
 
-#include "comm/packet/packet_buffer.h"
-#include "comm/packet/packet_channel.h"
+#include "packet_buffer.h"
+#include "packet_channel.h"
 #include "uart_client.h"
-#include "comm/packet/packet_handler.h"
+#include "packet_mgr.h"
 #include "template/singleton.h"
 
 #include <core/looper.h>
@@ -26,7 +26,7 @@
 
 typedef PacketChannel<UartClient> BtnCommChannel;
 
-class BtnMgr : public cdroid::EventHandler, public IHandler,
+class BtnMgr : public cdroid::EventHandler, public PacketHandler,
     public Singleton<BtnMgr> {
     friend Singleton<BtnMgr>;
 private:
@@ -50,7 +50,7 @@ protected:
     int handleEvents() override;
 
     void send2Btn();
-    void onCommDeal(IAck* ack) override;
+    void onCommDeal(const IAck* ack) override;
 
 public:
 };

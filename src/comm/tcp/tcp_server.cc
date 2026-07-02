@@ -29,9 +29,9 @@
 
 TcpServer::TcpServer(uint16_t port)
     : mListenSock(-1),
-      mNextClientId(1),
-      mRunning(false),
-      mHandler(nullptr) {
+    mNextClientId(1),
+    mRunning(false),
+    mHandler(nullptr) {
     mConfig.port = port;
     mConfig.backlog = 8;
     mConfig.readBufferSize = 4096;
@@ -40,11 +40,10 @@ TcpServer::TcpServer(uint16_t port)
 
 TcpServer::TcpServer(const Config& config)
     : mConfig(config),
-      mListenSock(-1),
-      mNextClientId(1),
-      mRunning(false),
-      mHandler(nullptr) {
-}
+    mListenSock(-1),
+    mNextClientId(1),
+    mRunning(false),
+    mHandler(nullptr) { }
 
 TcpServer::~TcpServer() {
     stop();

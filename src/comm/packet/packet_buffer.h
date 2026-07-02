@@ -15,6 +15,8 @@
 
 #include "packet_base.h"
 
+#include <cdlog.h>
+
 #include <limits>
 #include <stdlib.h>
 #include <string>
@@ -90,7 +92,7 @@ public:
     /** @brief 优先复用类型和容量匹配的缓存，否则分配新缓存。 */
     BuffData* obtain(size_t dataLen = 0, bool receive = false) override {
         const size_t baseLen = receive ? static_cast<size_t>(Ack::BUF_LEN)
-                                       : static_cast<size_t>(Ask::MIN_LEN);
+            : static_cast<size_t>(Ask::MIN_LEN);
         const size_t maxLen = static_cast<size_t>(std::numeric_limits<short>::max());
         if (baseLen == 0 || baseLen > maxLen || dataLen > maxLen - baseLen) {
             LOGE("Packet buffer length out of range. receive=%d base=%zu data=%zu max=%zu",

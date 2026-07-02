@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-08-01 03:03:02
- * @LastEditTime: 2026-06-19 18:33:43
+ * @LastEditTime: 2026-07-02 00:38:17
  * @FilePath: /kk_frame/src/app/protocol/tuya_mgr.cc
  * @Description:
  * @BugList:
@@ -59,7 +59,6 @@ TuyaMgr::TuyaMgr() {
 TuyaMgr::~TuyaMgr() {
     if (mInitialized) {
         cdroid::App::getInstance().removeEventHandler(this);
-        g_packetMgr->removeHandler(this);
         mInitialized = false;
     }
     if (mUartTUYA) {
@@ -173,7 +172,7 @@ void TuyaMgr::send2MCU(uint8_t* buf, uint16_t len, uint8_t cmd) {
     mLastSendTime = cdroid::SystemClock::uptimeMillis();
 }
 
-void TuyaMgr::onCommDeal(IAck* ack) {
+void TuyaMgr::onCommDeal(const IAck* ack) {
     if (mLastAcceptTime == 0)mLastAcceptTime = cdroid::SystemClock::uptimeMillis();
 
     bool show = false;

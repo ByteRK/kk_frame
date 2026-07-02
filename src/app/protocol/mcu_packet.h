@@ -13,7 +13,7 @@
 #ifndef __MCU_PACKET_H__
 #define __MCU_PACKET_H__
 
-#include "comm/packet/packet_base.h"
+#include "packet_base.h"
 #include "proto.h"
 #include "check_utils.h"
 #include "string_utils.h"
@@ -30,12 +30,12 @@ public:
 
     void parse(BuffData* buf) override {
         IAsk::parse(buf);
-        mBf->buf[0] = 0xA5;
-        mBf->buf[1] = 0x5A;
+        mBuf->buf[0] = 0xA5;
+        mBuf->buf[1] = 0x5A;
     }
 
     void checkCode() override {
-        mBf->buf[mBf->len - 1] = CheckUtils::checkSum(mBf->buf + 2, mBf->len - 3) & 0xFF;
+        mBuf->buf[mBuf->len - 1] = CheckUtils::checkSum(mBuf->buf + 2, mBuf->len - 3) & 0xFF;
     }
 };
 

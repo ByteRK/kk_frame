@@ -3,7 +3,7 @@
  * @Email: me@ricken.cn
  * @Date: 2026-06-26
  * @FilePath: /kk_frame/src/comm/packet/packet_base.h
- * @Description: Application packet base
+ * @Description: 通讯数据包基类
  * @BugList:
  *
  * Copyright (c) 2026 by Ricken, All Rights Reserved.
@@ -13,102 +13,41 @@
 #ifndef __PACKET_BASE_H__
 #define __PACKET_BASE_H__
 
-#include <cdlog.h>
-
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
 
 #pragma pack(1)
-/** @brief 数据包缓存头；实际分配空间由头部和可变长 buf 区域组成。 */
+/// @brief 收发数据包
 typedef struct {
-    /** @brief 协议类型，用于选择对应的数据包解析器。 */
-    short   type;
-    /** @brief buf 区域的总容量。 */
-    short   slen;
-    /** @brief buf 区域中当前有效的数据长度。 */
-    short   len;
-    /** @brief 可变长数据区的首字节。 */
-    uint8_t buf[1];
+    short   type;    // 包类型
+    short   len;     // 数据长度
+    short   slen;    // 数据区容量
+    uint8_t buf[1];  // 数据区指针
 } BuffData;
 #pragma pack()
 
-/**
- * @brief 发送包编码接口。
- *
- * parse() 绑定待编码的 BuffData，派生类通过 setData() 填充字段并实现 checkCode()
- * 写入协议校验值。IAsk 不拥有 BuffData。
- */
+/// @brief 发包编码器
 class IAsk {
-public:
-    virtual ~IAsk() { }
-
-    /** @brief 绑定待编码缓存；首次绑定时默认将有效长度设为缓存容量。 */
-    virtual void parse(BuffData* buf) {
-        mBf = buf;
-        if (mBf->len == 0) {
-            mBf->len = mBf->slen;
-        }
-    }
-
-    /** @brief 在数据区指定偏移写入一个字节；缓存未绑定或偏移越界时不写入。 */
-    virtual void setData(size_t pos, uint8_t data) {
-        if (mBf == nullptr) {
-            LOGE("IAsk setData failed: packet buffer is null");
-            return;
-        }
-        if (mBf->slen <= 0) {
-            LOGE("IAsk setData failed: invalid capacity=%d", mBf->slen);
-            return;
-        }
-        if (pos >= static_cast<size_t>(mBf->slen)) {
-            LOGE("IAsk setData out of bounds. pos=%zu capacity=%d", pos, mBf->slen);
-            return;
-        }
-        mBf->buf[pos] = data;
-    }
-
-    /** @brief 从 data 复制 len 字节到数据区指定偏移；范围越界时不写入。 */
-    virtual void setData(const uint8_t* data, size_t pos, size_t len) {
-        if (len == 0) {
-            return;
-        }
-        if (mBf == nullptr) {
-            LOGE("IAsk setData failed: packet buffer is null");
-            return;
-        }
-        if (mBf->slen <= 0) {
-            LOGE("IAsk setData failed: invalid capacity=%d", mBf->slen);
-            return;
-        }
-        if (data == nullptr) {
-            LOGE("IAsk setData failed: source data is null. pos=%zu len=%zu", pos, len);
-            return;
-        }
-
-        const size_t capacity = static_cast<size_t>(mBf->slen);
-        if (pos > capacity || len > capacity - pos) {
-            LOGE("IAsk setData out of bounds. pos=%zu len=%zu capacity=%zu",
-                pos, len, capacity);
-            return;
-        }
-        memcpy(mBf->buf + pos, data, len);
-    }
-
-    /** @brief 按具体协议计算并写入发送包校验值。 */
-    virtual void checkCode() = 0;
-
 protected:
-    BuffData* mBf{ nullptr };
+    BuffData* mBuf{ nullptr }; // 数据源
+
+public:
+    virtual ~IAsk();
+    virtual void parse(BuffData* buf);
+    virtual void setData(size_t pos, uint8_t data);
+    virtual void setData(const uint8_t* data, size_t pos, size_t len);
+    virtual void checkCode() = 0; // 校验位设定
 };
 
-/**
- * @brief 接收包流式解析接口。
- *
- * 派生类定义包头定位、完整包判定、校验和命令类型提取。parse() 只绑定外部缓存，
- * IAck 不拥有 BuffData；返回给业务层的 IAck 也只应在当前分发期间使用。
- */
+/// @brief 收包解码器
 class IAck {
+public:
+    uint8_t* mBuf{ nullptr };   // 接收缓存数据区首地址
+    short*   mPlen{ nullptr };  // 数据包长度位指针(用于将有效长度同步到外部数据包)
+    short    mDlen{ 0 };        // 接收缓存中当前已有的字节数
+    uint16_t mDataLen{ 0 };     // 当前完整协议包总长度（含校验字节）
+
 public:
     virtual ~IAck() { }
 
@@ -129,7 +68,7 @@ public:
     virtual int  getType() = 0;
 
     /** @brief 按偏移读取一个字节，越界时返回 0。 */
-    virtual uint8_t getData(int pos) {
+    virtual uint8_t getData(int pos) const {
         if (pos >= 0 && pos < mDataLen - 1) {
             return mBuf[pos];
         }
@@ -137,7 +76,7 @@ public:
     }
 
     /** @brief 按偏移读取两个字节；swap 为 true 时按低字节在前组合。 */
-    virtual uint16_t getData2(int pos, bool swap = false) {
+    virtual uint16_t getData2(int pos, bool swap = false) const {
         if (pos >= 0 && pos + 1 < mDataLen - 1) {
             if (swap) {
                 return (static_cast<uint16_t>(mBuf[pos + 1]) << 8) | mBuf[pos];
@@ -146,12 +85,6 @@ public:
         }
         return 0;
     }
-
-public:
-    uint8_t* mBuf{ nullptr };
-    short    mDlen{ 0 };
-    short*   mPlen{ nullptr };
-    uint16_t mDataLen{ 0 };
 
 protected:
     void addData(const uint16_t maxLen, const uint8_t* data, int dataLen, int& rlen) {

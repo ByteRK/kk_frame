@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-11-24 09:40:23
- * @LastEditTime: 2026-02-08 12:34:20
+ * @LastEditTime: 2026-07-02 00:38:02
  * @FilePath: /kk_frame/src/app/protocol/conn_mgr.cc
  * @Description:
  * @BugList:
@@ -34,7 +34,6 @@ ConnMgr::ConnMgr() {
 ConnMgr::~ConnMgr() {
     if (mInitialized) {
         cdroid::App::getInstance().removeEventHandler(this);
-        g_packetMgr->removeHandler(this);
         mInitialized = false;
     }
     if (mUartMcu) {
@@ -124,7 +123,7 @@ void ConnMgr::send2Mcu() {
 
 /// @brief 处理串口信息
 /// @param ack 
-void ConnMgr::onCommDeal(IAck* ack) {
+void ConnMgr::onCommDeal(const IAck* ack) {
 
     // TODO:解析处理
 

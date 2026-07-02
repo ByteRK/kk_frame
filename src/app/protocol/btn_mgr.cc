@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-11-24 09:40:23
- * @LastEditTime: 2026-02-08 12:34:13
+ * @LastEditTime: 2026-07-02 00:37:53
  * @FilePath: /kk_frame/src/app/protocol/btn_mgr.cc
  * @Description:
  * @BugList:
@@ -34,7 +34,6 @@ BtnMgr::BtnMgr() {
 BtnMgr::~BtnMgr() {
     if (mInitialized) {
         cdroid::App::getInstance().removeEventHandler(this);
-        g_packetMgr->removeHandler(this);
         mInitialized = false;
     }
     if (mUartBtn) {
@@ -124,7 +123,7 @@ void BtnMgr::send2Btn() {
 
 /// @brief 处理串口信息
 /// @param ack 
-void BtnMgr::onCommDeal(IAck* ack) {
+void BtnMgr::onCommDeal(const IAck* ack) {
 
     // TODO:解析处理
 

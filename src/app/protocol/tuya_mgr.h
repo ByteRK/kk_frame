@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-06-20 15:14:05
- * @LastEditTime: 2026-02-06 11:34:26
+ * @LastEditTime: 2026-07-02 00:37:30
  * @FilePath: /kk_frame/src/app/protocol/tuya_mgr.h
  * @Description:
  * @BugList:
@@ -14,10 +14,10 @@
 #ifndef __TUYA_MGR_H__
 #define __TUYA_MGR_H__
 
-#include "comm/packet/packet_buffer.h"
-#include "comm/packet/packet_channel.h"
+#include "packet_buffer.h"
+#include "packet_channel.h"
 #include "uart_client.h"
-#include "comm/packet/packet_handler.h"
+#include "packet_mgr.h"
 #include "template/singleton.h"
 
 #include "struct.h"
@@ -28,7 +28,7 @@
 
 typedef PacketChannel<UartClient> TuyaCommChannel;
 
-class TuyaMgr : public cdroid::EventHandler, public IHandler,
+class TuyaMgr : public cdroid::EventHandler, public PacketHandler,
     public Singleton<TuyaMgr>{
     friend Singleton<TuyaMgr>;
 private: // 涂鸦数据点缓存
@@ -71,7 +71,7 @@ protected:
     void send2MCU(uint8_t* buf, uint16_t len, uint8_t cmd);
 
     // 处理数据
-    virtual void onCommDeal(IAck* ack);
+    virtual void onCommDeal(const IAck* ack) override;
 
 public:
     /// @brief 心跳

@@ -22,7 +22,7 @@
 
 namespace {
 
-constexpr int EVENT_QUEUE_WAIT_TIMEOUT_MS = 100;
+    constexpr int EVENT_QUEUE_WAIT_TIMEOUT_MS = 100;
 
 }
 
@@ -30,11 +30,10 @@ constexpr size_t Transport::DEFAULT_MAX_PENDING_EVENT_COUNT;
 
 Transport::Transport()
     : mMaxPendingEventCount(DEFAULT_MAX_PENDING_EVENT_COUNT),
-      mDroppedEventCount(0),
-      mDispatchGeneration(0),
-      mMainLooper(nullptr),
-      mWakeFd(-1) {
-}
+    mDroppedEventCount(0),
+    mDispatchGeneration(0),
+    mMainLooper(nullptr),
+    mWakeFd(-1) { }
 
 Transport::~Transport() {
     shutdownEventDispatcher();

@@ -13,7 +13,7 @@
 #ifndef __TUYA_PACKET_H__
 #define __TUYA_PACKET_H__
 
-#include "comm/packet/packet_base.h"
+#include "packet_base.h"
 #include "proto.h"
 #include "check_utils.h"
 #include "string_utils.h"
@@ -30,12 +30,12 @@ public:
 
     void parse(BuffData* buf) override {
         IAsk::parse(buf);
-        mBf->buf[0] = 0x55;
-        mBf->buf[1] = 0xAA;
+        mBuf->buf[0] = 0x55;
+        mBuf->buf[1] = 0xAA;
     }
 
     void checkCode() override {
-        mBf->buf[mBf->len - 1] = CheckUtils::checkSum(mBf->buf, mBf->len - 1) % 0x100;
+        mBuf->buf[mBuf->len - 1] = CheckUtils::checkSum(mBuf->buf, mBuf->len - 1) % 0x100;
     }
 };
 

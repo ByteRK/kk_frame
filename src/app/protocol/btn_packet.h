@@ -13,7 +13,7 @@
 #ifndef __BTN_PACKET_H__
 #define __BTN_PACKET_H__
 
-#include "comm/packet/packet_base.h"
+#include "packet_base.h"
 #include "proto.h"
 #include "check_utils.h"
 #include "string_utils.h"
@@ -30,12 +30,12 @@ public:
 
     void parse(BuffData* buf) override {
         IAsk::parse(buf);
-        mBf->buf[0] = 0xAA;
-        mBf->buf[1] = 0x0E;
+        mBuf->buf[0] = 0xAA;
+        mBuf->buf[1] = 0x0E;
     }
 
     void checkCode() override {
-        mBf->buf[mBf->len - 1] = CheckUtils::checkSum(mBf->buf, mBf->len - 1) & 0xFF;
+        mBuf->buf[mBuf->len - 1] = CheckUtils::checkSum(mBuf->buf, mBuf->len - 1) & 0xFF;
     }
 };
 

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:54:27
- * @LastEditTime: 2026-02-08 12:10:58
+ * @LastEditTime: 2026-07-02 00:37:39
  * @FilePath: /kk_frame/src/app/protocol/conn_mgr.h
  * @Description:
  * @BugList:
@@ -14,10 +14,10 @@
 #ifndef __CONN_MGR_H__
 #define __CONN_MGR_H__
 
-#include "comm/packet/packet_buffer.h"
-#include "comm/packet/packet_channel.h"
+#include "packet_buffer.h"
+#include "packet_channel.h"
 #include "uart_client.h"
-#include "comm/packet/packet_handler.h"
+#include "packet_mgr.h"
 #include "template/singleton.h"
 
 #include <core/looper.h>
@@ -26,7 +26,7 @@
 
 typedef PacketChannel<UartClient> ConnCommChannel;
 
-class ConnMgr : public cdroid::EventHandler, public IHandler,
+class ConnMgr : public cdroid::EventHandler, public PacketHandler,
     public Singleton<ConnMgr>{
     friend Singleton<ConnMgr>;
 private:
@@ -50,7 +50,7 @@ protected:
     int handleEvents() override;
 
     void send2Mcu();
-    void onCommDeal(IAck* ack) override;
+    void onCommDeal(const IAck* ack) override;
     
 public:
 };

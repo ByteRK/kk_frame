@@ -33,25 +33,25 @@
 
 namespace {
 
-constexpr int RESOLVE_WAIT_SLICE_MS = 50;
-constexpr int CONNECT_POLL_SLICE_MS = 100;
+    constexpr int RESOLVE_WAIT_SLICE_MS = 50;
+    constexpr int CONNECT_POLL_SLICE_MS = 100;
 
-struct ResolveState {
-    std::mutex lock;
-    std::condition_variable condition;
-    bool done{ false };
-    bool abandoned{ false };
-    int error{ 0 };
-    addrinfo* result{ nullptr };
-};
+    struct ResolveState {
+        std::mutex lock;
+        std::condition_variable condition;
+        bool done{ false };
+        bool abandoned{ false };
+        int error{ 0 };
+        addrinfo* result{ nullptr };
+    };
 
 }
 
 TcpClient::TcpClient(const std::string& host, uint16_t port)
     : mSock(-1),
-      mRunning(false),
-      mConnected(false),
-      mHandler(nullptr) {
+    mRunning(false),
+    mConnected(false),
+    mHandler(nullptr) {
     mConfig.host = host;
     mConfig.port = port;
     mConfig.reconnectDelayMs = 2000;
@@ -61,11 +61,10 @@ TcpClient::TcpClient(const std::string& host, uint16_t port)
 
 TcpClient::TcpClient(const Config& config)
     : mConfig(config),
-      mSock(-1),
-      mRunning(false),
-      mConnected(false),
-      mHandler(nullptr) {
-}
+    mSock(-1),
+    mRunning(false),
+    mConnected(false),
+    mHandler(nullptr) { }
 
 TcpClient::~TcpClient() {
     stop();
@@ -270,7 +269,8 @@ int TcpClient::connectServer() {
             resolveState->condition.notify_one();
         });
         resolver.detach();
-    } catch (const std::system_error& e) {
+    }
+    catch (const std::system_error& e) {
         LOGE("TcpClient resolver thread failed. err=%s", e.what());
         return -1;
     }
