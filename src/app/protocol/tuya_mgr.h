@@ -128,35 +128,35 @@ private:
     void createDp(uint8_t* buf, uint16_t& count, uint8_t dp, uint8_t type, void* data, uint16_t dlen, bool reverse = true);
     
     /// @brief 处理下发的DP
-    void acceptDP(uint8_t* data, uint16_t len);
+    void acceptDP(const uint8_t* data, uint16_t len);
 
     /// @brief 处理下发的时间
     /// @param status 
     /// @param data 
-    void acceptTime(uint8_t* data);
+    void acceptTime(const uint8_t* data);
 
     /// @brief 处理下发的天气
     /// @param data 
     /// @param len 
-    void acceptWeather(uint8_t* data, uint16_t len);
+    void acceptWeather(const uint8_t* data, uint16_t len);
 
     /// @brief 处理开启时间服务结果
     /// @param data 
-    void acceptOpenTime(uint8_t* data);
+    void acceptOpenTime(const uint8_t* data);
 
     /// @brief 处理开启天气服务结果
-    void acceptOpenWeather(uint8_t* data);
+    void acceptOpenWeather(const uint8_t* data);
     
 private:
 
 private:
     /// @brief 处理涂鸦OTA开始
     /// @param data 
-    void dealOTAComm(uint8_t* data, uint16_t len);
+    void dealOTAComm(const uint8_t* data, uint16_t len);
 
     /// @brief 处理涂鸦OTA数据
     /// @param data 
-    void dealOTAData(uint8_t* data, uint16_t len);
+    void dealOTAData(const uint8_t* data, uint16_t len);
 };
 
 #endif // !__TUYA_MGR_H__

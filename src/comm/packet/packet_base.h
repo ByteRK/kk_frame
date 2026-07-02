@@ -42,9 +42,12 @@ public:
 
 /// @brief 收包解码器
 class IAck {
-public:
+protected:
     uint8_t*  mBuf{ nullptr };    // 接收缓存数据区首地址
     uint16_t  mDataLen{ 0 };      // 当前完整协议包总长度（含校验字节）
+
+private:
+    BuffData* mPacket{ nullptr };  // 当前绑定的接收缓存
 
 public:
     virtual ~IAck() { }
@@ -137,6 +140,12 @@ public:
         return mDataLen > 0;
     }
 
+    /** @brief 返回当前完整协议包的数据区首地址。 */
+    const uint8_t* data() const { return mBuf; }
+
+    /** @brief 返回当前完整协议包总长度。 */
+    uint16_t dataLength() const { return mDataLen; }
+
     /** @brief 按偏移读取一个字节，越界时返回 0。 */
     uint8_t getData(int pos) const {
         if (pos >= 0 && pos < mDataLen - 1) {
@@ -156,7 +165,7 @@ public:
         return 0;
     }
 
-private:
+protected:
     /** @brief 返回协议包头。 */
     virtual const uint8_t* head() const = 0;
     /** @brief 返回协议包头长度。 */
@@ -166,8 +175,7 @@ private:
     /** @brief 从已满足 lengthReadySize() 的缓存中返回完整包长。 */
     virtual int32_t expectedLength() const = 0;
 
-    BuffData* mPacket{ nullptr };
-
+private:
     /** @brief 判断当前缓存是否已经以完整协议包头开头。 */
     bool hasHead() const {
         const uint16_t length = headLength();

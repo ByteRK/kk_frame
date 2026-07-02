@@ -195,7 +195,7 @@ void TuyaMgr::onCommDeal(const IAck* ack) {
         break;
     case TYCOMM_ACCEPT: {
         uint16_t dealDpLen = 7 + ack->getData2(TUYA_DATA_LEN_H);
-        acceptDP(ack->mBuf + TUYA_DATA_START, ack->getData2(TUYA_DATA_LEN_H));
+        acceptDP(ack->data() + TUYA_DATA_START, ack->getData2(TUYA_DATA_LEN_H));
     }   break;
     case TYCOMM_CHECK:
         sendDp();
@@ -205,32 +205,32 @@ void TuyaMgr::onCommDeal(const IAck* ack) {
         break;
 
     case TYCOMM_GET_TIME:
-        acceptTime(ack->mBuf + TUYA_DATA_START);
+        acceptTime(ack->data() + TUYA_DATA_START);
         break;
     case TYCOMM_OPEN_WEATHER:
-        acceptOpenWeather(ack->mBuf + TUYA_DATA_START);
+        acceptOpenWeather(ack->data() + TUYA_DATA_START);
         break;
     case TYCOMM_WEATHER:
-        acceptWeather(ack->mBuf + TUYA_DATA_START, ack->getData2(TUYA_DATA_LEN_H));
+        acceptWeather(ack->data() + TUYA_DATA_START, ack->getData2(TUYA_DATA_LEN_H));
         break;
     case TYCOMM_OPEN_TIME:
-        acceptOpenTime(ack->mBuf + TUYA_DATA_START);
+        acceptOpenTime(ack->data() + TUYA_DATA_START);
         break;
 
     case TYCOMM_OTA_START:
-        dealOTAComm(ack->mBuf + TUYA_DATA_START, ack->getData2(TUYA_DATA_LEN_H));
+        dealOTAComm(ack->data() + TUYA_DATA_START, ack->getData2(TUYA_DATA_LEN_H));
         break;
     case TYCOMM_OTA_DATA:
-        dealOTAData(ack->mBuf + TUYA_DATA_START, ack->getData2(TUYA_DATA_LEN_H));
+        dealOTAData(ack->data() + TUYA_DATA_START, ack->getData2(TUYA_DATA_LEN_H));
         break;
     default:
         show = true;
-        LOG(INFO) << "[default]accept. bytes=" << StringUtils::hexStr(ack->mBuf, ack->mDataLen);
+        LOG(INFO) << "[default]accept. bytes=" << StringUtils::hexStr(ack->data(), ack->dataLength());
         break;
     }
 
     if (!show)
-        LOG(VERBOSE) << "[default]accept. bytes=" << StringUtils::hexStr(ack->mBuf, ack->mDataLen);
+        LOG(VERBOSE) << "[default]accept. bytes=" << StringUtils::hexStr(ack->data(), ack->dataLength());
 
     mLastAcceptTime = cdroid::SystemClock::uptimeMillis();
 }
@@ -396,7 +396,7 @@ void TuyaMgr::createDp(uint8_t* buf, uint16_t& count, uint8_t dp, uint8_t type, 
     count += (4 + dlen); // 累加计数
 }
 
-void TuyaMgr::acceptDP(uint8_t* data, uint16_t len) {
+void TuyaMgr::acceptDP(const uint8_t* data, uint16_t len) {
     LOGE("len = %d", len);
     LOG(WARN) << "accept dp[" << StringUtils::fill(data[0], 3) << "]. bytes=" << StringUtils::hexStr(data, len);
     uint16_t dealCount = 0;
@@ -426,17 +426,17 @@ void TuyaMgr::acceptDP(uint8_t* data, uint16_t len) {
     LOGI("final Deal Tuya Dp");
 }
 
-void TuyaMgr::acceptTime(uint8_t* data) {
+void TuyaMgr::acceptTime(const uint8_t* data) {
     if (!data[0])return; // 消息错误
     SystemUtils::setTime(data[1] + 2000, data[2], data[3], data[4], data[5], data[6]);
 }
 
-void TuyaMgr::acceptOpenWeather(uint8_t* data) {
+void TuyaMgr::acceptOpenWeather(const uint8_t* data) {
     if (data[0])LOGI("Weather Serve Open Success");
     else LOGE("Weather Serve Open Failed!!!  -> code: %d", data[1]);
 }
 
-void TuyaMgr::acceptWeather(uint8_t* data, uint16_t len) {
+void TuyaMgr::acceptWeather(const uint8_t* data, uint16_t len) {
     LOG(VERBOSE) << "accept weather. bytes=" << StringUtils::hexStr(data, len);
     if (len > 1) {
         uint16_t dealCount = 1;
@@ -474,7 +474,7 @@ void TuyaMgr::acceptWeather(uint8_t* data, uint16_t len) {
     send2MCU(TYCOMM_WEATHER);
 }
 
-void TuyaMgr::acceptOpenTime(uint8_t* data) {
+void TuyaMgr::acceptOpenTime(const uint8_t* data) {
     switch (data[0]) {
     case 0x01:
         if (data[1])getTuyaTime();
@@ -486,7 +486,7 @@ void TuyaMgr::acceptOpenTime(uint8_t* data) {
     }
 }
 
-void TuyaMgr::dealOTAComm(uint8_t* data, uint16_t len) {
+void TuyaMgr::dealOTAComm(const uint8_t* data, uint16_t len) {
     if (mOTALen != 0) {
         mOTALen = 0;
         system(RM_OTA_PATH);
@@ -501,7 +501,7 @@ void TuyaMgr::dealOTAComm(uint8_t* data, uint16_t len) {
     g_windMgr->showPage(PAGE_OTA);
 }
 
-void TuyaMgr::dealOTAData(uint8_t* data, uint16_t len) {
+void TuyaMgr::dealOTAData(const uint8_t* data, uint16_t len) {
     uint32_t dataLen = len - 4;
     uint32_t dataOffSet = (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3];
     if (!dataLen || dataOffSet >= mOTALen) { // 数据传输完成
