@@ -43,17 +43,18 @@ public:
 /// @brief 收包解码器
 class IAck {
 public:
-    uint8_t* mBuf{ nullptr };    // 接收缓存数据区首地址
-    uint16_t mDataLen{ 0 };      // 当前完整协议包总长度（含校验字节）
-
-protected:
-    BuffData* mPacket{ nullptr };
+    uint8_t*  mBuf{ nullptr };    // 接收缓存数据区首地址
+    uint16_t  mDataLen{ 0 };      // 当前完整协议包总长度（含校验字节）
 
 public:
     virtual ~IAck() { }
+    /** @brief 校验当前完整数据包是否合法。 */
+    virtual bool check() = 0;
+    /** @brief 返回当前数据包的业务命令类型。 */
+    virtual int getType() = 0;
 
     /** @brief 绑定接收缓存。 */
-    virtual void parse(BuffData* buf) {
+    void parse(BuffData* buf) {
         mPacket = buf;
         mBuf = buf == nullptr ? nullptr : buf->buf;
         updateDataLength();
@@ -68,7 +69,7 @@ public:
      * 处理分为三个阶段：寻找并对齐包头、补齐长度字段、批量补齐完整包。
      * 包头未对齐时按字节扫描；包头匹配后使用 memcpy 按目标长度批量复制。
      */
-    virtual int add(const uint8_t* data, int len) {
+    int add(const uint8_t* data, int len) {
         // 接收缓存、输入数据或容量无效时，本轮不消费任何数据。
         if (mPacket == nullptr || mPacket->slen == 0 || data == nullptr || len <= 0) {
             return 0;
@@ -131,17 +132,13 @@ public:
     }
 
     /** @brief 判断当前缓存是否已包含一个完整数据包。 */
-    virtual bool complete() {
+    bool complete() {
         updateDataLength();
         return mDataLen > 0;
     }
-    /** @brief 校验当前完整数据包是否合法。 */
-    virtual bool check() = 0;
-    /** @brief 返回当前数据包的业务命令类型。 */
-    virtual int  getType() = 0;
 
     /** @brief 按偏移读取一个字节，越界时返回 0。 */
-    virtual uint8_t getData(int pos) const {
+    uint8_t getData(int pos) const {
         if (pos >= 0 && pos < mDataLen - 1) {
             return mBuf[pos];
         }
@@ -149,7 +146,7 @@ public:
     }
 
     /** @brief 按偏移读取两个字节；swap 为 true 时按低字节在前组合。 */
-    virtual uint16_t getData2(int pos, bool swap = false) const {
+    uint16_t getData2(int pos, bool swap = false) const {
         if (pos >= 0 && pos + 1 < mDataLen - 1) {
             if (swap) {
                 return (static_cast<uint16_t>(mBuf[pos + 1]) << 8) | mBuf[pos];
@@ -159,7 +156,7 @@ public:
         return 0;
     }
 
-protected:
+private:
     /** @brief 返回协议包头。 */
     virtual const uint8_t* head() const = 0;
     /** @brief 返回协议包头长度。 */
@@ -168,6 +165,8 @@ protected:
     virtual uint16_t lengthReadySize() const = 0;
     /** @brief 从已满足 lengthReadySize() 的缓存中返回完整包长。 */
     virtual int32_t expectedLength() const = 0;
+
+    BuffData* mPacket{ nullptr };
 
     /** @brief 判断当前缓存是否已经以完整协议包头开头。 */
     bool hasHead() const {

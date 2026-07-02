@@ -70,9 +70,6 @@ protected:
     uint16_t lengthReadySize() const override { return 6; }
 
     int32_t expectedLength() const override {
-        if (mPacket == nullptr || mPacket->len < 6) {
-            return 0;
-        }
         const uint16_t payloadLen =
             (static_cast<uint16_t>(mBuf[4]) << 8) | mBuf[5];
         return static_cast<int32_t>(payloadLen) + MIN_LEN;
