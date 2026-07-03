@@ -2,7 +2,7 @@
 
 if(ENABLED_WIFI)
     set(USE_WPACTRL ON)           # Enable wpactrl library
-    set(USE_HVTOOLS ON)           # Enable hvTools library
+    set(USE_HVTOOLS OFF)          # Enable hvTools library
     set(USE_NTPCLIENT ON)         # Enable ntpClient library
 else()
     set(USE_WPACTRL OFF)          # Disable wpactrl library
