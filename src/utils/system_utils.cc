@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 14:40:26
- * @LastEditTime: 2026-06-24 17:36:06
+ * @LastEditTime: 2026-07-03 15:04:09
  * @FilePath: /kk_frame/src/utils/system_utils.cc
  * @Description: 系统相关的一些函数
  * @BugList:
@@ -152,6 +152,27 @@ void SystemUtils::setBrightness(int value, bool swap) {
     system(cmd);
 #else
     LOGI("设置屏幕背光 %d | %d", value, swap);
+#endif
+}
+
+void SystemUtils::setVolume(int value) {
+    value %= 101;
+#if defined(PRODUCT_RK3506)
+    char cmd[256];
+    // amixer scontrols
+    // amixer set 'DAC Digital' 155~255
+    // amixer set 'Master' 0~100
+    if (level > 0) {
+        level = 155 + level;
+        snprintf(cmd, sizeof(cmd), "amixer set 'DAC Digital' %d", level);
+        system("amixer set 'Master' 100");
+    } else {
+        snprintf(cmd, sizeof(cmd), "amixer set 'DAC Digital' 0");
+        system("amixer set 'Master' 0");
+    }
+    system(cmd);
+#else
+    LOGI("设置音量 %d", value);
 #endif
 }
 
