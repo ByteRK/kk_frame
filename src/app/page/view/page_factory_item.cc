@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-07-03 17:05:27
- * @LastEditTime: 2026-07-04 05:06:43
+ * @LastEditTime: 2026-07-04 05:20:39
  * @FilePath: /kk_frame/src/app/page/view/page_factory_item.cc
  * @Description: 产测页面子项
  * @BugList:
@@ -178,9 +178,9 @@ void FactoryAuth::onMessage(int msgType, int msgValue, void* msgPtr) {
     if (g_config->isAuthSuccess()) {
         mAuthInfo->setText(
             StringUtils::format(
-                "授权码信息\nDID: %s  LIC: %s",
-                g_config->getDeviceId().c_str(),
-                g_config->getLicense().c_str()
+                "授权码信息\nPIP: %s | DID: %s",
+                g_config->getProductId().c_str(),
+                g_config->getDeviceId().c_str()
             )
         );
         mAuthRequest->setText("再次请求");
@@ -191,7 +191,6 @@ void FactoryAuth::onMessage(int msgType, int msgValue, void* msgPtr) {
         mAuthRequest->setActivated(false);
     }
 }
-
 
 /************************** 功能开关 **************************/
 
