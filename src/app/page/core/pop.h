@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-04 13:52:49
- * @LastEditTime: 2026-07-01 14:29:55
+ * @LastEditTime: 2026-07-03 14:37:27
  * @FilePath: /kk_frame/src/app/page/core/pop.h
  * @Description: 弹窗基类
  * @BugList:
@@ -42,6 +42,7 @@ public:
 
 protected:
     void close();                    // 关闭弹窗
+    void back();                     // 返回上一层弹窗
 
     void setMargin(int start, int top, int end, int bottom);      // 设置外边距
     void setPadding(int start, int top, int end, int bottom);     // 设置内边距
