@@ -81,7 +81,11 @@ void FactoryNetwork::setInterface() {
             item.name.c_str(),
             item.isUp ? "UP" : "DOWN",
             item.isRunning ? "RUNNING" : "STOPPED");
-        info += "  MAC: " + (item.macAddress.empty() ? std::string("-") : item.macAddress) + "\n";
+        info += "  当前 MAC: "
+            + (item.macAddress.empty() ? std::string("-") : item.macAddress) + "\n";
+        info += "  永久 MAC: "
+            + (item.permanentMacAddress.empty()
+                ? std::string("-") : item.permanentMacAddress) + "\n";
         info += StringUtils::format("  MTU: %u\n", item.mtu);
 
         for (size_t i = 0; i < item.ipv4Addresses.size(); ++i) {
