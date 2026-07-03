@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 14:40:26
- * @LastEditTime: 2026-07-03 15:08:55
+ * @LastEditTime: 2026-07-04 02:49:19
  * @FilePath: /kk_frame/src/utils/system_utils.cc
  * @Description: 系统相关的一些函数
  * @BugList:
@@ -124,7 +124,7 @@ void SystemUtils::setBrightness(int value, bool swap) {
     value %= 101;
     if (swap) value = 100 - value;
 #if defined(PRODUCT_SIGMA)
-#define BRIGHTNESS_PWM_PATH "/sys/class/pwm/pwmchip0/" SYS_SCREEN_BEIGHTNESS_PWM
+#define BRIGHTNESS_PWM_PATH "/sys/class/pwm/pwmchip0/pwm2"
 #define BRIGHTNESS_ENABLE_PATH BRIGHTNESS_PWM_PATH "/enable"
 #define BRIGHTNESS_VALUE_PATH BRIGHTNESS_PWM_PATH "/duty_cycle"
 
@@ -162,9 +162,9 @@ void SystemUtils::setVolume(int value) {
     // amixer scontrols
     // amixer set 'DAC Digital' 155~255
     // amixer set 'Master' 0~100
-    if (level > 0) {
-        level = 155 + level;
-        snprintf(cmd, sizeof(cmd), "amixer set 'DAC Digital' %d", level);
+    if (value > 0) {
+        value = 155 + value;
+        snprintf(cmd, sizeof(cmd), "amixer set 'DAC Digital' %d", value);
         system("amixer set 'Master' 100");
     } else {
         snprintf(cmd, sizeof(cmd), "amixer set 'DAC Digital' 0");
