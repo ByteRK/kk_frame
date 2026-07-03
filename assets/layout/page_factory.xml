@@ -21,6 +21,10 @@
                 style="@style/factory_menu_btn"
                 android:text="网络信息"/>
             <Button
+                android:id="@+id/to_auth"
+                style="@style/factory_menu_btn"
+                android:text="授权信息"/>
+            <Button
                 android:id="@+id/to_switch"
                 style="@style/factory_menu_btn"
                 android:text="功能开关"/>
@@ -60,13 +64,17 @@
             android:text="Power By Cdroid [https://gitee.com/houstudio/Cdroid]"/>
     </RelativeLayout>
 
-    <!-- 网络信息 -->
+    <!-- 项目信息 -->
     <include layout="@layout/page_factory_info"
         android:id="@+id/info_test"/>
 
-    <!-- 项目信息 -->
+    <!-- 网络信息 -->
     <include layout="@layout/page_factory_network"
         android:id="@+id/network_test"/>
+
+    <!-- 授权信息 -->
+    <include layout="@layout/page_factory_auth"
+        android:id="@+id/auth_test"/>
 
     <!-- 功能开关 -->
     <include layout="@layout/page_factory_switch"
