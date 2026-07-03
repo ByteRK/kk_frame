@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-07-03 17:05:27
- * @LastEditTime: 2026-07-03 23:32:58
+ * @LastEditTime: 2026-07-04 02:58:04
  * @FilePath: /kk_frame/src/app/page/view/page_factory_item.cc
  * @Description: 产测页面子项
  * @BugList:
@@ -22,6 +22,7 @@
 #include "network_utils.h"
 
 #include "app_version.h"
+#include "series_info.h"
 #include <core/build.h>
 
 /************************** 项目信息 **************************/
@@ -38,13 +39,20 @@ void FactoryInfo::setInfo() {
 
     // 软件信息
     info += "软件名称: " APP_NAME_STR "\n";
-    info += "软件版本: " APP_VERSION_D "\n";
+    info += "软件版本: V" APP_VERSION_D "\n";
     info += StringUtils::format("框架版本: Cdroid_V%s_%s\n", cdroid::Build::VERSION::Release, cdroid::Build::VERSION::CommitID);
     info += "代码哈希: " GIT_VERSION "\n";
     info += StringUtils::format("打包人员: %s\n", getlogin());
     info += "打包时间: " BUILD_DATE "\n";
     info += "打包详情: " APP_VER_INFO "\n";
     info += "运行命令: " + ArgUtils::getRawString() + "\n";
+
+    info += "\n";
+
+    // 硬件信息
+    info += "处理器: " CPU_BRAND " " CPU_NAME "\n";
+    info += "存储器: " FLASH_NAME " " FLASH_SIZE "\n";
+    info += "显示器: " SCREEN_SIZE "\n";
 
     tv->setText(info.c_str());
 }
