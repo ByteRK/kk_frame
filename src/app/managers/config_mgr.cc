@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2026-06-25 10:59:27
+ * @LastEditTime: 2026-07-04 04:03:49
  * @FilePath: /kk_frame/src/app/managers/config_mgr.cc
  * @Description:
  * @BugList:
@@ -14,6 +14,7 @@
 #include "config_mgr.h"
 #include "config_info.h"
 #include "file_utils.h"
+#include "app_version.h"
 
 #include <cdlog.h>
 #include <unistd.h>
@@ -28,12 +29,6 @@ ConfigMgr::~ConfigMgr() { }
 /// @brief 初始化
 void ConfigMgr::init() {
     load();
-
-    if (access(DEVCONF_FILE_PATH, F_OK) == 0) {
-        LOGI("load %s", DEVCONF_FILE_PATH);
-        mDevConf.load(DEVCONF_FILE_PATH);
-    }
-
     AutoSaveItem::init();
 }
 
@@ -51,9 +46,27 @@ void ConfigMgr::reset() {
 /// @return 
 bool ConfigMgr::load() {
     mConfig = cdroid::Preferences();  // 清空原配置
-    std::string loadingPath = "";
 
-    bool res = FileUtils::check(
+    bool res(false);
+    std::string loadingPath("");
+
+    // 设备配置文件
+    res = FileUtils::check(
+        { DEVCONF_FILE_PATH, DEVCONF_FILE_BAK_PATH },
+        [this, &loadingPath](const std::string& file, size_t size) {
+        if (size <= 0)return false;
+        mDevConf.load(file);
+        loadingPath = file;
+        return true;
+    });
+    if (res) {
+        LOG(INFO) << "[devconf] load devconf. file=" << loadingPath;
+    } else {
+        LOG(ERROR) << "[devconf] no devconf file found.";
+    }
+
+    // 应用配置文件
+    res = FileUtils::check(
         { CONFIG_FILE_PATH, CONFIG_FILE_BAK_PATH },
         [this, &loadingPath](const std::string& file, size_t size) {
         if (size <= 0)return false;
@@ -61,7 +74,6 @@ bool ConfigMgr::load() {
         loadingPath = file;
         return true;
     });
-
     if (res) {
         LOG(INFO) << "[config] load config. file=" << loadingPath;
     } else {
@@ -91,7 +103,7 @@ bool ConfigMgr::haveChange() {
 /**************************************************************************************/
 
 std::string ConfigMgr::getProductId() {
-    return mDevConf.getString(CONFIG_SECTION, "ProductId", "");
+    return mDevConf.getString(CONFIG_SECTION, "ProductId", APP_ID);
 }
 
 std::string ConfigMgr::getDeviceId() {
@@ -102,14 +114,20 @@ std::string ConfigMgr::getLicense() {
     return mDevConf.getString(CONFIG_SECTION, "License", "");
 }
 
-void ConfigMgr::setDeviceConf(const std::string& _pid, const std::string& _did, const std::string& _lic) {
+bool ConfigMgr::isAuthSuccess() {
+    return getDeviceId().size() > 0 && getLicense().size() > 0;
+}
+
+void ConfigMgr::setAuthInfo(const std::string& _pid, const std::string& _did, const std::string& _lic) {
     mDevConf.setValue(CONFIG_SECTION, "ProductId", _pid);
     mDevConf.setValue(CONFIG_SECTION, "DeviceId", _did);
     mDevConf.setValue(CONFIG_SECTION, "License", _lic);
 
     mDevConf.save(DEVCONF_FILE_PATH);
     FileUtils::sync();
-    LOGE("save read-only file. file=%s", DEVCONF_FILE_PATH);
+    mDevConf.save(DEVCONF_FILE_BAK_PATH);
+    FileUtils::sync();
+    LOGE("save read-only file. file=%s | %s", DEVCONF_FILE_PATH, DEVCONF_FILE_BAK_PATH);
 }
 
 /**************************************************************************************/

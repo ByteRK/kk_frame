@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2026-06-25 10:58:14
+ * @LastEditTime: 2026-07-04 03:20:32
  * @FilePath: /kk_frame/src/app/managers/config_mgr.h
  * @Description: 配置管理
  * @BugList:
@@ -45,7 +45,8 @@ public: // 设备配置
     std::string getProductId();  // 产品ID
     std::string getDeviceId();   // 设备ID
     std::string getLicense();    // 授权码
-    void        setDeviceConf(const std::string &_pid, const std::string &_did, const std::string &_lic);
+    bool        isAuthSuccess(); // 是否授权成功
+    void        setAuthInfo(const std::string& _pid, const std::string& _did, const std::string& _lic);
 
 public: // 应用配置
     // 亮度
