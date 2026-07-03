@@ -18,6 +18,8 @@
 #include <fstream>
 #include <iomanip>
 #include <ifaddrs.h>
+#include <linux/ethtool.h>
+#include <linux/sockios.h>
 #include <net/if.h>
 #include <netdb.h>
 #include <netpacket/packet.h>
@@ -80,6 +82,35 @@ namespace {
         ::close(fd);
         return ok && request.ifr_mtu > 0
             ? static_cast<uint32_t>(request.ifr_mtu) : 0;
+    }
+
+    bool getPermanentMac(const std::string& ifname,
+        std::array<uint8_t, 6>& mac) {
+        const int fd = ::socket(AF_INET, SOCK_DGRAM, 0);
+        if (fd < 0) return false;
+
+        const size_t maxAddressSize = 32;
+        std::vector<uint8_t> buffer(
+            sizeof(struct ethtool_perm_addr) + maxAddressSize, 0);
+        struct ethtool_perm_addr* permanentAddress =
+            reinterpret_cast<struct ethtool_perm_addr*>(buffer.data());
+        permanentAddress->cmd = ETHTOOL_GPERMADDR;
+        permanentAddress->size = maxAddressSize;
+
+        struct ifreq request;
+        std::memset(&request, 0, sizeof(request));
+        std::strncpy(request.ifr_name, ifname.c_str(), IFNAMSIZ - 1);
+        request.ifr_data = reinterpret_cast<char*>(permanentAddress);
+
+        const bool ok = ::ioctl(fd, SIOCETHTOOL, &request) == 0
+            && permanentAddress->size == mac.size();
+        ::close(fd);
+        if (!ok) return false;
+
+        std::copy(permanentAddress->data,
+            permanentAddress->data + mac.size(), mac.begin());
+        return std::find_if(mac.begin(), mac.end(),
+            [](uint8_t byte) { return byte != 0; }) != mac.end();
     }
 
     bool parseAddress(const std::string& text, int family,
@@ -210,6 +241,10 @@ std::vector<NetworkUtils::InterfaceInfo> NetworkUtils::getInterfaces() {
 
     for (size_t i = 0; i < output.size(); ++i) {
         output[i].mtu = getMtu(output[i].name);
+        std::array<uint8_t, 6> permanentMac;
+        if (getPermanentMac(output[i].name, permanentMac)) {
+            output[i].permanentMacAddress = formatMac(permanentMac);
+        }
     }
     return output;
 }

@@ -47,7 +47,8 @@ namespace NetworkUtils {
         std::vector<std::string> ipv4Netmasks;     // IPv4 掩码列表
         std::vector<std::string> ipv6Addresses;    // IPv6 地址列表
         std::vector<std::string> ipv6Netmasks;     // IPv6 掩码列表
-        std::string macAddress;                    // 大写冒号分隔 MAC 地址
+        std::string macAddress;                    // 当前生效的 MAC 地址
+        std::string permanentMacAddress;           // 永久硬件 MAC；不支持时为空
         uint32_t mtu{ 0 };                         // 最大传输单元；获取失败时为 0
     };
 
