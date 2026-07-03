@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="140dp"
+    android:layout_height="80dp"
+    android:layout_marginHorizontal="3dp"
+    android:layout_marginBottom="5dp"
+    android:padding="2dp"
+    android:background="@drawable/factory_switch_item">
+    <TextView
+        style="@style/font_medium"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="3dp"
+        android:textColor="#70a1ff"
+        android:gravity="center"
+        android:textSize="20sp"
+        android:text="功能X"/>
+    <Switch
+        android:layout_width="80dp"
+        android:layout_height="48dp"
+        android:layout_centerHorizontal="true"
+        android:layout_alignParentBottom="true"
+        android:track="@drawable/factory_switch_track"
+        android:thumb="@drawable/factory_switch_thumb"
+        android:showText="false"
+        android:clickable="true"/>
+</RelativeLayout>

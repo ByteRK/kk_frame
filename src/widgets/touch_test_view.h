@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-26 18:06:25
- * @LastEditTime: 2026-03-26 22:21:40
+ * @LastEditTime: 2026-07-03 21:47:39
  * @FilePath: /kk_frame/src/widgets/touch_test_view.h
  * @Description: 触摸测试组件
  * @BugList:
@@ -52,7 +52,7 @@ private:
         double r{ 0.8 }, g{ 0.5 }, b{ 0.3 };
         int blockW{ 40 };
         int blockH{ 40 };
-        int verCount{ 11 };
+        int verCount{ 7 };
         int horCount{ 19 };
     } mCfg;
 

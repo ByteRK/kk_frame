@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scrollbars="vertical"
+        android:fadeScrollbars="false"
+        android:paddingVertical="10dp"
+        android:paddingStart="10dp"
+        android:scrollbarThumbVertical="@drawable/factory_scrollview_thumb">
+        <!-- <TextView
+            android:id="@+id/wifi_list"
+            style="@style/font_medium"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingBottom="40dp"
+            android:textColor="#2f3542"
+            android:textSize="20sp"
+            android:text="Wifi List"/> -->
+        <TextView
+            android:id="@+id/wifi_list"
+            android:fontFamily="@font/dengkuan"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingBottom="40dp"
+            android:textColor="#2f3542"
+            android:textSize="20sp"
+            android:text="Wifi List"/>
+    </ScrollView>
+
+    <Button style="@style/factory_exit_btn"
+        android:id="@+id/exit"
+        android:text="退出"/>
+    <Button style="@style/factory_refresh_btn"
+        android:layout_above="@id/exit"
+        android:id="@+id/wifi_switch"
+        android:text="未开启"/>
+    <Button style="@style/factory_refresh_btn"
+        android:layout_above="@id/wifi_switch"
+        android:id="@+id/refresh"/>
+    <Button style="@style/factory_refresh_btn"
+        android:layout_above="@id/refresh"
+        android:layout_width="240dp"
+        android:id="@+id/wifi_conn_info"
+        android:text="未连接"/>
+</RelativeLayout>

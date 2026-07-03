@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scrollbars="vertical"
+        android:fadeScrollbars="false"
+        android:paddingVertical="10dp"
+        android:paddingStart="10dp"
+        android:scrollbarThumbVertical="@drawable/factory_scrollview_thumb">
+        <TextView
+            android:id="@+id/inter_face"
+            style="@style/font_medium"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingBottom="40dp"
+            android:textColor="#2f3542"
+            android:textSize="20sp"
+            android:text="NetWork InterFace"/>
+    </ScrollView>
+
+    <Button style="@style/factory_exit_btn"
+        android:id="@+id/exit"
+        android:text="退出"/>
+    <Button style="@style/factory_refresh_btn"
+        android:id="@+id/refresh"/>
+</RelativeLayout>
