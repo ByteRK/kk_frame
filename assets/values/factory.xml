@@ -16,5 +16,32 @@
         <item name="android:textColor">@color/factory_text</item>
         <item name="android:textSize">20sp</item>
         <item name="android:gravity">center</item>
+        <item name="android:stateListAnimator">@animator/btn_click_scale</item>
+    </style>
+
+    <style name="factory_exit_btn">
+        <item name="android:layout_width">160dp</item>
+        <item name="android:layout_height">70dp</item>
+        <item name="android:layout_alignParentBottom">true</item>
+        <item name="android:layout_alignParentEnd">true</item>
+        <item name="android:layout_margin">20dp</item>
+        <item name="android:background">@drawable/factory_menu_btn</item>
+        <item name="android:textColor">@color/factory_text</item>
+        <item name="android:textSize">25sp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:stateListAnimator">@animator/btn_click_scale</item>
+    </style>
+    <style name="factory_refresh_btn">
+        <item name="android:layout_width">160dp</item>
+        <item name="android:layout_height">70dp</item>
+        <item name="android:layout_above">@id/exit</item>
+        <item name="android:layout_alignEnd">@id/exit</item>
+        <item name="android:layout_marginTop">20dp</item>
+        <item name="android:background">@drawable/factory_menu_btn</item>
+        <item name="android:textColor">@color/factory_text</item>
+        <item name="android:textSize">25sp</item>
+        <item name="android:text">刷新</item>
+        <item name="android:gravity">center</item>
+        <item name="android:stateListAnimator">@animator/btn_click_scale</item>
     </style>
 </resources>

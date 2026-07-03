@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-27 09:43:34
- * @LastEditTime: 2026-03-09 16:43:38
+ * @LastEditTime: 2026-07-03 23:10:58
  * @FilePath: /kk_frame/src/comm/wifi/wifi_hal.cc
  * @Description: WiFi 管理器
  * @BugList:
@@ -476,10 +476,10 @@ bool WifiHal::parseScanResults(std::vector<ApInfo>& out) {
         2412, 2437, 2462, 5180, 5200, 5220, 5745, 5765, 5785
     };
     std::vector<std::string> ssids = {
-        "Ricken_5G", "Home_WiFi", "Office_AP", "Guest_Network",
-        "CDROID_Lab", "Coffee_Free", "LivingRoom", "IoT_Network",
+        "Ricken_5G", "\\*&?-_!$%^&*()_+", "Office_AP", "Guest_Network",
+        "大胆狗贼", "Coffee_Free", "LivingRoom", "IoT_Network",
         "ChinaNet-5G", "CMCC-WEB", "TP-Link_2.4G", "Xiaomi_5G",
-        "HUAWEI-Home", "DIRECT-Printer", "AndroidAP", "kk_frame"
+        "HUAWEI-Home", "我家WIFI", "IMKK", "kk_frame"
     };
 
     static thread_local std::mt19937 engine(std::random_device{}());

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-07-03 17:05:27
- * @LastEditTime: 2026-07-03 19:15:27
+ * @LastEditTime: 2026-07-03 23:19:35
  * @FilePath: /kk_frame/src/app/page/view/page_factory_item.h
  * @Description: 产测页面子项
  * @BugList:
@@ -16,6 +16,7 @@
 
 #include "page_factory.h"
 #include "tick_mgr.h"
+#include "wifi_mgr.h"
 
 /// @brief 项目信息
 class FactoryInfo : public PageFactory::FactoryItem {
@@ -23,6 +24,14 @@ public:
     FactoryInfo(View* view, PageFactory* factory);
 private:
     void setInfo();
+};
+
+/// @brief 网络信息
+class FactoryNetwork : public PageFactory::FactoryItem {
+public:
+    FactoryNetwork(View* view, PageFactory* factory);
+private:
+    void setInterface();
 };
 
 /// @brief 功能开关
@@ -43,7 +52,7 @@ private:
     void setTouch();
 };
 
-/// @brief 颜色测试
+/// @brief 显示测试
 class FactoryColor : public PageFactory::FactoryItem {
 public:
     FactoryColor(View* view, PageFactory* factory);
@@ -53,7 +62,27 @@ private:
     void setColor();
 };
 
-/// @brief 老化测试
+/// @brief WIFI检测
+class FactoryWifi : public PageFactory::FactoryItem,
+    public WifiMgr::WiFiListener {
+private:
+    TextView* mWifiList{ nullptr };
+    TextView* mWifiConnInfo{ nullptr };
+    TextView* mWifiRefresh{ nullptr };
+    TextView* mWifiSwitch{ nullptr };
+public:
+    FactoryWifi(View* view, PageFactory* factory);
+    ~FactoryWifi() override;
+protected:
+    void onShow() override;
+    void onHide() override;
+    void onStateChanged() override;
+    void onScanResult() override;
+private:
+    void updateWifiInfo();
+};
+
+/// @brief 屏幕老化
 class FactoryAging : public PageFactory::FactoryItem {
 private:
     TickMgr::ITickVariable mTicker;

@@ -10,12 +10,16 @@
             android:id="@+id/factory_menu"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:columnCount="6"
+            android:columnCount="8"
             android:padding="10dp">
             <Button
                 android:id="@+id/to_info"
                 style="@style/factory_menu_btn"
                 android:text="项目信息"/>
+            <Button
+                android:id="@+id/to_network"
+                style="@style/factory_menu_btn"
+                android:text="网络信息"/>
             <Button
                 android:id="@+id/to_switch"
                 style="@style/factory_menu_btn"
@@ -27,11 +31,15 @@
             <Button
                 android:id="@+id/to_color"
                 style="@style/factory_menu_btn"
-                android:text="颜色测试"/>
+                android:text="显示测试"/>
+            <Button
+                android:id="@+id/to_wifi"
+                style="@style/factory_menu_btn"
+                android:text="WIFI检测"/>
             <Button
                 android:id="@+id/to_aging"
                 style="@style/factory_menu_btn"
-                android:text="老化测试"/>
+                android:text="屏幕老化"/>
             <Button
                 android:id="@+id/exit"
                 style="@style/factory_menu_btn"
@@ -39,7 +47,7 @@
         </GridLayout>
 
         <TextView
-            android:id="@+id/cdroid"
+            android:id="@+id/copyright"
             style="@style/font_medium"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -52,9 +60,13 @@
             android:text="Power By Cdroid [https://gitee.com/houstudio/Cdroid]"/>
     </RelativeLayout>
 
-    <!-- 项目信息 -->
+    <!-- 网络信息 -->
     <include layout="@layout/page_factory_info"
         android:id="@+id/info_test"/>
+
+    <!-- 项目信息 -->
+    <include layout="@layout/page_factory_network"
+        android:id="@+id/network_test"/>
 
     <!-- 功能开关 -->
     <include layout="@layout/page_factory_switch"
@@ -64,11 +76,15 @@
     <include layout="@layout/page_factory_touch"
         android:id="@+id/touch_test"/>
 
-    <!-- 颜色测试 -->
+    <!-- 显示测试 -->
     <include layout="@layout/page_factory_color"
         android:id="@+id/color_test"/>
 
-    <!-- 老化测试 -->
+    <!-- WIFI检测 -->
+    <include layout="@layout/page_factory_wifi"
+        android:id="@+id/wifi_test"/>
+
+    <!-- 屏幕老化 -->
     <include layout="@layout/page_factory_color"
         android:id="@+id/aging_test"/>
 

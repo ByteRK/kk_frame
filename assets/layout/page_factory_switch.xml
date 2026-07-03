@@ -5,7 +5,7 @@
     <GridLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:columnCount="5"
+        android:columnCount="8"
         android:padding="10dp">
         <include layout="@layout/page_factory_switch_item"/>
         <include layout="@layout/page_factory_switch_item"/>
@@ -17,11 +17,8 @@
         <include layout="@layout/page_factory_switch_item"/>
         <include layout="@layout/page_factory_switch_item"/>
     </GridLayout>
-    <Button
+
+    <Button style="@style/factory_exit_btn"
         android:id="@+id/exit"
-        style="@style/factory_menu_btn"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentEnd="true"
-        android:layout_margin="20dp"
-        android:text="完成"/>
+        android:text="退出"/>
 </RelativeLayout>

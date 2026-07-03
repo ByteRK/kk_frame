@@ -40,10 +40,12 @@ private:
     typedef enum {
         FACTORY_MENU = 0,  // 菜单页
         FACTORY_INFO,      // 项目信息页
+        FACTORY_NETWORK,   // 网络信息页
         FACTORY_SWITCH,    // 功能开关页
         FACTORY_TOUCH,     // 触摸测试页
-        FACTORY_COLOR,     // 颜色测试页
-        FACTORY_AGING,     // 老化测试页
+        FACTORY_COLOR,     // 显示测试页
+        FACTORY_WIFI,      // WIFI检测页
+        FACTORY_AGING,     // 屏幕老化页
 
         FACTORY_MAX,       // 最大值
     } FactoryPageType;

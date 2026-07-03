@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-22 12:32:26
- * @LastEditTime: 2026-07-03 19:10:22
+ * @LastEditTime: 2026-07-03 22:10:14
  * @FilePath: /kk_frame/src/app/page/view/page_factory.cc
  * @Description:
  * @BugList:
@@ -42,6 +42,7 @@ PageFactory::PageFactory() :PageBase("@layout/page_factory") {
 }
 
 PageFactory::~PageFactory() {
+    checkoutShow(FACTORY_MENU);
     for (auto it = mFactoryItems.begin(); it != mFactoryItems.end(); ++it) {
         delete it->second;
     }
@@ -66,6 +67,12 @@ void PageFactory::setView() {
     for (int i = 0, sum = menuG->getChildCount(); i < sum; ++i) {
         click(menuG->getChildAt(i), clickL);
     }
+
+    TextView* copyright = get<TextView>(AppRid::copyright);
+    std::string copyrightText("Copyright (c) 2026 by Ric" "ken, All Rights Reserved.");
+    copyrightText += ("\n" + copyright->getText());
+    copyrightText += ("\n" "Project Based On k" "k_frame [https://github.com/Byte" "RK/k" "k_frame]");
+    copyright->setText(copyrightText);
 }
 
 void PageFactory::onAttach() {
@@ -91,11 +98,13 @@ void PageFactory::onDetach() {
 
 void PageFactory::onMenuClick(View& v) {
     switch (v.getId()) {
-    case AppRid::to_info:   checkoutShow(FACTORY_INFO); break;
-    case AppRid::to_switch: checkoutShow(FACTORY_SWITCH); break;
-    case AppRid::to_touch:  checkoutShow(FACTORY_TOUCH); break;
-    case AppRid::to_color:  checkoutShow(FACTORY_COLOR); break;
-    case AppRid::to_aging:  checkoutShow(FACTORY_AGING); break;
+    case AppRid::to_info:     checkoutShow(FACTORY_INFO);     break;
+    case AppRid::to_network:  checkoutShow(FACTORY_NETWORK);  break;
+    case AppRid::to_switch:   checkoutShow(FACTORY_SWITCH);   break;
+    case AppRid::to_touch:    checkoutShow(FACTORY_TOUCH);    break;
+    case AppRid::to_color:    checkoutShow(FACTORY_COLOR);    break;
+    case AppRid::to_wifi:     checkoutShow(FACTORY_WIFI);     break;
+    case AppRid::to_aging:    checkoutShow(FACTORY_AGING);    break;
     case AppRid::exit: g_windMgr->goToPageBack(); break;
     default: {
         LOGE("unknow menu click %d", v.getId());
@@ -141,6 +150,9 @@ PageFactory::FactoryItem* PageFactory::createFactoryItem(FactoryPageType page) {
     case FACTORY_INFO: {
         item = new FactoryInfo(mFlipper->getChildAt(page), this);
     }   break;
+    case FACTORY_NETWORK: {
+        item = new FactoryNetwork(mFlipper->getChildAt(page), this);
+    }   break;
     case FACTORY_SWITCH: {
         item = new FactorySwitch(mFlipper->getChildAt(page), this);
     }   break;
@@ -149,6 +161,9 @@ PageFactory::FactoryItem* PageFactory::createFactoryItem(FactoryPageType page) {
     }   break;
     case FACTORY_COLOR: {
         item = new FactoryColor(mFlipper->getChildAt(page), this);
+    }   break;
+    case FACTORY_WIFI: {
+        item = new FactoryWifi(mFlipper->getChildAt(page), this);
     }   break;
     case FACTORY_AGING: {
         item = new FactoryAging(mFlipper->getChildAt(page), this);
