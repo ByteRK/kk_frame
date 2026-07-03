@@ -47,6 +47,8 @@ void TouchTestView::setBlockSize(int w, int h) {
 }
 
 void TouchTestView::setBlockCount(int v, int h) {
+    if (v % 2 == 0) v++;
+    if (h % 2 == 0) h++;
     mCfg.verCount = v;
     mCfg.horCount = h;
     mLayoutDirty = true;
