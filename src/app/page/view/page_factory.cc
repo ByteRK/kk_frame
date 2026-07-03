@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-22 12:32:26
- * @LastEditTime: 2026-07-01 22:41:27
+ * @LastEditTime: 2026-07-03 19:10:22
  * @FilePath: /kk_frame/src/app/page/view/page_factory.cc
  * @Description:
  * @BugList:
@@ -12,131 +12,149 @@
 **/
 
 #include "page_factory.h"
-#include "wind_mgr.h"
-#include "arg_utils.h"
-#include "string_utils.h"
-#include "arg_utils.h"
+#include "page_factory_item.h"
 
-#include "app_version.h"
-#include <core/build.h>
+#include "wind_mgr.h"
+
+#include "arg_utils.h"
 
 PAGE_REGISTER(PAGE_FACTORY, PageFactory);
+
+/************************** 子项类 **************************/
+
+PageFactory::FactoryItem::FactoryItem(View* root, PageFactory* factory) {
+    mFactory = factory;
+    mRootView = root;
+}
+
+void PageFactory::FactoryItem::exit() {
+    mFactory->showMenu();
+}
+
+void PageFactory::FactoryItem::setExitBtn(int id) {
+    PBase::click(mRootView, id, [this](View&) {exit();});
+}
+
+/************************** 页面类 **************************/
 
 PageFactory::PageFactory() :PageBase("@layout/page_factory") {
     initUI();
 }
 
-PageFactory::~PageFactory() { }
+PageFactory::~PageFactory() {
+    for (auto it = mFactoryItems.begin(); it != mFactoryItems.end(); ++it) {
+        delete it->second;
+    }
+    mFactoryItems.clear();
+}
 
 int8_t PageFactory::getType() const {
     return PAGE_FACTORY;
 }
 
+void PageFactory::showMenu() {
+    checkoutShow(FACTORY_MENU);
+}
+
 void PageFactory::getView() {
     mFlipper = __dc(ViewFlipper, mRootView);
-    mTouchView = get<TouchTestView>(AppRid::touch_test);
 }
 
 void PageFactory::setView() {
-    setFactoryMenu();
-    setFactoryInfo();
-    setFactoryTouch();
-    setFactoryColor();
-    setFactorySwitch();
+    ViewGroup* menuG = get<ViewGroup>(AppRid::factory_menu);
+    auto clickL = std::bind(&PageFactory::onMenuClick, this, std::placeholders::_1);
+    for (int i = 0, sum = menuG->getChildCount(); i < sum; ++i) {
+        click(menuG->getChildAt(i), clickL);
+    }
 }
 
 void PageFactory::onAttach() {
+    // 直接进入产测则默认显示触摸校准页面
     if (ArgUtils::get().selectPage == PAGE_FACTORY) {
-        mCurPage = FACTORY_TOUCH;
+        checkoutShow(FACTORY_TOUCH);
     } else {
-        mCurPage = FACTORY_MENU;
+        checkoutShow(FACTORY_MENU);
     }
-    mFlipper->setDisplayedChild(mCurPage);
-
+    // 侧边栏处理
     g_window->storeSidebarState();
     g_window->hideSidebar();
+    // 取消屏保计时，保证常亮
     g_window->setScreenSave(false);
 }
 
 void PageFactory::onDetach() {
+    // 恢复侧边栏状态
     g_window->restoreSidebarState();
+    // 恢复屏保计时
     g_window->setScreenSave(true);
 }
 
-void PageFactory::setFactoryMenu() {
-    /* 项目信息 */
-    click(AppRid::to_info, [this](View&) {
-        mCurPage = FACTORY_INFO;
-        mFlipper->setDisplayedChild(mCurPage);
-    });
-
-    /* 触摸测试 */
-    click(AppRid::to_touch, [this](View&) {
-        mCurPage = FACTORY_TOUCH;
-        mFlipper->setDisplayedChild(mCurPage);
-    });
-
-    /* 色彩测试 */
-    click(AppRid::to_color, [this](View&) {
-        mCurPage = FACTORY_COLOR;
-        mFlipper->setDisplayedChild(mCurPage);
-        mFlipper->getChildAt(mCurPage)->getBackground()->setLevel(1);
-    });
-
-    /* 功能开关 */
-    click(AppRid::to_switch, [this](View&) {
-        mCurPage = FACTORY_SWITCH;
-        mFlipper->setDisplayedChild(mCurPage);
-    });
-
-    /* 退出 */
-    click(mFlipper->getChildAt(FACTORY_MENU), AppRid::exit, [](View&) {
-        g_windMgr->goToPageBack();
-    });
+void PageFactory::onMenuClick(View& v) {
+    switch (v.getId()) {
+    case AppRid::to_info:   checkoutShow(FACTORY_INFO); break;
+    case AppRid::to_switch: checkoutShow(FACTORY_SWITCH); break;
+    case AppRid::to_touch:  checkoutShow(FACTORY_TOUCH); break;
+    case AppRid::to_color:  checkoutShow(FACTORY_COLOR); break;
+    case AppRid::to_aging:  checkoutShow(FACTORY_AGING); break;
+    case AppRid::exit: g_windMgr->goToPageBack(); break;
+    default: {
+        LOGE("unknow menu click %d", v.getId());
+    }   break;
+    }
 }
 
-void PageFactory::setFactoryInfo() {
-    TextView* tv = get<TextView>(mFlipper->getChildAt(FACTORY_INFO), AppRid::info);
+void PageFactory::checkoutShow(FactoryPageType page) {
+    if (page == mCurPage) return;
 
-    std::string info;
-    info += "软件名称: " APP_NAME_STR "\n";
-    info += "软件版本: " APP_VERSION_D "\n";
-    info += StringUtils::format("框架版本: Cdroid_V%s_%s\n", cdroid::Build::VERSION::Release, cdroid::Build::VERSION::CommitID);
-    info += "代码哈希: " GIT_VERSION "\n";
-    info += StringUtils::format("打包人员: %s\n", getlogin());
-    info += "打包时间: " BUILD_DATE "\n";
-    info += "打包详情: " APP_VER_INFO "\n";
-    info += "运行命令: " + ArgUtils::getRawString() + "\n";
+    // 获取前后项的指针
+    FactoryItem *itemNow = nullptr, *itemNew = nullptr;
+    if (mCurPage != FACTORY_MENU) itemNow = getFactoryItem(mCurPage);
+    if (page != FACTORY_MENU) itemNew = getFactoryItem(page);
 
-    tv->setText(info.c_str());
-    click(mFlipper->getChildAt(FACTORY_INFO), AppRid::exit, [this](View&) {
-        mFlipper->setDisplayedChild(FACTORY_MENU);
-    });
+    // 判断目标是否能够正常构建
+    if (page != FACTORY_MENU && itemNew == nullptr) {
+        LOGE("unknow page %d", page);
+        return;
+    }
+
+    // 切换
+    if (itemNow) itemNow->onHide();
+    if (itemNew) itemNew->onShow();
+    mFlipper->setDisplayedChild(page);
+    mCurPage = page;
 }
 
-void PageFactory::setFactoryTouch() {
-    mTouchView->setOnAllBlocksActivated([this]() {
-        mTouchView->resetTest();
-        mFlipper->setDisplayedChild(FACTORY_MENU);
-    });
+PageFactory::FactoryItem* PageFactory::getFactoryItem(FactoryPageType page) {
+    // 检查缓存
+    auto it = mFactoryItems.find(page);
+    if (it != mFactoryItems.end()) return it->second;
+
+    // 尝试构建
+    PageFactory::FactoryItem* item = createFactoryItem(page);
+    FailFast(item == nullptr, "create factory item[%d] failed", page);
+    return item;
 }
 
-void PageFactory::setFactoryColor() {
-    click(mFlipper->getChildAt(FACTORY_COLOR), [this](View& v) {
-        cdroid::Drawable* bg = v.getBackground();
-
-        int level = bg->getLevel();
-        if (level < 7) {
-            bg->setLevel(++level);
-        } else {
-            bg->setLevel(1);
-            mFlipper->setDisplayedChild(FACTORY_MENU);
-        }
-    });
-}
-
-void PageFactory::setFactorySwitch() {
-    click(mFlipper->getChildAt(FACTORY_SWITCH), AppRid::exit, [this](View&) {
-        mFlipper->setDisplayedChild(FACTORY_MENU);
-    });
+PageFactory::FactoryItem* PageFactory::createFactoryItem(FactoryPageType page) {
+    PageFactory::FactoryItem* item = nullptr;
+    switch (page) {
+    case FACTORY_INFO: {
+        item = new FactoryInfo(mFlipper->getChildAt(page), this);
+    }   break;
+    case FACTORY_SWITCH: {
+        item = new FactorySwitch(mFlipper->getChildAt(page), this);
+    }   break;
+    case FACTORY_TOUCH: {
+        item = new FactoryTouch(mFlipper->getChildAt(page), this);
+    }   break;
+    case FACTORY_COLOR: {
+        item = new FactoryColor(mFlipper->getChildAt(page), this);
+    }   break;
+    case FACTORY_AGING: {
+        item = new FactoryAging(mFlipper->getChildAt(page), this);
+    }   break;
+    default: break;
+    }
+    if (item) mFactoryItems[page] = item;
+    return item;
 }
