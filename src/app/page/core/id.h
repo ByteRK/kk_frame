@@ -38,7 +38,7 @@ typedef enum {
 /// @brief 消息类型
 typedef enum {
     MSG_GENERAL = 0,   // 通用消息
-
+    MSG_AUTH_CODE,     // 授权码消息
     
 
     MSG_MAX,           // 消息类型数量

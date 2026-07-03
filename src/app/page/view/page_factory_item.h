@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-07-03 17:05:27
- * @LastEditTime: 2026-07-03 23:19:35
+ * @LastEditTime: 2026-07-04 04:30:45
  * @FilePath: /kk_frame/src/app/page/view/page_factory_item.h
  * @Description: 产测页面子项
  * @BugList:
@@ -17,6 +17,7 @@
 #include "page_factory.h"
 #include "tick_mgr.h"
 #include "wifi_mgr.h"
+#include "message_mgr.h"
 
 /// @brief 项目信息
 class FactoryInfo : public PageFactory::FactoryItem {
@@ -32,6 +33,21 @@ public:
     FactoryNetwork(View* view, PageFactory* factory);
 private:
     void setInterface();
+};
+
+/// @brief 授权信息
+class FactoryAuth : public PageFactory::FactoryItem,
+    public MessageListener {
+private:
+    TextView* mAuthInfo{ nullptr };
+    TextView* mAuthRequest{ nullptr };
+    TextView* mAuthRequestInfo{ nullptr };
+public:
+    FactoryAuth(View* view, PageFactory* factory);
+    ~FactoryAuth() override;
+protected:
+    void onShow() override;
+    void onMessage(int msgType, int msgValue = 0, void* msgPtr = nullptr) override;
 };
 
 /// @brief 功能开关
@@ -75,7 +91,6 @@ public:
     ~FactoryWifi() override;
 protected:
     void onShow() override;
-    void onHide() override;
     void onStateChanged() override;
     void onScanResult() override;
 private:

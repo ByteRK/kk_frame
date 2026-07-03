@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-08 22:48:56
- * @LastEditTime: 2026-06-30 00:37:16
+ * @LastEditTime: 2026-07-04 04:01:17
  * @FilePath: /kk_frame/src/app/managers/http_mgr.h
  * @Description: Http 请求管理
  * @BugList:
@@ -63,10 +63,10 @@ public:
 
     /* 回调到主线程的事件类型 */
     enum class EventType {
-        STARTED,
-        PROGRESS,
-        COMPLETED,
-        CANCELLED,
+        STARTED,   // 请求开始
+        PROGRESS,  // 请求进度
+        COMPLETED, // 请求完成
+        CANCELLED, // 请求取消
     };
 
     /* 响应结果或阶段性响应数据 */

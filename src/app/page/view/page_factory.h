@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-22 12:32:19
- * @LastEditTime: 2026-07-03 19:09:30
+ * @LastEditTime: 2026-07-04 04:22:06
  * @FilePath: /kk_frame/src/app/page/view/page_factory.h
  * @Description: 工厂界面
  * @BugList:
@@ -41,6 +41,7 @@ private:
         FACTORY_MENU = 0,  // 菜单页
         FACTORY_INFO,      // 项目信息页
         FACTORY_NETWORK,   // 网络信息页
+        FACTORY_AUTH,      // 授权信息页
         FACTORY_SWITCH,    // 功能开关页
         FACTORY_TOUCH,     // 触摸测试页
         FACTORY_COLOR,     // 显示测试页

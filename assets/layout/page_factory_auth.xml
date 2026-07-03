@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_demo">
+
+    <Button
+        android:id="@+id/auth_request"
+        android:layout_width="220dp"
+        android:layout_height="90dp"
+        android:layout_centerHorizontal="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="120dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/factory_menu_btn"
+        android:stateListAnimator="@animator/btn_click_scale"
+        android:gravity="center"
+        android:textColor="@color/factory_text"
+        android:textSize="30sp"
+        android:text="请求授权码"/>
+
+    <TextView
+        android:id="@+id/auth_info"
+        style="@style/font_medium"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_above="@id/auth_request"
+        android:layout_marginBottom="80dp"
+        android:gravity="center"
+        android:textColor="#000000"
+        android:textSize="32sp"
+        android:text="当前不存在授权码"/>
+
+    <TextView
+        android:id="@+id/auth_request_info"
+        style="@style/font_medium"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_above="@id/auth_request"
+        android:layout_marginBottom="6dp"
+        android:gravity="center"
+        android:textColor="#666666"
+        android:textSize="20sp"
+        android:text="MAC: 00:00:00:00:00\nURL: http://demo.com.cn"/>
+
+    <Button style="@style/factory_exit_btn"
+        android:id="@+id/exit"
+        android:text="退出"/>
+</RelativeLayout>

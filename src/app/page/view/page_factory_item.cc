@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-07-03 17:05:27
- * @LastEditTime: 2026-07-04 02:58:04
+ * @LastEditTime: 2026-07-04 05:06:43
  * @FilePath: /kk_frame/src/app/page/view/page_factory_item.cc
  * @Description: 产测页面子项
  * @BugList:
@@ -14,6 +14,8 @@
 #include "page_factory_item.h"
 
 #include "wifi_mgr.h"
+#include "auth_mgr.h"
+#include "config_mgr.h"
 
 #include "touch_test_view.h"
 
@@ -81,7 +83,11 @@ void FactoryNetwork::setInterface() {
             item.name.c_str(),
             item.isUp ? "UP" : "DOWN",
             item.isRunning ? "RUNNING" : "STOPPED");
-        info += "  MAC: " + (item.macAddress.empty() ? std::string("-") : item.macAddress) + "\n";
+        info += "  当前 MAC: "
+            + (item.macAddress.empty() ? std::string("-") : item.macAddress) + "\n";
+        info += "  永久 MAC: "
+            + (item.permanentMacAddress.empty()
+                ? std::string("-") : item.permanentMacAddress) + "\n";
         info += StringUtils::format("  MTU: %u\n", item.mtu);
 
         for (size_t i = 0; i < item.ipv4Addresses.size(); ++i) {
@@ -136,6 +142,56 @@ void FactoryNetwork::setInterface() {
 
     interFace->setText(info.c_str());
 }
+
+/************************** 授权信息 **************************/
+
+FactoryAuth::FactoryAuth(View* view, PageFactory* factory) :
+    PageFactory::FactoryItem(view, factory) {
+    setExitBtn(AppRid::exit);
+
+    mAuthInfo = PBase::get<TextView>(mRootView, AppRid::auth_info);
+    mAuthRequest = PBase::get<TextView>(mRootView, AppRid::auth_request);
+    mAuthRequestInfo = PBase::get<TextView>(mRootView, AppRid::auth_request_info);
+
+    PBase::click(mAuthRequest, [](View&) {
+        g_auth->request();
+    });
+
+    g_msg->add(MSG_AUTH_CODE, this);
+}
+
+FactoryAuth::~FactoryAuth() {
+    g_msg->removeAll(this);
+}
+
+void FactoryAuth::onShow() {
+    onMessage(MSG_AUTH_CODE, 0, nullptr);
+}
+
+void FactoryAuth::onMessage(int msgType, int msgValue, void* msgPtr) {
+    if (msgType != MSG_AUTH_CODE) return;
+
+    mAuthRequestInfo->setText(
+        g_auth->mac() + "\n" + g_auth->authURL()
+    );
+
+    if (g_config->isAuthSuccess()) {
+        mAuthInfo->setText(
+            StringUtils::format(
+                "授权码信息\nDID: %s  LIC: %s",
+                g_config->getDeviceId().c_str(),
+                g_config->getLicense().c_str()
+            )
+        );
+        mAuthRequest->setText("再次请求");
+        mAuthRequest->setActivated(true);
+    } else {
+        mAuthInfo->setText("当前不存在授权码");
+        mAuthRequest->setText("申请授权码");
+        mAuthRequest->setActivated(false);
+    }
+}
+
 
 /************************** 功能开关 **************************/
 
@@ -222,8 +278,6 @@ FactoryWifi::~FactoryWifi() {
 void FactoryWifi::onShow() {
     updateWifiInfo();
 }
-
-void FactoryWifi::onHide() { }
 
 void FactoryWifi::onStateChanged() {
     updateWifiInfo();

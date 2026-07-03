@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-22 12:32:26
- * @LastEditTime: 2026-07-03 22:10:14
+ * @LastEditTime: 2026-07-04 04:22:43
  * @FilePath: /kk_frame/src/app/page/view/page_factory.cc
  * @Description:
  * @BugList:
@@ -100,6 +100,7 @@ void PageFactory::onMenuClick(View& v) {
     switch (v.getId()) {
     case AppRid::to_info:     checkoutShow(FACTORY_INFO);     break;
     case AppRid::to_network:  checkoutShow(FACTORY_NETWORK);  break;
+    case AppRid::to_auth:     checkoutShow(FACTORY_AUTH);     break;
     case AppRid::to_switch:   checkoutShow(FACTORY_SWITCH);   break;
     case AppRid::to_touch:    checkoutShow(FACTORY_TOUCH);    break;
     case AppRid::to_color:    checkoutShow(FACTORY_COLOR);    break;
@@ -152,6 +153,9 @@ PageFactory::FactoryItem* PageFactory::createFactoryItem(FactoryPageType page) {
     }   break;
     case FACTORY_NETWORK: {
         item = new FactoryNetwork(mFlipper->getChildAt(page), this);
+    }   break;
+    case FACTORY_AUTH: {
+        item = new FactoryAuth(mFlipper->getChildAt(page), this);
     }   break;
     case FACTORY_SWITCH: {
         item = new FactorySwitch(mFlipper->getChildAt(page), this);
