@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-04 13:52:55
- * @LastEditTime: 2026-07-01 14:27:40
+ * @LastEditTime: 2026-07-03 14:37:32
  * @FilePath: /kk_frame/src/app/page/core/pop.cc
  * @Description: 弹窗基类
  * @BugList:
@@ -68,6 +68,12 @@ void PopBase::callDetach() {
 
 /// @brief 关闭弹窗
 void PopBase::close() {
+    if (g_window->getPopType() == getType())
+        g_windMgr->clearPop();
+}
+
+/// @brief 返回弹窗
+void PopBase::back() { 
     if (g_window->getPopType() == getType())
         g_windMgr->goToPopBack();
 }
