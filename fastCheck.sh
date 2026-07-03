@@ -22,6 +22,7 @@ NAME=kk_frame
 # 编译参数
 PRODUCT=x64
 PRODUCT_DIR=outX64-Debug
+MAKE_JOBS=-j8
 
 # 构建相关路径
 SRC_DIR="$(realpath "$(pwd)")"
@@ -29,16 +30,20 @@ PACKAGE_DIR=$SRC_DIR/dist
 CDROID_DIR="$(realpath "$SRC_DIR/../..")"
 OUT_DIR=$CDROID_DIR/$PRODUCT_DIR
 
+# 运行参数
+RUN_AFTER_COPY=false
+
 # 处理输入参数
 for arg in "$@"; do
     case $arg in
         -t)
             touch $SRC_DIR/CMakeLists.txt
             ;;
-        -rm)
-            cd $CDROID_DIR
-            rm -rf ./$PRODUCT_DIR
-            ./build.sh --product=$PRODUCT
+        -r)
+            RUN_AFTER_COPY=true
+            ;;
+        -j|-j[0-9]*)
+            MAKE_JOBS=$arg
             ;;
         *)
             echo "未知参数: $arg"
@@ -68,7 +73,7 @@ fi
 
 # 编译
 cd $OUT_DIR
-make $NAME -j8
+make $NAME $MAKE_JOBS
 
 # 拷贝文件
 cp $OUT_DIR/apps/$NAME/$NAME*                  $PACKAGE_DIR/
@@ -76,3 +81,8 @@ cp $OUT_DIR/src/gui/cdroid.pak                 $PACKAGE_DIR/
 cp $OUT_DIR/src/gui/libcdroid.so               $PACKAGE_DIR/
 cp $OUT_DIR/src/porting/$PRODUCT/libtvhal.so   $PACKAGE_DIR/
 chmod +x $PACKAGE_DIR/$NAME
+
+# 携带 -r 参数时运行编译产物
+if [ "$RUN_AFTER_COPY" = true ]; then
+    $OUT_DIR/apps/$NAME/$NAME
+fi
