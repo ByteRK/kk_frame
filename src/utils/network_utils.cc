@@ -29,91 +29,91 @@
 
 namespace {
 
-int toNativeFamily(NetworkUtils::AddressFamily family) {
-    if (family == NetworkUtils::AddressFamily::IPv4) return AF_INET;
-    if (family == NetworkUtils::AddressFamily::IPv6) return AF_INET6;
-    return AF_UNSPEC;
-}
-
-bool sockaddrToString(const sockaddr* address, std::string& output) {
-    if (address == nullptr) return false;
-
-    const void* source = nullptr;
-    socklen_t size = 0;
-    if (address->sa_family == AF_INET) {
-        source = &reinterpret_cast<const sockaddr_in*>(address)->sin_addr;
-        size = INET_ADDRSTRLEN;
-    } else if (address->sa_family == AF_INET6) {
-        source = &reinterpret_cast<const sockaddr_in6*>(address)->sin6_addr;
-        size = INET6_ADDRSTRLEN;
-    } else {
-        return false;
+    int toNativeFamily(NetworkUtils::AddressFamily family) {
+        if (family == NetworkUtils::AddressFamily::IPv4) return AF_INET;
+        if (family == NetworkUtils::AddressFamily::IPv6) return AF_INET6;
+        return AF_UNSPEC;
     }
 
-    char buffer[INET6_ADDRSTRLEN] = { 0 };
-    if (::inet_ntop(address->sa_family, source, buffer, size) == nullptr) {
-        return false;
-    }
-    output.assign(buffer);
-    return true;
-}
+    bool sockaddrToString(const sockaddr* address, std::string& output) {
+        if (address == nullptr) return false;
 
-NetworkUtils::InterfaceInfo* findInterface(
+        const void* source = nullptr;
+        socklen_t size = 0;
+        if (address->sa_family == AF_INET) {
+            source = &reinterpret_cast<const sockaddr_in*>(address)->sin_addr;
+            size = INET_ADDRSTRLEN;
+        } else if (address->sa_family == AF_INET6) {
+            source = &reinterpret_cast<const sockaddr_in6*>(address)->sin6_addr;
+            size = INET6_ADDRSTRLEN;
+        } else {
+            return false;
+        }
+
+        char buffer[INET6_ADDRSTRLEN] = { 0 };
+        if (::inet_ntop(address->sa_family, source, buffer, size) == nullptr) {
+            return false;
+        }
+        output.assign(buffer);
+        return true;
+    }
+
+    NetworkUtils::InterfaceInfo* findInterface(
         std::vector<NetworkUtils::InterfaceInfo>& interfaces,
         const std::string& name) {
-    for (size_t i = 0; i < interfaces.size(); ++i) {
-        if (interfaces[i].name == name) return &interfaces[i];
+        for (size_t i = 0; i < interfaces.size(); ++i) {
+            if (interfaces[i].name == name) return &interfaces[i];
+        }
+        interfaces.push_back(NetworkUtils::InterfaceInfo());
+        interfaces.back().name = name;
+        return &interfaces.back();
     }
-    interfaces.push_back(NetworkUtils::InterfaceInfo());
-    interfaces.back().name = name;
-    return &interfaces.back();
-}
 
-uint32_t getMtu(const std::string& ifname) {
-    const int fd = ::socket(AF_INET, SOCK_DGRAM, 0);
-    if (fd < 0) return 0;
+    uint32_t getMtu(const std::string& ifname) {
+        const int fd = ::socket(AF_INET, SOCK_DGRAM, 0);
+        if (fd < 0) return 0;
 
-    struct ifreq request;
-    std::memset(&request, 0, sizeof(request));
-    std::strncpy(request.ifr_name, ifname.c_str(), IFNAMSIZ - 1);
-    const bool ok = ::ioctl(fd, SIOCGIFMTU, &request) == 0;
-    ::close(fd);
-    return ok && request.ifr_mtu > 0
-        ? static_cast<uint32_t>(request.ifr_mtu) : 0;
-}
+        struct ifreq request;
+        std::memset(&request, 0, sizeof(request));
+        std::strncpy(request.ifr_name, ifname.c_str(), IFNAMSIZ - 1);
+        const bool ok = ::ioctl(fd, SIOCGIFMTU, &request) == 0;
+        ::close(fd);
+        return ok && request.ifr_mtu > 0
+            ? static_cast<uint32_t>(request.ifr_mtu) : 0;
+    }
 
-bool parseAddress(const std::string& text, int family,
-                  std::array<uint8_t, 16>& bytes, size_t& size) {
-    bytes.fill(0);
-    size = family == AF_INET ? 4U : 16U;
-    return ::inet_pton(family, text.c_str(), bytes.data()) == 1;
-}
+    bool parseAddress(const std::string& text, int family,
+        std::array<uint8_t, 16>& bytes, size_t& size) {
+        bytes.fill(0);
+        size = family == AF_INET ? 4U : 16U;
+        return ::inet_pton(family, text.c_str(), bytes.data()) == 1;
+    }
 
-bool formatAddress(const uint8_t* bytes, int family, std::string& output) {
-    char buffer[INET6_ADDRSTRLEN] = { 0 };
-    if (::inet_ntop(family, bytes, buffer, sizeof(buffer)) == nullptr) return false;
-    output.assign(buffer);
-    return true;
-}
+    bool formatAddress(const uint8_t* bytes, int family, std::string& output) {
+        char buffer[INET6_ADDRSTRLEN] = { 0 };
+        if (::inet_ntop(family, bytes, buffer, sizeof(buffer)) == nullptr) return false;
+        output.assign(buffer);
+        return true;
+    }
 
-int hexValue(char value) {
-    if (value >= '0' && value <= '9') return value - '0';
-    if (value >= 'a' && value <= 'f') return value - 'a' + 10;
-    if (value >= 'A' && value <= 'F') return value - 'A' + 10;
-    return -1;
-}
+    int hexValue(char value) {
+        if (value >= '0' && value <= '9') return value - '0';
+        if (value >= 'a' && value <= 'f') return value - 'a' + 10;
+        if (value >= 'A' && value <= 'F') return value - 'A' + 10;
+        return -1;
+    }
 
-bool parseSubnetInputs(const std::string& ip, const std::string& netmask,
-                       std::array<uint8_t, 16>& ipBytes,
-                       std::array<uint8_t, 16>& maskBytes,
-                       int& family, size_t& size) {
-    family = NetworkUtils::isValidIPv4(ip) ? AF_INET : AF_INET6;
-    size_t ipSize = 0;
-    size_t maskSize = 0;
-    return parseAddress(ip, family, ipBytes, ipSize)
-        && parseAddress(netmask, family, maskBytes, maskSize)
-        && ipSize == maskSize && (size = ipSize) > 0;
-}
+    bool parseSubnetInputs(const std::string& ip, const std::string& netmask,
+        std::array<uint8_t, 16>& ipBytes,
+        std::array<uint8_t, 16>& maskBytes,
+        int& family, size_t& size) {
+        family = NetworkUtils::isValidIPv4(ip) ? AF_INET : AF_INET6;
+        size_t ipSize = 0;
+        size_t maskSize = 0;
+        return parseAddress(ip, family, ipBytes, ipSize)
+            && parseAddress(netmask, family, maskBytes, maskSize)
+            && ipSize == maskSize && (size = ipSize) > 0;
+    }
 
 } // namespace
 
@@ -138,8 +138,7 @@ std::string NetworkUtils::getIp(const std::string& host) {
     return result.addresses.empty() ? std::string() : result.addresses.front();
 }
 
-NetworkUtils::ResolveResult NetworkUtils::resolveHost(
-        const std::string& host, AddressFamily family) {
+NetworkUtils::ResolveResult NetworkUtils::resolveHost(const std::string& host, AddressFamily family) {
     ResolveResult output;
     if (host.empty()) {
         output.errorCode = EAI_NONAME;
@@ -181,19 +180,19 @@ std::vector<NetworkUtils::InterfaceInfo> NetworkUtils::getInterfaces() {
 
         std::string address;
         if (item->ifa_addr->sa_family == AF_INET
-                || item->ifa_addr->sa_family == AF_INET6) {
+            || item->ifa_addr->sa_family == AF_INET6) {
             if (sockaddrToString(item->ifa_addr, address)) {
                 std::vector<std::string>& addresses =
                     item->ifa_addr->sa_family == AF_INET
-                        ? info->ipv4Addresses : info->ipv6Addresses;
+                    ? info->ipv4Addresses : info->ipv6Addresses;
                 if (std::find(addresses.begin(), addresses.end(), address)
-                        == addresses.end()) {
+                    == addresses.end()) {
                     addresses.push_back(address);
                     std::string netmask;
                     sockaddrToString(item->ifa_netmask, netmask);
                     std::vector<std::string>& netmasks =
                         item->ifa_addr->sa_family == AF_INET
-                            ? info->ipv4Netmasks : info->ipv6Netmasks;
+                        ? info->ipv4Netmasks : info->ipv6Netmasks;
                     netmasks.push_back(netmask);
                 }
             }
@@ -216,7 +215,7 @@ std::vector<NetworkUtils::InterfaceInfo> NetworkUtils::getInterfaces() {
 }
 
 bool NetworkUtils::getInterfaceInfo(const std::string& ifname,
-                                    InterfaceInfo& output) {
+    InterfaceInfo& output) {
     const std::vector<InterfaceInfo> interfaces = getInterfaces();
     for (size_t i = 0; i < interfaces.size(); ++i) {
         if (interfaces[i].name == ifname) {
@@ -247,7 +246,7 @@ bool NetworkUtils::getDefaultGateway(std::string& gateway, std::string* ifname) 
         std::string gatewayHex;
         unsigned int flags = 0;
         if (!(stream >> interfaceName >> destination >> gatewayHex
-                    >> std::hex >> flags)) continue;
+            >> std::hex >> flags)) continue;
         if (destination != "00000000" || (flags & 0x2U) == 0) continue;
 
         if (gatewayHex.size() != 8) continue;
@@ -284,7 +283,7 @@ std::vector<std::string> NetworkUtils::getDnsServers() {
         std::string keyword;
         std::string address;
         if (!(stream >> keyword >> address) || keyword != "nameserver"
-                || !isValidIp(address)) continue;
+            || !isValidIp(address)) continue;
         if (std::find(output.begin(), output.end(), address) == output.end()) {
             output.push_back(address);
         }
@@ -311,7 +310,7 @@ bool NetworkUtils::isValidPort(uint32_t port) {
 }
 
 bool NetworkUtils::parseMac(const std::string& text,
-                            std::array<uint8_t, 6>& output) {
+    std::array<uint8_t, 6>& output) {
     std::string compact;
     compact.reserve(12);
     char separator = 0;
@@ -320,7 +319,7 @@ bool NetworkUtils::parseMac(const std::string& text,
         if (value == ':' || value == '-') {
             if (separator == 0) separator = value;
             if (separator != value || i == 0 || i + 1 == text.size()
-                    || text[i - 1] == separator) return false;
+                || text[i - 1] == separator) return false;
         } else if (hexValue(value) >= 0) {
             compact.push_back(value);
         } else {
@@ -357,8 +356,8 @@ bool NetworkUtils::isValidMac(const std::string& mac) {
 }
 
 bool NetworkUtils::isSameSubnet(const std::string& ip,
-                                const std::string& peerIp,
-                                const std::string& netmask) {
+    const std::string& peerIp,
+    const std::string& netmask) {
     std::array<uint8_t, 16> first;
     std::array<uint8_t, 16> mask;
     int family = AF_UNSPEC;
@@ -376,7 +375,7 @@ bool NetworkUtils::isSameSubnet(const std::string& ip,
 }
 
 bool NetworkUtils::prefixLengthToNetmask(uint8_t prefix, AddressFamily family,
-                                         std::string& netmask) {
+    std::string& netmask) {
     const size_t size = family == AddressFamily::IPv4 ? 4U
         : family == AddressFamily::IPv6 ? 16U : 0U;
     if (size == 0 || prefix > size * 8) return false;
@@ -389,7 +388,7 @@ bool NetworkUtils::prefixLengthToNetmask(uint8_t prefix, AddressFamily family,
 }
 
 bool NetworkUtils::netmaskToPrefixLength(const std::string& netmask,
-                                         uint8_t& prefix) {
+    uint8_t& prefix) {
     std::array<uint8_t, 16> bytes;
     size_t size = 0;
     const int family = isValidIPv4(netmask) ? AF_INET : AF_INET6;
@@ -409,27 +408,27 @@ bool NetworkUtils::netmaskToPrefixLength(const std::string& netmask,
 }
 
 bool NetworkUtils::networkAddress(const std::string& ip,
-                                  const std::string& netmask,
-                                  std::string& output) {
+    const std::string& netmask,
+    std::string& output) {
     std::array<uint8_t, 16> address;
     std::array<uint8_t, 16> mask;
     int family = AF_UNSPEC;
     size_t size = 0;
     if (!parseSubnetInputs(ip, netmask, address, mask, family, size)
-            || family != AF_INET) return false;
+        || family != AF_INET) return false;
     for (size_t i = 0; i < size; ++i) address[i] &= mask[i];
     return formatAddress(address.data(), family, output);
 }
 
 bool NetworkUtils::broadcastAddress(const std::string& ip,
-                                    const std::string& netmask,
-                                    std::string& output) {
+    const std::string& netmask,
+    std::string& output) {
     std::array<uint8_t, 16> address;
     std::array<uint8_t, 16> mask;
     int family = AF_UNSPEC;
     size_t size = 0;
     if (!parseSubnetInputs(ip, netmask, address, mask, family, size)
-            || family != AF_INET) return false;
+        || family != AF_INET) return false;
     for (size_t i = 0; i < size; ++i) {
         address[i] = static_cast<uint8_t>(address[i] | ~mask[i]);
     }
@@ -446,11 +445,11 @@ bool NetworkUtils::hasUsableAddress(const std::string& ifname) {
     if (!getInterfaceInfo(ifname, info) || !info.isUp) return false;
     for (size_t i = 0; i < info.ipv4Addresses.size(); ++i) {
         if (info.ipv4Addresses[i] != "0.0.0.0"
-                && !isLoopbackAddress(info.ipv4Addresses[i])) return true;
+            && !isLoopbackAddress(info.ipv4Addresses[i])) return true;
     }
     for (size_t i = 0; i < info.ipv6Addresses.size(); ++i) {
         if (info.ipv6Addresses[i] != "::"
-                && !isLoopbackAddress(info.ipv6Addresses[i])) return true;
+            && !isLoopbackAddress(info.ipv6Addresses[i])) return true;
     }
     return false;
 }
