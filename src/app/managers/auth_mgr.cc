@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-07-04 00:39:16
- * @LastEditTime: 2026-07-04 05:06:16
+ * @LastEditTime: 2026-07-04 17:59:41
  * @FilePath: /kk_frame/src/app/managers/auth_mgr.cc
  * @Description: 授权码管理器
  * @BugList:
@@ -117,7 +117,7 @@ void AuthMgr::onHttpEvent(const HttpManager::Event& event) {
 
     // 请求结果处理
     if (event.response.httpStatusCode != 200) {
-        g_window->showToast("授权码分发服务异常，请稍候重试...");
+        g_window->showToast("授权码分发服务异常[" + std::to_string(event.response.httpStatusCode) + "]，请稍候重试...");
         LOGE("AuthMgr::onHttpEvent() httpStatusCode[%d]", event.response.httpStatusCode);
         return;
     }
