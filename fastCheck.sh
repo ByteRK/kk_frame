@@ -2,7 +2,7 @@
  # @Author: Ricken
  # @Email: me@ricken.cn
  # @Date: 2026-06-17 01:21:46
- # @LastEditTime: 2026-06-30 01:27:44
+ # @LastEditTime: 2026-07-05 00:48:17
  # @FilePath: /kk_frame/fastCheck.sh
  # @Description: 快速编译检验脚本
  # @BugList: 
@@ -32,6 +32,8 @@ OUT_DIR=$CDROID_DIR/$PRODUCT_DIR
 
 # 运行参数
 RUN_AFTER_COPY=false
+RUN_ONLY=false
+USE_GDB=false
 
 # 处理输入参数
 for arg in "$@"; do
@@ -40,6 +42,13 @@ for arg in "$@"; do
             touch $SRC_DIR/CMakeLists.txt
             ;;
         -r)
+            RUN_AFTER_COPY=true
+            ;;
+        -R|--run-only)
+            RUN_ONLY=true
+            ;;
+        -g)
+            USE_GDB=true
             RUN_AFTER_COPY=true
             ;;
         -j|-j[0-9]*)
@@ -51,6 +60,20 @@ for arg in "$@"; do
             ;;
     esac
 done
+
+# 仅运行已有的编译产物
+if [ "$RUN_ONLY" = true ]; then
+    EXECUTABLE=$OUT_DIR/apps/$NAME/$NAME
+    if [ ! -x "$EXECUTABLE" ]; then
+        echo "Executable not found or not executable: $EXECUTABLE"
+        exit 1
+    fi
+    cd "$OUT_DIR" || exit 1
+    if [ "$USE_GDB" = true ]; then
+        exec gdb --args "$EXECUTABLE"
+    fi
+    exec "$EXECUTABLE"
+fi
 
 # 检查编译目录是否存在
 if [ ! -d "$OUT_DIR" ]; then
@@ -82,7 +105,12 @@ cp $OUT_DIR/src/gui/libcdroid.so               $PACKAGE_DIR/
 cp $OUT_DIR/src/porting/$PRODUCT/libtvhal.so   $PACKAGE_DIR/
 chmod +x $PACKAGE_DIR/$NAME
 
-# 携带 -r 参数时运行编译产物
+# 携带 -r 或 -g 参数时运行编译产物
 if [ "$RUN_AFTER_COPY" = true ]; then
-    $OUT_DIR/apps/$NAME/$NAME
+    EXECUTABLE=$OUT_DIR/apps/$NAME/$NAME
+    cd "$OUT_DIR" || exit 1
+    if [ "$USE_GDB" = true ]; then
+        exec gdb --args "$EXECUTABLE"
+    fi
+    exec "$EXECUTABLE"
 fi
