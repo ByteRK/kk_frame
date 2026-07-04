@@ -23,20 +23,19 @@ WorkMgr::~WorkMgr() {
 void WorkMgr::init() {
 }
 
-void WorkMgr::onTimer(uint32_t id, size_t param, uint32_t count) {
-    if (param == 1) {
-        mXXXOverTimer -= 1;
-        if (mXXXOverTimer <= 0)
-            stopXXX();
-        LOGI("XXX Working: %d/%d", mXXXOverTimer, mXXXOverTimer + count);
-    }
-}
-
 void WorkMgr::startXXX() {
     LOGI("start XXX Work");
     mXXXOverTimer = 1000;
-    g_timer->addTimer(1000, this, 1, 0);
+    mXXXTimer = g_timer->scopedRepeated(1000, 1000,
+        [this](TimerMgr::TimerId, uint32_t count) {
+        mXXXOverTimer -= 1;
+        if (mXXXOverTimer <= 0) {
+            stopXXX();
+        }
+        LOGI("XXX Working: %d/%d", mXXXOverTimer, mXXXOverTimer + count);
+    });
 }
 
 void WorkMgr::stopXXX() {
+    mXXXTimer.cancel();
 }

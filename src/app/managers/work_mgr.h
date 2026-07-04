@@ -20,12 +20,12 @@
 
 #define g_work WorkMgr::instance()
 
-class WorkMgr :public Singleton<WorkMgr>,
-    public TimerMgr::ITimer {
+class WorkMgr :public Singleton<WorkMgr> {
     friend class Singleton<WorkMgr>;
 
 private:
-    int64_t mXXXOverTimer;  // XXX工作剩余时间
+    int64_t               mXXXOverTimer;  // XXX工作剩余时间
+    TimerMgr::TimerHandle mXXXTimer;
 
 protected:
     WorkMgr();
@@ -33,8 +33,6 @@ protected:
 public:
     ~WorkMgr();
     void init();
-    void onTimer(uint32_t id, size_t param, uint32_t count) override;
-
     void startXXX();
     void stopXXX();
 
