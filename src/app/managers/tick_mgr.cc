@@ -2,9 +2,9 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-12 17:08:29
- * @LastEditTime: 2026-06-08 23:59:22
+ * @LastEditTime: 2026-07-04 23:56:25
  * @FilePath: /kk_frame/src/app/managers/tick_mgr.cc
- * @Description: Tick 管理器
+ * @Description: 持久化 Tick 管理器
  * @BugList:
  *
  * Copyright (c) 2026 by Ricken, All Rights Reserved.
@@ -18,12 +18,12 @@
 
 namespace {
     constexpr int64_t kTickWarnCostMs = 100;
-}
 
-/// @brief 获取当前时间戳
-/// @return 毫秒时间戳
-static int64_t getNowMs() {
-    return cdroid::SystemClock::uptimeMillis();
+    /// @brief 获取当前时间戳
+    /// @return 毫秒时间戳
+    static int64_t getNowMs() {
+        return cdroid::SystemClock::uptimeMillis();
+    }
 }
 
 /// @brief Tick 监听对象析构
@@ -56,12 +56,48 @@ void TickMgr::ITickClass::stopTick() {
     if (g_tick->hasTick(this)) g_tick->removeTick(this);
 }
 
+/// @brief Tick 任务变量构造
+TickMgr::ITickVariable::~ITickVariable() {
+#if 0 // 降低性能影响，应用层自行管控
+    stopTick();
+#endif
+}
+
+/// @brief 设置 Tick 任务回调
+/// @param cb 
+void TickMgr::ITickVariable::setCallBack(TickCallBack cb) {
+    mTickCB = cb;
+}
+
+/// @brief 设置 Tick 任务间隔
+/// @param intervalMs 
+void TickMgr::ITickVariable::setTick(int64_t intervalMs) {
+    ITickClass::setTick(intervalMs);
+}
+
+/// @brief 开始 Tick 任务
+/// @param firstDelayMs 
+void TickMgr::ITickVariable::startTick(int64_t firstDelayMs) {
+    ITickClass::startTick(firstDelayMs);
+}
+
+/// @brief 停止 Tick 任务
+void TickMgr::ITickVariable::stopTick() {
+    ITickClass::stopTick();
+}
+
+/// @brief Tick 任务回调
+/// @param now 
+void TickMgr::ITickVariable::onTick(int64_t now) {
+    if (mTickCB) mTickCB(now);
+}
+
 /// @brief Tick 管理器构造
 TickMgr::TickMgr() { }
 
 /// @brief Tick 管理器析构
 TickMgr::~TickMgr() {
-    cdroid::Looper::getMainLooper()->removeEventHandler(this);
+    if (mLooper) mLooper->removeEventHandler(this);
     clear();
     if (mDispatchingRecord) {
         destroyRecord(mDispatchingRecord);
@@ -73,7 +109,14 @@ TickMgr::~TickMgr() {
 
 /// @brief 初始化 TickMgr
 void TickMgr::init() {
-    cdroid::Looper::getMainLooper()->addEventHandler(this);
+    if (mInited) return;
+    mLooper = cdroid::Looper::getMainLooper();
+    if (!mLooper) {
+        LOGE("TickMgr init failed: main thread has no Looper");
+        return;
+    }
+    mLooper->addEventHandler(this);
+    mInited = true;
 }
 
 /// @brief 获取已注册任务数量
@@ -104,6 +147,10 @@ void TickMgr::clear() {
 /// @param firstDelayMs 首次调度延迟：-1 立即执行；0 下一轮 check/handle 时执行；>0 延迟指定毫秒后执行
 /// @return 状态
 bool TickMgr::addTick(ITickClass* listener, int64_t intervalMs, int64_t firstDelayMs) {
+    if (!mInited) {
+        LOGE("addTick failed: TickMgr is not initialized");
+        return false;
+    }
     if (!listener) {
         LOGE("addTick failed: listener is nullptr");
         return false;
@@ -231,6 +278,7 @@ bool TickMgr::updateInterval(ITickClass* listener, int64_t intervalMs, bool rest
 /// @brief 检查是否存在到期任务
 /// @return 非 0 表示存在到期任务
 int TickMgr::checkEvents() {
+    if (!mInited) return 0;
     const TickRecord* front = peekFront();
     return (front && front->nextFireMs <= getNowMs()) ? 1 : 0;
 }
