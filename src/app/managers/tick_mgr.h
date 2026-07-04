@@ -2,9 +2,9 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-12 17:08:29
- * @LastEditTime: 2026-06-09 01:33:18
+ * @LastEditTime: 2026-07-05 00:32:29
  * @FilePath: /kk_frame/src/app/managers/tick_mgr.h
- * @Description: Tick 管理器
+ * @Description: 持久化 Tick 管理器
  * @BugList:
  *
  * Copyright (c) 2026 by Ricken, All Rights Reserved.
@@ -17,14 +17,13 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <vector>
-
 #include <core/looper.h>
-
 #include "template/singleton.h"
 
 #define g_tick TickMgr::instance()
 
 /// @brief Tick 管理器
+/// @note 适用于需要持久化运行的 Tick 任务
 class TickMgr : public cdroid::EventHandler,
     public Singleton<TickMgr> {
     friend Singleton<TickMgr>;
@@ -32,6 +31,7 @@ class TickMgr : public cdroid::EventHandler,
 public:
     /// @brief Tick 任务类
     /// @note 直接调用 startTick 默认周期是 1 秒
+    /// @note 析构前必须调用 stopTick
     class ITickClass {
     private:
         int64_t mTickIntervalMs{ 1000 };
@@ -46,23 +46,25 @@ public:
 
     /// @brief Tick 任务变量类
     /// @note 便于不方便继承自 ITickClass 的类使用
+    /// @note 析构前必须调用 stopTick
     class ITickVariable : public ITickClass {
     public:
         using TickCallBack = std::function<void(int64_t)>;
     private:
         TickCallBack mTickCB{ nullptr };
     public:
-        void setCallBack(TickCallBack cb) { mTickCB = cb; };
-        void setTick(int64_t intervalMs) { ITickClass::setTick(intervalMs); };
-        void startTick(int64_t firstDelayMs = 0) { ITickClass::startTick(firstDelayMs); };
-        void stopTick() { ITickClass::stopTick(); };
+        virtual ~ITickVariable();
+        void setCallBack(TickCallBack cb);
+        void setTick(int64_t intervalMs);
+        void startTick(int64_t firstDelayMs = 0);
+        void stopTick();
     protected:
-        void onTick(int64_t now) override { if (mTickCB)mTickCB(now); };
+        void onTick(int64_t now) override;
     };
 
 protected:
     TickMgr();
-    virtual ~TickMgr();
+    ~TickMgr();
 
 public:
     void   init();
@@ -77,10 +79,11 @@ public:
     bool   updateInterval(ITickClass* listener, int64_t intervalMs, bool restartFromNow = true);
 
 protected:
-    virtual int checkEvents() override;
+    virtual int checkEvents()  override;
     virtual int handleEvents() override;
 
 private:
+    /// @brief 单个 Tick 任务的内部调度记录
     struct TickRecord {
         ITickClass*  listener{ nullptr };    // 回调对象
         bool         cancelled{ false };     // 取消标识
@@ -89,11 +92,11 @@ private:
     };
 
 private:
-    static const size_t kInvalidIndex = static_cast<size_t>(-1);
+    static const size_t kInvalidIndex = static_cast<size_t>(-1); // 无效索引
 
 private:
-    bool shouldRunBefore(const TickRecord& lhs, const TickRecord& rhs) const;
-    bool isDispatching() const;
+    bool        shouldRunBefore(const TickRecord& lhs, const TickRecord& rhs) const;
+    bool        isDispatching() const;
 
     TickRecord* peekFront() const;
     TickRecord* findDispatchingRecord(const ITickClass* listener) const;
@@ -114,6 +117,8 @@ private:
     bool        dispatchRecord(TickRecord* record, int64_t nowMs);
 
 private:
+    bool                     mInited{ false };              // 初始化标识
+    cdroid::Looper*          mLooper{ nullptr };            // 所属 Looper
     TickRecord*              mDispatchingRecord{ nullptr }; // 当前正在执行 onTick 的任务，脱离 mListeners
     std::vector<TickRecord*> mListeners;                    // 已注册任务，按 nextFireMs 从小到大有序
     std::vector<TickRecord*> mRecordPool;                   // TickRecord 缓存池

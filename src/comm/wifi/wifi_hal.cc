@@ -30,7 +30,7 @@
 #ifdef PRODUCT_X64
 #include "timer_mgr.h"
 
-class WifiHal::X64DelayTimer : public TimerMgr::ITimer {
+class WifiHal::X64DelayTimer {
 public:
     explicit X64DelayTimer(const std::function<void()>& callback)
         : mCallback(callback) { }
@@ -41,28 +41,21 @@ public:
 
     bool schedule(int64_t delayMs) {
         cancel();
-        const uint32_t safeDelayMs = static_cast<uint32_t>(
-            std::max<int64_t>(delayMs, 10));
-        mTimerId = g_timer->addTimer(safeDelayMs, this, 0, 1);
-        return mTimerId != 0;
+        if (delayMs <= 0) return false;
+        mTimer = g_timer->scopedAfter(delayMs,
+            [this](TimerMgr::TimerId, uint32_t) {
+                if (mCallback) mCallback();
+            });
+        return mTimer.isActive();
     }
 
     void cancel() {
-        if (mTimerId != 0) {
-            g_timer->delTimer(mTimerId);
-            mTimerId = 0;
-        }
-    }
-
-    void onTimer(uint32_t id, size_t, uint32_t) override {
-        if (id != mTimerId) return;
-        mTimerId = 0;
-        if (mCallback) mCallback();
+        mTimer.cancel();
     }
 
 private:
     std::function<void()> mCallback;
-    uint32_t              mTimerId{ 0 };
+    TimerMgr::TimerHandle mTimer;
 };
 #endif // PRODUCT_X64
 
