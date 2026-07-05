@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-07-01 22:42:41
- * @LastEditTime: 2026-07-02 02:16:13
+ * @LastEditTime: 2026-07-05 13:59:52
  * @FilePath: /kk_frame/src/comm/packet/packet_channel.h
  * @Description: 数据包处理管道
  * @BugList:
@@ -25,6 +25,12 @@
 /// @note 否则 id 参数将被忽略
 #define PACKET_CHANNEL_ENABLE_MULTI_ID 0
 #endif
+
+#if !PACKET_CHANNEL_ENABLE_MULTI_ID
+/// @brief 禁用多客户端处理机制时，是否允许接受所有数据包
+#define ACCAPT_ALL_PACKET_WHEN_DISABLE_MULTI_ID 1
+#endif
+
 
 #if PACKET_CHANNEL_ENABLE_MULTI_ID
 #include <map>
@@ -141,11 +147,11 @@ public:
         return mTransport.send(data, len, id);
     }
 
-    /**
-     * @brief 发送已编码数据包，并在发送尝试结束后自动回收 ask。
-     * @return 全部字节发送成功返回 0，否则返回 -1。
-     * @note packetBuff 有效时，无论连接或发送结果如何，调用后 ask 均不再归调用者所有。
-     */
+    /// @brief 发送已编码数据包
+    /// @param ask 数据包
+    /// @param id 客户端 id
+    /// @return 全部字节发送成功返回 0，否则返回 -1。
+    /// @note 调用后，数据包自动回收，无需手动释放
     int send(BuffData* ask, int id = -1) {
         if (ask == nullptr || mPacketBuff == nullptr) {
             return -1;
@@ -166,7 +172,8 @@ public:
         return result;
     }
 
-    /** @brief 接收底层连接事件；服务端 id 表示具体客户端。 */
+    /// @brief 设备连接事件处理
+    /// @param id 客户端 id
     void onConnected(int id = -1) override {
 #if PACKET_CHANNEL_ENABLE_MULTI_ID
         if (id >= 0) {
@@ -180,7 +187,8 @@ public:
         LOGI("PacketChannel connected. id=%d", id);
     }
 
-    /** @brief 接收底层断开事件；服务端 id 表示具体客户端。 */
+    /// @brief 设备断开事件处理
+    /// @param id 客户端 id
     void onDisconnected(int id = -1) override {
 #if PACKET_CHANNEL_ENABLE_MULTI_ID
         if (id >= 0) {
@@ -197,7 +205,10 @@ public:
         LOGW("PacketChannel disconnected. id=%d", id);
     }
 
-    /** @brief 按来源选择独立解码器，并按消费长度持续处理原始字节。 */
+    /// @brief 原始数据接收事件处理
+    /// @param data 数据
+    /// @param len 数据长度
+    /// @param id 客户端 id
     void onRecv(const uint8_t* data, size_t len, int id = -1) override {
 #if PACKET_CHANNEL_ENABLE_MULTI_ID
         PacketStreamDecoder* decoder = id >= 0 ? ensureDecoder(id) : &mDecoder;
@@ -226,7 +237,7 @@ public:
         }
     }
 
-    /// @brief 记录最近一次通道错误
+    /// @brief 错误事件处理
     /// @param err 错误码
     void onError(int err) override {
         mLastError = err;
@@ -253,6 +264,9 @@ public:
 
 private:
 #if PACKET_CHANNEL_ENABLE_MULTI_ID
+    /// @brief 根据客户端ID获取解码器
+    /// @param id 客户端ID
+    /// @return 解码器
     PacketStreamDecoder* ensureDecoder(int id) {
         auto it = mClientDecoders.find(id);
         if (it != mClientDecoders.end()) {
@@ -266,7 +280,14 @@ private:
         return result;
     }
 #else
+    /// @brief 检查来源是否单客户端
+    /// @param id 客户端 id
+    /// @param event 事件名称
+    /// @return true 单ID
     bool acceptSingleId(int id, const char* event) {
+#if ACCAPT_ALL_PACKET_WHEN_DISABLE_MULTI_ID
+        return true;
+#else
         if (id < 0) {
             return true;
         }
@@ -281,6 +302,7 @@ private:
         LOGE("PacketChannel unexpected client id in single-id mode. event=%s expected=%d actual=%d",
             event, mSingleClientId, id);
         return false;
+#endif
     }
 #endif
 };

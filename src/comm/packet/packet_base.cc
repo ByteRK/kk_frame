@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-07-02 00:40:27
- * @LastEditTime: 2026-07-03 00:20:04
+ * @LastEditTime: 2026-07-05 14:17:57
  * @FilePath: /kk_frame/src/comm/packet/packet_base.cc
  * @Description: 通讯数据包基类
  * @BugList:
@@ -74,4 +74,206 @@ void IAsk::setData(const uint8_t* data, size_t pos, size_t len) {
         return;
     }
     memcpy(mBuf->buf + pos, data, len);
+}
+
+/// @brief 绑定接收数据包
+/// @param buf 数据包
+void IAck::parse(BuffData* buf) {
+    mPacket = buf;
+    mBuf = buf == nullptr ? nullptr : buf->buf;
+    updateDataLength();
+}
+
+/// @brief 原始数据流入口
+/// @param data 数据指针
+/// @param len 数据长度
+/// @return 真实消费数据长度
+/// @note 处理分为三个阶段：寻找并对齐包头、补齐长度字段、批量补齐完整包
+/// @note 包头未对齐时按字节扫描；包头匹配后使用 memcpy 按目标长度批量复制
+int IAck::add(const uint8_t* data, int len) {
+    // 接收缓存、输入数据或容量无效时，本轮不消费任何数据
+    if (mPacket == nullptr || mPacket->slen == 0 || data == nullptr || len <= 0) {
+        return 0;
+    }
+
+    // 校验协议提供的包头长度及“可读取完整包长”所需的缓存长度
+    const uint16_t headerSize = headLength();
+    const uint16_t lengthReady = lengthReadySize();
+    if (head() == nullptr || headerSize == 0 || headerSize > mPacket->slen
+        || lengthReady < headerSize || lengthReady > mPacket->slen) {
+        return 0;
+    }
+
+    // 当前缓存已经是完整包时等待上层处理，避免覆盖尚未分发的数据
+    if (complete()) {
+        return 0;
+    }
+
+    int consumed = 0;
+    while (consumed < len) {
+        // 阶段一：逐字节寻找包头。alignHead() 会丢弃无效前缀
+        // 并保留末尾可能构成下一次包头的部分字节，以支持跨批次包头
+        while (consumed < len && !hasHead()) {
+            if (mPacket->len >= mPacket->slen) {
+                mPacket->len = 0;
+            }
+            mBuf[mPacket->len++] = data[consumed++];
+            alignHead();
+        }
+        if (!hasHead()) {
+            break;
+        }
+
+        // 阶段二：包头已对齐，一次性补齐到协议能够读取完整包长的位置
+        // 固定长度协议的 lengthReady 通常等于包头长度，因此不会额外复制
+        copyInput(data, len, consumed, lengthReady);
+        if (mPacket->len < lengthReady) {
+            // 当前输入不足以读取完整包长，保留缓存等待下一批数据。
+            break;
+        }
+
+        // 由具体协议解析完整包长，并确保该长度能被当前接收缓存容纳
+        const int32_t expected = expectedLength();
+        if (expected < lengthReady || expected > mPacket->slen) {
+            // 长度字段非法：丢弃当前包头首字节，重新从已有数据中寻头
+            discardPrefix(1);
+            alignHead();
+            continue;
+        }
+
+        // 阶段三：已知完整包长，批量复制本包剩余数据，不复制后续粘包
+        copyInput(data, len, consumed, static_cast<uint16_t>(expected));
+        if (mPacket->len == expected) {
+            // 只记录第一个完整包；返回后上层会从 consumed 位置继续处理
+            mDataLen = mPacket->len;
+            break;
+        }
+    }
+    return consumed;
+}
+
+/// @brief 数据包完整性校验
+/// @return 数据包是否完整
+bool IAck::complete() {
+    updateDataLength();
+    return mDataLen > 0;
+}
+
+/// @brief 获取数据包原始指针
+/// @return 数据指针
+const uint8_t* IAck::data() const {
+    return mBuf;
+}
+
+/// @brief 获取数据包长度
+/// @return 数据长度
+uint16_t IAck::dataLength() const {
+    return mDataLen;
+}
+
+/// @brief 获取单字节数据
+/// @param pos 位置
+/// @return 数据，越界返回 0
+uint8_t IAck::getData(int pos) const {
+    if (pos >= 0 && pos < mDataLen - 1) {
+        return mBuf[pos];
+    }
+    return 0;
+}
+
+/// @brief 获取双字节数据
+/// @param pos 位置
+/// @param swap 是否需要字节序转换
+/// @return 数据，越界返回 0
+uint16_t IAck::getData2(int pos, bool swap) const {
+    if (pos >= 0 && pos + 1 < mDataLen - 1) {
+        if (swap) {
+            return (static_cast<uint16_t>(mBuf[pos + 1]) << 8) | mBuf[pos];
+        }
+        return (static_cast<uint16_t>(mBuf[pos]) << 8) | mBuf[pos + 1];
+    }
+    return 0;
+}
+
+/// @brief 判断包头是否已对齐
+/// @return true 已对齐
+bool IAck::hasHead() const {
+    const uint16_t length = headLength();
+    return mPacket != nullptr && head() != nullptr && length > 0
+        && mPacket->len >= length && memcmp(mBuf, head(), length) == 0;
+}
+
+/// @brief 尝试对齐包头
+/// @return true 包头已对齐
+/// @note 丢弃缓存中不匹配包头的前缀部分，并保留可能构成下一次包头的部分字节
+bool IAck::alignHead() {
+    if (mPacket == nullptr || head() == nullptr || headLength() == 0) {
+        return false;
+    }
+
+    // 优先查找缓存中第一个完整包头，并丢弃它之前的噪声数据。
+    const uint16_t length = headLength();
+    for (uint16_t pos = 0; pos + length <= mPacket->len; ++pos) {
+        if (memcmp(mBuf + pos, head(), length) == 0) {
+            discardPrefix(pos);
+            return true;
+        }
+    }
+
+    // 没有完整包头时，计算缓存末尾与包头前缀匹配的最长长度。
+    uint16_t keep = mPacket->len < length - 1 ? mPacket->len : length - 1;
+    while (keep > 0) {
+        if (memcmp(mBuf + mPacket->len - keep, head(), keep) == 0) {
+            break;
+        }
+        --keep;
+    }
+    if (keep < mPacket->len) {
+        memmove(mBuf, mBuf + mPacket->len - keep, keep);
+    }
+    mPacket->len = keep;
+    return false;
+}
+
+/// @brief 丢弃缓存中指定长度的数据
+/// @param length 丢弃长度
+void IAck::discardPrefix(uint16_t length) {
+    if (mPacket == nullptr || length == 0) {
+        return;
+    }
+    if (length >= mPacket->len) {
+        mPacket->len = 0;
+        return;
+    }
+    memmove(mBuf, mBuf + length, mPacket->len - length);
+    mPacket->len -= length;
+}
+
+/// @brief 从输入流批量复制数据
+/// @param data 输入数据
+/// @param dataLen 输入数据总长度
+/// @param consumed 已消耗长度
+/// @param targetLen 目标长度
+void IAck::copyInput(const uint8_t* data, int dataLen, int& consumed, uint16_t targetLen) {
+    if (mPacket->len >= targetLen || consumed >= dataLen) {
+        return;
+    }
+    const uint16_t need = targetLen - mPacket->len;
+    const int remaining = dataLen - consumed;
+    const uint16_t copyLen = need < remaining ? need : static_cast<uint16_t>(remaining);
+    memcpy(mBuf + mPacket->len, data + consumed, copyLen);
+    mPacket->len += copyLen;
+    consumed += copyLen;
+}
+
+/// @brief 根据协议更新真实数据包长度
+void IAck::updateDataLength() {
+    mDataLen = 0;
+    if (!hasHead() || mPacket->len < lengthReadySize()) {
+        return;
+    }
+    const int32_t expected = expectedLength();
+    if (expected > 0 && expected <= mPacket->slen && mPacket->len >= expected) {
+        mDataLen = static_cast<uint16_t>(expected);
+    }
 }
