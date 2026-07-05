@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-06-26 00:45:36
- * @LastEditTime: 2026-07-05 20:59:48
+ * @LastEditTime: 2026-07-05 21:36:26
  * @FilePath: /kk_frame/src/comm/packet/packet_buffer.h
  * @Description: 通讯数据包缓存
  * @BugList:
@@ -65,16 +65,13 @@ public: // 数据发送场景
     void checkCode(BuffData* buf);
 
 public: // 数据包调试
-    /** @brief 将有效数据转换为空格分隔的十六进制字符串。 */
     std::string str(BuffData* buf);
 };
 
-/**
- * @brief 绑定具体协议类型、发送包类型和接收包类型的缓存实现。
- * @tparam T 写入 BuffData::type 的协议标识。
- * @tparam Ask IAsk 的具体发送编码类型，需提供 BASE_LEN。
- * @tparam Ack IAck 的具体接收解析类型，需提供 BUFFER_CAPACITY。
- */
+/// @brief 绑定具体协议类型、发送包类型和接收包类型的通讯数据包缓存实现
+/// @tparam Ask IAsk 的具体发送编码类型，需提供 BASE_LEN
+/// @tparam Ack IAck 的具体接收解析类型，需提供 BUFFER_CAPACITY
+/// @tparam T 协议类型
 template <int16_t T, typename Ask, typename Ack>
 class PacketBufferT : public PacketBuffer {
 public:
