@@ -78,11 +78,11 @@ public:
     /// @note 重复调用应保持幂等
     virtual void stop() = 0;
 
-    /// @brief 返回当前通道是否可用于收发
-    /// @return true 可用，false 不可用
+    /// @brief 返回当前通讯通道是否处于运行或连接状态
+    /// @return true 处于运行或连接状态，false 未运行或未连接
     virtual bool isConnected() const = 0;
 
-    /// @brief 设置事件消费者
+    /// @brief 发送原始数据
     /// @param data 待发送数据，调用期间必须有效
     /// @param len 数据长度，必须大于 0
     /// @param id 多客户端通讯下的目标客户端标识；点对点通道忽略该参数
@@ -102,7 +102,7 @@ protected:
 
 
 /// @brief 异步通讯抽象层 [带FD跨线程分发能力]
-/// @note 实现层调用 postEvent() 分发事件，事件分发在 initAsyncDispatcher() 所在线程执行
+/// @note 实现层调用 postEvent() 分发事件，事件由 initAsyncDispatcher() 绑定的 Looper 线程执行
 class AsyncTransport : public Transport {
 public:
     static constexpr size_t DEFAULT_MAX_PENDING_EVENT_COUNT = 256;  // 默认待分发事件数量上限

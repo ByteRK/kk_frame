@@ -24,7 +24,7 @@ typedef struct {
     int16_t  type;    // 包类型
     uint16_t len;     // 数据长度
     uint16_t slen;    // 数据区容量
-    uint8_t  buf[1];  // 数据区指针
+    uint8_t  buf[1];  // 尾随数据区起始数组
 } BuffData;
 #pragma pack()
 

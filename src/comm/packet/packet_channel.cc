@@ -62,7 +62,7 @@ int PacketStreamDecoder::onBytes(const uint8_t* data, size_t len, int id) {
         return 0;
     }
 
-    // 长度溢出保护
+    // 转换为底层解码接口使用的长度类型
     const int totalLen = static_cast<int>(len);
     LOGV("packet channel recv len: %zu hex: \n%s", totalLen, StringUtils::hexStr(data, totalLen).c_str());
 
@@ -82,7 +82,7 @@ int PacketStreamDecoder::onBytes(const uint8_t* data, size_t len, int id) {
         mCheckErrorCount = 0;
         // 数据包重复校验
         if (mEnableRepeatAccept || !mPacketBuff->compare(mCurrRecv, mLastRecv)) {
-            // 数据包打包并分发
+            // 绑定接收包解码器并分发
             IAck* ack = mPacketBuff->ack(mCurrRecv);
             g_packetMgr->onCommand(ack, id);
             // 数据包缓存更新
@@ -118,8 +118,8 @@ int64_t PacketStreamDecoder::recvCount() const {
     return mRecvCount;
 }
 
-/// @brief 获取上一次连续校验失败数据包数量
-/// @return 连续校验失败数据包数量
+/// @brief 获取当前连续校验失败数据包数量
+/// @return 当前连续校验失败数据包数量
 int PacketStreamDecoder::checkErrorCount() const {
     return mCheckErrorCount;
 }

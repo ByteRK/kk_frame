@@ -19,7 +19,7 @@
 #ifndef PACKET_CHANNEL_ENABLE_MULTI_ID
 /// @brief 多客户端处理机制开关
 /// @note 开启后，onRecv 中的 id 参数将有效，且激活独立解码器机制
-/// @note 否则 id 参数将被忽略
+/// @note 关闭后所有来源共享默认解码器，并通过 id 限制同一时间只接受一个客户端
 #define PACKET_CHANNEL_ENABLE_MULTI_ID 0
 #endif
 
@@ -43,9 +43,9 @@ private:
     PacketBuffer*  mPacketBuff;            // 解码器指针(带缓存管理)
     BuffData*      mLastRecv{ nullptr };   // 上次数据包
     BuffData*      mCurrRecv{ nullptr };   // 当前数据包
-    bool           mEnableRepeatAccept;    // 同包去重开关
+    bool           mEnableRepeatAccept;    // 是否允许连续重复包
     int64_t        mRecvCount{ 0 };        // 接收整包计数
-    int            mCheckErrorCount{ 0 };  // 错误包计数
+    int            mCheckErrorCount{ 0 };  // 当前连续校验失败包数量
 
 public:
     PacketStreamDecoder(PacketBuffer* packetBuff, bool enableRepeatAccept);

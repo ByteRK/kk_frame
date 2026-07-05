@@ -70,8 +70,8 @@ namespace {
 
 }
 
-std::mutex UartClient::sDeviceLock;              // 设备锁
-std::set<std::string> UartClient::sUsedDevices;  // 已使用的设备路径(防止重复打开同一设备)
+std::mutex UartClient::sDeviceLock;              // 设备占用记录锁
+std::set<std::string> UartClient::sUsedDevices;  // 已占用的设备路径（防止重复打开同一设备）
 
 /// @brief 串口通讯客户端构造
 /// @param config 串口配置
@@ -176,7 +176,7 @@ void UartClient::stop() {
 /// @param data 数据
 /// @param len 数据长度
 /// @param id 客户端标识（串口通讯不需要）
-/// @return 发送的字节数，-1 表示失败
+/// @return 实际发送字节数，参数或通道状态无效时返回 -1；超时或写入错误时可能小于 len
 ssize_t UartClient::send(const uint8_t* data, size_t len, int /*id*/) {
     if (!isConnected() || data == nullptr || len == 0) {
         return -1;
@@ -253,7 +253,7 @@ int UartClient::onFdEvent(int fd, int events, void* context) {
 /// @brief 处理 FD 事件
 /// @param fd 文件描述符
 /// @param events 事件
-/// @return
+/// @return 继续监听返回 1，停止监听返回 0
 int UartClient::handleFdEvent(int fd, int events) {
     if (!isConnected() || fd != mFd) {
         return 0;
@@ -361,7 +361,8 @@ int UartClient::openDevice() {
 
 /// @brief 配置设备
 /// @param fd 文件描述符
-/// @return 0: 成功, -1: tcgetattr 失败, -2: 不支持的波特率, -3: 不支持的数据位, -4: 不支持的校验位, -5: 不支持的停止位
+/// @return 0 成功；-1 获取属性失败；-2 波特率无效；-3 数据位无效；-4 校验位无效
+/// @return -5 停止位无效；-6 平台不支持硬件流控；-7 流控模式无效；-8 应用属性失败
 int UartClient::configureDevice(int fd) {
     termios options;
     if (tcgetattr(fd, &options) != 0) {

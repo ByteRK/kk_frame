@@ -141,7 +141,7 @@ void AsyncTransport::shutdownAsyncDispatcher() {
     cancelAsyncEvents();
 }
 
-/// @brief 立即分发所有待处理的事件
+/// @brief 立即分发当前批次的待处理事件
 /// @note 用于关闭前保留生命周期回调
 void AsyncTransport::flushAsyncEvents() {
     dispatchPendingEvents();

@@ -72,7 +72,7 @@ TcpClient::~TcpClient() {
 
 /// @brief TCP通讯客户端初始化
 /// @return 0: 成功, 非0: 失败
-/// @note 校验地址并将当前线程 Looper 初始化为事件接收线程
+/// @note 校验地址并将当前线程已有的 Looper 绑定为事件接收 Looper
 int TcpClient::init() {
     if (mConfig.host.empty() || mConfig.port == 0) {
         LOGE("TcpClient init failed. host=%s port=%u",
@@ -90,7 +90,7 @@ int TcpClient::init() {
     return initAsyncDispatcher();
 }
 
-/// @brief 启动服务
+/// @brief 启动客户端通讯
 /// @return true: 成功, false: 失败
 /// @note 启动连接和接收线程，连接失败时按配置持续重试
 bool TcpClient::start() {
@@ -105,8 +105,8 @@ bool TcpClient::start() {
     return true;
 }
 
-/// @brief 停止服务
-/// @note 关闭连接和接收线程，中止解析、连接和重连等待，关闭套接字并释放事件分发器
+/// @brief 停止客户端通讯
+/// @note 停止等待 DNS 解析、连接和重连，关闭套接字，等待工作线程退出并释放事件分发器
 void TcpClient::stop() {
     if (!mRunning.load() && !mConnected.load()) {
         shutdownAsyncDispatcher();
@@ -131,7 +131,7 @@ void TcpClient::stop() {
 /// @param data 数据
 /// @param len 数据长度
 /// @param id 客户端标识（TCP 客户端通讯不需要）
-/// @return 发送的字节数，-1 表示失败
+/// @return 实际发送字节数，参数或连接状态无效时返回 -1；超时或发送错误时可能小于 len
 ssize_t TcpClient::send(const uint8_t* data, size_t len, int /*id*/) {
     if (data == nullptr || len == 0) {
         return -1;
@@ -154,7 +154,7 @@ bool TcpClient::isConnected() const {
     return mConnected.load();
 }
 
-/// @brief 数据接受线程
+/// @brief 连接、重连和数据接收工作线程
 void TcpClient::threadLoop() {
     while (mRunning.load()) {
         const int fd = connectServer();

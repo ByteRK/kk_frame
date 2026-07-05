@@ -40,7 +40,7 @@ private:
     std::mutex              mSendLock;           // 发送锁
     int                     mSock{ -1 };         // 通讯套接字
     mutable std::mutex      mSocketLock;         // 通讯套接字锁
-    std::thread             mThread;             // 接收线程
+    std::thread             mThread;             // 通讯工作线程
     std::atomic<bool>       mRunning{ false };   // 是否正在运行
     std::atomic<bool>       mConnected{ false }; // 是否已连接
     std::mutex              mStopLock;           // 停止锁

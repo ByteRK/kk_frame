@@ -49,7 +49,7 @@ TcpServer::~TcpServer() {
 
 /// @brief TCP通讯服务端初始化
 /// @return 0: 成功, 非0: 失败
-/// @note 校验端口并将当前线程 Looper 初始化为事件接收线程
+/// @note 校验端口并将当前线程已有的 Looper 绑定为事件接收 Looper
 int TcpServer::init() {
     if (mConfig.port == 0) {
         LOGE("TcpServer init failed. port is zero");
@@ -114,7 +114,7 @@ void TcpServer::stop() {
 /// @param data 数据
 /// @param len 数据长度
 /// @param id 客户端标识
-/// @return 发送的字节数，-1 表示失败
+/// @return 实际发送字节数，参数或客户端无效时返回 -1；超时或发送错误时可能小于 len
 ssize_t TcpServer::send(const uint8_t* data, size_t len, int id) {
     if (data == nullptr || len == 0 || id < 0) {
         return -1;
@@ -141,7 +141,7 @@ bool TcpServer::isConnected() const {
     return mRunning.load();
 }
 
-/// @brief 数据接受线程
+/// @brief 客户端接入和数据接收线程
 void TcpServer::threadLoop() {
     while (mRunning.load()) {
         std::map<int, int> clients;
@@ -276,7 +276,7 @@ void TcpServer::threadLoop() {
 }
 
 /// @brief 创建监听socket
-/// @return 监听套接字，失败时返回 -1
+/// @return 监听套接字，失败时返回负数
 int TcpServer::createListenSocket() {
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd < 0) {
@@ -309,7 +309,7 @@ int TcpServer::createListenSocket() {
     return fd;
 }
 
-/// @brief 关闭所有监听socket
+/// @brief 关闭监听套接字和全部客户端套接字
 void TcpServer::closeAllSockets() {
     std::lock_guard<std::mutex> sendLock(mSendLock);
     std::map<int, int> clients;

@@ -173,7 +173,7 @@ uint16_t IAck::dataLength() const {
 
 /// @brief 获取单字节数据
 /// @param pos 位置
-/// @return 数据，越界返回 0
+/// @return 数据，位置无效或指向末尾校验字节时返回 0
 uint8_t IAck::getData(int pos) const {
     if (pos >= 0 && pos < mDataLen - 1) {
         return mBuf[pos];
@@ -184,7 +184,7 @@ uint8_t IAck::getData(int pos) const {
 /// @brief 获取双字节数据
 /// @param pos 位置
 /// @param swap 是否需要字节序转换
-/// @return 数据，越界返回 0
+/// @return 数据，位置无效或范围涉及末尾校验字节时返回 0
 uint16_t IAck::getData2(int pos, bool swap) const {
     if (pos >= 0 && pos + 1 < mDataLen - 1) {
         if (swap) {

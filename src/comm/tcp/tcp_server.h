@@ -21,7 +21,7 @@
 #include <mutex>
 #include <thread>
 
-/// @brief Tcp通讯服务端 [带重连、一对多]
+/// @brief Tcp通讯服务端 [一对多]
 /// @note 基于 AsyncTransport 的 FD 模式实现
 /// @note 每个客户端在连接期间拥有唯一 id，上层发送回复时必须传回对应 id
 class TcpServer : public AsyncTransport {
@@ -41,7 +41,7 @@ private:
     int                mNextClientId{ 1 };   // 下一个客户端 id
     std::mutex         mSendLock;            // 发送锁
     mutable std::mutex mSocketLock;          // 套接字锁
-    std::thread        mThread;              // 接收线程
+    std::thread        mThread;              // 接入/接收线程
     std::atomic<bool>  mRunning{ false };    // 是否正在运行
 
 public:

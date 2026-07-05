@@ -123,9 +123,9 @@ bool PacketBuffer::check(BuffData* buf) {
     return mRCV->check();
 }
 
-/// @brief 打包数据包
+/// @brief 绑定数据包并获取接收解码器
 /// @param bf 数据包
-/// @return 打包结果
+/// @return 接收解码器，参数或解码器无效时返回 nullptr
 IAck* PacketBuffer::ack(BuffData* bf) {
     if (bf == nullptr || mRCV == nullptr) {
         return nullptr;

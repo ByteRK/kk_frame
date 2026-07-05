@@ -21,11 +21,11 @@ PacketHandler::~PacketHandler() {
     g_packetMgr->removeHandler(this);
 }
 
-/// @brief 数据包处理（不校验ID）
+/// @brief 数据包处理（不携带来源 ID）
 /// @param ack 数据包
 void PacketHandler::onCommDeal(const IAck* ack) { }
 
-/// @brief 数据包处理（校验ID）
+/// @brief 数据包处理（携带来源 ID）
 /// @param ack 数据包
 /// @param id 来源ID（适合多客户端的服务端使用）
 void PacketHandler::onCommDeal(const IAck* ack, int id) {

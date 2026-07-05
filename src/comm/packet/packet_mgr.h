@@ -32,7 +32,7 @@ public:
 
 /// @brief 通讯数据包分发管理器
 /// @note 支持一对多以及多对一分发
-/// @note 不支持并发，必须单UI线程调用
+/// @note 不支持并发，必须在同一线程调用
 /// @note 分发过程新增处理器下包生效
 class PacketManager : public Singleton<PacketManager> {
     friend  Singleton<PacketManager>;

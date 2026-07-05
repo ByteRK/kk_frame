@@ -39,17 +39,17 @@ public:
     };
 
 private:
-    static std::mutex            sDeviceLock;  // 设备锁
-    static std::set<std::string> sUsedDevices; // 已使用的设备路径(防止重复打开同一设备)
+    static std::mutex            sDeviceLock;  // 设备占用记录锁
+    static std::set<std::string> sUsedDevices; // 已占用的设备路径（防止重复打开同一设备）
 
 private:
     Config          mConfig;                   // 通讯配置
     int             mFd{ -1 };                 // 串口文件描述符
     bool            mRunning{ false };         // 通道是否启动
-    bool            mDeviceClaimed{ false };   // 设备是否已被占用
+    bool            mDeviceClaimed{ false };   // 当前实例是否已登记设备占用
     bool            mUseFdMode{ false };       // 是否使用 FD 触发模式
     bool            mFdRegistered{ false };    // 是否已注册 FD 事件
-    cdroid::Looper* mLooper{ nullptr };        // 事件分发目标 Looper
+    cdroid::Looper* mLooper{ nullptr };        // FD 事件监听 Looper
 
 public:
     explicit UartClient(const Config& config);
