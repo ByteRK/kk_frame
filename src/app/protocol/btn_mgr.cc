@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-11-24 09:40:23
- * @LastEditTime: 2026-07-02 00:37:53
+ * @LastEditTime: 2026-07-05 23:08:22
  * @FilePath: /kk_frame/src/app/protocol/btn_mgr.cc
  * @Description:
  * @BugList:
@@ -14,6 +14,8 @@
 #include "btn_mgr.h"
 #include "btn_packet.h"
 #include "string_utils.h"
+#include "project_utils.h"
+#include "app_common.h"
 #include <core/app.h>
 #include <core/systemclock.h>
 
@@ -23,35 +25,25 @@ typedef PacketBufferPoolT<BT_BTN, BtnAsk, BtnAck> BtnPacketBufferPool;
 
 BtnMgr::BtnMgr() {
     mPacket = new BtnPacketBufferPool();
-    mNextEventTime = 0;
-    mNextSendTime = 0;
     mLastAcceptTime = cdroid::SystemClock::uptimeMillis();
-    mBtnUpd = 0;
-    mUartBtn = nullptr;
-    mInitialized = false;
 }
 
 BtnMgr::~BtnMgr() {
-    if (mInitialized) {
-        cdroid::App::getInstance().removeEventHandler(this);
-        mInitialized = false;
-    }
-    if (mUartBtn) {
-        delete mUartBtn;
-        mUartBtn = nullptr;
-    }
-    if (mPacket) {
-        delete mPacket;
-        mPacket = nullptr;
-    }
+    mInitialized = false;
+    stopTick();
+    __delete(mChannel);
+    __delete(mPacket);
 }
 
 int BtnMgr::init() {
-    if (mInitialized) {
-        return 0;
-    }
-
+    if (mInitialized) return 0;
     LOGI("BtnMgr init");
+
+#ifdef PRODUCT_X64
+    TcpClient::Config config;
+    ProjectUtils::getDebugServiceInfo(config.host, config.port);
+    config.port += BT_BTN;
+#else
     UartClient::Config config;
     config.device = "/dev/ttyS2";
     config.baudRate = 9600;
@@ -60,6 +52,7 @@ int BtnMgr::init() {
     config.stopBits = 1;
     config.parity = 'N';
     config.pollIntervalMs = 10;
+#endif
 
     BtnCommChannel* channel = new BtnCommChannel(mPacket, false, config);
     const int rc = channel->init();
@@ -73,35 +66,25 @@ int BtnMgr::init() {
         delete channel;
         return -4;
     }
-    mUartBtn = channel;
+    mChannel = channel;
 
     // 启动延迟一会后开始发包
-    mLastAcceptTime = cdroid::SystemClock::uptimeMillis();
-    mNextEventTime = cdroid::SystemClock::uptimeMillis() + TICK_TIME * 10;
-    cdroid::App::getInstance().addEventHandler(this);
+    setTick(TICK_TIME);
+    startTick(TICK_TIME * 10);
+
     mInitialized = true;
     return 0;
 }
 
-int BtnMgr::checkEvents() {
-    int64_t now = cdroid::SystemClock::uptimeMillis();
-    if (mUartBtn && mBtnUpd > 0) return 1;
-    if (now >= mNextEventTime) {
-        mNextEventTime = now + TICK_TIME;
-        return 1;
-    }
-    return 0;
-}
-
-int BtnMgr::handleEvents() {
-    if (mUartBtn) {
+void BtnMgr::onTick(int64_t nowMs) {
+    if (mChannel) {
         if (mBtnUpd > 0) send2Btn();
 
-        if (cdroid::SystemClock::uptimeMillis() - mLastAcceptTime > 10 * 1000) {
+        if (nowMs - mLastAcceptTime > 10 * 1000) {
             LOGE("btn communication failure");
+            mLastAcceptTime = nowMs;
         }
     }
-    return 1;
 }
 
 /// @brief 发送串口消息
@@ -117,7 +100,7 @@ void BtnMgr::send2Btn() {
 
     snd.checkCode();
     LOG(VERBOSE) << "[BTN -->] hex str: " << StringUtils::hexStr(bd->buf, bd->len);
-    mUartBtn->send(bd);
+    mChannel->send(bd);
 }
 
 /// @brief 处理串口信息

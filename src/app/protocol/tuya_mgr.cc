@@ -13,6 +13,8 @@
 
 #include "tuya_mgr.h"
 #include "tuya_packet.h"
+#include "project_utils.h"
+#include "app_common.h"
 #include <core/app.h>
 #include <core/systemclock.h>
 
@@ -48,35 +50,24 @@ typedef PacketBufferPoolT<BT_TUYA, TuyaAsk, TuyaAck> TuyaPacketBufferPool;
 
 TuyaMgr::TuyaMgr() {
     mPacket = new TuyaPacketBufferPool();
-    mUartTUYA = 0;
-    mNextEventTime = 0;
-    mLastSendTime = 0;
-    mLastSyncDateTime = 0;
-    mLastSendDiffDPTime = 0;
-    mInitialized = false;
 }
 
 TuyaMgr::~TuyaMgr() {
-    if (mInitialized) {
-        cdroid::App::getInstance().removeEventHandler(this);
-        mInitialized = false;
-    }
-    if (mUartTUYA) {
-        delete mUartTUYA;
-        mUartTUYA = nullptr;
-    }
-    if (mPacket) {
-        delete mPacket;
-        mPacket = nullptr;
-    }
+    mInitialized = false;
+    stopTick();
+    __delete(mChannel);
+    __delete(mPacket);
 }
 
 int TuyaMgr::init() {
-    if (mInitialized) {
-        return 0;
-    }
-
+    if (mInitialized) return 0;
     LOGI("开始监听");
+
+#ifdef PRODUCT_X64
+    TcpClient::Config config;
+    ProjectUtils::getDebugServiceInfo(config.host, config.port);
+    config.port += BT_TUYA;
+#else
     UartClient::Config config;
     config.device = "/dev/ttyS3";
     config.baudRate = 9600;
@@ -85,6 +76,7 @@ int TuyaMgr::init() {
     config.stopBits = 1;
     config.parity = 'N';
     config.pollIntervalMs = 10;
+#endif
 
     TuyaCommChannel* channel = new TuyaCommChannel(mPacket, true, config);
     const int rc = channel->init();
@@ -98,52 +90,35 @@ int TuyaMgr::init() {
         delete channel;
         return -4;
     }
-    mUartTUYA = channel;
-
-    mLastAcceptTime = 0;
-
-    mIsRunConnectWork = false;
-    mNetWorkConnectTime = 0;
+    mChannel = channel;
 
     // 启动延迟一会后开始发包
-    mNextEventTime = cdroid::SystemClock::uptimeMillis() + TICK_TIME * 10;
-    cdroid::App::getInstance().addEventHandler(this);
+    setTick(TICK_TIME);
+    startTick(TICK_TIME * 10);
+
     mInitialized = true;
     return 0;
 }
 
-int TuyaMgr::checkEvents() {
-    int64_t curr_tick = cdroid::SystemClock::uptimeMillis();
-    if (curr_tick >= mNextEventTime) {
-        mNextEventTime = curr_tick + TICK_TIME;
-        return 1;
-    }
-    return 0;
-}
-
-int TuyaMgr::handleEvents() {
-    int64_t now_tick = cdroid::SystemClock::uptimeMillis();
-
+void TuyaMgr::onTick(int64_t nowMs) {
     if (mIsRunConnectWork) {
-        if (now_tick - mLastSendDiffDPTime >= 400) {
+        if (nowMs - mLastSendDiffDPTime >= 400) {
             sendDiffDp();
-            mLastSendDiffDPTime = now_tick;
+            mLastSendDiffDPTime = nowMs;
         }
 
-        if (now_tick - mLastSyncDateTime >= 1080000) {
+        if (nowMs - mLastSyncDateTime >= 1080000) {
             getTuyaTime();
         }
     } else {
         if (g_data->mNetWorkDetail == 0x04 &&
-            now_tick - mNetWorkConnectTime >= 1000) {
+            nowMs - mNetWorkConnectTime >= 1000) {
             openWeatherServe();
             // send2MCU(TYCOMM_GET_TIME);
             openTimeServe();
             mIsRunConnectWork = true;
         }
     }
-
-    return 1;
 }
 
 void TuyaMgr::send2MCU(uint8_t cmd) {
@@ -166,7 +141,7 @@ void TuyaMgr::send2MCU(uint8_t* buf, uint16_t len, uint8_t cmd) {
 
     snd.checkCode();    // 修改检验位
     LOG(VERBOSE) << "send to tuya. bytes=" << StringUtils::hexStr(bd->buf, bd->len);
-    mUartTUYA->send(bd);
+    mChannel->send(bd);
     mLastSendTime = cdroid::SystemClock::uptimeMillis();
 }
 

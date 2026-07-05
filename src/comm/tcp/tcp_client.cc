@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-06-26 00:44:35
- * @LastEditTime: 2026-07-05 21:11:52
+ * @LastEditTime: 2026-07-05 23:00:03
  * @FilePath: /kk_frame/src/comm/tcp/tcp_client.cc
  * @Description: TCP通讯客户端
  * @BugList:
@@ -87,7 +87,9 @@ int TcpClient::init() {
         LOGE("TcpClient init failed. sendTimeoutMs=%d", mConfig.sendTimeoutMs);
         return -3;
     }
-    return initAsyncDispatcher();
+    int res = initAsyncDispatcher();
+    if (res == 0) LOGI("TcpClient init success. host=%s port=%u", mConfig.host.c_str(), mConfig.port);
+    return res;
 }
 
 /// @brief 启动客户端通讯

@@ -14,6 +14,8 @@
 #include "conn_mgr.h"
 #include "mcu_packet.h"
 #include "string_utils.h"
+#include "project_utils.h"
+#include "app_common.h"
 #include <core/app.h>
 #include <core/systemclock.h>
 
@@ -23,35 +25,25 @@ typedef PacketBufferPoolT<BT_MCU, McuAsk, McuAck> McuPacketBufferPool;
 
 ConnMgr::ConnMgr() {
     mPacket = new McuPacketBufferPool();
-    mNextEventTime = 0;
-    mNextSendTime = 0;
     mLastAcceptTime = cdroid::SystemClock::uptimeMillis();
-    mMcuUpd = 0;
-    mUartMcu = nullptr;
-    mInitialized = false;
 }
 
 ConnMgr::~ConnMgr() {
-    if (mInitialized) {
-        cdroid::App::getInstance().removeEventHandler(this);
-        mInitialized = false;
-    }
-    if (mUartMcu) {
-        delete mUartMcu;
-        mUartMcu = nullptr;
-    }
-    if (mPacket) {
-        delete mPacket;
-        mPacket = nullptr;
-    }
+    mInitialized = false;
+    stopTick();
+    __delete(mChannel);
+    __delete(mPacket);
 }
 
 int ConnMgr::init() {
-    if (mInitialized) {
-        return 0;
-    }
-
+    if (mInitialized) return 0;
     LOGI("ConnMgr init");
+
+#ifdef PRODUCT_X64
+    TcpClient::Config config;
+    ProjectUtils::getDebugServiceInfo(config.host, config.port);
+    config.port += BT_MCU;
+#else
     UartClient::Config config;
     config.device = "/dev/ttyS1";
     config.baudRate = 9600;
@@ -60,6 +52,7 @@ int ConnMgr::init() {
     config.stopBits = 1;
     config.parity = 'N';
     config.pollIntervalMs = 10;
+#endif
 
     ConnCommChannel* channel = new ConnCommChannel(mPacket, false, config);
     const int rc = channel->init();
@@ -73,35 +66,25 @@ int ConnMgr::init() {
         delete channel;
         return -4;
     }
-    mUartMcu = channel;
+    mChannel = channel;
 
     // 启动延迟一会后开始发包
-    mLastAcceptTime = cdroid::SystemClock::uptimeMillis();
-    mNextEventTime = cdroid::SystemClock::uptimeMillis() + TICK_TIME * 10;
-    cdroid::App::getInstance().addEventHandler(this);
+    setTick(TICK_TIME);
+    startTick(TICK_TIME * 10);
+
     mInitialized = true;
     return 0;
 }
 
-int ConnMgr::checkEvents() {
-    int64_t now = cdroid::SystemClock::uptimeMillis();
-    if (mUartMcu && mMcuUpd > 0) return 1;
-    if (now >= mNextEventTime) {
-        mNextEventTime = now + TICK_TIME;
-        return 1;
-    }
-    return 0;
-}
-
-int ConnMgr::handleEvents() {
-    if (mUartMcu) {
+void ConnMgr::onTick(int64_t nowMs) {
+    if (mChannel) {
         if (mMcuUpd > 0) send2Mcu();
 
-        if (cdroid::SystemClock::uptimeMillis() - mLastAcceptTime > 10 * 1000) {
+        if (nowMs - mLastAcceptTime > 10 * 1000) {
             LOGE("mcu communication failure");
+            mLastAcceptTime = nowMs;
         }
     }
-    return 1;
 }
 
 /// @brief 发送串口消息
@@ -117,7 +100,7 @@ void ConnMgr::send2Mcu() {
 
     snd.checkCode();
     LOG(VERBOSE) << "[CONN -->] hex str: " << StringUtils::hexStr(bd->buf, bd->len);
-    mUartMcu->send(bd);
+    mChannel->send(bd);
 }
 
 /// @brief 处理串口信息

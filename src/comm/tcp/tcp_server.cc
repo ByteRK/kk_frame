@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-06-26 00:48:00
- * @LastEditTime: 2026-07-05 21:16:08
+ * @LastEditTime: 2026-07-05 22:59:26
  * @FilePath: /kk_frame/src/comm/tcp/tcp_server.cc
  * @Description: TCP通讯服务端
  * @BugList:
@@ -59,7 +59,10 @@ int TcpServer::init() {
         LOGE("TcpServer init failed. sendTimeoutMs=%d", mConfig.sendTimeoutMs);
         return -2;
     }
-    return initAsyncDispatcher();
+
+    int res = initAsyncDispatcher();
+    if (res == 0) LOGI("TcpServer init success. port=%d", mConfig.port);
+    return res;
 }
 
 /// @brief 启动服务
