@@ -23,7 +23,8 @@
 /**
  * @brief 基于 POSIX 串口设备的原始字节通讯实现。
  *
- * 类内部直接完成设备打开和 termios 配置，并通过 TickMgr 周期驱动非阻塞读取。
+ * 类内部直接完成设备打开和 termios 配置。短轮询间隔使用 Looper 直接监听设备 fd，
+ * 较长轮询间隔使用 TickMgr 周期驱动非阻塞读取。
  */
 class UartClient : public Transport, private TickMgr::ITickClass {
 public:
@@ -41,8 +42,8 @@ public:
         int stopBits{ 1 };
         /** @brief 校验位：N/n 无校验，O/o 奇校验，E/e 偶校验。 */
         char parity{ 'N' };
-        /** @brief 两次串口读取检查之间的调度间隔，单位毫秒；小于 1 时按 1 处理。 */
-        int pollIntervalMs{ 10 };
+        /** @brief 读取调度间隔；小于 100ms 使用 fd 事件模式，否则使用定时轮询模式。 */
+        int pollIntervalMs{ 200 };
         /** @brief 写入繁忙时的最大等待时间，单位毫秒；负数表示不设超时。 */
         int writeTimeoutMs{ 1000 };
         /** @brief 单次读取使用的缓存大小；为 0 时使用 4096 字节。 */
@@ -73,10 +74,16 @@ protected:
 private:
     /** @brief TickMgr 周期回调，执行一次非阻塞串口读取。 */
     void onTick(int64_t nowMs) override;
+    /** @brief Looper 串口 fd 事件入口。 */
+    static int onFdEvent(int fd, int events, void* context);
+    int handleFdEvent(int fd, int events);
+    bool startReadDriver();
+    void stopReadDriver();
+    void readAvailable();
     int openDevice();
     int configureDevice(int fd);
     void releaseDeviceClaim();
-    void disconnectOnDeviceError(int error, short revents);
+    void disconnectOnDeviceError(int error, int events);
     ssize_t writeAll(const uint8_t* data, size_t len);
 
 private:
@@ -87,6 +94,9 @@ private:
     int mFd;
     bool mRunning;
     bool mDeviceClaimed;
+    bool mUseFdMode;
+    bool mFdRegistered;
+    cdroid::Looper* mLooper;
     TransportHandler* mHandler;
 };
 

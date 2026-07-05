@@ -35,6 +35,7 @@
 namespace {
 
     constexpr short UART_POLL_ERROR_EVENTS = POLLERR | POLLHUP | POLLNVAL;
+    constexpr int UART_FD_MODE_THRESHOLD_MS = 100;
 
     speed_t baudToTermios(int baudRate) {
         switch (baudRate) {
@@ -75,8 +76,13 @@ UartClient::UartClient(const Config& config)
     mFd(-1),
     mRunning(false),
     mDeviceClaimed(false),
+    mUseFdMode(config.pollIntervalMs < UART_FD_MODE_THRESHOLD_MS),
+    mFdRegistered(false),
+    mLooper(nullptr),
     mHandler(nullptr) {
-    setTick(mConfig.pollIntervalMs > 0 ? mConfig.pollIntervalMs : 1);
+    if (!mUseFdMode) {
+        setTick(mConfig.pollIntervalMs);
+    }
 }
 
 UartClient::~UartClient() {
@@ -138,7 +144,10 @@ bool UartClient::start() {
     }
 
     mRunning = true;
-    startTick(0);
+    if (!startReadDriver()) {
+        mRunning = false;
+        return false;
+    }
 
     Event ev;
     ev.type = Event::CONNECTED;
@@ -147,7 +156,7 @@ bool UartClient::start() {
 
 void UartClient::stop() {
     const bool notifyDisconnected = mRunning;
-    stopTick();
+    stopReadDriver();
     mRunning = false;
     cancelEventDispatch();
 
@@ -205,6 +214,76 @@ void UartClient::onTick(int64_t /*nowMs*/) {
     }
 
     if ((pfd.revents & POLLIN) == 0) {
+        return;
+    }
+
+    readAvailable();
+}
+
+int UartClient::onFdEvent(int fd, int events, void* context) {
+    UartClient* client = static_cast<UartClient*>(context);
+    if (client == nullptr) {
+        return 0;
+    }
+    return client->handleFdEvent(fd, events);
+}
+
+int UartClient::handleFdEvent(int fd, int events) {
+    if (!isConnected() || fd != mFd) {
+        return 0;
+    }
+
+    if ((events & (cdroid::Looper::EVENT_ERROR
+        | cdroid::Looper::EVENT_HANGUP)) != 0) {
+        int error = EIO;
+        if ((events & cdroid::Looper::EVENT_HANGUP) != 0) {
+            error = ENODEV;
+        }
+        disconnectOnDeviceError(error, events);
+        return 0;
+    }
+
+    if ((events & cdroid::Looper::EVENT_INPUT) != 0) {
+        readAvailable();
+    }
+    return isConnected() ? 1 : 0;
+}
+
+bool UartClient::startReadDriver() {
+    if (!mUseFdMode) {
+        startTick(0);
+        return true;
+    }
+
+    mLooper = cdroid::Looper::getForThread();
+    if (mLooper == nullptr) {
+        LOGE("UartClient fd mode failed: current looper is null");
+        return false;
+    }
+
+    const int events = cdroid::Looper::EVENT_INPUT
+        | cdroid::Looper::EVENT_ERROR
+        | cdroid::Looper::EVENT_HANGUP;
+    if (mLooper->addFd(mFd, 0, events, onFdEvent, this) < 0) {
+        LOGE("UartClient addFd failed. device=%s fd=%d", mConfig.device.c_str(), mFd);
+        mLooper = nullptr;
+        return false;
+    }
+    mFdRegistered = true;
+    return true;
+}
+
+void UartClient::stopReadDriver() {
+    if (mFdRegistered && mLooper != nullptr && mFd >= 0) {
+        mLooper->removeFd(mFd);
+    }
+    mFdRegistered = false;
+    mLooper = nullptr;
+    stopTick();
+}
+
+void UartClient::readAvailable() {
+    if (!isConnected()) {
         return;
     }
 
@@ -382,13 +461,13 @@ void UartClient::releaseDeviceClaim() {
     mDeviceClaimed = false;
 }
 
-void UartClient::disconnectOnDeviceError(int error, short revents) {
+void UartClient::disconnectOnDeviceError(int error, int events) {
     const bool notifyDisconnected = mRunning;
-    stopTick();
+    stopReadDriver();
     mRunning = false;
 
-    LOGE("UartClient device error. device=%s errno=%d err=%s revents=0x%x",
-        mConfig.device.c_str(), error, strerror(error), revents);
+    LOGE("UartClient device error. device=%s errno=%d err=%s events=0x%x",
+        mConfig.device.c_str(), error, strerror(error), events);
 
     if (mFd >= 0) {
         close(mFd);
