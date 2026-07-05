@@ -121,7 +121,6 @@ int UartClient::init() {
         return -3;
     }
 
-    tcflush(mFd, TCIOFLUSH);
     LOGI("UartClient init. device=%s baud=%d data=%d stop=%d parity=%c",
         mConfig.device.c_str(),
         mConfig.baudRate,
@@ -139,6 +138,12 @@ bool UartClient::start() {
     }
 
     if (mFd < 0 && init() != 0) {
+        return false;
+    }
+
+    if (tcflush(mFd, TCIOFLUSH) != 0) {
+        LOGE("UartClient flush failed before start. device=%s errno=%d err=%s",
+            mConfig.device.c_str(), errno, strerror(errno));
         return false;
     }
 

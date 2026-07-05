@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-08-01 03:03:02
- * @LastEditTime: 2026-07-06 01:06:19
+ * @LastEditTime: 2026-07-06 01:25:53
  * @FilePath: /kk_frame/src/app/protocol/tuya_mgr.cc
  * @Description:
  * @BugList:
@@ -75,7 +75,7 @@ int TuyaMgr::init() {
     config.dataBits = 8;
     config.stopBits = 1;
     config.parity = 'N';
-    config.pollIntervalMs = 10;
+    config.pollIntervalMs = 200;
 #endif
 
     TuyaCommChannel* channel = new TuyaCommChannel(mPacket, true, config);

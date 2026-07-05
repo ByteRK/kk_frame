@@ -201,7 +201,9 @@ closeSocket() -> post DISCONNECTED -> 等待 reconnectDelayMs -> 重连
 2. 在进程级静态集合 `sUsedDevices` 中登记设备，禁止两个 `UartClient` 同时打开同一路径；重复占用会 `abort()`，不是普通错误返回。
 3. 以 `O_RDWR | O_NOCTTY | O_NONBLOCK | O_CLOEXEC` 打开设备。
 4. 使用 raw 模式配置波特率、数据位、停止位、奇偶校验和流控。
-5. 设置 `VMIN=0`、`VTIME=0`，并 `tcflush(TCIOFLUSH)` 清空收发队列。
+5. 设置 `VMIN=0`、`VTIME=0`。
+
+每次 `start()` 启动读取驱动前都会调用 `tcflush(TCIOFLUSH)` 清空收发队列；清空失败时启动失败。
 
 支持的常用波特率为 300～38400，并在平台宏存在时支持 57600、115200、230400、460800、921600。流控值：0 无流控、1 硬件流控、2 软件流控。
 
@@ -214,7 +216,7 @@ closeSocket() -> post DISCONNECTED -> 等待 reconnectDelayMs -> 重连
 | `< 100 ms` | Looper FD 模式 | 将串口 FD 注册到当前线程 Looper，收到 INPUT/ERROR/HANGUP 时立即处理 |
 | `>= 100 ms` | Tick 模式 | 由 `TickMgr` 定期触发，使用零超时 `poll()` 检查串口 |
 
-因此工程内 `pollIntervalMs = 10` 的 MCU、按钮、涂鸦通道都使用 FD 模式。FD 模式和 TCP 一样要求调用线程已经有 Looper，但 UART 不创建工作线程，读取和 handler 回调都直接发生在 Looper/Tick 所在线程。
+当前工程内 MCU、按钮、涂鸦通道均设置 `pollIntervalMs = 200`，使用 Tick 模式。FD 模式和 TCP 一样要求调用线程已经有 Looper，但 UART 不创建工作线程，读取和 handler 回调都直接发生在 Looper/Tick 所在线程。
 
 `readAvailable()` 循环读取，直到：读取量小于缓冲区大小、暂时无数据、被信号打断或发生错误。每次成功 `read()` 都立即同步分发一个 `DATA`，所以一次回调可能是半包、一个包或多个粘连包。
 
