@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 11:38:20
- * @LastEditTime: 2026-04-24 15:16:54
+ * @LastEditTime: 2026-07-06 01:02:48
  * @FilePath: /kk_frame/src/utils/encoding_utils.h
  * @Description: 编码相关的一些函数
  * @BugList:
@@ -18,6 +18,12 @@
 #include <stdint.h>
 
 namespace EncodingUtils {
+
+    /// @brief 多字节数据的线路字节序
+    typedef enum {
+        BigEndian,    // 大端字节序
+        LittleEndian, // 小端字节序
+    } ByteOrder;
 
     /// @brief 检查当前系统是否为小端字节序
     /// @return 

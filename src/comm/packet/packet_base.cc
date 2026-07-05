@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-06-26 00:44:10
- * @LastEditTime: 2026-07-05 20:59:15
+ * @LastEditTime: 2026-07-06 01:00:24
  * @FilePath: /kk_frame/src/comm/packet/packet_base.cc
  * @Description: 通讯数据包基类
  * @BugList:
@@ -171,28 +171,96 @@ uint16_t IAck::dataLength() const {
     return mDataLen;
 }
 
-/// @brief 获取单字节数据
-/// @param pos 位置
-/// @return 数据，位置无效或指向末尾校验字节时返回 0
-uint8_t IAck::getData(int pos) const {
-    if (pos >= 0 && pos < mDataLen - 1) {
-        return mBuf[pos];
-    }
-    return 0;
+/// @brief 判断完整数据包内是否包含指定范围
+/// @param offset 起始偏移
+/// @param length 数据长度
+/// @return true 范围有效，false 范围越界或当前无完整数据包
+bool IAck::hasRange(size_t offset, size_t length) const {
+    return mBuf != nullptr
+        && offset <= mDataLen
+        && length <= static_cast<size_t>(mDataLen) - offset;
 }
 
-/// @brief 获取双字节数据
-/// @param pos 位置
-/// @param swap 是否需要字节序转换
-/// @return 数据，位置无效或范围涉及末尾校验字节时返回 0
-uint16_t IAck::getData2(int pos, bool swap) const {
-    if (pos >= 0 && pos + 1 < mDataLen - 1) {
-        if (swap) {
-            return (static_cast<uint16_t>(mBuf[pos + 1]) << 8) | mBuf[pos];
-        }
-        return (static_cast<uint16_t>(mBuf[pos]) << 8) | mBuf[pos + 1];
+/// @brief 读取无符号单字节整数
+/// @param offset 起始偏移
+/// @param value 读取结果
+/// @return true 成功
+bool IAck::readU8(size_t offset, uint8_t& value) const {
+    if (!hasRange(offset, sizeof(value))) return false;
+    value = mBuf[offset];
+    return true;
+}
+
+/// @brief 读取无符号双字节整数
+/// @param offset 起始偏移
+/// @param value 读取结果
+/// @param order 大小端序
+/// @return true 成功
+bool IAck::readU16(size_t offset, uint16_t& value, ByteOrder order) const {
+    if (!hasRange(offset, sizeof(value))) return false;
+    if (order == ByteOrder::BigEndian) {
+        value = (static_cast<uint16_t>(mBuf[offset]) << 8)
+            | static_cast<uint16_t>(mBuf[offset + 1]);
+    } else {
+        value = (static_cast<uint16_t>(mBuf[offset + 1]) << 8)
+            | static_cast<uint16_t>(mBuf[offset]);
     }
-    return 0;
+    return true;
+}
+
+/// @brief 读取无符号四字节整数
+/// @param offset 起始偏移
+/// @param value 读取结果
+/// @param order 大小端序
+/// @return true 成功
+bool IAck::readU32(size_t offset, uint32_t& value, ByteOrder order) const {
+    if (!hasRange(offset, sizeof(value))) return false;
+    value = 0;
+    if (order == ByteOrder::BigEndian) {
+        for (size_t i = 0; i < sizeof(value); ++i) {
+            value = (value << 8) | static_cast<uint32_t>(mBuf[offset + i]);
+        }
+    } else {
+        for (size_t i = 0; i < sizeof(value); ++i) {
+            value |= static_cast<uint32_t>(mBuf[offset + i]) << (i * 8);
+        }
+    }
+    return true;
+}
+
+/// @brief 读取无符号八字节整数
+/// @param offset 起始偏移
+/// @param value 读取结果
+/// @param order 大小端序
+/// @return true 成功
+bool IAck::readU64(size_t offset, uint64_t& value, ByteOrder order) const {
+    if (!hasRange(offset, sizeof(value))) return false;
+    value = 0;
+    if (order == ByteOrder::BigEndian) {
+        for (size_t i = 0; i < sizeof(value); ++i) {
+            value = (value << 8) | static_cast<uint64_t>(mBuf[offset + i]);
+        }
+    } else {
+        for (size_t i = 0; i < sizeof(value); ++i) {
+            value |= static_cast<uint64_t>(mBuf[offset + i]) << (i * 8);
+        }
+    }
+    return true;
+}
+
+/// @brief 获取完整数据包内指定范围的只读视图
+/// @param offset 起始偏移
+/// @param length 数据长度
+/// @param bytes 数据指针
+/// @return true 成功读取
+/// @note 返回指针由 IAck 绑定的缓存持有，仅在当前数据包回调期间有效
+bool IAck::readBytes(size_t offset, size_t length, const uint8_t*& bytes) const {
+    if (!hasRange(offset, length)) {
+        bytes = nullptr;
+        return false;
+    }
+    bytes = mBuf + offset;
+    return true;
 }
 
 /// @brief 判断包头是否已对齐

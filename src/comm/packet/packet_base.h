@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-06-26 00:44:10
- * @LastEditTime: 2026-07-05 20:59:03
+ * @LastEditTime: 2026-07-06 00:54:10
  * @FilePath: /kk_frame/src/comm/packet/packet_base.h
  * @Description: 通讯数据包基类
  * @BugList:
@@ -13,6 +13,8 @@
 
 #ifndef __PACKET_BASE_H__
 #define __PACKET_BASE_H__
+
+#include "encoding_utils.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -43,26 +45,35 @@ public:
 
 /// @brief 收包解码器
 class IAck {
+public:
+    using ByteOrder = EncodingUtils::ByteOrder;
+
 protected:
-    uint8_t*  mBuf{ nullptr };    // 接收缓存数据区首地址
-    uint16_t  mDataLen{ 0 };      // 当前完整协议包总长度（含校验字节）
+    uint8_t*  mBuf{ nullptr };     // 接收缓存数据区首地址
+    uint16_t  mDataLen{ 0 };       // 当前完整协议包总长度（含校验字节）
 
 private:
     BuffData* mPacket{ nullptr };  // 当前绑定的接收缓存
 
 public:
     virtual ~IAck() { }
-    virtual bool check() = 0;   // 数据包校验
-    virtual int  getType() = 0; // 业务命令类型
+    virtual int    getType() = 0;  // 业务命令类型
 
-    void parse(BuffData* buf);
-    int  add(const uint8_t* data, int len);
-    bool complete();
+public: // Decoder 调用
+    void           parse(BuffData* buf);
+    int            add(const uint8_t* data, int len);
+    bool           complete();
+    virtual bool   check() = 0;    // 数据包校验
 
+public: // 应用层 调用
     const uint8_t* data() const;
     uint16_t       dataLength() const;
-    uint8_t        getData(int pos) const;
-    uint16_t       getData2(int pos, bool swap = false) const;
+    bool           hasRange(size_t offset, size_t length) const;
+    bool           readU8(size_t offset, uint8_t& value) const;
+    bool           readU16(size_t offset, uint16_t& value, ByteOrder order = ByteOrder::BigEndian) const;
+    bool           readU32(size_t offset, uint32_t& value, ByteOrder order = ByteOrder::BigEndian) const;
+    bool           readU64(size_t offset, uint64_t& value, ByteOrder order = ByteOrder::BigEndian) const;
+    bool           readBytes(size_t offset, size_t length, const uint8_t*& bytes) const;
 
 protected:
     virtual const uint8_t* head() const = 0;            // 协议包头
