@@ -19,10 +19,10 @@
 /**
  * @brief 原始通讯事件回调接口。
  *
- * 回调由具体 Transport 分发。TCP 实现通常会将工作线程事件切换到 init() 所在线程的
- * Looper 中再回调；显式 stop() 期间为避免生命周期事件被清空，可能在 stop() 调用线程
- * 同步排空已投递事件。UART 接收事件由 TickMgr 所在线程同步回调，start()/stop()
- * 产生的连接事件则在调用线程同步回调。
+ * 回调由具体 Transport 分发。AsyncTransport 实现会将工作线程事件切换到 init() 所在
+ * 线程的 Looper；显式 stop() 为同步完成资源回收，可能在 stop() 调用线程排空尚未处理
+ * 的事件。由 Looper 或 TickMgr 直接驱动的 Transport 实现在对应驱动线程同步回调，
+ * start()/stop() 产生的生命周期事件在调用线程同步回调。
  * 回调参数中的数据只在本次 onRecv() 调用期间有效，如需异步使用必须自行复制。
  * 回调中允许调用通道的 stop()，当前回调返回后剩余待分发事件会被取消。禁止在
  * 回调中直接销毁 Transport、PacketChannel 或当前 handler；销毁必须延迟到回调返回后。

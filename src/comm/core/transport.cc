@@ -26,52 +26,83 @@ namespace {
 
 }
 
-constexpr size_t Transport::DEFAULT_MAX_PENDING_EVENT_COUNT;
+Transport::Transport() : mHandler(nullptr) { }
 
-Transport::Transport()
+Transport::~Transport() { }
+
+void Transport::setHandler(TransportHandler* handler) {
+    mHandler = handler;
+}
+
+void Transport::dispatchEvent(const Event& ev) {
+    if (mHandler == nullptr) {
+        return;
+    }
+
+    switch (ev.type) {
+    case Event::CONNECTED:
+        mHandler->onConnected(ev.id);
+        break;
+    case Event::DISCONNECTED:
+        mHandler->onDisconnected(ev.id);
+        break;
+    case Event::DATA:
+        if (!ev.data.empty()) {
+            mHandler->onRecv(ev.data.data(), ev.data.size(), ev.id);
+        }
+        break;
+    case Event::ERROR:
+        mHandler->onError(ev.error);
+        break;
+    }
+}
+
+constexpr size_t AsyncTransport::DEFAULT_MAX_PENDING_EVENT_COUNT;
+
+AsyncTransport::AsyncTransport()
     : mMaxPendingEventCount(DEFAULT_MAX_PENDING_EVENT_COUNT),
     mDroppedEventCount(0),
     mDispatchGeneration(0),
-    mMainLooper(nullptr),
+    mCallbackLooper(nullptr),
     mWakeFd(-1) { }
 
-Transport::~Transport() {
-    shutdownEventDispatcher();
+AsyncTransport::~AsyncTransport() {
+    shutdownAsyncDispatcher();
 }
 
-int Transport::initEventDispatcher(cdroid::Looper* mainLooper) {
+int AsyncTransport::initAsyncDispatcher(cdroid::Looper* callbackLooper) {
     if (mWakeFd >= 0) {
         return 0;
     }
 
-    mMainLooper = mainLooper != nullptr ? mainLooper : cdroid::Looper::getForThread();
-    if (mMainLooper == nullptr) {
-        LOGE("Transport init failed: main looper is null");
+    mCallbackLooper = callbackLooper != nullptr ? callbackLooper : cdroid::Looper::getForThread();
+    if (mCallbackLooper == nullptr) {
+        LOGE("AsyncTransport init failed: callback looper is null");
         return -1;
     }
 
     mWakeFd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
     if (mWakeFd < 0) {
-        LOGE("Transport eventfd failed. errno=%d err=%s", errno, strerror(errno));
+        LOGE("AsyncTransport eventfd failed. errno=%d err=%s", errno, strerror(errno));
         return -2;
     }
 
-    const int addResult = mMainLooper->addFd(
+    const int addResult = mCallbackLooper->addFd(
         mWakeFd, 0, cdroid::Looper::EVENT_INPUT, onWake, this);
     if (addResult < 0) {
-        LOGE("Transport addFd failed. fd=%d", mWakeFd);
+        LOGE("AsyncTransport addFd failed. fd=%d", mWakeFd);
         close(mWakeFd);
         mWakeFd = -1;
-        mMainLooper = nullptr;
+        mCallbackLooper = nullptr;
         return -3;
     }
 
     return 0;
 }
 
-void Transport::shutdownEventDispatcher() {
-    if (mMainLooper != nullptr && mWakeFd >= 0) {
-        mMainLooper->removeFd(mWakeFd);
+void AsyncTransport::shutdownAsyncDispatcher() {
+    if (mCallbackLooper != nullptr && mWakeFd >= 0) {
+        mCallbackLooper->removeFd(mWakeFd);
     }
 
     if (mWakeFd >= 0) {
@@ -79,25 +110,20 @@ void Transport::shutdownEventDispatcher() {
         mWakeFd = -1;
     }
 
-    mMainLooper = nullptr;
+    mCallbackLooper = nullptr;
 
-    cancelEventDispatch();
+    cancelAsyncEvents();
 }
 
-void Transport::flushEventDispatch() {
-    handleEvents();
+void AsyncTransport::flushAsyncEvents() {
+    dispatchPendingEvents();
 }
 
-bool Transport::isEventDispatcherReady() const {
-    return mWakeFd >= 0 && mMainLooper != nullptr;
+bool AsyncTransport::isAsyncDispatcherReady() const {
+    return mWakeFd >= 0 && mCallbackLooper != nullptr;
 }
 
-int Transport::checkEvents() {
-    std::lock_guard<std::mutex> lock(mEventLock);
-    return mEvents.empty() ? 0 : 1;
-}
-
-int Transport::handleEvents() {
+void AsyncTransport::dispatchPendingEvents() {
     const uint64_t generation = mDispatchGeneration.load();
     std::queue<Event> events;
     {
@@ -114,10 +140,9 @@ int Transport::handleEvents() {
         }
     }
 
-    return 1;
 }
 
-void Transport::cancelEventDispatch() {
+void AsyncTransport::cancelAsyncEvents() {
     {
         std::lock_guard<std::mutex> lock(mEventLock);
         ++mDispatchGeneration;
@@ -127,7 +152,7 @@ void Transport::cancelEventDispatch() {
     mEventSpace.notify_all();
 }
 
-void Transport::setMaxPendingEventCount(size_t count) {
+void AsyncTransport::setMaxPendingEventCount(size_t count) {
     {
         std::lock_guard<std::mutex> lock(mEventLock);
         mMaxPendingEventCount = count > 0 ? count : DEFAULT_MAX_PENDING_EVENT_COUNT;
@@ -135,17 +160,17 @@ void Transport::setMaxPendingEventCount(size_t count) {
     mEventSpace.notify_all();
 }
 
-size_t Transport::maxPendingEventCount() const {
+size_t AsyncTransport::maxPendingEventCount() const {
     std::lock_guard<std::mutex> lock(mEventLock);
     return mMaxPendingEventCount;
 }
 
-size_t Transport::droppedEventCount() const {
+size_t AsyncTransport::droppedEventCount() const {
     std::lock_guard<std::mutex> lock(mEventLock);
     return mDroppedEventCount;
 }
 
-void Transport::postEvent(const Event& ev) {
+void AsyncTransport::postEvent(const Event& ev) {
     size_t droppedCount = 0;
     size_t queueLimit = 0;
     {
@@ -163,7 +188,7 @@ void Transport::postEvent(const Event& ev) {
 
     if (droppedCount > 0) {
         if (droppedCount == 1 || (droppedCount & (droppedCount - 1)) == 0) {
-            LOGE("Transport event queue full. dropped=%zu limit=%zu type=%d id=%d",
+            LOGE("AsyncTransport event queue full. dropped=%zu limit=%zu type=%d id=%d",
                 droppedCount, queueLimit, static_cast<int>(ev.type), ev.id);
         }
         return;
@@ -172,24 +197,18 @@ void Transport::postEvent(const Event& ev) {
     wakeMainThread();
 }
 
-bool Transport::sendEvent(const Event& ev) {
-    const uint64_t generation = mDispatchGeneration.load();
-    dispatchEvent(ev);
-    return mDispatchGeneration.load() == generation;
-}
-
-int Transport::onWake(int fd, int /*events*/, void* context) {
-    Transport* transport = static_cast<Transport*>(context);
+int AsyncTransport::onWake(int fd, int /*events*/, void* context) {
+    AsyncTransport* transport = static_cast<AsyncTransport*>(context);
     if (transport == nullptr) {
         return 0;
     }
 
     transport->drainWakeFd();
-    transport->handleEvents();
+    transport->dispatchPendingEvents();
     return 1;
 }
 
-void Transport::wakeMainThread() {
+void AsyncTransport::wakeMainThread() {
     if (mWakeFd < 0) {
         return;
     }
@@ -197,11 +216,11 @@ void Transport::wakeMainThread() {
     const uint64_t value = 1;
     const ssize_t rc = write(mWakeFd, &value, sizeof(value));
     if (rc < 0 && errno != EAGAIN) {
-        LOGE("Transport wake failed. errno=%d err=%s", errno, strerror(errno));
+        LOGE("AsyncTransport wake failed. errno=%d err=%s", errno, strerror(errno));
     }
 }
 
-void Transport::drainWakeFd() {
+void AsyncTransport::drainWakeFd() {
     if (mWakeFd < 0) {
         return;
     }

@@ -23,10 +23,10 @@
 /**
  * @brief 支持多个客户端的 TCP 服务端原始字节通讯实现。
  *
- * 监听、接入和接收在内部工作线程执行，事件经 Transport 投递到 init() 所在线程。
+ * 监听、接入和接收在内部工作线程执行，事件经 AsyncTransport 投递到 init() 所在线程。
  * 每个客户端在连接期间拥有唯一 id，上层发送回复时必须传回对应 id。
  */
-class TcpServer : public Transport {
+class TcpServer : public AsyncTransport {
 public:
     /** @brief TCP 监听及接收参数。 */
     struct Config {
@@ -47,8 +47,6 @@ public:
     explicit TcpServer(const Config& config);
     ~TcpServer();
 
-    /** @copydoc Transport::setHandler */
-    void setHandler(TransportHandler* handler) override;
     /** @brief 校验端口并将当前线程 Looper 初始化为事件接收线程。 */
     int init() override;
     /** @brief 创建监听套接字并启动接入/接收线程。 */
@@ -62,9 +60,6 @@ public:
      * @param id onConnected()/onRecv() 回调中提供的客户端标识，必须大于等于 0。
      */
     ssize_t send(const uint8_t* data, size_t len, int id = -1) override;
-
-protected:
-    void dispatchEvent(const Event& ev) override;
 
 private:
     void threadLoop();
@@ -81,7 +76,6 @@ private:
     mutable std::mutex mSocketLock;
     std::thread mThread;
     std::atomic<bool> mRunning;
-    TransportHandler* mHandler;
 };
 
 #endif // !__TCP_SERVER_H__

@@ -78,8 +78,7 @@ UartClient::UartClient(const Config& config)
     mDeviceClaimed(false),
     mUseFdMode(config.pollIntervalMs < UART_FD_MODE_THRESHOLD_MS),
     mFdRegistered(false),
-    mLooper(nullptr),
-    mHandler(nullptr) {
+    mLooper(nullptr) {
     if (!mUseFdMode) {
         setTick(mConfig.pollIntervalMs);
     }
@@ -87,10 +86,6 @@ UartClient::UartClient(const Config& config)
 
 UartClient::~UartClient() {
     stop();
-}
-
-void UartClient::setHandler(TransportHandler* handler) {
-    mHandler = handler;
 }
 
 int UartClient::init() {
@@ -151,15 +146,14 @@ bool UartClient::start() {
 
     Event ev;
     ev.type = Event::CONNECTED;
-    return sendEvent(ev) && mRunning;
+    dispatchEvent(ev);
+    return mRunning;
 }
 
 void UartClient::stop() {
     const bool notifyDisconnected = mRunning;
     stopReadDriver();
     mRunning = false;
-    cancelEventDispatch();
-
     if (mFd >= 0) {
         close(mFd);
         mFd = -1;
@@ -169,7 +163,7 @@ void UartClient::stop() {
     if (notifyDisconnected) {
         Event ev;
         ev.type = Event::DISCONNECTED;
-        sendEvent(ev);
+        dispatchEvent(ev);
     }
 }
 
@@ -193,7 +187,7 @@ void UartClient::onTick(int64_t /*nowMs*/) {
             Event ev;
             ev.type = Event::ERROR;
             ev.error = errno;
-            sendEvent(ev);
+            dispatchEvent(ev);
         }
         return;
     }
@@ -294,9 +288,8 @@ void UartClient::readAvailable() {
             Event ev;
             ev.type = Event::DATA;
             ev.data.assign(buffer.begin(), buffer.begin() + n);
-            if (!sendEvent(ev)) {
-                return;
-            }
+            dispatchEvent(ev);
+            if (!isConnected()) return;
             if (static_cast<size_t>(n) < buffer.size()) {
                 break;
             }
@@ -314,7 +307,7 @@ void UartClient::readAvailable() {
             disconnectOnDeviceError(errno, 0);
             return;
         }
-        sendEvent(ev);
+        dispatchEvent(ev);
         break;
     }
 }
@@ -325,31 +318,6 @@ ssize_t UartClient::send(const uint8_t* data, size_t len, int /*id*/) {
     }
 
     return writeAll(data, len);
-}
-
-void UartClient::dispatchEvent(const Event& ev) {
-    if (mHandler == nullptr) {
-        return;
-    }
-
-    switch (ev.type) {
-    case Event::CONNECTED:
-        mHandler->onConnected();
-        break;
-    case Event::DISCONNECTED:
-        mHandler->onDisconnected();
-        break;
-    case Event::DATA:
-        if (!ev.data.empty()) {
-            mHandler->onRecv(ev.data.data(), ev.data.size());
-        }
-        break;
-    case Event::ERROR:
-        mHandler->onError(ev.error);
-        break;
-    default:
-        break;
-    }
 }
 
 int UartClient::openDevice() {
@@ -478,14 +446,12 @@ void UartClient::disconnectOnDeviceError(int error, int events) {
     Event errorEvent;
     errorEvent.type = Event::ERROR;
     errorEvent.error = error;
-    if (!sendEvent(errorEvent)) {
-        return;
-    }
+    dispatchEvent(errorEvent);
 
     if (notifyDisconnected) {
         Event disconnected;
         disconnected.type = Event::DISCONNECTED;
-        sendEvent(disconnected);
+        dispatchEvent(disconnected);
     }
 }
 
@@ -517,7 +483,7 @@ ssize_t UartClient::writeAll(const uint8_t* data, size_t len) {
         Event ev;
         ev.type = Event::ERROR;
         ev.error = errno;
-        sendEvent(ev);
+        dispatchEvent(ev);
         break;
     }
 

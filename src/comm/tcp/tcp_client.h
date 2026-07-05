@@ -24,10 +24,10 @@
 /**
  * @brief 自动重连的 TCP 客户端原始字节通讯实现。
  *
- * 连接与接收在内部工作线程执行，事件经 Transport 的 eventfd 机制投递到 init()
+ * 连接与接收在内部工作线程执行，事件经 AsyncTransport 投递到 init()
  * 所在线程的 Looper。心跳和应用层握手不属于本类职责。
  */
-class TcpClient : public Transport {
+class TcpClient : public AsyncTransport {
 public:
     /** @brief TCP 服务端地址及接收参数。 */
     struct Config {
@@ -50,8 +50,6 @@ public:
     explicit TcpClient(const Config& config);
     ~TcpClient();
 
-    /** @copydoc Transport::setHandler */
-    void setHandler(TransportHandler* handler) override;
     /** @brief 校验地址并将当前线程 Looper 初始化为事件接收线程。 */
     int init() override;
     /** @brief 启动连接和接收线程；连接失败时按配置持续重试。 */
@@ -62,9 +60,6 @@ public:
     bool isConnected() const override;
     /** @brief 向当前服务端连接写入原始字节；id 会被忽略。 */
     ssize_t send(const uint8_t* data, size_t len, int id = -1) override;
-
-protected:
-    void dispatchEvent(const Event& ev) override;
 
 private:
     void threadLoop();
@@ -83,7 +78,6 @@ private:
     std::atomic<bool> mConnected;
     std::mutex mStopLock;
     std::condition_variable mStopCondition;
-    TransportHandler* mHandler;
 };
 
 #endif // !__TCP_CLIENT_H__

@@ -30,8 +30,7 @@
 TcpServer::TcpServer(uint16_t port)
     : mListenSock(-1),
     mNextClientId(1),
-    mRunning(false),
-    mHandler(nullptr) {
+    mRunning(false) {
     mConfig.port = port;
     mConfig.backlog = 8;
     mConfig.readBufferSize = 4096;
@@ -42,15 +41,10 @@ TcpServer::TcpServer(const Config& config)
     : mConfig(config),
     mListenSock(-1),
     mNextClientId(1),
-    mRunning(false),
-    mHandler(nullptr) { }
+    mRunning(false) { }
 
 TcpServer::~TcpServer() {
     stop();
-}
-
-void TcpServer::setHandler(TransportHandler* handler) {
-    mHandler = handler;
 }
 
 int TcpServer::init() {
@@ -62,7 +56,7 @@ int TcpServer::init() {
         LOGE("TcpServer init failed. sendTimeoutMs=%d", mConfig.sendTimeoutMs);
         return -2;
     }
-    return initEventDispatcher();
+    return initAsyncDispatcher();
 }
 
 bool TcpServer::start() {
@@ -70,7 +64,7 @@ bool TcpServer::start() {
         return true;
     }
 
-    if (!isEventDispatcherReady() && init() != 0) {
+    if (!isAsyncDispatcherReady() && init() != 0) {
         return false;
     }
 
@@ -95,7 +89,7 @@ bool TcpServer::start() {
 
 void TcpServer::stop() {
     if (!mRunning.load()) {
-        shutdownEventDispatcher();
+        shutdownAsyncDispatcher();
         return;
     }
 
@@ -109,9 +103,9 @@ void TcpServer::stop() {
     Event ev;
     ev.type = Event::DISCONNECTED;
     postEvent(ev);
-    flushEventDispatch();
+    flushAsyncEvents();
 
-    shutdownEventDispatcher();
+    shutdownAsyncDispatcher();
 }
 
 bool TcpServer::isConnected() const {
@@ -138,37 +132,6 @@ ssize_t TcpServer::send(const uint8_t* data, size_t len, int id) {
     }
 
     return sendAll(fd, data, len);
-}
-
-void TcpServer::dispatchEvent(const Event& ev) {
-    if (mHandler == nullptr) {
-        return;
-    }
-
-    switch (ev.type) {
-    case Event::CONNECTED:
-        mHandler->onConnected();
-        break;
-    case Event::DISCONNECTED:
-        mHandler->onDisconnected();
-        break;
-    case Event::CLIENT_CONNECTED:
-        mHandler->onConnected(ev.id);
-        break;
-    case Event::CLIENT_DISCONNECTED:
-        mHandler->onDisconnected(ev.id);
-        break;
-    case Event::DATA:
-        if (!ev.data.empty()) {
-            mHandler->onRecv(ev.data.data(), ev.data.size(), ev.id);
-        }
-        break;
-    case Event::ERROR:
-        mHandler->onError(ev.error);
-        break;
-    default:
-        break;
-    }
 }
 
 void TcpServer::threadLoop() {
@@ -234,7 +197,7 @@ void TcpServer::threadLoop() {
                 }
 
                 Event ev;
-                ev.type = Event::CLIENT_CONNECTED;
+                ev.type = Event::CONNECTED;
                 ev.id = clientId;
                 postEvent(ev);
             }
@@ -297,7 +260,7 @@ void TcpServer::threadLoop() {
             }
 
             Event ev;
-            ev.type = Event::CLIENT_DISCONNECTED;
+            ev.type = Event::DISCONNECTED;
             ev.id = clientId;
             postEvent(ev);
         }

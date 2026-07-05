@@ -31,20 +31,16 @@
  * 本层只负责通道生命周期、原始字节收发和事件分发，不处理心跳、握手、校验或
  * 业务协议。典型调用顺序为 setHandler() -> init() -> start()，结束时调用 stop()。
  */
-class Transport : public cdroid::EventHandler {
-public:
-    static constexpr size_t DEFAULT_MAX_PENDING_EVENT_COUNT = 256;
-
-    /** @brief 跨线程投递时使用的内部事件载体。 */
+class Transport {
+protected:
+    /** @brief 传输实现内部使用的标准事件。 */
     struct Event {
-        /** @brief 通道级事件和 TCP 服务端客户端级事件。 */
+        /** @brief 通用通道事件；多端点传输通过 id 标识具体端点。 */
         enum Type {
             CONNECTED,
             DISCONNECTED,
             DATA,
             ERROR,
-            CLIENT_CONNECTED,
-            CLIENT_DISCONNECTED,
         } type;
 
         int id{ -1 };
@@ -52,14 +48,13 @@ public:
         std::vector<uint8_t> data;
     };
 
-protected:
     Transport();
 
 public:
     virtual ~Transport();
 
-    /** @brief 设置事件接收者；对象不接管 handler 的生命周期。 */
-    virtual void setHandler(TransportHandler* handler) = 0;
+    /** @brief 设置事件接收者；仅可在停止状态调用，对象不接管 handler 生命周期。 */
+    void setHandler(TransportHandler* handler);
     /** @brief 校验配置并初始化资源，成功返回 0，失败返回非 0。 */
     virtual int init() = 0;
     /** @brief 启动通讯；重复启动应保持幂等，成功返回 true。 */
@@ -77,10 +72,29 @@ public:
      */
     virtual ssize_t send(const uint8_t* data, size_t len, int id = -1) = 0;
 
-    /** @brief Looper 查询是否存在待分发事件。 */
-    int checkEvents() override;
-    /** @brief 在 Looper 所在线程中取出并分发全部待处理事件。 */
-    int handleEvents() override;
+protected:
+    /** @brief 在当前线程将标准事件转换为 TransportHandler 回调。 */
+    void dispatchEvent(const Event& ev);
+
+private:
+    TransportHandler* mHandler;
+};
+
+/**
+ * @brief 带 Looper 跨线程事件分发能力的传输基类。
+ *
+ * IO 在内部工作线程执行的传输实现继承本类，通过 postEvent() 将回调统一切换到
+ * initAsyncDispatcher() 所在线程。已由目标 Looper 驱动的实现应直接继承 Transport。
+ */
+class AsyncTransport : public Transport {
+public:
+    static constexpr size_t DEFAULT_MAX_PENDING_EVENT_COUNT = 256;
+
+protected:
+    AsyncTransport();
+
+public:
+    ~AsyncTransport() override;
 
     /** @brief 设置待分发事件数量上限；传入 0 时恢复默认值。 */
     void setMaxPendingEventCount(size_t count);
@@ -92,29 +106,26 @@ public:
 protected:
     /**
      * @brief 初始化基于 eventfd 的跨线程事件分发器。
-     * @param mainLooper 目标 Looper；为空时使用当前线程的 Looper。
+     * @param callbackLooper 目标 Looper；为空时使用当前线程的 Looper。
      */
-    int initEventDispatcher(cdroid::Looper* mainLooper = nullptr);
+    int initAsyncDispatcher(cdroid::Looper* callbackLooper = nullptr);
     /** @brief 注销 eventfd、清空待处理事件并释放分发资源。 */
-    void shutdownEventDispatcher();
+    void shutdownAsyncDispatcher();
     /** @brief 立即分发当前已经排队的事件，用于关闭前保留生命周期回调。 */
-    void flushEventDispatch();
+    void flushAsyncEvents();
     /** @brief 返回跨线程事件分发器是否已经可用。 */
-    bool isEventDispatcherReady() const;
+    bool isAsyncDispatcherReady() const;
     /** @brief 使当前批次尚未分发的事件失效，并清空排队事件。 */
-    void cancelEventDispatch();
+    void cancelAsyncEvents();
 
     /** @brief 将事件加入队列，并唤醒 Looper 线程后异步分发。 */
     void postEvent(const Event& ev);
-    /** @brief 在当前线程同步分发；回调触发取消或停止时返回 false。 */
-    bool sendEvent(const Event& ev);
-    /** @brief 由派生类将内部事件转换为 TransportHandler 回调。 */
-    virtual void dispatchEvent(const Event& ev) = 0;
 
 private:
     static int onWake(int fd, int events, void* context);
     void wakeMainThread();
     void drainWakeFd();
+    void dispatchPendingEvents();
 
 private:
     mutable std::mutex mEventLock;
@@ -123,7 +134,7 @@ private:
     size_t mMaxPendingEventCount;
     size_t mDroppedEventCount;
     std::atomic<uint64_t> mDispatchGeneration;
-    cdroid::Looper* mMainLooper;
+    cdroid::Looper* mCallbackLooper;
     int mWakeFd;
 };
 

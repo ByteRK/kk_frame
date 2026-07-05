@@ -50,8 +50,7 @@ namespace {
 TcpClient::TcpClient(const std::string& host, uint16_t port)
     : mSock(-1),
     mRunning(false),
-    mConnected(false),
-    mHandler(nullptr) {
+    mConnected(false) {
     mConfig.host = host;
     mConfig.port = port;
     mConfig.reconnectDelayMs = 2000;
@@ -63,15 +62,10 @@ TcpClient::TcpClient(const Config& config)
     : mConfig(config),
     mSock(-1),
     mRunning(false),
-    mConnected(false),
-    mHandler(nullptr) { }
+    mConnected(false) { }
 
 TcpClient::~TcpClient() {
     stop();
-}
-
-void TcpClient::setHandler(TransportHandler* handler) {
-    mHandler = handler;
 }
 
 int TcpClient::init() {
@@ -88,7 +82,7 @@ int TcpClient::init() {
         LOGE("TcpClient init failed. sendTimeoutMs=%d", mConfig.sendTimeoutMs);
         return -3;
     }
-    return initEventDispatcher();
+    return initAsyncDispatcher();
 }
 
 bool TcpClient::start() {
@@ -96,7 +90,7 @@ bool TcpClient::start() {
         return true;
     }
 
-    if (!isEventDispatcherReady() && init() != 0) {
+    if (!isAsyncDispatcherReady() && init() != 0) {
         return false;
     }
 
@@ -107,7 +101,7 @@ bool TcpClient::start() {
 
 void TcpClient::stop() {
     if (!mRunning.load() && !mConnected.load()) {
-        shutdownEventDispatcher();
+        shutdownAsyncDispatcher();
         return;
     }
 
@@ -123,10 +117,10 @@ void TcpClient::stop() {
         Event ev;
         ev.type = Event::DISCONNECTED;
         postEvent(ev);
-        flushEventDispatch();
+        flushAsyncEvents();
     }
 
-    shutdownEventDispatcher();
+    shutdownAsyncDispatcher();
 }
 
 bool TcpClient::isConnected() const {
@@ -150,31 +144,6 @@ ssize_t TcpClient::send(const uint8_t* data, size_t len, int /*id*/) {
     }
 
     return sendAll(fd, data, len);
-}
-
-void TcpClient::dispatchEvent(const Event& ev) {
-    if (mHandler == nullptr) {
-        return;
-    }
-
-    switch (ev.type) {
-    case Event::CONNECTED:
-        mHandler->onConnected();
-        break;
-    case Event::DISCONNECTED:
-        mHandler->onDisconnected();
-        break;
-    case Event::DATA:
-        if (!ev.data.empty()) {
-            mHandler->onRecv(ev.data.data(), ev.data.size());
-        }
-        break;
-    case Event::ERROR:
-        mHandler->onError(ev.error);
-        break;
-    default:
-        break;
-    }
 }
 
 void TcpClient::threadLoop() {

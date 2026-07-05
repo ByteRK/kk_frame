@@ -55,8 +55,6 @@ public:
     explicit UartClient(const Config& config);
     ~UartClient();
 
-    /** @copydoc Transport::setHandler */
-    void setHandler(TransportHandler* handler) override;
     /** @brief 打开并配置串口设备，成功返回 0。 */
     int init() override;
     /** @brief 启用串口通道并同步发出连接事件。 */
@@ -67,9 +65,6 @@ public:
     bool isConnected() const override;
     /** @brief 写入原始字节；id 对串口无意义，会被忽略。 */
     ssize_t send(const uint8_t* data, size_t len, int id = -1) override;
-
-protected:
-    void dispatchEvent(const Event& ev) override;
 
 private:
     /** @brief TickMgr 周期回调，执行一次非阻塞串口读取。 */
@@ -97,7 +92,6 @@ private:
     bool mUseFdMode;
     bool mFdRegistered;
     cdroid::Looper* mLooper;
-    TransportHandler* mHandler;
 };
 
 #endif // !__UART_CLIENT_H__
