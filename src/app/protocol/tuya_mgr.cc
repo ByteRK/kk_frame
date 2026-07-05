@@ -44,7 +44,7 @@
 
 //////////////////////////////////////////////////////////////////
 
-typedef IPacketBufferT<BT_TUYA, TuyaAsk, TuyaAck> TuyaPacketBuffer;
+typedef PacketBufferT<BT_TUYA, TuyaAsk, TuyaAck> TuyaPacketBuffer;
 
 TuyaMgr::TuyaMgr() {
     mPacket = new TuyaPacketBuffer();

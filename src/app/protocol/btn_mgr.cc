@@ -19,7 +19,7 @@
 
 #define TICK_TIME 100 // tick触发时间（毫秒）
 
-typedef IPacketBufferT<BT_BTN, BtnAsk, BtnAck> BtnPacketBuffer;
+typedef PacketBufferT<BT_BTN, BtnAsk, BtnAck> BtnPacketBuffer;
 
 BtnMgr::BtnMgr() {
     mPacket = new BtnPacketBuffer();

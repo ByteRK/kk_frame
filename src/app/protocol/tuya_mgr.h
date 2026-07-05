@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-06-20 15:14:05
- * @LastEditTime: 2026-07-02 00:37:30
+ * @LastEditTime: 2026-07-05 21:18:04
  * @FilePath: /kk_frame/src/app/protocol/tuya_mgr.h
  * @Description:
  * @BugList:
@@ -37,7 +37,7 @@ private: // 涂鸦数据点缓存
 private:
     bool             mClearWifi = false;    // 复位WIFI标志位
 
-    IPacketBuffer*   mPacket;               // 数据包
+    PacketBuffer*    mPacket;               // 数据包
     int64_t          mNextEventTime;        // 下一次发包时间
     int64_t          mLastSendTime;         // 最后一次发送数据时间
     int64_t          mLastAcceptTime;       // 最后一次接受数据时间

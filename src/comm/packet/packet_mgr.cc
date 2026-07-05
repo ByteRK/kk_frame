@@ -2,9 +2,9 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-07-01 22:42:41
- * @LastEditTime: 2026-07-02 01:09:35
+ * @LastEditTime: 2026-07-05 16:34:03
  * @FilePath: /kk_frame/src/comm/packet/packet_mgr.cc
- * @Description: 通讯数据包管理器
+ * @Description: 通讯数据包分发管理器
  * @BugList:
  *
  * Copyright (c) 2026 by Ricken, All Rights Reserved.
@@ -32,7 +32,7 @@ void PacketHandler::onCommDeal(const IAck* ack, int id) {
     onCommDeal(ack);
 }
 
-/// @brief 包管理器构造函数
+/// @brief 通讯数据包分发管理器构造函数
 PacketManager::PacketManager() { }
 
 /// @brief 注册包处理器
@@ -94,7 +94,7 @@ void PacketManager::onCommand(IAck* ack, int id) {
         return;
     }
 
-    const handlers snapshot = it->second;
+    const Handlers snapshot = it->second;
     for (PacketHandler* hd : snapshot) {
         if (hd == nullptr) continue;
 
@@ -103,7 +103,7 @@ void PacketManager::onCommand(IAck* ack, int id) {
         if (current == mHandlers.end()) break;
 
         // 判断该处理器是否还存在
-        const handlers& currentHandlers = current->second;
+        const Handlers& currentHandlers = current->second;
         if (std::find(currentHandlers.begin(), currentHandlers.end(), hd) == currentHandlers.end()) {
             continue;
         }

@@ -19,7 +19,7 @@
 
 #define TICK_TIME 100 // tick触发时间（毫秒）
 
-typedef IPacketBufferT<BT_MCU, McuAsk, McuAck> McuPacketBuffer;
+typedef PacketBufferT<BT_MCU, McuAsk, McuAck> McuPacketBuffer;
 
 ConnMgr::ConnMgr() {
     mPacket = new McuPacketBuffer();

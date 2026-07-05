@@ -2,13 +2,13 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-07-01 22:42:41
- * @LastEditTime: 2026-07-02 01:10:37
+ * @LastEditTime: 2026-07-05 20:55:54
  * @FilePath: /kk_frame/src/comm/packet/packet_mgr.h
- * @Description: 通讯数据包管理器
- * @BugList: 
- * 
- * Copyright (c) 2026 by Ricken, All Rights Reserved. 
- * 
+ * @Description: 通讯数据包分发管理器
+ * @BugList:
+ *
+ * Copyright (c) 2026 by Ricken, All Rights Reserved.
+ *
 **/
 
 #ifndef __PACKET_HANDLER_H__
@@ -22,7 +22,7 @@
 
 #define g_packetMgr PacketManager::instance()
 
-/// @brief 数据包处理器
+/// @brief 通讯数据包处理器
 class PacketHandler {
 public:
     virtual ~PacketHandler();
@@ -30,16 +30,16 @@ public:
     virtual void onCommDeal(const IAck* ack, int id);
 };
 
-/// @brief 数据包分发管理器
+/// @brief 通讯数据包分发管理器
 /// @note 支持一对多以及多对一分发
 /// @note 不支持并发，必须单UI线程调用
 /// @note 分发过程新增处理器下包生效
 class PacketManager : public Singleton<PacketManager> {
-    friend Singleton<PacketManager>;
-    typedef std::vector<PacketHandler*> handlers;
+    friend  Singleton<PacketManager>;
+    typedef std::vector<PacketHandler*> Handlers;
 
 private:
-    std::map<int, handlers> mHandlers; // <数据包类型, 处理器列表>
+    std::map<int, Handlers> mHandlers; // <数据包类型, 处理器列表>
 
 protected:
     PacketManager();

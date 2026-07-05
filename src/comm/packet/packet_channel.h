@@ -2,9 +2,9 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-07-01 22:42:41
- * @LastEditTime: 2026-07-05 13:59:52
+ * @LastEditTime: 2026-07-05 16:55:04
  * @FilePath: /kk_frame/src/comm/packet/packet_channel.h
- * @Description: 数据包处理管道
+ * @Description: 通讯数据包处理管道
  * @BugList:
  *
  * Copyright (c) 2026 by Ricken, All Rights Reserved.
@@ -14,10 +14,7 @@
 #ifndef __PACKET_CHANNEL_H__
 #define __PACKET_CHANNEL_H__
 
-#include "packet_buffer.h"
-#include "transport_handler.h"
-
-#include <cdlog.h>
+/******************* 模式定义开始 *******************/
 
 #ifndef PACKET_CHANNEL_ENABLE_MULTI_ID
 /// @brief 多客户端处理机制开关
@@ -26,11 +23,7 @@
 #define PACKET_CHANNEL_ENABLE_MULTI_ID 0
 #endif
 
-#if !PACKET_CHANNEL_ENABLE_MULTI_ID
-/// @brief 禁用多客户端处理机制时，是否允许接受所有数据包
-#define ACCAPT_ALL_PACKET_WHEN_DISABLE_MULTI_ID 1
-#endif
-
+/******************* 模式定义结束 *******************/
 
 #if PACKET_CHANNEL_ENABLE_MULTI_ID
 #include <map>
@@ -40,10 +33,14 @@
 #include <stdint.h>
 #include <utility>
 
-/// @brief 数据流解码工具
+#include "packet_buffer.h"
+#include "transport.h"
+#include <cdlog.h>
+
+/// @brief 通讯数据流解码工具
 class PacketStreamDecoder {
 private:
-    IPacketBuffer* mPacketBuff;            // 解码器指针(带缓存管理)
+    PacketBuffer*  mPacketBuff;            // 解码器指针(带缓存管理)
     BuffData*      mLastRecv{ nullptr };   // 上次数据包
     BuffData*      mCurrRecv{ nullptr };   // 当前数据包
     bool           mEnableRepeatAccept;    // 同包去重开关
@@ -51,34 +48,33 @@ private:
     int            mCheckErrorCount{ 0 };  // 错误包计数
 
 public:
-    PacketStreamDecoder(IPacketBuffer* packetBuff, bool enableRepeatAccept);
+    PacketStreamDecoder(PacketBuffer* packetBuff, bool enableRepeatAccept);
     ~PacketStreamDecoder();
     int     onBytes(const uint8_t* data, size_t len, int id = -1);
+    void    reset();
     int64_t recvCount() const;
     int     checkErrorCount() const;
 
 };
 
-/// @brief 数据管道 Transport -> PacketStreamDecoder
+/// @brief 通讯数据管道 Transport -> PacketStreamDecoder
 /// @tparam 数据源类型(Transport派生)
 template <typename TransportType>
 class PacketChannel : public TransportHandler {
 private:
-#if PACKET_CHANNEL_ENABLE_MULTI_ID
-    typedef std::unique_ptr<PacketStreamDecoder> ClientDecoder; // 客户端数据流解码类
-#endif
     TransportType                mTransport;              // 通讯数据通道
-    IPacketBuffer*               mPacketBuff;             // 解码器指针
+    PacketBuffer*                mPacketBuff;             // 通讯数据包缓存
     PacketStreamDecoder          mDecoder;                // 默认数据流解码工具
-#if PACKET_CHANNEL_ENABLE_MULTI_ID
-    bool                         mEnableRepeatAccept;     // 是否允许连续重复包
-    std::map<int, ClientDecoder> mClientDecoders;         // 分客户端数据流解码工具
-#else
-    int                          mSingleClientId{ -1 };   // 唯一客户端 ID
-#endif
     int64_t                      mSendCount{ 0 };         // 发送统计
     int64_t                      mRecvCount{ 0 };         // 接收统计
     int                          mLastError{ 0 };         // 最后一次错误码
+#if PACKET_CHANNEL_ENABLE_MULTI_ID
+    typedef std::unique_ptr<PacketStreamDecoder> ClientDecoder;           // 客户端数据流解码类
+    bool                                         mEnableRepeatAccept;     // 是否允许连续重复包
+    std::map<int, ClientDecoder>                 mClientDecoders;         // 分客户端数据流解码工具
+#else
+    int                                          mSingleClientId{ -1 };   // 唯一客户端 ID
+#endif
 
 public:
     /// @brief 构造数据管道，并将剩余参数转发给 TransportType 构造函数
@@ -87,7 +83,7 @@ public:
     /// @param enableRepeatAccept 是否允许连续重复包
     /// @param ...args TransportType 构造函数参数
     template <typename... Args>
-    PacketChannel(IPacketBuffer* packetBuff, bool enableRepeatAccept, Args&&... args)
+    PacketChannel(PacketBuffer* packetBuff, bool enableRepeatAccept, Args&&... args)
         : mPacketBuff(packetBuff),
         mDecoder(packetBuff, enableRepeatAccept),
 #if PACKET_CHANNEL_ENABLE_MULTI_ID
@@ -196,6 +192,7 @@ public:
         if (id >= 0) {
             mSingleClientId = -1;
         }
+        mDecoder.reset();
 #endif
         LOGW("PacketChannel disconnected. id=%d", id);
     }
@@ -280,9 +277,6 @@ private:
     /// @param event 事件名称
     /// @return true 单ID
     bool acceptSingleId(int id, const char* event) {
-#if ACCAPT_ALL_PACKET_WHEN_DISABLE_MULTI_ID
-        return true;
-#else
         if (id < 0) {
             return true;
         }
@@ -297,7 +291,6 @@ private:
         LOGE("PacketChannel unexpected client id in single-id mode. event=%s expected=%d actual=%d",
             event, mSingleClientId, id);
         return false;
-#endif
     }
 #endif
 };

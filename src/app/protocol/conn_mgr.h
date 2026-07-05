@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:54:27
- * @LastEditTime: 2026-07-02 00:37:39
+ * @LastEditTime: 2026-07-05 21:18:30
  * @FilePath: /kk_frame/src/app/protocol/conn_mgr.h
  * @Description:
  * @BugList:
@@ -30,7 +30,7 @@ class ConnMgr : public cdroid::EventHandler, public PacketHandler,
     public Singleton<ConnMgr>{
     friend Singleton<ConnMgr>;
 private:
-    IPacketBuffer*   mPacket;                  // 电控数据包
+    PacketBuffer*    mPacket;                  // 电控数据包
     int64_t          mNextEventTime;           // 下次事件时间
     int64_t          mNextSendTime;            // 下次发送时间
     int64_t          mLastAcceptTime;          // 上次接收时间

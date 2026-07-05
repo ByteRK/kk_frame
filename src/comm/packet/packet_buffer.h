@@ -1,9 +1,10 @@
 /*
  * @Author: Ricken
  * @Email: me@ricken.cn
- * @Date: 2026-06-26
+ * @Date: 2026-06-26 00:45:36
+ * @LastEditTime: 2026-07-05 20:59:48
  * @FilePath: /kk_frame/src/comm/packet/packet_buffer.h
- * @Description: Application packet buffer
+ * @Description: 通讯数据包缓存
  * @BugList:
  *
  * Copyright (c) 2026 by Ricken, All Rights Reserved.
@@ -21,57 +22,51 @@
 #include <string>
 #include <vector>
 
-/**
- * @brief 数据包缓存池及协议编解码器的统一入口。
- *
- * obtain() 取得的 BuffData 由调用者暂时持有，使用完必须交回 recycle()。
- * 类内部持有并负责销毁发送解析器 mSND、接收解析器 mRCV 和已回收缓存。
- */
-class IPacketBuffer {
+/// @brief 通讯数据包缓存
+/// @note 提供缓存池+数据包编解码器
+/// @note 内部持有并负责销毁编码器 mSND、解码器 mRCV 和数据包缓存
+/// @note obtain 返回的数据包由外部持有，调用 recycle 回收
+class PacketBuffer {
 public:
-    static constexpr size_t DEFAULT_MAX_CACHE_COUNT = 16;
+    static constexpr size_t DEFAULT_MAX_CACHE_COUNT = 16; // 默认最大数据包缓存数量
 
 protected:
-    std::vector<BuffData*> mBuffs; // 已回收缓存池
-    size_t mMaxCacheCount{ DEFAULT_MAX_CACHE_COUNT };
-    IAsk* mSND{ nullptr };
-    IAck* mRCV{ nullptr };
+    size_t                 mMaxCacheCount;  // 最大缓存数量
+    std::vector<BuffData*> mBuffs;          // 数据包缓存池
+    IAsk* mSND{ nullptr };                  // 发送编码器
+    IAck* mRCV{ nullptr };                  // 接收解码器
 
 public:
-    /** @brief 创建缓存池并按默认最大缓存数量预留指针空间。 */
-    IPacketBuffer();
-    virtual ~IPacketBuffer();
+    PacketBuffer();
+    virtual ~PacketBuffer();
 
-    /**
-     * @brief 设置最多保留的空闲缓存数量，超出部分会告警并释放。
-     * @param count 最大缓存数量；设置为 0 表示不保留空闲缓存。
-     */
-    void setMaxCacheCount(size_t count);
-    /** @brief 返回当前设置的最大空闲缓存数量。 */
-    size_t maxCacheCount() const;
+    void    setMaxCacheCount(size_t count);
+    size_t  maxCacheCount() const;
 
-    /**
-     * @brief 取得一个清空后的数据包缓存。
-     * @param dataLen 在协议基础长度之外追加的可变数据长度。
-     * @param receive true 创建接收缓存，false 创建发送缓存。
-     */
+public: // 数据包缓存池
+    /// @brief 取得一个清空后的数据包
+    /// @param dataLen 在协议基础长度之外追加的可变数据长度
+    /// @param receive true 创建接收缓存，false 创建发送缓存
+    /// @return 数据包
     virtual BuffData* obtain(uint16_t dataLen = 0, bool receive = false) = 0;
-    /** @brief 清空缓存并放回池中；传入 nullptr 时无操作。 */
-    virtual void recycle(BuffData* buf);
-    /** @brief 将输入字节追加到接收缓存，返回实际消费的输入长度。 */
-    virtual int add(BuffData* buf, const uint8_t* inBuf, int len);
-    /** @brief 判断接收缓存是否已经组成完整数据包。 */
-    virtual bool complete(BuffData* buf);
-    /** @brief 比较两个缓存的协议类型、有效长度和数据内容是否完全一致。 */
-    virtual bool compare(BuffData* src, BuffData* dst);
-    /** @brief 使用接收解析器校验完整数据包。 */
-    virtual bool check(BuffData* buf);
+
+    /// @brief 回收数据包
+    /// @param buf 数据包
+    void recycle(BuffData* buf);
+
+public: // 数据接收场景
+    int   add(BuffData* buf, const uint8_t* inBuf, int len);
+    bool  complete(BuffData* buf);
+    bool  compare(BuffData* src, BuffData* dst);
+    bool  check(BuffData* buf);
+    IAck* ack(BuffData* bf);
+
+public: // 数据发送场景
+    void checkCode(BuffData* buf);
+
+public: // 数据包调试
     /** @brief 将有效数据转换为空格分隔的十六进制字符串。 */
-    virtual std::string str(BuffData* buf);
-    /** @brief 使用发送解析器计算并写入校验值。 */
-    virtual void checkCode(BuffData* buf);
-    /** @brief 将接收解析器绑定到 bf 并返回；返回对象由本类持有。 */
-    virtual IAck* ack(BuffData* bf);
+    std::string str(BuffData* buf);
 };
 
 /**
@@ -81,14 +76,18 @@ public:
  * @tparam Ack IAck 的具体接收解析类型，需提供 BUFFER_CAPACITY。
  */
 template <int16_t T, typename Ask, typename Ack>
-class IPacketBufferT : public IPacketBuffer {
+class PacketBufferT : public PacketBuffer {
 public:
-    IPacketBufferT() {
+    PacketBufferT() {
         mSND = new Ask();
         mRCV = new Ack();
     }
 
-    /** @brief 优先复用类型和容量匹配的缓存，否则分配新缓存。 */
+    /// @brief 取得一个清空后的数据包
+    /// @param dataLen 在协议基础长度之外追加的可变数据长度
+    /// @param receive true 创建接收缓存，false 创建发送缓存
+    /// @return 数据包
+    /// @note 优先复用类型和容量匹配的缓存，否则分配新缓存
     BuffData* obtain(uint16_t dataLen = 0, bool receive = false) override {
         const uint16_t baseCapacity = receive ? Ack::BUFFER_CAPACITY : Ask::BASE_LEN;
         if (baseCapacity == 0 || dataLen > UINT16_MAX - baseCapacity) {

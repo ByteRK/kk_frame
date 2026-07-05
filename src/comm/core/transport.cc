@@ -1,9 +1,10 @@
 /*
  * @Author: Ricken
  * @Email: me@ricken.cn
- * @Date: 2026-06-26
+ * @Date: 2026-06-26 00:31:52
+ * @LastEditTime: 2026-07-05 21:00:07
  * @FilePath: /kk_frame/src/comm/core/transport.cc
- * @Description: Raw transport base
+ * @Description: 原始通讯抽象
  * @BugList:
  *
  * Copyright (c) 2026 by Ricken, All Rights Reserved.
@@ -20,56 +21,82 @@
 #include <sys/eventfd.h>
 #include <unistd.h>
 
-namespace {
+constexpr int EVENT_QUEUE_WAIT_TIMEOUT_MS = 100; // 事件队列等待超时时间
 
-    constexpr int EVENT_QUEUE_WAIT_TIMEOUT_MS = 100;
+/// @brief 原始通讯抽象层构造
+Transport::Transport() { }
 
-}
-
-Transport::Transport() : mHandler(nullptr) { }
-
+/// @brief 原始通讯抽象层析构
 Transport::~Transport() { }
 
+/// @brief 设置事件消费者
+/// @param handler 事件消费者
 void Transport::setHandler(TransportHandler* handler) {
     mHandler = handler;
 }
 
+/// @brief 分发事件
+/// @param ev 事件
 void Transport::dispatchEvent(const Event& ev) {
-    if (mHandler == nullptr) {
-        return;
-    }
-
+    if (mHandler == nullptr) return;
     switch (ev.type) {
-    case Event::CONNECTED:
+    case Event::CONNECTED: {
         mHandler->onConnected(ev.id);
-        break;
-    case Event::DISCONNECTED:
+    }   break;
+    case Event::DISCONNECTED: {
         mHandler->onDisconnected(ev.id);
-        break;
-    case Event::DATA:
-        if (!ev.data.empty()) {
-            mHandler->onRecv(ev.data.data(), ev.data.size(), ev.id);
-        }
-        break;
-    case Event::ERROR:
+    }   break;
+    case Event::DATA: {
+        if (ev.data.empty())break;
+        mHandler->onRecv(ev.data.data(), ev.data.size(), ev.id);
+    }   break;
+    case Event::ERROR: {
         mHandler->onError(ev.error);
-        break;
+    }   break;
+    default: {
+        LOGW("Unknown event type: %d", ev.type);
+    }   break;
     }
 }
 
-constexpr size_t AsyncTransport::DEFAULT_MAX_PENDING_EVENT_COUNT;
-
+/// @brief 异步通讯抽象层构造
 AsyncTransport::AsyncTransport()
-    : mMaxPendingEventCount(DEFAULT_MAX_PENDING_EVENT_COUNT),
-    mDroppedEventCount(0),
-    mDispatchGeneration(0),
-    mCallbackLooper(nullptr),
-    mWakeFd(-1) { }
+    : mMaxPendingEventCount(DEFAULT_MAX_PENDING_EVENT_COUNT) { }
 
+/// @brief 异步通讯抽象层析构
 AsyncTransport::~AsyncTransport() {
     shutdownAsyncDispatcher();
 }
 
+/// @brief 设置最大分发事件数量
+/// @param count 最大分发事件数量
+/// @note 如果count为0，则使用默认值DEFAULT_MAX_PENDING_EVENT_COUNT
+void AsyncTransport::setMaxPendingEventCount(size_t count) {
+    {
+        std::lock_guard<std::mutex> lock(mEventLock);
+        mMaxPendingEventCount = count > 0 ? count : DEFAULT_MAX_PENDING_EVENT_COUNT;
+    }
+    mEventSpace.notify_all();
+}
+
+/// @brief 返回最大分发事件数量
+/// @return 最大分发事件数量
+size_t AsyncTransport::maxPendingEventCount() const {
+    std::lock_guard<std::mutex> lock(mEventLock);
+    return mMaxPendingEventCount;
+}
+
+/// @brief 返回丢弃的事件数量
+/// @return 丢弃的事件数量
+/// @note 仅记录因队列持续满载而丢弃的累计事件
+size_t AsyncTransport::droppedEventCount() const {
+    std::lock_guard<std::mutex> lock(mEventLock);
+    return mDroppedEventCount;
+}
+
+/// @brief 初始化跨线程事件分发器
+/// @param callbackLooper 目标 Looper
+/// @return 0 成功，非 0 失败
 int AsyncTransport::initAsyncDispatcher(cdroid::Looper* callbackLooper) {
     if (mWakeFd >= 0) {
         return 0;
@@ -100,48 +127,33 @@ int AsyncTransport::initAsyncDispatcher(cdroid::Looper* callbackLooper) {
     return 0;
 }
 
+/// @brief 关闭跨线程事件分发器
+/// @note 注销 eventfd、清空待处理事件并释放分发资源
 void AsyncTransport::shutdownAsyncDispatcher() {
     if (mCallbackLooper != nullptr && mWakeFd >= 0) {
         mCallbackLooper->removeFd(mWakeFd);
     }
-
     if (mWakeFd >= 0) {
         close(mWakeFd);
         mWakeFd = -1;
     }
-
     mCallbackLooper = nullptr;
-
     cancelAsyncEvents();
 }
 
+/// @brief 立即分发所有待处理的事件
+/// @note 用于关闭前保留生命周期回调
 void AsyncTransport::flushAsyncEvents() {
     dispatchPendingEvents();
 }
 
+/// @brief 判断跨线程事件分发器是否可用
+/// @return true 可用，false 不可用
 bool AsyncTransport::isAsyncDispatcherReady() const {
     return mWakeFd >= 0 && mCallbackLooper != nullptr;
 }
 
-void AsyncTransport::dispatchPendingEvents() {
-    const uint64_t generation = mDispatchGeneration.load();
-    std::queue<Event> events;
-    {
-        std::lock_guard<std::mutex> lock(mEventLock);
-        mEvents.swap(events);
-    }
-    mEventSpace.notify_all();
-
-    while (!events.empty()) {
-        dispatchEvent(events.front());
-        events.pop();
-        if (mDispatchGeneration.load() != generation) {
-            break;
-        }
-    }
-
-}
-
+/// @brief 清空所有待处理的事件
 void AsyncTransport::cancelAsyncEvents() {
     {
         std::lock_guard<std::mutex> lock(mEventLock);
@@ -152,24 +164,8 @@ void AsyncTransport::cancelAsyncEvents() {
     mEventSpace.notify_all();
 }
 
-void AsyncTransport::setMaxPendingEventCount(size_t count) {
-    {
-        std::lock_guard<std::mutex> lock(mEventLock);
-        mMaxPendingEventCount = count > 0 ? count : DEFAULT_MAX_PENDING_EVENT_COUNT;
-    }
-    mEventSpace.notify_all();
-}
-
-size_t AsyncTransport::maxPendingEventCount() const {
-    std::lock_guard<std::mutex> lock(mEventLock);
-    return mMaxPendingEventCount;
-}
-
-size_t AsyncTransport::droppedEventCount() const {
-    std::lock_guard<std::mutex> lock(mEventLock);
-    return mDroppedEventCount;
-}
-
+/// @brief 投递事件
+/// @param ev 事件
 void AsyncTransport::postEvent(const Event& ev) {
     size_t droppedCount = 0;
     size_t queueLimit = 0;
@@ -197,22 +193,23 @@ void AsyncTransport::postEvent(const Event& ev) {
     wakeMainThread();
 }
 
-int AsyncTransport::onWake(int fd, int /*events*/, void* context) {
+/// @brief FD 触发唤醒
+/// @param fd 来源FD
+/// @param events 事件
+/// @param context 上下文 [跨线程事件分发器指针]
+/// @return 唤醒结果
+int AsyncTransport::onWake(int fd, int events, void* context) {
     AsyncTransport* transport = static_cast<AsyncTransport*>(context);
-    if (transport == nullptr) {
-        return 0;
-    }
+    if (transport == nullptr) return 0;
 
     transport->drainWakeFd();
     transport->dispatchPendingEvents();
     return 1;
 }
 
+/// @brief 通过 FD 唤醒主线程
 void AsyncTransport::wakeMainThread() {
-    if (mWakeFd < 0) {
-        return;
-    }
-
+    if (mWakeFd < 0) return;
     const uint64_t value = 1;
     const ssize_t rc = write(mWakeFd, &value, sizeof(value));
     if (rc < 0 && errno != EAGAIN) {
@@ -220,12 +217,29 @@ void AsyncTransport::wakeMainThread() {
     }
 }
 
+/// @brief 清空唤醒 FD
 void AsyncTransport::drainWakeFd() {
-    if (mWakeFd < 0) {
-        return;
-    }
-
+    if (mWakeFd < 0) return;
     uint64_t value = 0;
-    while (read(mWakeFd, &value, sizeof(value)) > 0) {
+    while (read(mWakeFd, &value, sizeof(value)) > 0) { }
+}
+
+/// @brief 分发事件
+void AsyncTransport::dispatchPendingEvents() {
+    const uint64_t generation = mDispatchGeneration.load();
+    std::queue<Event> events;
+    {
+        std::lock_guard<std::mutex> lock(mEventLock);
+        mEvents.swap(events);
+    }
+    mEventSpace.notify_all();
+
+    while (!events.empty()) {
+        dispatchEvent(events.front());
+        events.pop();
+        // 批次变更，退出
+        if (mDispatchGeneration.load() != generation) {
+            break;
+        }
     }
 }

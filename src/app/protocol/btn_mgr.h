@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-06-12 14:49:06
- * @LastEditTime: 2026-02-08 12:33:47
+ * @LastEditTime: 2026-07-05 21:18:34
  * @FilePath: /kk_frame/src/app/protocol/btn_mgr.h
  * @Description:
  * @BugList:
@@ -30,7 +30,7 @@ class BtnMgr : public cdroid::EventHandler, public PacketHandler,
     public Singleton<BtnMgr> {
     friend Singleton<BtnMgr>;
 private:
-    IPacketBuffer*   mPacket;                  // 按键数据包
+    PacketBuffer*    mPacket;                  // 按键数据包
     int64_t          mNextEventTime;           // 下次事件时间
     int64_t          mNextSendTime;            // 下次发送时间
     int64_t          mLastAcceptTime;          // 上次接收时间

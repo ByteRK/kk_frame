@@ -1,9 +1,10 @@
 /*
  * @Author: Ricken
  * @Email: me@ricken.cn
- * @Date: 2026-06-26
+ * @Date: 2026-06-26 00:47:22
+ * @LastEditTime: 2026-07-05 20:57:38
  * @FilePath: /kk_frame/src/comm/uart/uart_client.cc
- * @Description: Raw UART client
+ * @Description: 串口通讯客户端
  * @BugList:
  *
  * Copyright (c) 2026 by Ricken, All Rights Reserved.
@@ -35,7 +36,7 @@
 namespace {
 
     constexpr short UART_POLL_ERROR_EVENTS = POLLERR | POLLHUP | POLLNVAL;
-    constexpr int UART_FD_MODE_THRESHOLD_MS = 100;
+    constexpr int   UART_FD_MODE_THRESHOLD_MS = 100;
 
     speed_t baudToTermios(int baudRate) {
         switch (baudRate) {
@@ -61,33 +62,34 @@ namespace {
 #ifdef B921600
         case 921600: return B921600;
 #endif
-        default:
-            return static_cast<speed_t>(0);
+        default: {
+            LOGE("Unsupported baud rate: %d!!!!!!", baudRate);
+        }   return static_cast<speed_t>(0);
         }
     }
 
 }
 
-std::mutex UartClient::sDeviceLock;
-std::set<std::string> UartClient::sUsedDevices;
+std::mutex UartClient::sDeviceLock;              // 设备锁
+std::set<std::string> UartClient::sUsedDevices;  // 已使用的设备路径(防止重复打开同一设备)
 
+/// @brief 串口通讯客户端构造
+/// @param config 串口配置
 UartClient::UartClient(const Config& config)
     : mConfig(config),
-    mFd(-1),
-    mRunning(false),
-    mDeviceClaimed(false),
-    mUseFdMode(config.pollIntervalMs < UART_FD_MODE_THRESHOLD_MS),
-    mFdRegistered(false),
-    mLooper(nullptr) {
+    mUseFdMode(config.pollIntervalMs < UART_FD_MODE_THRESHOLD_MS) {
     if (!mUseFdMode) {
         setTick(mConfig.pollIntervalMs);
     }
 }
 
+/// @brief 串口通讯客户端析构
 UartClient::~UartClient() {
     stop();
 }
 
+/// @brief 打开并配置串口设备
+/// @return 0: 成功, 非0: 失败
 int UartClient::init() {
     if (mConfig.device.empty()) {
         LOGE("UartClient init failed: device is empty");
@@ -129,6 +131,8 @@ int UartClient::init() {
     return 0;
 }
 
+/// @brief 启用串口通道
+/// @return true: 成功, false: 失败
 bool UartClient::start() {
     if (mRunning) {
         return true;
@@ -150,6 +154,7 @@ bool UartClient::start() {
     return mRunning;
 }
 
+/// @brief 停止串口通道
 void UartClient::stop() {
     const bool notifyDisconnected = mRunning;
     stopReadDriver();
@@ -167,10 +172,27 @@ void UartClient::stop() {
     }
 }
 
+/// @brief 发送数据
+/// @param data 数据
+/// @param len 数据长度
+/// @param id 客户端标识（串口通讯不需要）
+/// @return 发送的字节数，-1 表示失败
+ssize_t UartClient::send(const uint8_t* data, size_t len, int /*id*/) {
+    if (!isConnected() || data == nullptr || len == 0) {
+        return -1;
+    }
+    return writeAll(data, len);
+}
+
+/// @brief 通道是否已连接
+/// @return true: 已连接, false: 未连接
 bool UartClient::isConnected() const {
     return mRunning && mFd >= 0;
 }
 
+/// @brief 定时器回调
+/// @param nowMs 当前时间戳
+/// @note 长轮询间隔时触发
 void UartClient::onTick(int64_t /*nowMs*/) {
     if (!isConnected()) {
         return;
@@ -214,6 +236,12 @@ void UartClient::onTick(int64_t /*nowMs*/) {
     readAvailable();
 }
 
+/// @brief FD 事件回调
+/// @param fd 文件描述符
+/// @param events 事件
+/// @param context 上下文
+/// @return 继续监听返回 1，停止监听返回 0
+/// @note 短轮询间隔时触发
 int UartClient::onFdEvent(int fd, int events, void* context) {
     UartClient* client = static_cast<UartClient*>(context);
     if (client == nullptr) {
@@ -222,6 +250,10 @@ int UartClient::onFdEvent(int fd, int events, void* context) {
     return client->handleFdEvent(fd, events);
 }
 
+/// @brief 处理 FD 事件
+/// @param fd 文件描述符
+/// @param events 事件
+/// @return
 int UartClient::handleFdEvent(int fd, int events) {
     if (!isConnected() || fd != mFd) {
         return 0;
@@ -243,6 +275,8 @@ int UartClient::handleFdEvent(int fd, int events) {
     return isConnected() ? 1 : 0;
 }
 
+/// @brief 启动读取驱动
+/// @return true: 成功, false: 失败
 bool UartClient::startReadDriver() {
     if (!mUseFdMode) {
         startTick(0);
@@ -267,6 +301,7 @@ bool UartClient::startReadDriver() {
     return true;
 }
 
+/// @brief 停止读取驱动
 void UartClient::stopReadDriver() {
     if (mFdRegistered && mLooper != nullptr && mFd >= 0) {
         mLooper->removeFd(mFd);
@@ -276,6 +311,7 @@ void UartClient::stopReadDriver() {
     stopTick();
 }
 
+/// @brief 读取数据
 void UartClient::readAvailable() {
     if (!isConnected()) {
         return;
@@ -312,14 +348,8 @@ void UartClient::readAvailable() {
     }
 }
 
-ssize_t UartClient::send(const uint8_t* data, size_t len, int /*id*/) {
-    if (!isConnected() || data == nullptr || len == 0) {
-        return -1;
-    }
-
-    return writeAll(data, len);
-}
-
+/// @brief 打开 FD 设备
+/// @return 文件描述符
 int UartClient::openDevice() {
     int fd = open(mConfig.device.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK | O_CLOEXEC);
     if (fd < 0) {
@@ -329,6 +359,9 @@ int UartClient::openDevice() {
     return fd;
 }
 
+/// @brief 配置设备
+/// @param fd 文件描述符
+/// @return 0: 成功, -1: tcgetattr 失败, -2: 不支持的波特率, -3: 不支持的数据位, -4: 不支持的校验位, -5: 不支持的停止位
 int UartClient::configureDevice(int fd) {
     termios options;
     if (tcgetattr(fd, &options) != 0) {
@@ -419,6 +452,7 @@ int UartClient::configureDevice(int fd) {
     return 0;
 }
 
+/// @brief 释放设备占用
 void UartClient::releaseDeviceClaim() {
     if (!mDeviceClaimed) {
         return;
@@ -429,6 +463,9 @@ void UartClient::releaseDeviceClaim() {
     mDeviceClaimed = false;
 }
 
+/// @brief 故障时断开连接
+/// @param error 错误码
+/// @param events 事件
 void UartClient::disconnectOnDeviceError(int error, int events) {
     const bool notifyDisconnected = mRunning;
     stopReadDriver();
@@ -455,6 +492,10 @@ void UartClient::disconnectOnDeviceError(int error, int events) {
     }
 }
 
+/// @brief 写入数据
+/// @param data 数据
+/// @param len 数据长度
+/// @return 写入的字节数
 ssize_t UartClient::writeAll(const uint8_t* data, size_t len) {
     size_t written = 0;
     const int64_t startMs = cdroid::SystemClock::uptimeMillis();

@@ -21,7 +21,7 @@
 /// @brief 数据流解码工具构造
 /// @param packetBuff 协议器缓存
 /// @param enableRepeatAccept 是否允许重复接收
-PacketStreamDecoder::PacketStreamDecoder(IPacketBuffer* packetBuff, bool enableRepeatAccept)
+PacketStreamDecoder::PacketStreamDecoder(PacketBuffer* packetBuff, bool enableRepeatAccept)
     : mPacketBuff(packetBuff), mEnableRepeatAccept(enableRepeatAccept) {
     if (!mPacketBuff) {
         LOGE("PacketStreamDecoder packetBuff is null");
@@ -98,6 +98,17 @@ int PacketStreamDecoder::onBytes(const uint8_t* data, size_t len, int id) {
     // 当前数据包复原并返回消费长度
     mCurrRecv->len = 0;
     return consumed;
+}
+
+/// @brief 清空当前流和去重状态，保留累计接收计数
+void PacketStreamDecoder::reset() {
+    if (mLastRecv != nullptr) {
+        mLastRecv->len = 0;
+    }
+    if (mCurrRecv != nullptr) {
+        mCurrRecv->len = 0;
+    }
+    mCheckErrorCount = 0;
 }
 
 /// @brief 获取已接收数据包数量

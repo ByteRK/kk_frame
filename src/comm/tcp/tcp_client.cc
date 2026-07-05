@@ -1,9 +1,10 @@
 /*
  * @Author: Ricken
  * @Email: me@ricken.cn
- * @Date: 2026-06-26
+ * @Date: 2026-06-26 00:44:35
+ * @LastEditTime: 2026-07-05 21:11:52
  * @FilePath: /kk_frame/src/comm/tcp/tcp_client.cc
- * @Description: Raw TCP client
+ * @Description: TCP通讯客户端
  * @BugList:
  *
  * Copyright (c) 2026 by Ricken, All Rights Reserved.
@@ -33,24 +34,25 @@
 
 namespace {
 
-    constexpr int RESOLVE_WAIT_SLICE_MS = 50;
-    constexpr int CONNECT_POLL_SLICE_MS = 100;
+    constexpr int RESOLVE_WAIT_SLICE_MS = 50;  // DNS 解析等待时间间隔
+    constexpr int CONNECT_POLL_SLICE_MS = 100; // 连接等待时间间隔
 
+    // DNS 解析线程与连接线程之间共享的状态。
     struct ResolveState {
-        std::mutex lock;
-        std::condition_variable condition;
-        bool done{ false };
-        bool abandoned{ false };
-        int error{ 0 };
-        addrinfo* result{ nullptr };
+        std::mutex              lock;                   // 保护以下共享状态
+        std::condition_variable condition;              // 通知连接线程解析已完成
+        bool                    done{ false };          // 解析结果是否已就绪
+        bool                    abandoned{ false };     // 连接线程是否已停止等待
+        int                     error{ 0 };             // getaddrinfo 返回的错误码
+        addrinfo*               result{ nullptr };      // getaddrinfo 返回的地址链表
     };
 
 }
 
-TcpClient::TcpClient(const std::string& host, uint16_t port)
-    : mSock(-1),
-    mRunning(false),
-    mConnected(false) {
+/// @brief TCP通讯客户端构造
+/// @param host 主机名
+/// @param port 端口号
+TcpClient::TcpClient(const std::string& host, uint16_t port) {
     mConfig.host = host;
     mConfig.port = port;
     mConfig.reconnectDelayMs = 2000;
@@ -58,16 +60,19 @@ TcpClient::TcpClient(const std::string& host, uint16_t port)
     mConfig.sendTimeoutMs = 1000;
 }
 
+/// @brief TCP通讯客户端构造
+/// @param config TCP 客户端配置
 TcpClient::TcpClient(const Config& config)
-    : mConfig(config),
-    mSock(-1),
-    mRunning(false),
-    mConnected(false) { }
+    : mConfig(config) { }
 
+/// @brief TCP通讯客户端析构
 TcpClient::~TcpClient() {
     stop();
 }
 
+/// @brief TCP通讯客户端初始化
+/// @return 0: 成功, 非0: 失败
+/// @note 校验地址并将当前线程 Looper 初始化为事件接收线程
 int TcpClient::init() {
     if (mConfig.host.empty() || mConfig.port == 0) {
         LOGE("TcpClient init failed. host=%s port=%u",
@@ -85,67 +90,71 @@ int TcpClient::init() {
     return initAsyncDispatcher();
 }
 
+/// @brief 启动服务
+/// @return true: 成功, false: 失败
+/// @note 启动连接和接收线程，连接失败时按配置持续重试
 bool TcpClient::start() {
     if (mRunning.load()) {
         return true;
     }
-
     if (!isAsyncDispatcherReady() && init() != 0) {
         return false;
     }
-
     mRunning.store(true);
     mThread = std::thread(&TcpClient::threadLoop, this);
     return true;
 }
 
+/// @brief 停止服务
+/// @note 关闭连接和接收线程，中止解析、连接和重连等待，关闭套接字并释放事件分发器
 void TcpClient::stop() {
     if (!mRunning.load() && !mConnected.load()) {
         shutdownAsyncDispatcher();
         return;
     }
-
     mRunning.store(false);
     mStopCondition.notify_all();
     closeSocket();
-
     if (mThread.joinable()) {
         mThread.join();
     }
-
     if (mConnected.exchange(false)) {
         Event ev;
         ev.type = Event::DISCONNECTED;
         postEvent(ev);
         flushAsyncEvents();
     }
-
     shutdownAsyncDispatcher();
 }
 
-bool TcpClient::isConnected() const {
-    return mConnected.load();
-}
-
+/// @brief 发送数据
+/// @param data 数据
+/// @param len 数据长度
+/// @param id 客户端标识（TCP 客户端通讯不需要）
+/// @return 发送的字节数，-1 表示失败
 ssize_t TcpClient::send(const uint8_t* data, size_t len, int /*id*/) {
     if (data == nullptr || len == 0) {
         return -1;
     }
-
     std::lock_guard<std::mutex> sendLock(mSendLock);
     int fd = -1;
     {
         std::lock_guard<std::mutex> lock(mSocketLock);
         fd = mSock;
     }
-
     if (fd < 0 || !mConnected.load()) {
         return -1;
     }
-
     return sendAll(fd, data, len);
 }
 
+/// @brief TCP 是否已连接
+/// @return true: 已连接, false: 未连接
+bool TcpClient::isConnected() const {
+    return mConnected.load();
+}
+
+/// @brief 数据接受线程
 void TcpClient::threadLoop() {
     while (mRunning.load()) {
         const int fd = connectServer();
@@ -205,6 +214,8 @@ void TcpClient::threadLoop() {
     }
 }
 
+/// @brief 连接服务器
+/// @return 套接字文件描述符，-1 表示失败
 int TcpClient::connectServer() {
     char portText[16];
     snprintf(portText, sizeof(portText), "%u", mConfig.port);
@@ -336,17 +347,18 @@ int TcpClient::connectServer() {
     return fd;
 }
 
+/// @brief 重连等待
 void TcpClient::waitForReconnectDelay() {
     if (!mRunning.load() || mConfig.reconnectDelayMs == 0) {
         return;
     }
-
     std::unique_lock<std::mutex> lock(mStopLock);
     mStopCondition.wait_for(lock,
         std::chrono::milliseconds(mConfig.reconnectDelayMs),
         [this]() { return !mRunning.load(); });
 }
 
+/// @brief 关闭连接
 void TcpClient::closeSocket() {
     std::lock_guard<std::mutex> sendLock(mSendLock);
     int fd = -1;
@@ -362,6 +374,11 @@ void TcpClient::closeSocket() {
     }
 }
 
+/// @brief 发送数据
+/// @param fd 文件描述符
+/// @param data 数据
+/// @param len 数据长度
+/// @return 发送的字节数
 ssize_t TcpClient::sendAll(int fd, const uint8_t* data, size_t len) {
     const auto deadline = std::chrono::steady_clock::now() +
         std::chrono::milliseconds(mConfig.sendTimeoutMs);

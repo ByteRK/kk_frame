@@ -1,9 +1,10 @@
 /*
  * @Author: Ricken
  * @Email: me@ricken.cn
- * @Date: 2026-06-26
+ * @Date: 2026-06-26 00:48:00
+ * @LastEditTime: 2026-07-05 21:16:08
  * @FilePath: /kk_frame/src/comm/tcp/tcp_server.cc
- * @Description: Raw TCP server
+ * @Description: TCP通讯服务端
  * @BugList:
  *
  * Copyright (c) 2026 by Ricken, All Rights Reserved.
@@ -27,26 +28,28 @@
 #define MSG_NOSIGNAL 0
 #endif
 
-TcpServer::TcpServer(uint16_t port)
-    : mListenSock(-1),
-    mNextClientId(1),
-    mRunning(false) {
+/// @brief TCP通讯服务端构造
+/// @param port 监听端口
+TcpServer::TcpServer(uint16_t port) {
     mConfig.port = port;
     mConfig.backlog = 8;
     mConfig.readBufferSize = 4096;
     mConfig.sendTimeoutMs = 1000;
 }
 
+/// @brief TCP通讯服务端构造
+/// @param config TCP 服务端配置
 TcpServer::TcpServer(const Config& config)
-    : mConfig(config),
-    mListenSock(-1),
-    mNextClientId(1),
-    mRunning(false) { }
+    : mConfig(config) { }
 
+/// @brief TCP通讯服务端析构
 TcpServer::~TcpServer() {
     stop();
 }
 
+/// @brief TCP通讯服务端初始化
+/// @return 0: 成功, 非0: 失败
+/// @note 校验端口并将当前线程 Looper 初始化为事件接收线程
 int TcpServer::init() {
     if (mConfig.port == 0) {
         LOGE("TcpServer init failed. port is zero");
@@ -59,15 +62,16 @@ int TcpServer::init() {
     return initAsyncDispatcher();
 }
 
+/// @brief 启动服务
+/// @return true: 成功, false: 失败
+/// @note 创建监听套接字并启动接入/接收线程
 bool TcpServer::start() {
     if (mRunning.load()) {
         return true;
     }
-
     if (!isAsyncDispatcherReady() && init() != 0) {
         return false;
     }
-
     int listenSock = createListenSocket();
     if (listenSock < 0) {
         return false;
@@ -87,36 +91,34 @@ bool TcpServer::start() {
     return true;
 }
 
+/// @brief 停止服务
+/// @note 停止监听、关闭全部连接、等待线程退出并释放事件分发器
 void TcpServer::stop() {
     if (!mRunning.load()) {
         shutdownAsyncDispatcher();
         return;
     }
-
     mRunning.store(false);
     closeAllSockets();
-
     if (mThread.joinable()) {
         mThread.join();
     }
-
     Event ev;
     ev.type = Event::DISCONNECTED;
     postEvent(ev);
     flushAsyncEvents();
-
     shutdownAsyncDispatcher();
 }
 
-bool TcpServer::isConnected() const {
-    return mRunning.load();
-}
-
+/// @brief 向指定客户端发送数据
+/// @param data 数据
+/// @param len 数据长度
+/// @param id 客户端标识
+/// @return 发送的字节数，-1 表示失败
 ssize_t TcpServer::send(const uint8_t* data, size_t len, int id) {
     if (data == nullptr || len == 0 || id < 0) {
         return -1;
     }
-
     std::lock_guard<std::mutex> sendLock(mSendLock);
     int fd = -1;
     {
@@ -126,14 +128,20 @@ ssize_t TcpServer::send(const uint8_t* data, size_t len, int id) {
             fd = it->second;
         }
     }
-
     if (fd < 0) {
         return -1;
     }
-
     return sendAll(fd, data, len);
 }
 
+/// @brief TCP 是否正在监听
+/// @return true: 在监听, false: 未监听
+/// @note 不表示一定已有客户端连接
+bool TcpServer::isConnected() const {
+    return mRunning.load();
+}
+
+/// @brief 数据接受线程
 void TcpServer::threadLoop() {
     while (mRunning.load()) {
         std::map<int, int> clients;
@@ -267,6 +275,8 @@ void TcpServer::threadLoop() {
     }
 }
 
+/// @brief 创建监听socket
+/// @return 监听套接字，失败时返回 -1
 int TcpServer::createListenSocket() {
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd < 0) {
@@ -299,6 +309,7 @@ int TcpServer::createListenSocket() {
     return fd;
 }
 
+/// @brief 关闭所有监听socket
 void TcpServer::closeAllSockets() {
     std::lock_guard<std::mutex> sendLock(mSendLock);
     std::map<int, int> clients;
@@ -321,6 +332,11 @@ void TcpServer::closeAllSockets() {
     }
 }
 
+/// @brief 向指定客户端发送数据
+/// @param fd 客户端socket
+/// @param data 数据
+/// @param len 数据长度
+/// @return 发送的字节数
 ssize_t TcpServer::sendAll(int fd, const uint8_t* data, size_t len) {
     const auto deadline = std::chrono::steady_clock::now() +
         std::chrono::milliseconds(mConfig.sendTimeoutMs);
