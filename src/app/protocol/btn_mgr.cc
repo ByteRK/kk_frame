@@ -19,10 +19,10 @@
 
 #define TICK_TIME 100 // tick触发时间（毫秒）
 
-typedef PacketBufferT<BT_BTN, BtnAsk, BtnAck> BtnPacketBuffer;
+typedef PacketBufferPoolT<BT_BTN, BtnAsk, BtnAck> BtnPacketBufferPool;
 
 BtnMgr::BtnMgr() {
-    mPacket = new BtnPacketBuffer();
+    mPacket = new BtnPacketBufferPool();
     mNextEventTime = 0;
     mNextSendTime = 0;
     mLastAcceptTime = cdroid::SystemClock::uptimeMillis();
@@ -106,7 +106,7 @@ int BtnMgr::handleEvents() {
 
 /// @brief 发送串口消息
 void BtnMgr::send2Btn() {
-    BuffData* bd = mPacket->obtain();
+    BuffData* bd = mPacket->obtainSend();
     if (bd == nullptr) {
         LOGE("BtnMgr packet allocation failed");
         return;

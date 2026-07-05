@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-08-01 03:03:02
- * @LastEditTime: 2026-07-02 00:38:17
+ * @LastEditTime: 2026-07-05 22:26:32
  * @FilePath: /kk_frame/src/app/protocol/tuya_mgr.cc
  * @Description:
  * @BugList:
@@ -44,10 +44,10 @@
 
 //////////////////////////////////////////////////////////////////
 
-typedef PacketBufferT<BT_TUYA, TuyaAsk, TuyaAck> TuyaPacketBuffer;
+typedef PacketBufferPoolT<BT_TUYA, TuyaAsk, TuyaAck> TuyaPacketBufferPool;
 
 TuyaMgr::TuyaMgr() {
-    mPacket = new TuyaPacketBuffer();
+    mPacket = new TuyaPacketBufferPool();
     mUartTUYA = 0;
     mNextEventTime = 0;
     mLastSendTime = 0;
@@ -78,7 +78,7 @@ int TuyaMgr::init() {
 
     LOGI("开始监听");
     UartClient::Config config;
-    config.device = "/dev/ttyS2";
+    config.device = "/dev/ttyS3";
     config.baudRate = 9600;
     config.flowControl = 0;
     config.dataBits = 8;
@@ -151,7 +151,7 @@ void TuyaMgr::send2MCU(uint8_t cmd) {
 }
 
 void TuyaMgr::send2MCU(uint8_t* buf, uint16_t len, uint8_t cmd) {
-    BuffData* bd = mPacket->obtain(len);
+    BuffData* bd = mPacket->obtainSend(len);
     if (bd == nullptr) {
         LOGE("TuyaMgr packet allocation failed. data_len=%u cmd=%u", len, cmd);
         return;

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-06-20 15:14:05
- * @LastEditTime: 2026-07-05 21:18:04
+ * @LastEditTime: 2026-07-05 22:18:17
  * @FilePath: /kk_frame/src/app/protocol/tuya_mgr.h
  * @Description:
  * @BugList:
@@ -14,7 +14,6 @@
 #ifndef __TUYA_MGR_H__
 #define __TUYA_MGR_H__
 
-#include "packet_buffer.h"
 #include "packet_channel.h"
 #include "uart_client.h"
 #include "packet_mgr.h"
@@ -32,26 +31,26 @@ class TuyaMgr : public cdroid::EventHandler, public PacketHandler,
     public Singleton<TuyaMgr>{
     friend Singleton<TuyaMgr>;
 private: // 涂鸦数据点缓存
-    bool             mPower = true;          // 开关
+    bool              mPower = true;         // 开关
 
 private:
-    bool             mClearWifi = false;    // 复位WIFI标志位
+    bool              mClearWifi = false;    // 复位WIFI标志位
 
-    PacketBuffer*    mPacket;               // 数据包
-    int64_t          mNextEventTime;        // 下一次发包时间
-    int64_t          mLastSendTime;         // 最后一次发送数据时间
-    int64_t          mLastAcceptTime;       // 最后一次接受数据时间
-    int64_t          mLastSendDiffDPTime;   // 最后一次差异上报时间
-    int64_t          mLastSyncDateTime;     // 最后一次时间同步时间
-    TuyaCommChannel* mUartTUYA;             // 涂鸦通讯通道
-    bool             mInitialized;          // 初始化完成标志
+    PacketBufferPool* mPacket;               // 数据包缓存池
+    int64_t           mNextEventTime;        // 下一次发包时间
+    int64_t           mLastSendTime;         // 最后一次发送数据时间
+    int64_t           mLastAcceptTime;       // 最后一次接受数据时间
+    int64_t           mLastSendDiffDPTime;   // 最后一次差异上报时间
+    int64_t           mLastSyncDateTime;     // 最后一次时间同步时间
+    TuyaCommChannel*  mUartTUYA;             // 涂鸦通讯通道
+    bool              mInitialized;          // 初始化完成标志
 
-    bool             mIsRunConnectWork;     // 是否已完成联网
-    int64_t          mNetWorkConnectTime;   // 联网成功时间
+    bool              mIsRunConnectWork;     // 是否已完成联网
+    int64_t           mNetWorkConnectTime;   // 联网成功时间
 
-    uint32_t         mOTALen = 0;           // OTA数据长度
-    uint32_t         mOTACurLen = 0;        // OTA当前接收长度
-    uint64_t         mOTAAcceptTime = 0;    // OTA接收数据时间
+    uint32_t          mOTALen = 0;           // OTA数据长度
+    uint32_t          mOTACurLen = 0;        // OTA当前接收长度
+    uint64_t          mOTAAcceptTime = 0;    // OTA接收数据时间
 
 protected:
     TuyaMgr();

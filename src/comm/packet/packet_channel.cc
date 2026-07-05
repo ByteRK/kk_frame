@@ -19,22 +19,23 @@
 #include <string.h>
 
 /// @brief 数据流解码工具构造
-/// @param packetBuff 协议器缓存
+/// @param packetPool 数据包缓存池
 /// @param enableRepeatAccept 是否允许重复接收
-PacketStreamDecoder::PacketStreamDecoder(PacketBuffer* packetBuff, bool enableRepeatAccept)
-    : mPacketBuff(packetBuff), mEnableRepeatAccept(enableRepeatAccept) {
-    if (!mPacketBuff) {
-        LOGE("PacketStreamDecoder packetBuff is null");
+PacketStreamDecoder::PacketStreamDecoder(PacketBufferPool* packetPool, bool enableRepeatAccept)
+    : mPacketPool(packetPool), mEnableRepeatAccept(enableRepeatAccept) {
+    if (!mPacketPool) {
+        LOGE("PacketStreamDecoder packet pool is null");
         return;
     }
 
-    mLastRecv = mPacketBuff->obtain(0, true);
-    mCurrRecv = mPacketBuff->obtain(0, true);
+    mAck = mPacketPool->createAck();
+    mLastRecv = mPacketPool->obtainReceive();
+    mCurrRecv = mPacketPool->obtainReceive();
 
-    if (mLastRecv == nullptr || mCurrRecv == nullptr) {
-        LOGE("PacketStreamDecoder receive buffer allocation failed");
-        mPacketBuff->recycle(mLastRecv);
-        mPacketBuff->recycle(mCurrRecv);
+    if (!mAck || mLastRecv == nullptr || mCurrRecv == nullptr) {
+        LOGE("PacketStreamDecoder initialization failed");
+        mPacketPool->recycle(mLastRecv);
+        mPacketPool->recycle(mCurrRecv);
         mLastRecv = nullptr;
         mCurrRecv = nullptr;
     }
@@ -42,9 +43,9 @@ PacketStreamDecoder::PacketStreamDecoder(PacketBuffer* packetBuff, bool enableRe
 
 /// @brief 数据流解码工具析构
 PacketStreamDecoder::~PacketStreamDecoder() {
-    if (mPacketBuff != nullptr) {
-        mPacketBuff->recycle(mLastRecv);
-        mPacketBuff->recycle(mCurrRecv);
+    if (mPacketPool != nullptr) {
+        mPacketPool->recycle(mLastRecv);
+        mPacketPool->recycle(mCurrRecv);
     }
     mLastRecv = nullptr;
     mCurrRecv = nullptr;
@@ -57,8 +58,9 @@ PacketStreamDecoder::~PacketStreamDecoder() {
 /// @return 已处理字节数
 int PacketStreamDecoder::onBytes(const uint8_t* data, size_t len, int id) {
     // 数据初始校验
-    if (mPacketBuff == nullptr || mCurrRecv == nullptr || data == nullptr || len == 0) {
-        LOGW("onBytes failed. packetBuff=%p currRecv=%p data=%p len=%zu", mPacketBuff, mCurrRecv, data, len);
+    if (mPacketPool == nullptr || !mAck || mCurrRecv == nullptr || data == nullptr || len == 0) {
+        LOGW("onBytes failed. packetPool=%p ack=%p currRecv=%p data=%p len=%zu",
+            mPacketPool, mAck.get(), mCurrRecv, data, len);
         return 0;
     }
 
@@ -67,8 +69,9 @@ int PacketStreamDecoder::onBytes(const uint8_t* data, size_t len, int id) {
     LOGV("packet channel recv len: %zu hex: \n%s", totalLen, StringUtils::hexStr(data, totalLen).c_str());
 
     // 数据流推入协议器缓存
-    const int consumed = mPacketBuff->add(mCurrRecv, data, totalLen);
-    if (consumed <= 0 || !mPacketBuff->complete(mCurrRecv)) {
+    mAck->parse(mCurrRecv);
+    const int consumed = mAck->add(data, totalLen);
+    if (consumed <= 0 || !mAck->complete()) {
         // 未处理完或数据包不完整
         return consumed;
     }
@@ -78,13 +81,11 @@ int PacketStreamDecoder::onBytes(const uint8_t* data, size_t len, int id) {
     ++mRecvCount;
 
     // 数据包校验
-    if (mPacketBuff->check(mCurrRecv)) {
+    if (mAck->check()) {
         mCheckErrorCount = 0;
         // 数据包重复校验
-        if (mEnableRepeatAccept || !mPacketBuff->compare(mCurrRecv, mLastRecv)) {
-            // 绑定接收包解码器并分发
-            IAck* ack = mPacketBuff->ack(mCurrRecv);
-            g_packetMgr->onCommand(ack, id);
+        if (mEnableRepeatAccept || !isSamePacket(mCurrRecv, mLastRecv)) {
+            g_packetMgr->onCommand(mAck.get(), id);
             // 数据包缓存更新
             mLastRecv->len = mCurrRecv->len;
             memcpy(mLastRecv->buf, mCurrRecv->buf, mCurrRecv->len);
@@ -122,4 +123,15 @@ int64_t PacketStreamDecoder::recvCount() const {
 /// @return 当前连续校验失败数据包数量
 int PacketStreamDecoder::checkErrorCount() const {
     return mCheckErrorCount;
+}
+
+/// @brief 比较两个数据包的类型和原始数据
+/// @return true 数据包相同
+bool PacketStreamDecoder::isSamePacket(const BuffData* lhs, const BuffData* rhs) {
+    if (lhs == nullptr || rhs == nullptr) {
+        return false;
+    }
+    return lhs->type == rhs->type
+        && lhs->len == rhs->len
+        && memcmp(lhs->buf, rhs->buf, lhs->len) == 0;
 }

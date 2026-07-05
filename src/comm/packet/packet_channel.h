@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-07-01 22:42:41
- * @LastEditTime: 2026-07-05 16:55:04
+ * @LastEditTime: 2026-07-05 22:20:22
  * @FilePath: /kk_frame/src/comm/packet/packet_channel.h
  * @Description: 通讯数据包处理管道
  * @BugList:
@@ -31,6 +31,7 @@
 #endif
 #include <stddef.h>
 #include <stdint.h>
+#include <memory>
 #include <utility>
 
 #include "packet_buffer.h"
@@ -40,21 +41,24 @@
 /// @brief 通讯数据流解码工具
 class PacketStreamDecoder {
 private:
-    PacketBuffer*  mPacketBuff;            // 解码器指针(带缓存管理)
-    BuffData*      mLastRecv{ nullptr };   // 上次数据包
-    BuffData*      mCurrRecv{ nullptr };   // 当前数据包
-    bool           mEnableRepeatAccept;    // 是否允许连续重复包
-    int64_t        mRecvCount{ 0 };        // 接收整包计数
-    int            mCheckErrorCount{ 0 };  // 当前连续校验失败包数量
+    PacketBufferPool*     mPacketPool;      // 数据包缓存池
+    std::unique_ptr<IAck> mAck;             // 当前流独立的接收解码器
+    BuffData*      mLastRecv{ nullptr };    // 上次数据包
+    BuffData*      mCurrRecv{ nullptr };    // 当前数据包
+    bool           mEnableRepeatAccept;     // 是否允许连续重复包
+    int64_t        mRecvCount{ 0 };         // 接收整包计数
+    int            mCheckErrorCount{ 0 };   // 当前连续校验失败包数量
 
 public:
-    PacketStreamDecoder(PacketBuffer* packetBuff, bool enableRepeatAccept);
+    PacketStreamDecoder(PacketBufferPool* packetPool, bool enableRepeatAccept);
     ~PacketStreamDecoder();
     int     onBytes(const uint8_t* data, size_t len, int id = -1);
     void    reset();
     int64_t recvCount() const;
     int     checkErrorCount() const;
 
+private:
+    static bool isSamePacket(const BuffData* lhs, const BuffData* rhs);
 };
 
 /// @brief 通讯数据管道 Transport -> PacketStreamDecoder
@@ -63,7 +67,7 @@ template <typename TransportType>
 class PacketChannel : public TransportHandler {
 private:
     TransportType                mTransport;              // 通讯数据通道
-    PacketBuffer*                mPacketBuff;             // 通讯数据包缓存
+    PacketBufferPool*            mPacketPool;             // 通讯数据包缓存池
     PacketStreamDecoder          mDecoder;                // 默认数据流解码工具
     int64_t                      mSendCount{ 0 };         // 发送统计
     int64_t                      mRecvCount{ 0 };         // 接收统计
@@ -83,9 +87,9 @@ public:
     /// @param enableRepeatAccept 是否允许连续重复包
     /// @param ...args TransportType 构造函数参数
     template <typename... Args>
-    PacketChannel(PacketBuffer* packetBuff, bool enableRepeatAccept, Args&&... args)
-        : mPacketBuff(packetBuff),
-        mDecoder(packetBuff, enableRepeatAccept),
+    PacketChannel(PacketBufferPool* packetPool, bool enableRepeatAccept, Args&&... args)
+        : mPacketPool(packetPool),
+        mDecoder(packetPool, enableRepeatAccept),
 #if PACKET_CHANNEL_ENABLE_MULTI_ID
         mEnableRepeatAccept(enableRepeatAccept),
 #endif
@@ -144,18 +148,18 @@ public:
     /// @return 全部字节发送成功返回 0，否则返回 -1。
     /// @note 调用后，数据包自动回收，无需手动释放
     int send(BuffData* ask, int id = -1) {
-        if (ask == nullptr || mPacketBuff == nullptr) {
+        if (ask == nullptr || mPacketPool == nullptr) {
             return -1;
         }
 
         if (!mTransport.isConnected()) {
-            mPacketBuff->recycle(ask);
+            mPacketPool->recycle(ask);
             return -1;
         }
 
         const ssize_t rc = mTransport.send(ask->buf, ask->len, id);
         const int result = (rc == ask->len) ? 0 : -1;
-        mPacketBuff->recycle(ask);
+        mPacketPool->recycle(ask);
 
         if (result == 0) {
             ++mSendCount;
@@ -266,7 +270,7 @@ private:
         }
 
         std::unique_ptr<PacketStreamDecoder> decoder(
-            new PacketStreamDecoder(mPacketBuff, mEnableRepeatAccept));
+            new PacketStreamDecoder(mPacketPool, mEnableRepeatAccept));
         PacketStreamDecoder* result = decoder.get();
         mClientDecoders[id] = std::move(decoder);
         return result;

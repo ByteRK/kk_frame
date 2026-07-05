@@ -19,10 +19,10 @@
 
 #define TICK_TIME 100 // tick触发时间（毫秒）
 
-typedef PacketBufferT<BT_MCU, McuAsk, McuAck> McuPacketBuffer;
+typedef PacketBufferPoolT<BT_MCU, McuAsk, McuAck> McuPacketBufferPool;
 
 ConnMgr::ConnMgr() {
-    mPacket = new McuPacketBuffer();
+    mPacket = new McuPacketBufferPool();
     mNextEventTime = 0;
     mNextSendTime = 0;
     mLastAcceptTime = cdroid::SystemClock::uptimeMillis();
@@ -106,7 +106,7 @@ int ConnMgr::handleEvents() {
 
 /// @brief 发送串口消息
 void ConnMgr::send2Mcu() {
-    BuffData* bd = mPacket->obtain();
+    BuffData* bd = mPacket->obtainSend();
     if (bd == nullptr) {
         LOGE("ConnMgr packet allocation failed");
         return;
