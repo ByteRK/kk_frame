@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-11-24 09:40:23
- * @LastEditTime: 2026-07-05 23:08:22
+ * @LastEditTime: 2026-07-06 01:24:13
  * @FilePath: /kk_frame/src/app/protocol/btn_mgr.cc
  * @Description:
  * @BugList:
@@ -51,7 +51,7 @@ int BtnMgr::init() {
     config.dataBits = 8;
     config.stopBits = 1;
     config.parity = 'N';
-    config.pollIntervalMs = 10;
+    config.pollIntervalMs = 200;
 #endif
 
     BtnCommChannel* channel = new BtnCommChannel(mPacket, false, config);
