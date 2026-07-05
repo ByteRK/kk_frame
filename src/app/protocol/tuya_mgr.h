@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-06-20 15:14:05
- * @LastEditTime: 2026-02-06 11:34:26
+ * @LastEditTime: 2026-07-05 23:18:50
  * @FilePath: /kk_frame/src/app/protocol/tuya_mgr.h
  * @Description:
  * @BugList:
@@ -14,38 +14,48 @@
 #ifndef __TUYA_MGR_H__
 #define __TUYA_MGR_H__
 
-#include "packet_buffer.h"
-#include "uart_client.h"
-#include "packet_handler.h"
 #include "template/singleton.h"
+#include "packet_channel.h"
+#include "packet_mgr.h"
+#include "tick_mgr.h"
 
 #include "struct.h"
 
+#ifdef PRODUCT_X64
+#include "tcp_client.h"
+typedef PacketChannel<TcpClient>  TuyaCommChannel;
+#else
+#include "uart_client.h"
+typedef PacketChannel<UartClient> TuyaCommChannel;
+#endif
+
 #define g_tuyaMgr TuyaMgr::instance()
 
-class TuyaMgr : public EventHandler, public IHandler,
-    public Singleton<TuyaMgr>{
+class TuyaMgr : public TickMgr::ITickClass, public PacketHandler,
+    public Singleton<TuyaMgr> {
     friend Singleton<TuyaMgr>;
 private: // 涂鸦数据点缓存
-    bool             mPower = true;          // 开关
+    bool              mPower = true;         // 开关
 
 private:
-    bool             mClearWifi = false;    // 复位WIFI标志位
 
-    IPacketBuffer*   mPacket;               // 数据包
-    int64_t          mNextEventTime;        // 下一次发包时间
-    int64_t          mLastSendTime;         // 最后一次发送数据时间
-    int64_t          mLastAcceptTime;       // 最后一次接受数据时间
-    int64_t          mLastSendDiffDPTime;   // 最后一次差异上报时间
-    int64_t          mLastSyncDateTime;     // 最后一次时间同步时间
-    UartClient*      mUartTUYA;             // 涂鸦服务
+    TuyaCommChannel*  mChannel{ nullptr };        // 涂鸦通讯通道
+    PacketBufferPool* mPacket{ nullptr };         // 数据包缓存池
 
-    bool             mIsRunConnectWork;     // 是否已完成联网
-    int64_t          mNetWorkConnectTime;   // 联网成功时间
 
-    uint32_t         mOTALen = 0;           // OTA数据长度
-    uint32_t         mOTACurLen = 0;        // OTA当前接收长度
-    uint64_t         mOTAAcceptTime = 0;    // OTA接收数据时间
+    bool              mInitialized{ false };      // 初始化完成标志
+    int64_t           mLastSendTime{ 0 };         // 最后一次发送数据时间
+    int64_t           mLastAcceptTime{ 0 };       // 最后一次接受数据时间
+    int64_t           mLastSendDiffDPTime{ 0 };   // 最后一次差异上报时间
+    int64_t           mLastSyncDateTime{ 0 };     // 最后一次时间同步时间
+
+    bool              mClearWifi = false;         // 复位WIFI标志位
+    bool              mIsRunConnectWork{ false }; // 是否已完成联网
+    int64_t           mNetWorkConnectTime{ 0 };   // 联网成功时间
+
+    uint32_t          mOTALen = 0;           // OTA数据长度
+    uint32_t          mOTACurLen = 0;        // OTA当前接收长度
+    uint64_t          mOTAAcceptTime = 0;    // OTA接收数据时间
 
 protected:
     TuyaMgr();
@@ -55,8 +65,7 @@ public:
     int init();
 
 protected:
-    virtual int checkEvents();
-    virtual int handleEvents();
+    void onTick(int64_t nowMs) override;
 
     // 发送给MCU(不带消息)
     void send2MCU(uint8_t cmd);
@@ -65,7 +74,7 @@ protected:
     void send2MCU(uint8_t* buf, uint16_t len, uint8_t cmd);
 
     // 处理数据
-    virtual void onCommDeal(IAck* ack);
+    virtual void onCommDeal(const IAck* ack) override;
 
 public:
     /// @brief 心跳
@@ -120,37 +129,35 @@ private:
     /// @param dlen 
     /// @param reverse 
     void createDp(uint8_t* buf, uint16_t& count, uint8_t dp, uint8_t type, void* data, uint16_t dlen, bool reverse = true);
-    
+
     /// @brief 处理下发的DP
-    void acceptDP(uint8_t* data, uint16_t len);
+    void acceptDP(const uint8_t* data, uint16_t len);
 
     /// @brief 处理下发的时间
     /// @param status 
     /// @param data 
-    void acceptTime(uint8_t* data);
+    void acceptTime(const uint8_t* data);
 
     /// @brief 处理下发的天气
     /// @param data 
     /// @param len 
-    void acceptWeather(uint8_t* data, uint16_t len);
+    void acceptWeather(const uint8_t* data, uint16_t len);
 
     /// @brief 处理开启时间服务结果
     /// @param data 
-    void acceptOpenTime(uint8_t* data);
+    void acceptOpenTime(const uint8_t* data);
 
     /// @brief 处理开启天气服务结果
-    void acceptOpenWeather(uint8_t* data);
-    
-private:
+    void acceptOpenWeather(const uint8_t* data);
 
 private:
     /// @brief 处理涂鸦OTA开始
     /// @param data 
-    void dealOTAComm(uint8_t* data, uint16_t len);
+    void dealOTAComm(const uint8_t* data, uint16_t len);
 
     /// @brief 处理涂鸦OTA数据
     /// @param data 
-    void dealOTAData(uint8_t* data, uint16_t len);
+    void dealOTAData(const uint8_t* data, uint16_t len);
 };
 
 #endif // !__TUYA_MGR_H__

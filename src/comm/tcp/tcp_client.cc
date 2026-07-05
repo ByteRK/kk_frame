@@ -1,10 +1,10 @@
 /*
  * @Author: Ricken
  * @Email: me@ricken.cn
- * @Date: 2026-02-05 09:27:49
- * @LastEditTime: 2026-02-07 14:08:15
+ * @Date: 2026-06-26 00:44:35
+ * @LastEditTime: 2026-07-05 23:00:03
  * @FilePath: /kk_frame/src/comm/tcp/tcp_client.cc
- * @Description: TCP客户端实现
+ * @Description: TCP通讯客户端
  * @BugList:
  *
  * Copyright (c) 2026 by Ricken, All Rights Reserved.
@@ -12,134 +12,419 @@
 **/
 
 #include "tcp_client.h"
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <cstring>
 
-#include <core/app.h>
 #include <cdlog.h>
 
-TcpClient::TcpClient(const std::string& ip, uint16_t port)
-    : mIp(ip), mPort(port) {
-    LOGI("TcpClient::TcpClient(%s, %d)", ip.c_str(), port);
+#include <arpa/inet.h>
+#include <chrono>
+#include <errno.h>
+#include <fcntl.h>
+#include <memory>
+#include <netdb.h>
+#include <poll.h>
+#include <stdio.h>
+#include <string.h>
+#include <system_error>
+#include <sys/socket.h>
+#include <unistd.h>
+
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL 0
+#endif
+
+namespace {
+
+    constexpr int RESOLVE_WAIT_SLICE_MS = 50;  // DNS 解析等待时间间隔
+    constexpr int CONNECT_POLL_SLICE_MS = 100; // 连接等待时间间隔
+
+    // DNS 解析线程与连接线程之间共享的状态。
+    struct ResolveState {
+        std::mutex              lock;                   // 保护以下共享状态
+        std::condition_variable condition;              // 通知连接线程解析已完成
+        bool                    done{ false };          // 解析结果是否已就绪
+        bool                    abandoned{ false };     // 连接线程是否已停止等待
+        int                     error{ 0 };             // getaddrinfo 返回的错误码
+        addrinfo*               result{ nullptr };      // getaddrinfo 返回的地址链表
+    };
+
 }
 
+/// @brief TCP通讯客户端构造
+/// @param host 主机名
+/// @param port 端口号
+TcpClient::TcpClient(const std::string& host, uint16_t port) {
+    mConfig.host = host;
+    mConfig.port = port;
+    mConfig.reconnectDelayMs = 2000;
+    mConfig.readBufferSize = 4096;
+    mConfig.sendTimeoutMs = 1000;
+}
+
+/// @brief TCP通讯客户端构造
+/// @param config TCP 客户端配置
+TcpClient::TcpClient(const Config& config)
+    : mConfig(config) { }
+
+/// @brief TCP通讯客户端析构
 TcpClient::~TcpClient() {
     stop();
 }
 
-void TcpClient::setHandler(TransportHandler* handler) {
-    mHandler = handler;
+/// @brief TCP通讯客户端初始化
+/// @return 0: 成功, 非0: 失败
+/// @note 校验地址并将当前线程已有的 Looper 绑定为事件接收 Looper
+int TcpClient::init() {
+    if (mConfig.host.empty() || mConfig.port == 0) {
+        LOGE("TcpClient init failed. host=%s port=%u",
+            mConfig.host.c_str(), mConfig.port);
+        return -1;
+    }
+    if (mConfig.reconnectDelayMs < 0) {
+        LOGE("TcpClient init failed. reconnectDelayMs=%d", mConfig.reconnectDelayMs);
+        return -2;
+    }
+    if (mConfig.sendTimeoutMs <= 0) {
+        LOGE("TcpClient init failed. sendTimeoutMs=%d", mConfig.sendTimeoutMs);
+        return -3;
+    }
+    int res = initAsyncDispatcher();
+    if (res == 0) LOGI("TcpClient init success. host=%s port=%u", mConfig.host.c_str(), mConfig.port);
+    return res;
 }
 
-void TcpClient::init() {
-    cdroid::App::getInstance().addEventHandler(this);
-}
-
+/// @brief 启动客户端通讯
+/// @return true: 成功, false: 失败
+/// @note 启动连接和接收线程，连接失败时按配置持续重试
 bool TcpClient::start() {
-    if (mRunning)
+    if (mRunning.load()) {
+        return true;
+    }
+    if (!isAsyncDispatcherReady() && init() != 0) {
         return false;
-
-    mRunning = true;
+    }
+    mRunning.store(true);
     mThread = std::thread(&TcpClient::threadLoop, this);
     return true;
 }
 
+/// @brief 停止客户端通讯
+/// @note 停止等待 DNS 解析、连接和重连，关闭套接字，等待工作线程退出并释放事件分发器
 void TcpClient::stop() {
-    if (!mRunning)
+    if (!mRunning.load() && !mConnected.load()) {
+        shutdownAsyncDispatcher();
         return;
-
-    mRunning = false;
-
-    if (mSock >= 0) {
-        shutdown(mSock, SHUT_RDWR);
-        close(mSock);
-        mSock = -1;
     }
-
-    if (mThread.joinable())
+    mRunning.store(false);
+    mStopCondition.notify_all();
+    closeSocket();
+    if (mThread.joinable()) {
         mThread.join();
-}
-
-bool TcpClient::connectServer() {
-    mSock = socket(AF_INET, SOCK_STREAM, 0);
-    if (mSock < 0)
-        return false;
-
-    sockaddr_in addr{};
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(mPort);
-    inet_pton(AF_INET, mIp.c_str(), &addr.sin_addr);
-
-    if (connect(mSock, (sockaddr*)&addr, sizeof(addr)) < 0) {
-        close(mSock);
-        mSock = -1;
-        return false;
     }
-
-    Transport::Event ev;
-    ev.type = Transport::Event::CONNECTED;
-    postEvent(ev);
-    return true;
+    if (mConnected.exchange(false)) {
+        Event ev;
+        ev.type = Event::DISCONNECTED;
+        postEvent(ev);
+        flushAsyncEvents();
+    }
+    shutdownAsyncDispatcher();
 }
 
+/// @brief 发送数据
+/// @param data 数据
+/// @param len 数据长度
+/// @param id 客户端标识（TCP 客户端通讯不需要）
+/// @return 实际发送字节数，参数或连接状态无效时返回 -1；超时或发送错误时可能小于 len
+ssize_t TcpClient::send(const uint8_t* data, size_t len, int /*id*/) {
+    if (data == nullptr || len == 0) {
+        return -1;
+    }
+    std::lock_guard<std::mutex> sendLock(mSendLock);
+    int fd = -1;
+    {
+        std::lock_guard<std::mutex> lock(mSocketLock);
+        fd = mSock;
+    }
+    if (fd < 0 || !mConnected.load()) {
+        return -1;
+    }
+    return sendAll(fd, data, len);
+}
+
+/// @brief TCP 是否已连接
+/// @return true: 已连接, false: 未连接
+bool TcpClient::isConnected() const {
+    return mConnected.load();
+}
+
+/// @brief 连接、重连和数据接收工作线程
 void TcpClient::threadLoop() {
-    while (mRunning) {
-        if (!connectServer()) {
-            sleep(2);           // 防止空转
+    while (mRunning.load()) {
+        const int fd = connectServer();
+        if (fd < 0) {
+            waitForReconnectDelay();
             continue;
         }
 
-        uint8_t buf[1024];
-        while (mRunning) {
-            ssize_t n = recv(mSock, buf, sizeof(buf), 0);
-            if (n <= 0)
-                break;
+        mConnected.store(true);
+        {
+            std::lock_guard<std::mutex> lock(mSocketLock);
+            mSock = fd;
+        }
 
-            Transport::Event ev;
-            ev.type = Transport::Event::DATA;
-            ev.data.assign(buf, buf + n);
+        Event connected;
+        connected.type = Event::CONNECTED;
+        postEvent(connected);
+
+        std::vector<uint8_t> buffer(mConfig.readBufferSize > 0 ? mConfig.readBufferSize : 4096);
+        while (mRunning.load()) {
+            ssize_t n = recv(fd, buffer.data(), buffer.size(), 0);
+            if (n > 0) {
+                Event ev;
+                ev.type = Event::DATA;
+                ev.data.assign(buffer.begin(), buffer.begin() + n);
+                postEvent(ev);
+                continue;
+            }
+
+            if (n < 0 && errno == EINTR) {
+                continue;
+            }
+            if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+                poll(nullptr, 0, 10);
+                continue;
+            }
+
+            if (n < 0) {
+                Event ev;
+                ev.type = Event::ERROR;
+                ev.error = errno;
+                postEvent(ev);
+            }
+            break;
+        }
+
+        closeSocket();
+        if (mConnected.exchange(false)) {
+            Event ev;
+            ev.type = Event::DISCONNECTED;
             postEvent(ev);
         }
 
-        if (mSock >= 0) {
-            close(mSock);
-            mSock = -1;
+        if (mRunning.load()) {
+            waitForReconnectDelay();
+        }
+    }
+}
+
+/// @brief 连接服务器
+/// @return 套接字文件描述符，-1 表示失败
+int TcpClient::connectServer() {
+    char portText[16];
+    snprintf(portText, sizeof(portText), "%u", mConfig.port);
+
+    const std::shared_ptr<ResolveState> resolveState = std::make_shared<ResolveState>();
+    const std::string host = mConfig.host;
+    const std::string service = portText;
+    try {
+        std::thread resolver([resolveState, host, service]() {
+            addrinfo hints;
+            memset(&hints, 0, sizeof(hints));
+            hints.ai_family = AF_UNSPEC;
+            hints.ai_socktype = SOCK_STREAM;
+
+            addrinfo* resolved = nullptr;
+            const int error = getaddrinfo(host.c_str(), service.c_str(), &hints, &resolved);
+            bool abandoned = false;
+            {
+                std::lock_guard<std::mutex> lock(resolveState->lock);
+                abandoned = resolveState->abandoned;
+                if (!abandoned) {
+                    resolveState->error = error;
+                    resolveState->result = resolved;
+                    resolveState->done = true;
+                }
+            }
+
+            if (abandoned && resolved != nullptr) {
+                freeaddrinfo(resolved);
+            }
+            resolveState->condition.notify_one();
+        });
+        resolver.detach();
+    }
+    catch (const std::system_error& e) {
+        LOGE("TcpClient resolver thread failed. err=%s", e.what());
+        return -1;
+    }
+
+    addrinfo* result = nullptr;
+    int resolveError = 0;
+    {
+        std::unique_lock<std::mutex> lock(resolveState->lock);
+        while (!resolveState->done && mRunning.load()) {
+            resolveState->condition.wait_for(
+                lock, std::chrono::milliseconds(RESOLVE_WAIT_SLICE_MS));
         }
 
-        Transport::Event ev;
-        ev.type = Transport::Event::DISCONNECTED;
-        postEvent(ev);
+        if (!resolveState->done) {
+            resolveState->abandoned = true;
+            return -1;
+        }
 
-        sleep(2);   // 重连节流
+        resolveError = resolveState->error;
+        result = resolveState->result;
+        resolveState->result = nullptr;
     }
-}
 
-ssize_t TcpClient::send(const uint8_t* data, size_t len, int) {
-    if (mSock < 0)
+    if (resolveError != 0) {
+        LOGE("TcpClient getaddrinfo failed. host=%s port=%u err=%s",
+            mConfig.host.c_str(), mConfig.port, gai_strerror(resolveError));
+        if (result != nullptr) {
+            freeaddrinfo(result);
+        }
         return -1;
-    return ::send(mSock, data, len, 0);
+    }
+    if (result == nullptr) {
+        LOGE("TcpClient getaddrinfo returned no address. host=%s port=%u",
+            mConfig.host.c_str(), mConfig.port);
+        return -1;
+    }
+
+    int fd = -1;
+    for (addrinfo* it = result; it != nullptr; it = it->ai_next) {
+        if (!mRunning.load()) {
+            break;
+        }
+
+        fd = socket(it->ai_family, it->ai_socktype, it->ai_protocol);
+        if (fd < 0) {
+            continue;
+        }
+
+        const int originalFlags = fcntl(fd, F_GETFL, 0);
+        if (originalFlags < 0 || fcntl(fd, F_SETFL, originalFlags | O_NONBLOCK) != 0) {
+            close(fd);
+            fd = -1;
+            continue;
+        }
+
+        bool connected = connect(fd, it->ai_addr, it->ai_addrlen) == 0;
+        if (!connected && errno == EINPROGRESS) {
+            while (mRunning.load()) {
+                pollfd pfd;
+                pfd.fd = fd;
+                pfd.events = POLLOUT;
+                pfd.revents = 0;
+
+                const int ready = poll(&pfd, 1, CONNECT_POLL_SLICE_MS);
+                if (ready < 0 && errno == EINTR) {
+                    continue;
+                }
+                if (ready <= 0) {
+                    if (ready < 0) {
+                        break;
+                    }
+                    continue;
+                }
+
+                int socketError = 0;
+                socklen_t errorLen = sizeof(socketError);
+                if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &socketError, &errorLen) == 0 &&
+                    socketError == 0) {
+                    connected = true;
+                }
+                break;
+            }
+        }
+
+        if (connected && mRunning.load() && fcntl(fd, F_SETFL, originalFlags) == 0) {
+            break;
+        }
+
+        close(fd);
+        fd = -1;
+    }
+
+    freeaddrinfo(result);
+    return fd;
 }
 
-void TcpClient::dispatchEvent(const Transport::Event& ev) {
-    if (!mHandler)
+/// @brief 重连等待
+void TcpClient::waitForReconnectDelay() {
+    if (!mRunning.load() || mConfig.reconnectDelayMs == 0) {
         return;
+    }
+    std::unique_lock<std::mutex> lock(mStopLock);
+    mStopCondition.wait_for(lock,
+        std::chrono::milliseconds(mConfig.reconnectDelayMs),
+        [this]() { return !mRunning.load(); });
+}
 
-    switch (ev.type) {
-    case Transport::Event::CONNECTED:
-        mHandler->onConnected();
-        break;
-    case Transport::Event::DISCONNECTED:
-        mHandler->onDisconnected();
-        break;
-    case Transport::Event::DATA:
-        mHandler->onRecv(ev.data.data(), ev.data.size());
-        break;
-    case Transport::Event::ERROR:
-        mHandler->onError(ev.error);
-        break;
-    default:
+/// @brief 关闭连接
+void TcpClient::closeSocket() {
+    std::lock_guard<std::mutex> sendLock(mSendLock);
+    int fd = -1;
+    {
+        std::lock_guard<std::mutex> lock(mSocketLock);
+        fd = mSock;
+        mSock = -1;
+    }
+
+    if (fd >= 0) {
+        shutdown(fd, SHUT_RDWR);
+        close(fd);
+    }
+}
+
+/// @brief 发送数据
+/// @param fd 文件描述符
+/// @param data 数据
+/// @param len 数据长度
+/// @return 发送的字节数
+ssize_t TcpClient::sendAll(int fd, const uint8_t* data, size_t len) {
+    const auto deadline = std::chrono::steady_clock::now() +
+        std::chrono::milliseconds(mConfig.sendTimeoutMs);
+    size_t written = 0;
+    while (written < len) {
+        if (std::chrono::steady_clock::now() >= deadline) {
+            LOGE("TcpClient send timeout. written=%zu total=%zu", written, len);
+            break;
+        }
+
+        ssize_t n = ::send(fd, data + written, len - written,
+            MSG_NOSIGNAL | MSG_DONTWAIT);
+        if (n > 0) {
+            written += static_cast<size_t>(n);
+            continue;
+        }
+
+        if (n < 0 && errno == EINTR) {
+            continue;
+        }
+        if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+            const auto remaining = std::chrono::duration_cast<std::chrono::milliseconds>(
+                deadline - std::chrono::steady_clock::now()).count();
+            if (remaining <= 0) {
+                LOGE("TcpClient send timeout. written=%zu total=%zu", written, len);
+                break;
+            }
+
+            pollfd pfd;
+            pfd.fd = fd;
+            pfd.events = POLLOUT;
+            pfd.revents = 0;
+            const int ready = poll(&pfd, 1, static_cast<int>(remaining));
+            if (ready > 0 && (pfd.revents & POLLOUT) != 0) {
+                continue;
+            }
+            if (ready < 0 && errno == EINTR) {
+                continue;
+            }
+            if (ready == 0) {
+                LOGE("TcpClient send timeout. written=%zu total=%zu", written, len);
+            }
+        }
         break;
     }
+    return static_cast<ssize_t>(written);
 }

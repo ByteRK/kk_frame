@@ -3,7 +3,7 @@
  * @Email: me@ricken.cn
  * @Date: 2026-02-27 09:43:34
  * @LastEditTime: 2026-02-28 14:21:08
- * @FilePath: /kk_frame/src/comm/wifi/wifi_hal.h
+ * @FilePath: /kk_frame/src/wifi/wifi_hal.h
  * @Description: WiFi 适配层
  * @BugList:
  *

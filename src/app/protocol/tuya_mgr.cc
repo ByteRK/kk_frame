@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-08-01 03:03:02
- * @LastEditTime: 2026-06-30 01:01:25
+ * @LastEditTime: 2026-07-05 23:27:09
  * @FilePath: /kk_frame/src/app/protocol/tuya_mgr.cc
  * @Description:
  * @BugList:
@@ -12,7 +12,11 @@
 **/
 
 #include "tuya_mgr.h"
+#include "tuya_packet.h"
+#include "project_utils.h"
+#include "app_common.h"
 #include <core/app.h>
+#include <core/systemclock.h>
 
 #include <iostream>
 #include <fstream>
@@ -42,86 +46,79 @@
 
 //////////////////////////////////////////////////////////////////
 
-typedef IPacketBufferT<BT_TUYA, TuyaAsk, TuyaAck> TuyaPacketBuffer;
+typedef PacketBufferPoolT<BT_TUYA, TuyaAsk, TuyaAck> TuyaPacketBufferPool;
 
 TuyaMgr::TuyaMgr() {
-    mPacket = new TuyaPacketBuffer();
-    mUartTUYA = 0;
-    mNextEventTime = 0;
-    mLastSendTime = 0;
-    mLastSyncDateTime = 0;
-    mLastSendDiffDPTime = 0;
-
-    g_packetMgr->addHandler(BT_TUYA, this);
+    mPacket = new TuyaPacketBufferPool();
 }
 
 TuyaMgr::~TuyaMgr() {
-    if (mUartTUYA) {
-        delete mUartTUYA;
-        mUartTUYA = nullptr;
-    }
+    mInitialized = false;
+    stopTick();
+    __delete(mChannel);
+    __delete(mPacket);
 }
 
 int TuyaMgr::init() {
+    if (mInitialized) return 0;
     LOGI("开始监听");
-    UartOpenReq ss;
 
-    snprintf(ss.serialPort, sizeof(ss.serialPort), "/dev/ttyS2");
+#ifdef PRODUCT_X64
+    TcpClient::Config config;
+    ProjectUtils::getDebugServiceInfo(config.host, config.port);
+    config.port += BT_TUYA;
+#else
+    UartClient::Config config;
+    config.device = "/dev/ttyS3";
+    config.baudRate = 9600;
+    config.flowControl = 0;
+    config.dataBits = 8;
+    config.stopBits = 1;
+    config.parity = 'N';
+    config.pollIntervalMs = 10;
+#endif
 
-    ss.speed = 9600;
-    ss.flow_ctrl = 0;
-    ss.databits = 8;
-    ss.stopbits = 1;
-    ss.parity = 'N';
-
-    mUartTUYA = new UartClient(mPacket, ss, "192.168.0.113", 1144, 0, true);
-    mUartTUYA->init();
-
-    mLastAcceptTime = 0;
-
-    mIsRunConnectWork = false;
-    mNetWorkConnectTime = 0;
+    TuyaCommChannel* channel = new TuyaCommChannel(mPacket, true, config);
+    const int rc = channel->init();
+    if (rc != 0) {
+        LOGE("TuyaMgr channel init failed. rc=%d", rc);
+        delete channel;
+        return rc;
+    }
+    if (!g_packetMgr->addHandler(BT_TUYA, this)) {
+        LOGE("TuyaMgr packet handler registration failed");
+        delete channel;
+        return -4;
+    }
+    mChannel = channel;
 
     // 启动延迟一会后开始发包
-    mNextEventTime = SystemClock::uptimeMillis() + TICK_TIME * 10;
-    App::getInstance().addEventHandler(this);
+    setTick(TICK_TIME);
+    startTick(TICK_TIME * 10);
+
+    mInitialized = true;
     return 0;
 }
 
-int TuyaMgr::checkEvents() {
-    int64_t curr_tick = SystemClock::uptimeMillis();
-    if (curr_tick >= mNextEventTime) {
-        mNextEventTime = curr_tick + TICK_TIME;
-        return 1;
-    }
-    return 0;
-}
-
-int TuyaMgr::handleEvents() {
-    int64_t now_tick = SystemClock::uptimeMillis();
-
-    if (mUartTUYA) mUartTUYA->onTick();
-
+void TuyaMgr::onTick(int64_t nowMs) {
     if (mIsRunConnectWork) {
-        if (now_tick - mLastSendDiffDPTime >= 400) {
+        if (nowMs - mLastSendDiffDPTime >= 400) {
             sendDiffDp();
-            mLastSendDiffDPTime = now_tick;
+            mLastSendDiffDPTime = nowMs;
         }
 
-        if (now_tick - mLastSyncDateTime >= 1080000) {
+        if (nowMs - mLastSyncDateTime >= 1080000) {
             getTuyaTime();
         }
     } else {
         if (g_data->mNetWorkDetail == 0x04 &&
-            now_tick - mNetWorkConnectTime >= 1000) {
+            nowMs - mNetWorkConnectTime >= 1000) {
             openWeatherServe();
             // send2MCU(TYCOMM_GET_TIME);
             openTimeServe();
             mIsRunConnectWork = true;
         }
     }
-
-    return 1;
 }
 
 void TuyaMgr::send2MCU(uint8_t cmd) {
@@ -129,7 +126,11 @@ void TuyaMgr::send2MCU(uint8_t cmd) {
 }
 
 void TuyaMgr::send2MCU(uint8_t* buf, uint16_t len, uint8_t cmd) {
-    BuffData* bd = mPacket->obtain(false, len);
+    BuffData* bd = mPacket->obtainSend(len);
+    if (bd == nullptr) {
+        LOGE("TuyaMgr packet allocation failed. data_len=%u cmd=%u", len, cmd);
+        return;
+    }
     TuyaAsk   snd(bd);
 
     snd.setData(TUYA_VERSION, 0x03);
@@ -140,12 +141,12 @@ void TuyaMgr::send2MCU(uint8_t* buf, uint16_t len, uint8_t cmd) {
 
     snd.checkCode();    // 修改检验位
     LOG(VERBOSE) << "send to tuya. bytes=" << StringUtils::hexStr(bd->buf, bd->len);
-    mUartTUYA->send(bd);
-    mLastSendTime = SystemClock::uptimeMillis();
+    mChannel->send(bd);
+    mLastSendTime = cdroid::SystemClock::uptimeMillis();
 }
 
-void TuyaMgr::onCommDeal(IAck* ack) {
-    if (mLastAcceptTime == 0)mLastAcceptTime = SystemClock::uptimeMillis();
+void TuyaMgr::onCommDeal(const IAck* ack) {
+    if (mLastAcceptTime == 0)mLastAcceptTime = cdroid::SystemClock::uptimeMillis();
 
     bool show = false;
     switch (ack->getData(TUYA_COMM)) {
@@ -167,7 +168,7 @@ void TuyaMgr::onCommDeal(IAck* ack) {
         break;
     case TYCOMM_ACCEPT: {
         uint16_t dealDpLen = 7 + ack->getData2(TUYA_DATA_LEN_H);
-        acceptDP(ack->mBuf + TUYA_DATA_START, ack->getData2(TUYA_DATA_LEN_H));
+        acceptDP(ack->data() + TUYA_DATA_START, ack->getData2(TUYA_DATA_LEN_H));
     }   break;
     case TYCOMM_CHECK:
         sendDp();
@@ -177,34 +178,34 @@ void TuyaMgr::onCommDeal(IAck* ack) {
         break;
 
     case TYCOMM_GET_TIME:
-        acceptTime(ack->mBuf + TUYA_DATA_START);
+        acceptTime(ack->data() + TUYA_DATA_START);
         break;
     case TYCOMM_OPEN_WEATHER:
-        acceptOpenWeather(ack->mBuf + TUYA_DATA_START);
+        acceptOpenWeather(ack->data() + TUYA_DATA_START);
         break;
     case TYCOMM_WEATHER:
-        acceptWeather(ack->mBuf + TUYA_DATA_START, ack->getData2(TUYA_DATA_LEN_H));
+        acceptWeather(ack->data() + TUYA_DATA_START, ack->getData2(TUYA_DATA_LEN_H));
         break;
     case TYCOMM_OPEN_TIME:
-        acceptOpenTime(ack->mBuf + TUYA_DATA_START);
+        acceptOpenTime(ack->data() + TUYA_DATA_START);
         break;
 
     case TYCOMM_OTA_START:
-        dealOTAComm(ack->mBuf + TUYA_DATA_START, ack->getData2(TUYA_DATA_LEN_H));
+        dealOTAComm(ack->data() + TUYA_DATA_START, ack->getData2(TUYA_DATA_LEN_H));
         break;
     case TYCOMM_OTA_DATA:
-        dealOTAData(ack->mBuf + TUYA_DATA_START, ack->getData2(TUYA_DATA_LEN_H));
+        dealOTAData(ack->data() + TUYA_DATA_START, ack->getData2(TUYA_DATA_LEN_H));
         break;
     default:
         show = true;
-        LOG(INFO) << "[default]accept. bytes=" << StringUtils::hexStr(ack->mBuf, ack->mDataLen);
+        LOG(INFO) << "[default]accept. bytes=" << StringUtils::hexStr(ack->data(), ack->dataLength());
         break;
     }
 
     if (!show)
-        LOG(VERBOSE) << "[default]accept. bytes=" << StringUtils::hexStr(ack->mBuf, ack->mDataLen);
+        LOG(VERBOSE) << "[default]accept. bytes=" << StringUtils::hexStr(ack->data(), ack->dataLength());
 
-    mLastAcceptTime = SystemClock::uptimeMillis();
+    mLastAcceptTime = cdroid::SystemClock::uptimeMillis();
 }
 
 void TuyaMgr::sendHeartBeat() {
@@ -261,7 +262,7 @@ void TuyaMgr::sendWIFIStatus(uint8_t status) {
     case 0x04:
         if (g_data->mNetWork != 0x04) {
             mIsRunConnectWork = false;
-            mNetWorkConnectTime = SystemClock::uptimeMillis();
+            mNetWorkConnectTime = cdroid::SystemClock::uptimeMillis();
         }
         g_data->mNetWork = WIFI_4;
         break;
@@ -281,14 +282,14 @@ void TuyaMgr::sendWIFIStatus(uint8_t status) {
 
 void TuyaMgr::getTuyaTime() {
     LOG(VERBOSE) << "获取涂鸦时间";
-    mLastSyncDateTime = SystemClock::uptimeMillis();
+    mLastSyncDateTime = cdroid::SystemClock::uptimeMillis();
     send2MCU(TYCOMM_GET_TIME);
 }
 
 void TuyaMgr::openTimeServe() {
     LOG(VERBOSE) << "开启涂鸦时间服务";
     uint8_t data[2] = { 0x01 ,0x01 };
-    mLastSyncDateTime = SystemClock::uptimeMillis();
+    mLastSyncDateTime = cdroid::SystemClock::uptimeMillis();
     send2MCU(data, 2, TYCOMM_OPEN_TIME);
 }
 
@@ -326,7 +327,7 @@ void TuyaMgr::sendDp() {
 
     createDp(s_SendDpBuf, count, TYDPID_POWER, TUYATYPE_BOOL, &mPower, 1);
 
-    mLastSendDiffDPTime = SystemClock::uptimeMillis();
+    mLastSendDiffDPTime = cdroid::SystemClock::uptimeMillis();
     send2MCU(s_SendDpBuf, count, TYCOMM_SEND);
 }
 
@@ -370,7 +371,7 @@ void TuyaMgr::createDp(uint8_t* buf, uint16_t& count, uint8_t dp, uint8_t type, 
     count += (4 + dlen); // 累加计数
 }
 
-void TuyaMgr::acceptDP(uint8_t* data, uint16_t len) {
+void TuyaMgr::acceptDP(const uint8_t* data, uint16_t len) {
     LOGE("len = %d", len);
     LOG(WARN) << "accept dp[" << StringUtils::fill(data[0], 3) << "]. bytes=" << StringUtils::hexStr(data, len);
     uint16_t dealCount = 0;
@@ -400,17 +401,17 @@ void TuyaMgr::acceptDP(uint8_t* data, uint16_t len) {
     LOGI("final Deal Tuya Dp");
 }
 
-void TuyaMgr::acceptTime(uint8_t* data) {
+void TuyaMgr::acceptTime(const uint8_t* data) {
     if (!data[0])return; // 消息错误
     SystemUtils::setTime(data[1] + 2000, data[2], data[3], data[4], data[5], data[6]);
 }
 
-void TuyaMgr::acceptOpenWeather(uint8_t* data) {
+void TuyaMgr::acceptOpenWeather(const uint8_t* data) {
     if (data[0])LOGI("Weather Serve Open Success");
     else LOGE("Weather Serve Open Failed!!!  -> code: %d", data[1]);
 }
 
-void TuyaMgr::acceptWeather(uint8_t* data, uint16_t len) {
+void TuyaMgr::acceptWeather(const uint8_t* data, uint16_t len) {
     LOG(VERBOSE) << "accept weather. bytes=" << StringUtils::hexStr(data, len);
     if (len > 1) {
         uint16_t dealCount = 1;
@@ -448,7 +449,7 @@ void TuyaMgr::acceptWeather(uint8_t* data, uint16_t len) {
     send2MCU(TYCOMM_WEATHER);
 }
 
-void TuyaMgr::acceptOpenTime(uint8_t* data) {
+void TuyaMgr::acceptOpenTime(const uint8_t* data) {
     switch (data[0]) {
     case 0x01:
         if (data[1])getTuyaTime();
@@ -460,14 +461,14 @@ void TuyaMgr::acceptOpenTime(uint8_t* data) {
     }
 }
 
-void TuyaMgr::dealOTAComm(uint8_t* data, uint16_t len) {
+void TuyaMgr::dealOTAComm(const uint8_t* data, uint16_t len) {
     if (mOTALen != 0) {
         mOTALen = 0;
         system(RM_OTA_PATH);
     }
 
     mOTALen = (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3];
-    mOTAAcceptTime = SystemClock::uptimeMillis(); // 记录接收数据的时间
+    mOTAAcceptTime = cdroid::SystemClock::uptimeMillis(); // 记录接收数据的时间
     uint8_t send[1] = { OTA_PACKAGE_LEVEL };
     send2MCU(send, 1, TYCOMM_OTA_START);
 
@@ -475,7 +476,7 @@ void TuyaMgr::dealOTAComm(uint8_t* data, uint16_t len) {
     g_windMgr->showPage(PAGE_OTA);
 }
 
-void TuyaMgr::dealOTAData(uint8_t* data, uint16_t len) {
+void TuyaMgr::dealOTAData(const uint8_t* data, uint16_t len) {
     uint32_t dataLen = len - 4;
     uint32_t dataOffSet = (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3];
     if (!dataLen || dataOffSet >= mOTALen) { // 数据传输完成
@@ -493,7 +494,7 @@ void TuyaMgr::dealOTAData(uint8_t* data, uint16_t len) {
         }
         LOGW("[OTA PROGRESS] %d/%d", dataOffSet + dataLen, mOTALen);
     }
-    mOTAAcceptTime = SystemClock::uptimeMillis(); // 记录接收数据的时间
+    mOTAAcceptTime = cdroid::SystemClock::uptimeMillis(); // 记录接收数据的时间
     mOTACurLen = dataOffSet + dataLen;
     send2MCU(TYCOMM_OTA_DATA);
 }

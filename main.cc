@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-07-05 00:38:45
+ * @LastEditTime: 2026-07-05 23:28:12
  * @FilePath: /kk_frame/main.cc
  * @Description: 主程序入口
  * @BugList:
@@ -86,7 +86,7 @@ int main(int argc, const char* argv[]) {
     g_statistics->init();
 
     /* 通讯 */
-    // g_connMgr->init();
+    g_connMgr->init();
     // g_btnMgr->init();
     // g_tuyaMgr->init();
 
