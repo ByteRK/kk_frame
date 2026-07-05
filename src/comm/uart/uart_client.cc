@@ -75,8 +75,9 @@ UartClient::UartClient(const Config& config)
     mFd(-1),
     mRunning(false),
     mDeviceClaimed(false),
-    mLastPollMs(0),
-    mHandler(nullptr) { }
+    mHandler(nullptr) {
+    setTick(mConfig.pollIntervalMs > 0 ? mConfig.pollIntervalMs : 1);
+}
 
 UartClient::~UartClient() {
     stop();
@@ -137,7 +138,7 @@ bool UartClient::start() {
     }
 
     mRunning = true;
-    mLastPollMs = cdroid::SystemClock::uptimeMillis();
+    startTick(0);
 
     Event ev;
     ev.type = Event::CONNECTED;
@@ -146,6 +147,7 @@ bool UartClient::start() {
 
 void UartClient::stop() {
     const bool notifyDisconnected = mRunning;
+    stopTick();
     mRunning = false;
     cancelEventDispatch();
 
@@ -166,16 +168,10 @@ bool UartClient::isConnected() const {
     return mRunning && mFd >= 0;
 }
 
-void UartClient::onTick() {
+void UartClient::onTick(int64_t /*nowMs*/) {
     if (!isConnected()) {
         return;
     }
-
-    const int64_t nowMs = cdroid::SystemClock::uptimeMillis();
-    if (mConfig.pollIntervalMs > 0 && nowMs - mLastPollMs < mConfig.pollIntervalMs) {
-        return;
-    }
-    mLastPollMs = nowMs;
 
     pollfd pfd;
     pfd.fd = mFd;
@@ -388,6 +384,7 @@ void UartClient::releaseDeviceClaim() {
 
 void UartClient::disconnectOnDeviceError(int error, short revents) {
     const bool notifyDisconnected = mRunning;
+    stopTick();
     mRunning = false;
 
     LOGE("UartClient device error. device=%s errno=%d err=%s revents=0x%x",

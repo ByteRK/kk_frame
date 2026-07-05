@@ -13,6 +13,7 @@
 #ifndef __UART_CLIENT_H__
 #define __UART_CLIENT_H__
 
+#include "tick_mgr.h"
 #include "transport.h"
 
 #include <mutex>
@@ -22,10 +23,9 @@
 /**
  * @brief 基于 POSIX 串口设备的原始字节通讯实现。
  *
- * 类内部直接完成设备打开和 termios 配置。当前实现不创建接收线程，使用者需要在
- * 所在线程周期调用 onTick() 驱动非阻塞读取。
+ * 类内部直接完成设备打开和 termios 配置，并通过 TickMgr 周期驱动非阻塞读取。
  */
-class UartClient : public Transport {
+class UartClient : public Transport, private TickMgr::ITickClass {
 public:
     /** @brief 串口设备及收发参数。 */
     struct Config {
@@ -41,7 +41,7 @@ public:
         int stopBits{ 1 };
         /** @brief 校验位：N/n 无校验，O/o 奇校验，E/e 偶校验。 */
         char parity{ 'N' };
-        /** @brief onTick() 两次实际读取检查之间的最小间隔，单位毫秒。 */
+        /** @brief 两次串口读取检查之间的调度间隔，单位毫秒；小于 1 时按 1 处理。 */
         int pollIntervalMs{ 10 };
         /** @brief 写入繁忙时的最大等待时间，单位毫秒；负数表示不设超时。 */
         int writeTimeoutMs{ 1000 };
@@ -64,8 +64,6 @@ public:
     void stop() override;
     /** @brief 设备已打开且通道已启动时返回 true。 */
     bool isConnected() const override;
-    /** @brief 按 pollIntervalMs 周期非阻塞读取串口并同步分发数据。 */
-    void onTick() override;
     /** @brief 写入原始字节；id 对串口无意义，会被忽略。 */
     ssize_t send(const uint8_t* data, size_t len, int id = -1) override;
 
@@ -73,6 +71,8 @@ protected:
     void dispatchEvent(const Event& ev) override;
 
 private:
+    /** @brief TickMgr 周期回调，执行一次非阻塞串口读取。 */
+    void onTick(int64_t nowMs) override;
     int openDevice();
     int configureDevice(int fd);
     void releaseDeviceClaim();
@@ -87,7 +87,6 @@ private:
     int mFd;
     bool mRunning;
     bool mDeviceClaimed;
-    int64_t mLastPollMs;
     TransportHandler* mHandler;
 };
 

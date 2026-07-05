@@ -57,8 +57,6 @@ public:
     void stop() override;
     /** @brief 服务端正在监听时返回 true，不表示一定已有客户端连接。 */
     bool isConnected() const override;
-    /** @brief TCP 使用内部线程接收，无需外部周期驱动。 */
-    void onTick() override { }
     /**
      * @brief 向指定客户端写入原始字节。
      * @param id onConnected()/onRecv() 回调中提供的客户端标识，必须大于等于 0。

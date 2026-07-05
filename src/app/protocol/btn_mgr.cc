@@ -96,7 +96,6 @@ int BtnMgr::checkEvents() {
 int BtnMgr::handleEvents() {
     if (mUartBtn) {
         if (mBtnUpd > 0) send2Btn();
-        mUartBtn->onTick();
 
         if (cdroid::SystemClock::uptimeMillis() - mLastAcceptTime > 10 * 1000) {
             LOGE("btn communication failure");

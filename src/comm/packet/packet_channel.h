@@ -121,11 +121,6 @@ public:
         mTransport.stop();
     }
 
-    /// @brief 底层通道周期任务
-    void onTick() {
-        mTransport.onTick();
-    }
-
     /// @brief 可用状态返回
     /// @return true 可用
     bool isOk() const {

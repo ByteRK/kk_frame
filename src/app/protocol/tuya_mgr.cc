@@ -124,8 +124,6 @@ int TuyaMgr::checkEvents() {
 int TuyaMgr::handleEvents() {
     int64_t now_tick = cdroid::SystemClock::uptimeMillis();
 
-    if (mUartTUYA) mUartTUYA->onTick();
-
     if (mIsRunConnectWork) {
         if (now_tick - mLastSendDiffDPTime >= 400) {
             sendDiffDp();

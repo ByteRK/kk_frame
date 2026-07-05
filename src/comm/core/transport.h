@@ -68,8 +68,6 @@ public:
     virtual void stop() = 0;
     /** @brief 返回当前通道是否可用于收发。 */
     virtual bool isConnected() const = 0;
-    /** @brief 供需要主动轮询的实现执行周期任务；默认无操作。 */
-    virtual void onTick() { }
     /**
      * @brief 发送原始字节。
      * @param data 待发送数据，调用期间必须有效。

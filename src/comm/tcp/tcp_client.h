@@ -60,8 +60,6 @@ public:
     void stop() override;
     /** @brief 与服务端 TCP 连接已经建立时返回 true。 */
     bool isConnected() const override;
-    /** @brief TCP 使用内部线程接收，无需外部周期驱动。 */
-    void onTick() override { }
     /** @brief 向当前服务端连接写入原始字节；id 会被忽略。 */
     ssize_t send(const uint8_t* data, size_t len, int id = -1) override;
 

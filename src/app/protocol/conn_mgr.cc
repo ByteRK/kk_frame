@@ -96,7 +96,6 @@ int ConnMgr::checkEvents() {
 int ConnMgr::handleEvents() {
     if (mUartMcu) {
         if (mMcuUpd > 0) send2Mcu();
-        mUartMcu->onTick();
 
         if (cdroid::SystemClock::uptimeMillis() - mLastAcceptTime > 10 * 1000) {
             LOGE("mcu communication failure");
