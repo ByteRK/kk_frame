@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-07-04 00:39:16
- * @LastEditTime: 2026-07-04 17:59:41
+ * @LastEditTime: 2026-07-05 02:11:23
  * @FilePath: /kk_frame/src/app/managers/auth_mgr.cc
  * @Description: 授权码管理器
  * @BugList:
@@ -65,12 +65,16 @@ std::string AuthMgr::mac() {
     static NetworkUtils::InterfaceInfo info;
     // 读取无线网络MAC
     if (NetworkUtils::getInterfaceInfo(NET_WLAN_NAME, info)) {
+        LOGI("Try Load WLAN Permanent Mac Address");
         if (info.permanentMacAddress.size() > 0) return (sMac = info.permanentMacAddress);
+        LOGI("Try Load WLAN Mac Address");
         if (info.macAddress.size() > 0) return (sMac = info.macAddress);
     }
     // 读取有线网络MAC
     if (NetworkUtils::getInterfaceInfo(NET_LINE_NAME, info)) {
+        LOGI("Try Load LINE Permanent Mac Address");
         if (info.permanentMacAddress.size() > 0) return (sMac = info.permanentMacAddress);
+        LOGI("Try Load LINE Mac Address");
         if (info.macAddress.size() > 0) return (sMac = info.macAddress);
     }
 #ifdef PRODUCT_X64

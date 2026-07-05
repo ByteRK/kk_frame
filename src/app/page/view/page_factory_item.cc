@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-07-03 17:05:27
- * @LastEditTime: 2026-07-04 05:20:39
+ * @LastEditTime: 2026-07-05 02:24:24
  * @FilePath: /kk_frame/src/app/page/view/page_factory_item.cc
  * @Description: 产测页面子项
  * @BugList:
@@ -52,9 +52,10 @@ void FactoryInfo::setInfo() {
     info += "\n";
 
     // 硬件信息
-    info += "处理器: " CPU_BRAND " " CPU_NAME "\n";
-    info += "存储器: " FLASH_NAME " " FLASH_SIZE "\n";
-    info += "显示器: " SCREEN_SIZE "\n";
+    info += "核心: " CPU_BRAND " " CPU_NAME "\n";
+    info += "内存: " MEMORY_NAME " " MEMORY_SIZE "\n";
+    info += "闪存: " FLASH_NAME " " FLASH_SIZE "\n";
+    info += "屏幕: " SCREEN_SIZE "\n";
 
     tv->setText(info.c_str());
 }
