@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-08-01 03:03:02
- * @LastEditTime: 2026-07-05 22:26:32
+ * @LastEditTime: 2026-07-06 00:43:39
  * @FilePath: /kk_frame/src/app/protocol/tuya_mgr.cc
  * @Description:
  * @BugList:
@@ -148,8 +148,18 @@ void TuyaMgr::send2MCU(uint8_t* buf, uint16_t len, uint8_t cmd) {
 void TuyaMgr::onCommDeal(const IAck* ack) {
     if (mLastAcceptTime == 0)mLastAcceptTime = cdroid::SystemClock::uptimeMillis();
 
+    uint8_t command = 0;
+    uint16_t payloadLen = 0;
+    const uint8_t* payload = nullptr;
+    if (!ack->readU8(TUYA_COMM, command)
+        || !ack->readU16(TUYA_DATA_LEN_H, payloadLen)
+        || !ack->readBytes(TUYA_DATA_START, payloadLen, payload)) {
+        LOGE("Invalid Tuya packet fields. len=%u", ack->dataLength());
+        return;
+    }
+
     bool show = false;
-    switch (ack->getData(TUYA_COMM)) {
+    switch (command) {
     case TYCOMM_HEART:
         sendHeartBeat();
         break;
@@ -163,38 +173,47 @@ void TuyaMgr::onCommDeal(const IAck* ack) {
     case TYCOMM_CHECK_MDOE:
         sendSetWorkMode();
         break;
-    case TYCOMM_WIFI_STATUS:
-        sendWIFIStatus(ack->getData(TUYA_DATA_START));
-        break;
-    case TYCOMM_ACCEPT: {
-        uint16_t dealDpLen = 7 + ack->getData2(TUYA_DATA_LEN_H);
-        acceptDP(ack->data() + TUYA_DATA_START, ack->getData2(TUYA_DATA_LEN_H));
+    case TYCOMM_WIFI_STATUS: {
+        uint8_t status = 0;
+        if (!ack->readU8(TUYA_DATA_START, status)) {
+            LOGE("Invalid Tuya WiFi status packet");
+            break;
+        }
+        sendWIFIStatus(status);
     }   break;
+    case TYCOMM_ACCEPT:
+        acceptDP(payload, payloadLen);
+        break;
     case TYCOMM_CHECK:
         sendDp();
         break;
-    case TYCOMM_WIFITEST:
-        g_data->mTUYAWifiTestRes = ack->getData2(TUYA_DATA_START, true);
-        break;
+    case TYCOMM_WIFITEST: {
+        uint16_t result = 0;
+        if (!ack->readU16(TUYA_DATA_START, result, IAck::ByteOrder::LittleEndian)) {
+            LOGE("Invalid Tuya WiFi test packet");
+            break;
+        }
+        g_data->mTUYAWifiTestRes = result;
+    }   break;
 
     case TYCOMM_GET_TIME:
-        acceptTime(ack->data() + TUYA_DATA_START);
+        acceptTime(payload);
         break;
     case TYCOMM_OPEN_WEATHER:
-        acceptOpenWeather(ack->data() + TUYA_DATA_START);
+        acceptOpenWeather(payload);
         break;
     case TYCOMM_WEATHER:
-        acceptWeather(ack->data() + TUYA_DATA_START, ack->getData2(TUYA_DATA_LEN_H));
+        acceptWeather(payload, payloadLen);
         break;
     case TYCOMM_OPEN_TIME:
-        acceptOpenTime(ack->data() + TUYA_DATA_START);
+        acceptOpenTime(payload);
         break;
 
     case TYCOMM_OTA_START:
-        dealOTAComm(ack->data() + TUYA_DATA_START, ack->getData2(TUYA_DATA_LEN_H));
+        dealOTAComm(payload, payloadLen);
         break;
     case TYCOMM_OTA_DATA:
-        dealOTAData(ack->data() + TUYA_DATA_START, ack->getData2(TUYA_DATA_LEN_H));
+        dealOTAData(payload, payloadLen);
         break;
     default:
         show = true;
