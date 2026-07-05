@@ -67,12 +67,12 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
     # 通讯
     src/comm/core
-    src/comm/base
-    src/comm/i2c
-    src/comm/net
+    src/comm/packet
     src/comm/uart
-    src/comm/wifi
     src/comm/tcp
+
+    # WiFi
+    src/wifi
 
     # 组件及模板工具
     src/class

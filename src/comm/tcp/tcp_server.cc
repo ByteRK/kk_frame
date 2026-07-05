@@ -1,10 +1,10 @@
 /*
  * @Author: Ricken
  * @Email: me@ricken.cn
- * @Date: 2026-02-05 09:29:26
- * @LastEditTime: 2026-02-07 14:08:09
+ * @Date: 2026-06-26 00:48:00
+ * @LastEditTime: 2026-07-05 22:59:26
  * @FilePath: /kk_frame/src/comm/tcp/tcp_server.cc
- * @Description: TCP服务端实现
+ * @Description: TCP通讯服务端
  * @BugList:
  *
  * Copyright (c) 2026 by Ricken, All Rights Reserved.
@@ -12,176 +12,378 @@
 **/
 
 #include "tcp_server.h"
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <cstring>
 
-#include <core/app.h>
 #include <cdlog.h>
 
-TcpServer::TcpServer(uint16_t port)
-    : mPort(port) {
-    LOGI("TcpServer::TcpServer(%d)", port);
+#include <arpa/inet.h>
+#include <chrono>
+#include <errno.h>
+#include <poll.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <vector>
+
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL 0
+#endif
+
+/// @brief TCP通讯服务端构造
+/// @param port 监听端口
+TcpServer::TcpServer(uint16_t port) {
+    mConfig.port = port;
+    mConfig.backlog = 8;
+    mConfig.readBufferSize = 4096;
+    mConfig.sendTimeoutMs = 1000;
 }
 
+/// @brief TCP通讯服务端构造
+/// @param config TCP 服务端配置
+TcpServer::TcpServer(const Config& config)
+    : mConfig(config) { }
+
+/// @brief TCP通讯服务端析构
 TcpServer::~TcpServer() {
     stop();
 }
 
-void TcpServer::setHandler(TransportHandler* handler) {
-    mHandler = handler;
+/// @brief TCP通讯服务端初始化
+/// @return 0: 成功, 非0: 失败
+/// @note 校验端口并将当前线程已有的 Looper 绑定为事件接收 Looper
+int TcpServer::init() {
+    if (mConfig.port == 0) {
+        LOGE("TcpServer init failed. port is zero");
+        return -1;
+    }
+    if (mConfig.sendTimeoutMs <= 0) {
+        LOGE("TcpServer init failed. sendTimeoutMs=%d", mConfig.sendTimeoutMs);
+        return -2;
+    }
+
+    int res = initAsyncDispatcher();
+    if (res == 0) LOGI("TcpServer init success. port=%d", mConfig.port);
+    return res;
 }
 
-void TcpServer::init() {
-    cdroid::App::getInstance().addEventHandler(this);
+/// @brief 启动服务
+/// @return true: 成功, false: 失败
+/// @note 创建监听套接字并启动接入/接收线程
+bool TcpServer::start() {
+    if (mRunning.load()) {
+        return true;
+    }
+    if (!isAsyncDispatcherReady() && init() != 0) {
+        return false;
+    }
+    int listenSock = createListenSocket();
+    if (listenSock < 0) {
+        return false;
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(mSocketLock);
+        mListenSock = listenSock;
+    }
+
+    mRunning.store(true);
+    mThread = std::thread(&TcpServer::threadLoop, this);
+
+    Event ev;
+    ev.type = Event::CONNECTED;
+    postEvent(ev);
+    return true;
 }
 
+/// @brief 停止服务
+/// @note 停止监听、关闭全部连接、等待线程退出并释放事件分发器
+void TcpServer::stop() {
+    if (!mRunning.load()) {
+        shutdownAsyncDispatcher();
+        return;
+    }
+    mRunning.store(false);
+    closeAllSockets();
+    if (mThread.joinable()) {
+        mThread.join();
+    }
+    Event ev;
+    ev.type = Event::DISCONNECTED;
+    postEvent(ev);
+    flushAsyncEvents();
+    shutdownAsyncDispatcher();
+}
+
+/// @brief 向指定客户端发送数据
+/// @param data 数据
+/// @param len 数据长度
+/// @param id 客户端标识
+/// @return 实际发送字节数，参数或客户端无效时返回 -1；超时或发送错误时可能小于 len
+ssize_t TcpServer::send(const uint8_t* data, size_t len, int id) {
+    if (data == nullptr || len == 0 || id < 0) {
+        return -1;
+    }
+    std::lock_guard<std::mutex> sendLock(mSendLock);
+    int fd = -1;
+    {
+        std::lock_guard<std::mutex> lock(mSocketLock);
+        auto it = mClients.find(id);
+        if (it != mClients.end()) {
+            fd = it->second;
+        }
+    }
+    if (fd < 0) {
+        return -1;
+    }
+    return sendAll(fd, data, len);
+}
+
+/// @brief TCP 是否正在监听
+/// @return true: 在监听, false: 未监听
+/// @note 不表示一定已有客户端连接
+bool TcpServer::isConnected() const {
+    return mRunning.load();
+}
+
+/// @brief 客户端接入和数据接收线程
+void TcpServer::threadLoop() {
+    while (mRunning.load()) {
+        std::map<int, int> clients;
+        int listenSock = -1;
+        {
+            std::lock_guard<std::mutex> lock(mSocketLock);
+            listenSock = mListenSock;
+            clients = mClients;
+        }
+
+        if (listenSock < 0) {
+            break;
+        }
+
+        std::vector<pollfd> pollFds;
+        std::vector<int> clientIds;
+        pollFds.reserve(clients.size() + 1);
+        clientIds.reserve(clients.size());
+
+        pollfd listenPollFd;
+        listenPollFd.fd = listenSock;
+        listenPollFd.events = POLLIN;
+        listenPollFd.revents = 0;
+        pollFds.push_back(listenPollFd);
+
+        for (const auto& client : clients) {
+            pollfd clientPollFd;
+            clientPollFd.fd = client.second;
+            clientPollFd.events = POLLIN;
+            clientPollFd.revents = 0;
+            pollFds.push_back(clientPollFd);
+            clientIds.push_back(client.first);
+        }
+
+        const int ready = poll(pollFds.data(), pollFds.size(), 500);
+        if (!mRunning.load()) {
+            break;
+        }
+        if (ready < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+            Event ev;
+            ev.type = Event::ERROR;
+            ev.error = errno;
+            postEvent(ev);
+            continue;
+        }
+        if (ready == 0) {
+            continue;
+        }
+
+        if ((pollFds.front().revents & POLLIN) != 0) {
+            int fd = accept(listenSock, nullptr, nullptr);
+            if (fd >= 0) {
+                int clientId = 0;
+                {
+                    std::lock_guard<std::mutex> lock(mSocketLock);
+                    clientId = mNextClientId++;
+                    mClients[clientId] = fd;
+                }
+
+                Event ev;
+                ev.type = Event::CONNECTED;
+                ev.id = clientId;
+                postEvent(ev);
+            }
+        }
+
+        std::vector<uint8_t> buffer(mConfig.readBufferSize > 0 ? mConfig.readBufferSize : 4096);
+        for (size_t i = 0; i < clientIds.size(); ++i) {
+            const int clientId = clientIds[i];
+            const int fd = pollFds[i + 1].fd;
+            const short revents = pollFds[i + 1].revents;
+            if ((revents & (POLLIN | POLLERR | POLLHUP | POLLNVAL)) == 0) {
+                continue;
+            }
+
+            ssize_t n = 0;
+            int socketError = 0;
+            if ((revents & POLLIN) != 0) {
+                n = recv(fd, buffer.data(), buffer.size(), 0);
+                if (n < 0) {
+                    socketError = errno;
+                }
+            } else if ((revents & POLLNVAL) != 0) {
+                socketError = EBADF;
+            } else if ((revents & POLLERR) != 0) {
+                socklen_t errorLen = sizeof(socketError);
+                if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &socketError, &errorLen) != 0) {
+                    socketError = errno;
+                }
+            }
+
+            if (n > 0) {
+                Event ev;
+                ev.type = Event::DATA;
+                ev.id = clientId;
+                ev.data.assign(buffer.begin(), buffer.begin() + n);
+                postEvent(ev);
+                continue;
+            }
+
+            if (n < 0 && socketError == EINTR) {
+                continue;
+            }
+            if (socketError != 0) {
+                Event ev;
+                ev.type = Event::ERROR;
+                ev.id = clientId;
+                ev.error = socketError;
+                postEvent(ev);
+            }
+
+            {
+                std::lock_guard<std::mutex> sendLock(mSendLock);
+                std::lock_guard<std::mutex> lock(mSocketLock);
+                auto it = mClients.find(clientId);
+                if (it != mClients.end()) {
+                    shutdown(it->second, SHUT_RDWR);
+                    close(it->second);
+                    mClients.erase(it);
+                }
+            }
+
+            Event ev;
+            ev.type = Event::DISCONNECTED;
+            ev.id = clientId;
+            postEvent(ev);
+        }
+    }
+}
+
+/// @brief 创建监听socket
+/// @return 监听套接字，失败时返回负数
 int TcpServer::createListenSocket() {
     int fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (fd < 0)
+    if (fd < 0) {
+        LOGE("TcpServer socket failed. errno=%d err=%s", errno, strerror(errno));
         return -1;
+    }
 
     int opt = 1;
     setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
-    sockaddr_in addr{};
+    sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
-    addr.sin_port = htons(mPort);
-    addr.sin_addr.s_addr = INADDR_ANY;
+    addr.sin_port = htons(mConfig.port);
+    addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
-    if (bind(fd, (sockaddr*)&addr, sizeof(addr)) < 0) {
+    if (bind(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) != 0) {
+        LOGE("TcpServer bind failed. port=%u errno=%d err=%s",
+            mConfig.port, errno, strerror(errno));
         close(fd);
-        return -1;
+        return -2;
     }
 
-    if (listen(fd, 8) < 0) {
+    if (listen(fd, mConfig.backlog) != 0) {
+        LOGE("TcpServer listen failed. errno=%d err=%s", errno, strerror(errno));
         close(fd);
-        return -1;
+        return -3;
     }
 
     return fd;
 }
 
-bool TcpServer::start() {
-    if (mRunning)
-        return false;
-
-    mListenSock = createListenSocket();
-    if (mListenSock < 0)
-        return false;
-
-    mRunning = true;
-    mThread = std::thread(&TcpServer::threadLoop, this);
-    return true;
-}
-
-void TcpServer::stop() {
-    if (!mRunning)
-        return;
-
-    mRunning = false;
-
-    if (mListenSock >= 0) {
-        shutdown(mListenSock, SHUT_RDWR);
-        close(mListenSock);
+/// @brief 关闭监听套接字和全部客户端套接字
+void TcpServer::closeAllSockets() {
+    std::lock_guard<std::mutex> sendLock(mSendLock);
+    std::map<int, int> clients;
+    int listenSock = -1;
+    {
+        std::lock_guard<std::mutex> lock(mSocketLock);
+        listenSock = mListenSock;
         mListenSock = -1;
+        clients.swap(mClients);
     }
 
-    for (auto& c : mClients) {
-        shutdown(c.second, SHUT_RDWR);
-        close(c.second);
+    if (listenSock >= 0) {
+        shutdown(listenSock, SHUT_RDWR);
+        close(listenSock);
     }
-    mClients.clear();
 
-    if (mThread.joinable())
-        mThread.join();
+    for (const auto& client : clients) {
+        shutdown(client.second, SHUT_RDWR);
+        close(client.second);
+    }
 }
 
-void TcpServer::threadLoop() {
-    fd_set rfds;
-
-    while (mRunning) {
-        FD_ZERO(&rfds);
-        FD_SET(mListenSock, &rfds);
-        int maxfd = mListenSock;
-
-        for (auto& c : mClients) {
-            FD_SET(c.second, &rfds);
-            maxfd = std::max(maxfd, c.second);
+/// @brief 向指定客户端发送数据
+/// @param fd 客户端socket
+/// @param data 数据
+/// @param len 数据长度
+/// @return 发送的字节数
+ssize_t TcpServer::sendAll(int fd, const uint8_t* data, size_t len) {
+    const auto deadline = std::chrono::steady_clock::now() +
+        std::chrono::milliseconds(mConfig.sendTimeoutMs);
+    size_t written = 0;
+    while (written < len) {
+        if (std::chrono::steady_clock::now() >= deadline) {
+            LOGE("TcpServer send timeout. written=%zu total=%zu", written, len);
+            break;
         }
 
-        int ret = select(maxfd + 1, &rfds, nullptr, nullptr, nullptr);
-        if (ret <= 0)
+        ssize_t n = ::send(fd, data + written, len - written,
+            MSG_NOSIGNAL | MSG_DONTWAIT);
+        if (n > 0) {
+            written += static_cast<size_t>(n);
             continue;
-
-        if (FD_ISSET(mListenSock, &rfds)) {
-            int fd = accept(mListenSock, nullptr, nullptr);
-            if (fd >= 0) {
-                int cid = mNextClientId++;
-                mClients[cid] = fd;
-
-                Transport::Event ev;
-                ev.type = Transport::Event::CLIENT_CONNECTED;
-                ev.id = cid;
-                postEvent(ev);
-            }
         }
 
-        uint8_t buf[1024];
-        for (auto it = mClients.begin(); it != mClients.end();) {
-            int cid = it->first;
-            int fd = it->second;
-
-            if (FD_ISSET(fd, &rfds)) {
-                ssize_t n = recv(fd, buf, sizeof(buf), 0);
-                if (n <= 0) {
-                    Transport::Event ev;
-                    ev.type = Transport::Event::CLIENT_DISCONNECTED;
-                    ev.id = cid;
-                    postEvent(ev);
-
-                    close(fd);
-                    it = mClients.erase(it);
-                    continue;
-                }
-
-                Transport::Event ev;
-                ev.type = Transport::Event::DATA;
-                ev.id = cid;
-                ev.data.assign(buf, buf + n);
-                postEvent(ev);
-            }
-            ++it;
+        if (n < 0 && errno == EINTR) {
+            continue;
         }
-    }
-}
+        if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+            const auto remaining = std::chrono::duration_cast<std::chrono::milliseconds>(
+                deadline - std::chrono::steady_clock::now()).count();
+            if (remaining <= 0) {
+                LOGE("TcpServer send timeout. written=%zu total=%zu", written, len);
+                break;
+            }
 
-ssize_t TcpServer::send(const uint8_t* data, size_t len, int id) {
-    auto it = mClients.find(id);
-    if (it == mClients.end())
-        return -1;
-    return ::send(it->second, data, len, 0);
-}
-
-void TcpServer::dispatchEvent(const Transport::Event& ev) {
-    if (!mHandler)
-        return;
-
-    switch (ev.type) {
-    case Transport::Event::CLIENT_CONNECTED:
-        mHandler->onConnected(ev.id);
-        break;
-    case Transport::Event::CLIENT_DISCONNECTED:
-        mHandler->onDisconnected(ev.id);
-        break;
-    case Transport::Event::DATA:
-        mHandler->onRecv(
-            ev.data.data(),
-            ev.data.size(),
-            ev.id);
-        break;
-    default:
+            pollfd pfd;
+            pfd.fd = fd;
+            pfd.events = POLLOUT;
+            pfd.revents = 0;
+            const int ready = poll(&pfd, 1, static_cast<int>(remaining));
+            if (ready > 0 && (pfd.revents & POLLOUT) != 0) {
+                continue;
+            }
+            if (ready < 0 && errno == EINTR) {
+                continue;
+            }
+            if (ready == 0) {
+                LOGE("TcpServer send timeout. written=%zu total=%zu", written, len);
+            }
+        }
         break;
     }
+    return static_cast<ssize_t>(written);
 }

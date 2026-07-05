@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:47:17
- * @LastEditTime: 2026-06-24 17:50:58
+ * @LastEditTime: 2026-07-05 23:01:32
  * @FilePath: /kk_frame/src/utils/project_utils.cc
  * @Description: 项目相关的一些操作函数
  * @BugList:
@@ -89,7 +89,7 @@ void ProjectUtils::pKeyMap() {
     // fprintf(stderr, "\033[0;37m\n");
 }
 
-void ProjectUtils::getDebugServiceInfo(std::string& ip, int16_t& port) {
+void ProjectUtils::getDebugServiceInfo(std::string& ip, uint16_t& port) {
     ip = "127.0.0.1";
     port = 8999;
 

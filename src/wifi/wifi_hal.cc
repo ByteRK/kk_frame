@@ -2,8 +2,8 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-27 09:43:34
- * @LastEditTime: 2026-07-03 23:10:58
- * @FilePath: /kk_frame/src/comm/wifi/wifi_hal.cc
+ * @LastEditTime: 2026-07-05 23:27:53
+ * @FilePath: /kk_frame/src/wifi/wifi_hal.cc
  * @Description: WiFi 管理器
  * @BugList:
  *

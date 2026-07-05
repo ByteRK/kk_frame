@@ -1,368 +1,533 @@
+/*
+ * @Author: Ricken
+ * @Email: me@ricken.cn
+ * @Date: 2026-06-26 00:47:22
+ * @LastEditTime: 2026-07-05 20:57:38
+ * @FilePath: /kk_frame/src/comm/uart/uart_client.cc
+ * @Description: 串口通讯客户端
+ * @BugList:
+ *
+ * Copyright (c) 2026 by Ricken, All Rights Reserved.
+ *
+**/
 
 #include "uart_client.h"
-#include "packet_handler.h"
-#include "string_utils.h"
-#include <core/app.h>
-#include <uart.h>
 
-#ifdef DEBUG
-#define CONN_TCP 1
-#else
-#define CONN_TCP 0
+#include <cdlog.h>
+#include <core/systemclock.h>
+
+#include <cstdlib>
+#include <errno.h>
+#include <fcntl.h>
+#include <poll.h>
+#include <string.h>
+#include <termios.h>
+#include <unistd.h>
+#include <vector>
+
+#define FailFast(condition, fmt, ...)   \
+    do {                                \
+        if (condition) {                \
+            LOGE(fmt, ##__VA_ARGS__);   \
+            std::abort();               \
+        }                               \
+    } while (0)
+
+namespace {
+
+    constexpr short UART_POLL_ERROR_EVENTS = POLLERR | POLLHUP | POLLNVAL;
+    constexpr int   UART_FD_MODE_THRESHOLD_MS = 100;
+
+    speed_t baudToTermios(int baudRate) {
+        switch (baudRate) {
+        case 300: return B300;
+        case 1200: return B1200;
+        case 2400: return B2400;
+        case 4800: return B4800;
+        case 9600: return B9600;
+        case 19200: return B19200;
+        case 38400: return B38400;
+#ifdef B57600
+        case 57600: return B57600;
 #endif
+#ifdef B115200
+        case 115200: return B115200;
+#endif
+#ifdef B230400
+        case 230400: return B230400;
+#endif
+#ifdef B460800
+        case 460800: return B460800;
+#endif
+#ifdef B921600
+        case 921600: return B921600;
+#endif
+        default: {
+            LOGE("Unsupported baud rate: %d!!!!!!", baudRate);
+        }   return static_cast<speed_t>(0);
+        }
+    }
 
-#define RECV_PACKET_TIME_SPACE 50  // epoll_wait 收包间隔ms
-#define SEND_PACKET_TIME_SPACE 200 // 发包间隔ms
-
-#define ADD_TCP_HEARD false
-
-UartClient::UartClient(IPacketBuffer* ipacket, UartOpenReq& uartInfo, const std::string& ip,
-    short port, int recv_space, bool enableRepeatAcc)
-    : mPacketBuff(ipacket), mUartInfo(uartInfo), mIp(ip), mPort(port), mRecvSpace(recv_space), mEnableRepeatAcc(enableRepeatAcc) {
-
-    mLastSendTime = 0; // 最后一次发包时间
-    mSendCount    = 0;
-    mRecvCount    = 0;
-    mChkErrCount  = 0;
-    mLastRecvTime = SystemClock::uptimeMillis() + 5000;
-    mLastRecv     = mPacketBuff->obtain();
-    mCurrRecv     = mPacketBuff->obtain();
-    mLastSndHeart = SystemClock::uptimeMillis();
-    mSerialOk     = 0;
 }
 
+std::mutex UartClient::sDeviceLock;              // 设备占用记录锁
+std::set<std::string> UartClient::sUsedDevices;  // 已占用的设备路径（防止重复打开同一设备）
+
+/// @brief 串口通讯客户端构造
+/// @param config 串口配置
+UartClient::UartClient(const Config& config)
+    : mConfig(config),
+    mUseFdMode(config.pollIntervalMs < UART_FD_MODE_THRESHOLD_MS) {
+    if (!mUseFdMode) {
+        setTick(mConfig.pollIntervalMs);
+    }
+}
+
+/// @brief 串口通讯客户端析构
 UartClient::~UartClient() {
-    mPacketBuff->recycle(mLastRecv);
-    mPacketBuff->recycle(mCurrRecv);
-
-    for (BuffData* ask : mSendQueue) { mPacketBuff->recycle(ask); }
-    mSendQueue.clear();
-
-#if CONN_TCP
-    App::getInstance().removeEventHandler(this);
-#else
-    if (mRecvSpace < RECV_PACKET_TIME_SPACE) {
-        closeFd();
-    } else {
-        App::getInstance().removeEventHandler(this);
-    }
-#endif
+    stop();
 }
 
+/// @brief 打开并配置串口设备
+/// @return 0: 成功, 非0: 失败
 int UartClient::init() {
-
-#ifdef PRODUCT_X64
-    LOGI("Uart: %s-%d %p", mIp.c_str(), mPort, this);
-#else
-    LOGI("Uart: %s %d-%d-%d-%d-%C %p", mUartInfo.serialPort, mUartInfo.speed, mUartInfo.flow_ctrl, mUartInfo.databits,
-        mUartInfo.stopbits, mUartInfo.parity, this);
-#endif
-
-#if CONN_TCP
-#ifdef DEBUG
-    SocketClient::init(mIp.c_str(), mPort);
-#else
-    SocketClient::init();
-#endif
-    if (mRecvSpace >= RECV_PACKET_TIME_SPACE) {
-        App::getInstance().addEventHandler(this);
-    }
-#else
-#ifndef DEBUG
-    int uart_fd = UART0_Open(mUartInfo.serialPort);
-    if (uart_fd <= 0) {
-        LOGE("uart open fail. port=%s", mUartInfo.serialPort);
+    if (mConfig.device.empty()) {
+        LOGE("UartClient init failed: device is empty");
         return -1;
     }
-    int result = UART0_Init(uart_fd, mUartInfo.speed, mUartInfo.flow_ctrl, mUartInfo.databits, mUartInfo.stopbits,
-        mUartInfo.parity);
-    if (result == FALSE) {
-        LOGE("uart init fail. %d-%d-%d-%d-%C", mUartInfo.speed, mUartInfo.flow_ctrl, mUartInfo.databits,
-            mUartInfo.stopbits, mUartInfo.parity);
-        UART0_Close(uart_fd);
+
+    if (mFd >= 0) {
+        return 0;
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(sDeviceLock);
+        const bool inserted = sUsedDevices.insert(mConfig.device).second;
+        FailFast(!inserted, "UartClient device already in use. device=%s",
+            mConfig.device.c_str());
+        mDeviceClaimed = true;
+    }
+
+    mFd = openDevice();
+    if (mFd < 0) {
+        releaseDeviceClaim();
         return -2;
     }
 
-    // 读取缓冲区积累的数据丢弃
-    int read_len;
-    while ((read_len = UART0_Recv(uart_fd, mRSBuf->pos, mRSBuf->end - mRSBuf->last)) >= mRSBuf->end - mRSBuf->last) {
-        LOG(VERBOSE) << "fore-read data, give up. buf=" << StringUtils::hexStr(mRSBuf->pos, read_len);
+    if (configureDevice(mFd) != 0) {
+        close(mFd);
+        mFd = -1;
+        releaseDeviceClaim();
+        return -3;
     }
 
-    // 读消息事件处理
-    if (mRecvSpace < RECV_PACKET_TIME_SPACE) {
-        setFd(uart_fd);
-    } else {
-        mFd     = uart_fd;
-        mStatus = ST_CONNECTED;
-        onStatusChange();
-        App::getInstance().addEventHandler(this);
-    }
-#endif
-#endif
+    tcflush(mFd, TCIOFLUSH);
+    LOGI("UartClient init. device=%s baud=%d data=%d stop=%d parity=%c",
+        mConfig.device.c_str(),
+        mConfig.baudRate,
+        mConfig.dataBits,
+        mConfig.stopBits,
+        mConfig.parity);
     return 0;
 }
 
-bool UartClient::isOk() {
-    bool is_ok = isConn();
-#if CONN_TCP
-    return is_ok && mSerialOk;
-#endif
-    return is_ok;
+/// @brief 启用串口通道
+/// @return true: 成功, false: 失败
+bool UartClient::start() {
+    if (mRunning) {
+        return true;
+    }
+
+    if (mFd < 0 && init() != 0) {
+        return false;
+    }
+
+    mRunning = true;
+    if (!startReadDriver()) {
+        mRunning = false;
+        return false;
+    }
+
+    Event ev;
+    ev.type = Event::CONNECTED;
+    dispatchEvent(ev);
+    return mRunning;
 }
 
-int UartClient::readData() {
-    int read_len;
+/// @brief 停止串口通道
+void UartClient::stop() {
+    const bool notifyDisconnected = mRunning;
+    stopReadDriver();
+    mRunning = false;
+    if (mFd >= 0) {
+        close(mFd);
+        mFd = -1;
+    }
+    releaseDeviceClaim();
 
-#if CONN_TCP
-    read_len = Client::readData();
-#else
-    int64_t curr_tick = SystemClock::uptimeMillis();
-    if (curr_tick - mLastRecvTime < mRecvSpace) { return 1; }
-    mLastRecvTime = curr_tick;
+    if (notifyDisconnected) {
+        Event ev;
+        ev.type = Event::DISCONNECTED;
+        dispatchEvent(ev);
+    }
+}
 
-    read_len = UART0_Recv(mFd, mRSBuf->last, mRSBuf->end - mRSBuf->last);
-    if (read_len > 0) {
-        mRSBuf->last += read_len;
-    } else {
-        LOGE("uart recv error. result=%d", read_len);
+/// @brief 发送数据
+/// @param data 数据
+/// @param len 数据长度
+/// @param id 客户端标识（串口通讯不需要）
+/// @return 实际发送字节数，参数或通道状态无效时返回 -1；超时或写入错误时可能小于 len
+ssize_t UartClient::send(const uint8_t* data, size_t len, int /*id*/) {
+    if (!isConnected() || data == nullptr || len == 0) {
+        return -1;
+    }
+    return writeAll(data, len);
+}
+
+/// @brief 通道是否已连接
+/// @return true: 已连接, false: 未连接
+bool UartClient::isConnected() const {
+    return mRunning && mFd >= 0;
+}
+
+/// @brief 定时器回调
+/// @param nowMs 当前时间戳
+/// @note 长轮询间隔时触发
+void UartClient::onTick(int64_t /*nowMs*/) {
+    if (!isConnected()) {
+        return;
+    }
+
+    pollfd pfd;
+    pfd.fd = mFd;
+    pfd.events = POLLIN;
+    pfd.revents = 0;
+
+    int ready = poll(&pfd, 1, 0);
+    if (ready < 0) {
+        if (errno != EINTR) {
+            Event ev;
+            ev.type = Event::ERROR;
+            ev.error = errno;
+            dispatchEvent(ev);
+        }
+        return;
+    }
+
+    if (ready == 0) {
+        return;
+    }
+
+    if ((pfd.revents & UART_POLL_ERROR_EVENTS) != 0) {
+        int error = EIO;
+        if ((pfd.revents & POLLNVAL) != 0) {
+            error = EBADF;
+        } else if ((pfd.revents & POLLHUP) != 0) {
+            error = ENODEV;
+        }
+        disconnectOnDeviceError(error, pfd.revents);
+        return;
+    }
+
+    if ((pfd.revents & POLLIN) == 0) {
+        return;
+    }
+
+    readAvailable();
+}
+
+/// @brief FD 事件回调
+/// @param fd 文件描述符
+/// @param events 事件
+/// @param context 上下文
+/// @return 继续监听返回 1，停止监听返回 0
+/// @note 短轮询间隔时触发
+int UartClient::onFdEvent(int fd, int events, void* context) {
+    UartClient* client = static_cast<UartClient*>(context);
+    if (client == nullptr) {
         return 0;
     }
-#endif
-
-    return read_len;
+    return client->handleFdEvent(fd, events);
 }
 
-int UartClient::onRecvData() {
-    int    count    = 0;
-    size_t data_len = mRSBuf->last - mRSBuf->pos;
+/// @brief 处理 FD 事件
+/// @param fd 文件描述符
+/// @param events 事件
+/// @return 继续监听返回 1，停止监听返回 0
+int UartClient::handleFdEvent(int fd, int events) {
+    if (!isConnected() || fd != mFd) {
+        return 0;
+    }
 
-    // 串口数据包
-    int64_t oldRecvCount = mRecvCount;
-    onUartData(mRSBuf->pos, data_len);
-    mRSBuf->pos  = mRSBuf->start;
-    mRSBuf->last = mRSBuf->pos;
-    count        = mRecvCount - oldRecvCount;
+    if ((events & (cdroid::Looper::EVENT_ERROR
+        | cdroid::Looper::EVENT_HANGUP)) != 0) {
+        int error = EIO;
+        if ((events & cdroid::Looper::EVENT_HANGUP) != 0) {
+            error = ENODEV;
+        }
+        disconnectOnDeviceError(error, events);
+        return 0;
+    }
 
-    return count;
+    if ((events & cdroid::Looper::EVENT_INPUT) != 0) {
+        readAvailable();
+    }
+    return isConnected() ? 1 : 0;
 }
 
-int UartClient::onUartData(uint8_t* buf, int len) {
-    int offset = 0;
+/// @brief 启动读取驱动
+/// @return true: 成功, false: 失败
+bool UartClient::startReadDriver() {
+    if (!mUseFdMode) {
+        startTick(0);
+        return true;
+    }
 
-    if (len > 0) { LOG(VERBOSE) << "len:" << len << " hex:" << StringUtils::hexStr(buf, len); }
+    mLooper = cdroid::Looper::getForThread();
+    if (mLooper == nullptr) {
+        LOGE("UartClient fd mode failed: current looper is null");
+        return false;
+    }
 
-    for (; offset < len;) {
-        offset += mPacketBuff->add(mCurrRecv, buf + offset, len - offset);
-        if (!mPacketBuff->complete(mCurrRecv)) { break; }
-        LOG(VERBOSE) << "complete:" << StringUtils::hexStr(mCurrRecv->buf, mCurrRecv->len);
+    const int events = cdroid::Looper::EVENT_INPUT
+        | cdroid::Looper::EVENT_ERROR
+        | cdroid::Looper::EVENT_HANGUP;
+    if (mLooper->addFd(mFd, 0, events, onFdEvent, this) < 0) {
+        LOGE("UartClient addFd failed. device=%s fd=%d", mConfig.device.c_str(), mFd);
+        mLooper = nullptr;
+        return false;
+    }
+    mFdRegistered = true;
+    return true;
+}
 
-        mRecvCount++;
+/// @brief 停止读取驱动
+void UartClient::stopReadDriver() {
+    if (mFdRegistered && mLooper != nullptr && mFd >= 0) {
+        mLooper->removeFd(mFd);
+    }
+    mFdRegistered = false;
+    mLooper = nullptr;
+    stopTick();
+}
 
-        if (mPacketBuff->check(mCurrRecv)) {
-            mChkErrCount = 0;
-            // 检查重复数据包
-            if (mEnableRepeatAcc || !mPacketBuff->compare(mCurrRecv, mLastRecv)) {
-                LOG(VERBOSE) << "new packet:" << mPacketBuff->str(mCurrRecv);
-                IAck* ack = mPacketBuff->ack(mCurrRecv);
-                g_packetMgr->onCommand(ack);
+/// @brief 读取数据
+void UartClient::readAvailable() {
+    if (!isConnected()) {
+        return;
+    }
 
-                // 保存本次数据包
-                mLastRecv->len = mCurrRecv->len;
-                memcpy(mLastRecv->buf, mCurrRecv->buf, mCurrRecv->len);
-
-                mLastSendTime = 0;
+    std::vector<uint8_t> buffer(mConfig.readBufferSize > 0 ? mConfig.readBufferSize : 4096);
+    for (;;) {
+        ssize_t n = read(mFd, buffer.data(), buffer.size());
+        if (n > 0) {
+            Event ev;
+            ev.type = Event::DATA;
+            ev.data.assign(buffer.begin(), buffer.begin() + n);
+            dispatchEvent(ev);
+            if (!isConnected()) return;
+            if (static_cast<size_t>(n) < buffer.size()) {
+                break;
             }
-        } else {
-            mChkErrCount++;
-            // LOGE("data len:%d", mCurrRecv->len);
-            StringUtils::hexdump("uart recv data, check fail", mCurrRecv->buf, mCurrRecv->len, 100);
+            continue;
         }
 
-        mCurrRecv->len = 0;
-    }
+        if (n == 0 || errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
+            break;
+        }
 
-    return 0;
-}
-
-void UartClient::onTick() {
-    int64_t now_tick = SystemClock::uptimeMillis();
-
-    static int64_t s_last_time = 0;
-    if (now_tick - s_last_time >= 60000) {
-        s_last_time = now_tick;
-        LOG(DEBUG) << mUartInfo.serialPort << " packet info. send=" << mSendCount << " recv=" << mRecvCount
-            << " check_fail=" << mChkErrCount;
-    }
-
-    SocketClient::onTick();
-#if CONN_TCP
-    if (now_tick - mLastSndHeart >= HEART_TIME && isTimeout(HEART_TIME)) {
-        mLastSndHeart = now_tick;
-        sendHeart();
-    }
-#endif
-
-    // 上一个包接收超时，发送队列不为空
-    if (now_tick - mLastSendTime >= SEND_PACKET_TIME_SPACE && !mSendQueue.empty()) {
-        mLastSendTime = now_tick;
-
-        BuffData* ask = mSendQueue.front();
-        mSendQueue.pop_front();
-
-        mPacketBuff->checkCode(ask);
-        sendTrans(ask);
-        mPacketBuff->recycle(ask);
-        mSendCount++;
+        Event ev;
+        ev.type = Event::ERROR;
+        ev.error = errno;
+        if (errno == EIO || errno == ENODEV || errno == EBADF) {
+            disconnectOnDeviceError(errno, 0);
+            return;
+        }
+        dispatchEvent(ev);
+        break;
     }
 }
 
-int UartClient::send(BuffData* ask) {
+/// @brief 打开 FD 设备
+/// @return 文件描述符
+int UartClient::openDevice() {
+    int fd = open(mConfig.device.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK | O_CLOEXEC);
+    if (fd < 0) {
+        LOGE("UartClient open failed. device=%s errno=%d err=%s",
+            mConfig.device.c_str(), errno, strerror(errno));
+    }
+    return fd;
+}
 
-    if (!isConn()) {
-        mPacketBuff->recycle(ask);
+/// @brief 配置设备
+/// @param fd 文件描述符
+/// @return 0 成功；-1 获取属性失败；-2 波特率无效；-3 数据位无效；-4 校验位无效
+/// @return -5 停止位无效；-6 平台不支持硬件流控；-7 流控模式无效；-8 应用属性失败
+int UartClient::configureDevice(int fd) {
+    termios options;
+    if (tcgetattr(fd, &options) != 0) {
+        LOGE("UartClient tcgetattr failed. errno=%d err=%s", errno, strerror(errno));
         return -1;
     }
 
-    // 检查队列是否有相同的包还未发送
-    for (auto it = mSendQueue.begin(); it != mSendQueue.end(); it++) {
-        BuffData* dst = *it;
-        if (mPacketBuff->compare(ask, dst)) {
-            LOG(VERBOSE) << "same package exists! str=" << mPacketBuff->str(ask);
-            mPacketBuff->recycle(ask);
-            return 1;
-        }
+    const speed_t baud = baudToTermios(mConfig.baudRate);
+    if (baud == static_cast<speed_t>(0)) {
+        LOGE("UartClient unsupported baud rate. baud=%d", mConfig.baudRate);
+        return -2;
     }
 
-    mSendQueue.push_back(ask);
+    cfmakeraw(&options);
+    cfsetispeed(&options, baud);
+    cfsetospeed(&options, baud);
 
-    return 0;
-}
-
-void UartClient::onStatusChange() {
-#if CONN_TCP
-    SocketClient::onStatusChange();
-    if (isConn()) { sendConn(); }
-#else
-    LOGE_IF(!isConn(), "errno=%d errstr=%s", errno, strerror(errno));
-#endif
-}
-
-bool UartClient::isTimeout(int out_time /* = 0*/) {
-#if CONN_TCP
-    return SocketClient::isTimeout(out_time);
-#endif
-    return false;
-}
-
-void UartClient::sendConn() {
-    char        buf[LEN_4K];
-    UartHeader *head = (UartHeader *)buf;
-    head->mcmd       = main_cmd_uart;
-    head->scmd       = sub_cmd_uart_open_req;
-    head->size       = sizeof(UartHeader);
-
-    UartOpenReq* req = (UartOpenReq*)(buf + head->size);
-    memcpy(req, &mUartInfo, sizeof(UartOpenReq));
-    head->size += sizeof(UartOpenReq);
-
-    StringUtils::hexdump("uart connect", (unsigned char*)buf, head->size, 100);
-
-    sendData(buf, head->size);
-    LOG(INFO) << "connect uart. name=" << req->serialPort;
-}
-
-void UartClient::sendTrans(BuffData* ask) {
-#if CONN_TCP
-#if ADD_TCP_HEARD
-    char        buf[LEN_4K];
-    UartHeader* head = (UartHeader*)buf;
-    head->mcmd       = main_cmd_data;
-    head->scmd       = sub_cmd_data_trans;
-    head->size       = sizeof(UartHeader);
-
-    memcpy(buf + head->size, ask->buf, ask->len);
-    head->size += ask->len;
-
-    LOG(VERBOSE) << mFd << " sock send:" << StringUtils::hexStr(ask->buf, ask->len);
-    sendData(buf, head->size);
-#else
-    sendData(ask->buf, ask->len);
-#endif
-#else
-    LOG(VERBOSE) << mFd << " uart send:" << StringUtils::hexStr(ask->buf, ask->len);
-    UART0_Send(mFd, ask->buf, ask->len);
-    mLastRecvTime = SystemClock::uptimeMillis();
-#endif
-}
-
-void UartClient::sendHeart() {
-#if CONN_TCP
-    char        buf[LEN_4K];
-    UartHeader* head = (UartHeader*)buf;
-    head->mcmd       = main_cmd_data;
-    head->scmd       = sub_cmd_heart_ask;
-    head->size       = sizeof(UartHeader);
-
-    int64_t tt = SystemClock::uptimeMillis();
-    memcpy(buf + head->size, &tt, sizeof(int64_t));
-    head->size += sizeof(int64_t);
-
-    sendData(buf, head->size);
-#endif
-}
-
-int UartClient::checkEvents() {
-    int64_t now_time_tick = SystemClock::uptimeMillis();
-
-    if (now_time_tick - mLastRecvTime >= mRecvSpace) {
-        mLastRecvTime = now_time_tick;
-        return 1;
+    options.c_cflag |= (CLOCAL | CREAD);
+    options.c_cflag &= ~CSIZE;
+    switch (mConfig.dataBits) {
+    case 5: options.c_cflag |= CS5; break;
+    case 6: options.c_cflag |= CS6; break;
+    case 7: options.c_cflag |= CS7; break;
+    case 8: options.c_cflag |= CS8; break;
+    default:
+        LOGE("UartClient unsupported data bits. dataBits=%d", mConfig.dataBits);
+        return -3;
     }
 
-    return 0;
-}
-
-int UartClient::handleEvents() {
-#if CONN_TCP
-    if (!isConn()) return 0;
-
-    fd_set read_fds;
-    FD_ZERO(&read_fds);
-    FD_SET(mFd, &read_fds);
-
-    struct timeval vtime;
-    vtime.tv_sec = 0;
-    vtime.tv_usec = 1000;
-    int ready = select(mFd + 1, &read_fds, NULL, NULL, &vtime);
-    if (ready < 0) {
-        handleEvent(mFd, Looper::EVENT_INPUT, 0);
-        return 0;
+    switch (mConfig.parity) {
+    case 'N':
+    case 'n':
+        options.c_cflag &= ~PARENB;
+        options.c_iflag &= ~INPCK;
+        break;
+    case 'O':
+    case 'o':
+        options.c_cflag |= PARENB;
+        options.c_cflag |= PARODD;
+        options.c_iflag |= INPCK;
+        break;
+    case 'E':
+    case 'e':
+        options.c_cflag |= PARENB;
+        options.c_cflag &= ~PARODD;
+        options.c_iflag |= INPCK;
+        break;
+    default:
+        LOGE("UartClient unsupported parity. parity=%c", mConfig.parity);
+        return -4;
     }
 
-    if (FD_ISSET(mFd, &read_fds)) {
-        handleEvent(mFd, Looper::EVENT_INPUT, 0);
-        return 1;
-    }
-
-#else
-    int read_len = UART0_Recv(mFd, mRSBuf->last, mRSBuf->end - mRSBuf->last);
-
-    LOGV("uart recv. len=%d", read_len);
-
-    if (read_len > 0) {
-        mRSBuf->last += read_len;
+    if (mConfig.stopBits == 1) {
+        options.c_cflag &= ~CSTOPB;
+    } else if (mConfig.stopBits == 2) {
+        options.c_cflag |= CSTOPB;
     } else {
-        return 0;
+        LOGE("UartClient unsupported stop bits. stopBits=%d", mConfig.stopBits);
+        return -5;
     }
 
-    onRecvData();
-    return 1;
+    options.c_iflag &= ~(IXON | IXOFF | IXANY);
+#ifdef CRTSCTS
+    options.c_cflag &= ~CRTSCTS;
 #endif
+    if (mConfig.flowControl == 1) {
+#ifdef CRTSCTS
+        options.c_cflag |= CRTSCTS;
+#else
+        LOGE("UartClient hardware flow control is unsupported on this platform");
+        return -6;
+#endif
+    } else if (mConfig.flowControl == 2) {
+        options.c_iflag |= (IXON | IXOFF | IXANY);
+    } else if (mConfig.flowControl != 0) {
+        LOGE("UartClient unsupported flow control. flow=%d", mConfig.flowControl);
+        return -7;
+    }
+
+    options.c_cc[VTIME] = 0;
+    options.c_cc[VMIN] = 0;
+
+    if (tcsetattr(fd, TCSANOW, &options) != 0) {
+        LOGE("UartClient tcsetattr failed. errno=%d err=%s", errno, strerror(errno));
+        return -8;
+    }
 
     return 0;
 }
 
-int UartClient::getRecvSpace() {
-    return mRecvSpace;
+/// @brief 释放设备占用
+void UartClient::releaseDeviceClaim() {
+    if (!mDeviceClaimed) {
+        return;
+    }
+
+    std::lock_guard<std::mutex> lock(sDeviceLock);
+    sUsedDevices.erase(mConfig.device);
+    mDeviceClaimed = false;
+}
+
+/// @brief 故障时断开连接
+/// @param error 错误码
+/// @param events 事件
+void UartClient::disconnectOnDeviceError(int error, int events) {
+    const bool notifyDisconnected = mRunning;
+    stopReadDriver();
+    mRunning = false;
+
+    LOGE("UartClient device error. device=%s errno=%d err=%s events=0x%x",
+        mConfig.device.c_str(), error, strerror(error), events);
+
+    if (mFd >= 0) {
+        close(mFd);
+        mFd = -1;
+    }
+    releaseDeviceClaim();
+
+    Event errorEvent;
+    errorEvent.type = Event::ERROR;
+    errorEvent.error = error;
+    dispatchEvent(errorEvent);
+
+    if (notifyDisconnected) {
+        Event disconnected;
+        disconnected.type = Event::DISCONNECTED;
+        dispatchEvent(disconnected);
+    }
+}
+
+/// @brief 写入数据
+/// @param data 数据
+/// @param len 数据长度
+/// @return 写入的字节数
+ssize_t UartClient::writeAll(const uint8_t* data, size_t len) {
+    size_t written = 0;
+    const int64_t startMs = cdroid::SystemClock::uptimeMillis();
+
+    while (written < len) {
+        ssize_t n = write(mFd, data + written, len - written);
+        if (n > 0) {
+            written += static_cast<size_t>(n);
+            continue;
+        }
+
+        if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)) {
+            const int64_t nowMs = cdroid::SystemClock::uptimeMillis();
+            if (mConfig.writeTimeoutMs >= 0 && nowMs - startMs >= mConfig.writeTimeoutMs) {
+                break;
+            }
+
+            pollfd pfd;
+            pfd.fd = mFd;
+            pfd.events = POLLOUT;
+            pfd.revents = 0;
+            poll(&pfd, 1, 10);
+            continue;
+        }
+
+        Event ev;
+        ev.type = Event::ERROR;
+        ev.error = errno;
+        dispatchEvent(ev);
+        break;
+    }
+
+    return static_cast<ssize_t>(written);
 }

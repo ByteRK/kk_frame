@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:54:27
- * @LastEditTime: 2026-02-08 12:10:58
+ * @LastEditTime: 2026-07-05 23:17:33
  * @FilePath: /kk_frame/src/app/protocol/conn_mgr.h
  * @Description:
  * @BugList:
@@ -14,23 +14,32 @@
 #ifndef __CONN_MGR_H__
 #define __CONN_MGR_H__
 
-#include "packet_buffer.h"
-#include "uart_client.h"
-#include "packet_handler.h"
 #include "template/singleton.h"
+#include "packet_channel.h"
+#include "packet_mgr.h"
+#include "tick_mgr.h"
+
+#ifdef PRODUCT_X64
+#include "tcp_client.h"
+typedef PacketChannel<TcpClient>  ConnCommChannel;
+#else
+#include "uart_client.h"
+typedef PacketChannel<UartClient> ConnCommChannel;
+#endif
 
 #define g_connMgr ConnMgr::instance()
 
-class ConnMgr : public EventHandler, public IHandler,
-    public Singleton<ConnMgr>{
+class ConnMgr : public TickMgr::ITickClass, public PacketHandler,
+    public Singleton<ConnMgr> {
     friend Singleton<ConnMgr>;
 private:
-    IPacketBuffer*   mPacket;                  // 电控数据包
-    int64_t          mNextEventTime;           // 下次事件时间
-    int64_t          mNextSendTime;            // 下次发送时间
-    int64_t          mLastAcceptTime;          // 上次接收时间
-    int              mMcuUpd;                  // 电控更新标志
-    UartClient*      mUartMcu;                 // 电控串口
+    ConnCommChannel*  mChannel{ nullptr };      // 电控通讯通道
+    PacketBufferPool* mPacket{ nullptr };       // 电控数据包缓存池
+
+private:
+    bool              mInitialized{ false };    // 初始化完成标志
+    int64_t           mLastAcceptTime{ 0 };     // 上次接收时间
+    int               mMcuUpd{ 0 };             // 电控更新标志
 
 protected:
     ConnMgr();
@@ -40,12 +49,11 @@ public:
     int init();
 
 protected:
-    int checkEvents() override;
-    int handleEvents() override;
+    void onTick(int64_t nowMs) override;
 
     void send2Mcu();
-    void onCommDeal(IAck* ack) override;
-    
+    void onCommDeal(const IAck* ack) override;
+
 public:
 };
 
