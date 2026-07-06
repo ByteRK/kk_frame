@@ -16,7 +16,6 @@ add_custom_command(
     DEPENDS
         ${CMAKE_CURRENT_SOURCE_DIR}/script/prebuild.sh
         ${CMAKE_CURRENT_SOURCE_DIR}/script/fonts.sh
-        ${CMAKE_CURRENT_SOURCE_DIR}/script/file_count.sh
         ${CMAKE_CURRENT_SOURCE_DIR}/date2ver
         ${PREBUILD_FONT_INPUTS}
     VERBATIM
