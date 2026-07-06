@@ -13,7 +13,7 @@ message(STATUS "Configuring library: ${LIB_NAME}")
 set(TARGET_NAME "${PROJECT_NAME}_${LIB_NAME_LOWER}_lib")
 
 # 源文件收集
-file(GLOB_RECURSE LIB_SOURCES 
+file(GLOB_RECURSE LIB_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c"
 )
 

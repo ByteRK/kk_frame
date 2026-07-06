@@ -21,6 +21,3 @@ echo -e "\033[32m[Prebuild] Generating version number...\033[0m"
 
 echo -e "\033[32m[Prebuild] Generate font configuration...\033[0m"
 ./fonts.sh
-
-echo -e "\033[32m[Prebuild] Check for changes in the number of files...\033[0m"
-./file_count.sh

@@ -13,7 +13,7 @@ message(STATUS "Configuring library: ${LIB_NAME}")
 set(TARGET_NAME "${PROJECT_NAME}_${LIB_NAME_LOWER}_lib")
 
 # 3. 源文件收集
-file(GLOB_RECURSE LIB_SOURCES 
+file(GLOB_RECURSE LIB_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/*.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/*.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
@@ -46,8 +46,8 @@ if(LIB_SOURCES)
     else()
         find_package(OpenMP)
         if(OpenMP_C_FOUND)
-            add_definitions(-DENABLE_OMP=1)
-            target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_C)
+            target_compile_definitions(${TARGET_NAME} PRIVATE ENABLE_OMP=1)
+            target_link_libraries(${TARGET_NAME} PRIVATE OpenMP::OpenMP_C)
         endif()
     endif()
     

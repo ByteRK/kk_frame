@@ -5,7 +5,7 @@ message(STATUS "Library Manager Running...")
 message(STATUS "========================================")
 
 # 1. 预定义库选项
-include(${CMAKE_CURRENT_SOURCE_DIR}/option.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/options.cmake)
 
 # 2. 设置库输出目录
 set(LIBRARY_OUTPUT_DIR "${CMAKE_BINARY_DIR}/apps/${PROJECT_NAME}/lib")
@@ -14,7 +14,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${LIBRARY_OUTPUT_DIR})
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${LIBRARY_OUTPUT_DIR})
 
 # 3. 查找并添加所有库子目录
-file(GLOB lib_subdirs 
+file(GLOB lib_subdirs CONFIGURE_DEPENDS
     LIST_DIRECTORIES true 
     RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} 
     "${CMAKE_CURRENT_SOURCE_DIR}/*"
@@ -162,8 +162,8 @@ generate_library_config_header()
 # ========================================
 
 list(APPEND LIB_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-list(APPEND LIBRARY_OUTPUT_DIR ${LIB_LIBRARY_DIRS})
+set(LIB_LINK_DIRS ${LIBRARY_OUTPUT_DIR} ${LIB_LIBRARY_DIRS})
 
 set(LIB_LIBRARIES ${LIB_LIBRARIES} PARENT_SCOPE)
-set(LIB_LIBRARY_DIR ${LIBRARY_OUTPUT_DIR} PARENT_SCOPE)
+set(LIB_LIBRARY_DIR ${LIB_LINK_DIRS} PARENT_SCOPE)
 set(LIB_INCLUDE_DIR ${LIB_INCLUDE_DIR} PARENT_SCOPE)
