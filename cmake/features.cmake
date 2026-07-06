@@ -5,25 +5,22 @@ message(STATUS "========================================")
 
 ################################## 开关 ##################################
 
-include(${CMAKE_CURRENT_LIST_DIR}/option_helpers.cmake)
-
 if(CDROID_CHIPSET STREQUAL "x64")
-    set(DEFAULT_ENABLED_WIFI ON)
+    set(ENABLED_WIFI ON)              # Wi-Fi 支持（同时启用 CURL）
 else()
-    set(DEFAULT_ENABLED_WIFI OFF)
+    set(ENABLED_WIFI OFF)
 endif()
-project_option(ENABLED_WIFI ${DEFAULT_ENABLED_WIFI} "启用 Wi-Fi 支持[将附带CURL支持]")
-project_option(ENABLED_OPENSSL         OFF          "启用 CURL 的显式 OpenSSL 链接")
+set(ENABLED_OPENSSL         OFF)       # CURL 显式 OpenSSL 链接
 
-project_option(ENABLED_KEYBOARD        ON   "启用键盘支持")
-project_option(ENABLED_KEYBOARD_PINYIN OFF  "启用键盘拼音输入支持")
-project_option(ENABLED_GAUSS_VIEW      OFF  "启用高斯模糊视图")
-project_option(ENABLED_GAUSS_DRAWABLE  ON   "启用高斯模糊绘图")
-project_option(ENABLED_FILE_SYSTEM     ON   "启用文件系统支持")
-project_option(ENABLED_JSON            ON   "启用 JsonCpp 支持")
-project_option(ENABLED_PIXMAN          ON   "启用 Pixman 支持")
-project_option(ENABLED_VIDEO           ON   "启用视频支持")
-project_option(ENABLED_AUDIO           OFF  "启用 ALSA 音频播放")
+set(ENABLED_KEYBOARD        ON)        # 键盘支持
+set(ENABLED_KEYBOARD_PINYIN OFF)       # 键盘拼音输入支持
+set(ENABLED_GAUSS_VIEW      OFF)       # 高斯模糊视图
+set(ENABLED_GAUSS_DRAWABLE  ON)        # 高斯模糊绘图
+set(ENABLED_FILE_SYSTEM     ON)        # 文件系统支持
+set(ENABLED_JSON            ON)        # JsonCpp 支持
+set(ENABLED_PIXMAN          ON)        # Pixman 支持
+set(ENABLED_VIDEO           ON)        # 视频支持
+set(ENABLED_AUDIO           OFF)       # ALSA 音频播放
 
 
 ################################## 配置 ##################################
