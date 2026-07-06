@@ -170,10 +170,73 @@ bool AudioMgr::play(const std::string& filePath, bool loop) {
         mPositionMs = 0;
         mDurationMs = 0;
         mSeekMs = -1;
+        mSourceType = SourceType::File;
+        mStreamBuffers.clear();
+        mStreamBufferedBytes = 0;
+        mStreamFinished = true;
         oldState = setStateLocked(State::Loading);
         ++mRequestId;
     }
     postStateChanged(oldState, State::Loading);
+    mCondition.notify_all();
+    return true;
+}
+
+bool AudioMgr::startStream(const PcmFormat& format, size_t maxBufferedBytes) {
+    if (!isSupported() || format.sampleRate == 0 || format.channels == 0 ||
+        (format.bitsPerSample != 8 && format.bitsPerSample != 16 &&
+         format.bitsPerSample != 24 && format.bitsPerSample != 32)) return false;
+
+    const size_t frameBytes = format.channels * format.bitsPerSample / 8;
+    if (frameBytes == 0 || maxBufferedBytes < frameBytes) return false;
+
+    State oldState;
+    {
+        std::lock_guard<std::mutex> lock(mMutex);
+        mSourceType = SourceType::Stream;
+        mStreamFormat = format;
+        mStreamBuffers.clear();
+        mStreamBufferedBytes = 0;
+        mStreamMaxBufferedBytes = maxBufferedBytes;
+        mStreamFinished = false;
+        mFilePath.clear();
+        mLoop = false;
+        mLastError.clear();
+        mPositionMs = 0;
+        mDurationMs = 0;
+        mSeekMs = -1;
+        oldState = setStateLocked(State::Loading);
+        ++mRequestId;
+    }
+    postStateChanged(oldState, State::Loading);
+    mCondition.notify_all();
+    return true;
+}
+
+size_t AudioMgr::writeStream(const void* data, size_t size) {
+    if (data == nullptr || size == 0) return 0;
+    {
+        std::lock_guard<std::mutex> lock(mMutex);
+        const size_t frameBytes = mStreamFormat.channels * mStreamFormat.bitsPerSample / 8;
+        if (mSourceType != SourceType::Stream || mStreamFinished ||
+            (mState != State::Loading && mState != State::Playing && mState != State::Paused) ||
+            frameBytes == 0 || size % frameBytes != 0 ||
+            size > mStreamMaxBufferedBytes - mStreamBufferedBytes) return 0;
+        const char* bytes = static_cast<const char*>(data);
+        mStreamBuffers.emplace_back(bytes, bytes + size);
+        mStreamBufferedBytes += size;
+    }
+    mCondition.notify_all();
+    return size;
+}
+
+bool AudioMgr::finishStream() {
+    {
+        std::lock_guard<std::mutex> lock(mMutex);
+        if (mSourceType != SourceType::Stream || mStreamFinished ||
+            (mState != State::Loading && mState != State::Playing && mState != State::Paused)) return false;
+        mStreamFinished = true;
+    }
     mCondition.notify_all();
     return true;
 }
@@ -206,6 +269,9 @@ void AudioMgr::stop() {
         oldState = setStateLocked(State::Stopped);
         mPositionMs = 0;
         mSeekMs = -1;
+        mStreamBuffers.clear();
+        mStreamBufferedBytes = 0;
+        mStreamFinished = true;
         ++mRequestId;
     }
     postStateChanged(oldState, State::Stopped);
@@ -225,7 +291,8 @@ void AudioMgr::removeListener(AudioListener* listener) {
 
 bool AudioMgr::seek(int64_t positionMs) {
     std::lock_guard<std::mutex> lock(mMutex);
-    if (mState != State::Playing && mState != State::Paused) return false;
+    if (mSourceType != SourceType::File ||
+        (mState != State::Playing && mState != State::Paused)) return false;
     mSeekMs = std::max<int64_t>(0, std::min(positionMs, mDurationMs));
     mPositionMs = mSeekMs;
     return true;
@@ -308,20 +375,34 @@ void AudioMgr::playbackLoop() {
 #else
     for (;;) {
         std::string path;
+        SourceType sourceType;
+        PcmFormat streamFormat;
         uint64_t requestId;
         {
             std::unique_lock<std::mutex> lock(mMutex);
             mCondition.wait(lock, [this] { return mExit || mState == State::Loading; });
             if (mExit) return;
             path = mFilePath;
+            sourceType = mSourceType;
+            streamFormat = mStreamFormat;
             requestId = mRequestId;
         }
 
-        std::ifstream stream(path.c_str(), std::ios::binary);
+        const bool isStream = sourceType == SourceType::Stream;
+        std::ifstream fileStream;
         WavInfo wav;
         std::string error;
-        if (!stream.is_open()) error = "Cannot open audio file: " + path;
-        else if (!readWavHeader(stream, wav, error) && error.empty()) error = "Cannot read WAV header";
+        if (isStream) {
+            wav.format = 1;
+            wav.channels = streamFormat.channels;
+            wav.sampleRate = streamFormat.sampleRate;
+            wav.bitsPerSample = streamFormat.bitsPerSample;
+            wav.blockAlign = streamFormat.channels * streamFormat.bitsPerSample / 8;
+        } else {
+            fileStream.open(path.c_str(), std::ios::binary);
+            if (!fileStream.is_open()) error = "Cannot open audio file: " + path;
+            else if (!readWavHeader(fileStream, wav, error) && error.empty()) error = "Cannot read WAV header";
+        }
 
         snd_pcm_format_t format = SND_PCM_FORMAT_UNKNOWN;
         if (wav.bitsPerSample == 8) format = SND_PCM_FORMAT_U8;
@@ -357,7 +438,7 @@ void AudioMgr::playbackLoop() {
             continue;
         }
 
-        const uint64_t totalFrames = wav.dataSize / wav.blockAlign;
+        const uint64_t totalFrames = isStream ? 0 : wav.dataSize / wav.blockAlign;
         State oldState;
         {
             std::lock_guard<std::mutex> lock(mMutex);
@@ -368,14 +449,15 @@ void AudioMgr::playbackLoop() {
         postStateChanged(oldState, State::Playing);
 
         const size_t framesPerChunk = 2048;
-        std::vector<char> buffer(framesPerChunk * wav.blockAlign);
+        std::vector<char> fileBuffer(framesPerChunk * wav.blockAlign);
         uint64_t framePosition = 0;
         bool pausedInAlsa = false;
 
-        while (framePosition < totalFrames) {
+        while (isStream || framePosition < totalFrames) {
             float volume;
-            bool loop;
+            bool loop = false;
             int64_t seekMs;
+            std::vector<char> streamBuffer;
             {
                 std::unique_lock<std::mutex> lock(mMutex);
                 if (mExit || requestId != mRequestId || mState == State::Stopped) break;
@@ -387,27 +469,45 @@ void AudioMgr::playbackLoop() {
                     continue;
                 }
                 if (pausedInAlsa) { snd_pcm_pause(pcm, 0); pausedInAlsa = false; }
+                if (isStream && mStreamBuffers.empty()) {
+                    if (mStreamFinished) break;
+                    mCondition.wait(lock, [this, requestId] {
+                        return mExit || requestId != mRequestId || mState == State::Stopped ||
+                            mState == State::Paused || mStreamFinished || !mStreamBuffers.empty();
+                    });
+                    continue;
+                }
                 seekMs = mSeekMs;
                 mSeekMs = -1;
                 volume = mVolume;
-                loop = mLoop;
+                if (isStream) {
+                    streamBuffer = std::move(mStreamBuffers.front());
+                    mStreamBufferedBytes -= streamBuffer.size();
+                    mStreamBuffers.pop_front();
+                } else {
+                    loop = mLoop;
+                }
             }
 
-            if (seekMs >= 0) {
+            if (!isStream && seekMs >= 0) {
                 framePosition = std::min<uint64_t>(totalFrames,
                     static_cast<uint64_t>(seekMs) * wav.sampleRate / 1000);
-                stream.clear();
-                stream.seekg(static_cast<std::streamoff>(wav.dataOffset + framePosition * wav.blockAlign));
+                fileStream.clear();
+                fileStream.seekg(static_cast<std::streamoff>(wav.dataOffset + framePosition * wav.blockAlign));
                 snd_pcm_drop(pcm);
                 snd_pcm_prepare(pcm);
                 continue;
             }
 
-            size_t frames = static_cast<size_t>(std::min<uint64_t>(framesPerChunk, totalFrames - framePosition));
-            size_t bytes = frames * wav.blockAlign;
-            stream.read(buffer.data(), bytes);
-            size_t bytesRead = static_cast<size_t>(stream.gcount());
-            frames = bytesRead / wav.blockAlign;
+            std::vector<char>& buffer = isStream ? streamBuffer : fileBuffer;
+            size_t frames;
+            if (isStream) {
+                frames = buffer.size() / wav.blockAlign;
+            } else {
+                frames = static_cast<size_t>(std::min<uint64_t>(framesPerChunk, totalFrames - framePosition));
+                fileStream.read(buffer.data(), frames * wav.blockAlign);
+                frames = static_cast<size_t>(fileStream.gcount()) / wav.blockAlign;
+            }
             if (!frames) break;
             applyVolume(buffer, frames * wav.blockAlign, wav.bitsPerSample, volume);
 
@@ -432,12 +532,18 @@ void AudioMgr::playbackLoop() {
 
             if (framePosition >= totalFrames && loop) {
                 framePosition = 0;
-                stream.clear();
-                stream.seekg(static_cast<std::streamoff>(wav.dataOffset));
+                fileStream.clear();
+                fileStream.seekg(static_cast<std::streamoff>(wav.dataOffset));
             }
         }
 
-        snd_pcm_drop(pcm);
+        bool shouldDrain = false;
+        {
+            std::lock_guard<std::mutex> lock(mMutex);
+            shouldDrain = error.empty() && requestId == mRequestId && mState != State::Stopped;
+        }
+        if (shouldDrain) snd_pcm_drain(pcm);
+        else snd_pcm_drop(pcm);
         snd_pcm_close(pcm);
         State completionOldState = State::Completed;
         State newState = State::Completed;
@@ -451,7 +557,8 @@ void AudioMgr::playbackLoop() {
                     newState = State::Error;
                     changed = true;
                 } else if (mState != State::Stopped) {
-                    mPositionMs = mDurationMs;
+                    if (isStream) mDurationMs = mPositionMs;
+                    else mPositionMs = mDurationMs;
                     completionOldState = setStateLocked(State::Completed);
                     changed = true;
                 }
