@@ -17,6 +17,7 @@ set(ENABLED_OPENSSL OFF)          # OpenSSL
 set(ENABLED_JSON ON)              # Json
 set(ENABLED_PIXMAN ON)            # Pixman
 set(ENABLED_VIDEO ON)             # 视频
+set(ENABLED_AUDIO OFF)            # ALSA 音频播放
 
 
 
@@ -100,4 +101,11 @@ if (ENABLED_VIDEO)
         list(APPEND PROJECT_LIBRARY_DIR ${FFMPEG_LIBRARY_DIRS})
         list(APPEND PROJECT_LIBRARIES ${FFMPEG_LIBRARIES} ${SWSCALE_LIBRARIES} ${SWRESAMPLE_LIBRARIES})
     endif()
+endif()
+
+if (ENABLED_AUDIO)
+    find_package(ALSA REQUIRED)
+    add_definitions(-DENABLE_AUDIO=1)
+    list(APPEND PROJECT_INCLUDE_DIR ${ALSA_INCLUDE_DIRS})
+    list(APPEND PROJECT_LIBRARIES ${ALSA_LIBRARIES})
 endif()
