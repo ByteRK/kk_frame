@@ -1,19 +1,28 @@
 /*
  * @Author: Ricken
  * @Email: me@ricken.cn
- * @Date: 2026-07-06
+ * @Date: 2026-07-06 22:53:00
+ * @LastEditTime: 2026-07-06 23:15:29
  * @FilePath: /kk_frame/src/app/managers/audio_mgr.cc
  * @Description: ALSA 音频播放管理器
- */
+ * @BugList:
+ *
+ * Copyright (c) 2026 by Ricken, All Rights Reserved.
+ *
+**/
 
 #include "audio_mgr.h"
 
 #include <algorithm>
+#include <cerrno>
 #include <cstring>
 #include <fstream>
 #include <vector>
+#include <cdlog.h>
+#include <sys/eventfd.h>
+#include <unistd.h>
 
-#ifdef ENABLE_AUDIO
+#if defined(ENABLE_AUDIO) || defined(__VSCODE__)
 #include <alsa/asoundlib.h>
 #endif
 
@@ -113,7 +122,23 @@ namespace {
 
 } // namespace
 
-AudioMgr::AudioMgr() : mThread(&AudioMgr::playbackLoop, this) { }
+AudioMgr::AudioMgr() {
+    mCallbackLooper = cdroid::Looper::getMainLooper();
+    if (mCallbackLooper == nullptr) {
+        LOGE("AudioMgr callback looper is null");
+    } else {
+        mWakeFd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+        if (mWakeFd < 0) {
+            LOGE("AudioMgr eventfd failed. errno=%d err=%s", errno, std::strerror(errno));
+        } else if (mCallbackLooper->addFd(
+            mWakeFd, 0, cdroid::Looper::EVENT_INPUT, onWake, this) < 0) {
+            LOGE("AudioMgr addFd failed. fd=%d", mWakeFd);
+            close(mWakeFd);
+            mWakeFd = -1;
+        }
+    }
+    mThread = std::thread(&AudioMgr::playbackLoop, this);
+}
 
 AudioMgr::~AudioMgr() {
     {
@@ -123,10 +148,20 @@ AudioMgr::~AudioMgr() {
     }
     mCondition.notify_all();
     if (mThread.joinable()) mThread.join();
+    if (mCallbackLooper != nullptr && mWakeFd >= 0) mCallbackLooper->removeFd(mWakeFd);
+    if (mWakeFd >= 0) close(mWakeFd);
+    mWakeFd = -1;
+    mCallbackLooper = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(mEventMutex);
+        std::queue<StateEvent> empty;
+        mStateEvents.swap(empty);
+    }
 }
 
 bool AudioMgr::play(const std::string& filePath, bool loop) {
     if (filePath.empty() || !isSupported()) return false;
+    State oldState;
     {
         std::lock_guard<std::mutex> lock(mMutex);
         mFilePath = filePath;
@@ -135,17 +170,21 @@ bool AudioMgr::play(const std::string& filePath, bool loop) {
         mPositionMs = 0;
         mDurationMs = 0;
         mSeekMs = -1;
-        mState = State::Loading;
+        oldState = setStateLocked(State::Loading);
         ++mRequestId;
     }
+    postStateChanged(oldState, State::Loading);
     mCondition.notify_all();
     return true;
 }
 
 bool AudioMgr::pause() {
-    std::lock_guard<std::mutex> lock(mMutex);
-    if (mState != State::Playing) return false;
-    mState = State::Paused;
+    {
+        std::lock_guard<std::mutex> lock(mMutex);
+        if (mState != State::Playing) return false;
+        setStateLocked(State::Paused);
+    }
+    postStateChanged(State::Playing, State::Paused);
     return true;
 }
 
@@ -153,21 +192,35 @@ bool AudioMgr::resume() {
     {
         std::lock_guard<std::mutex> lock(mMutex);
         if (mState != State::Paused) return false;
-        mState = State::Playing;
+        setStateLocked(State::Playing);
     }
+    postStateChanged(State::Paused, State::Playing);
     mCondition.notify_all();
     return true;
 }
 
 void AudioMgr::stop() {
+    State oldState;
     {
         std::lock_guard<std::mutex> lock(mMutex);
-        mState = State::Stopped;
+        oldState = setStateLocked(State::Stopped);
         mPositionMs = 0;
         mSeekMs = -1;
         ++mRequestId;
     }
+    postStateChanged(oldState, State::Stopped);
     mCondition.notify_all();
+}
+
+void AudioMgr::addListener(AudioListener* listener) {
+    if (!listener) return;
+    std::lock_guard<std::recursive_mutex> lock(mListenerMutex);
+    mListeners.insert(listener);
+}
+
+void AudioMgr::removeListener(AudioListener* listener) {
+    std::lock_guard<std::recursive_mutex> lock(mListenerMutex);
+    mListeners.erase(listener);
 }
 
 bool AudioMgr::seek(int64_t positionMs) {
@@ -190,20 +243,67 @@ std::string AudioMgr::getCurrentFile() const { std::lock_guard<std::mutex> lock(
 std::string AudioMgr::getLastError() const { std::lock_guard<std::mutex> lock(mMutex); return mLastError; }
 
 bool AudioMgr::isSupported() {
-#ifdef ENABLE_AUDIO
+#if defined(ENABLE_AUDIO) || defined(__VSCODE__)
     return true;
 #else
     return false;
 #endif
 }
 
-void AudioMgr::setErrorLocked(const std::string& error) {
-    mLastError = error;
-    mState = State::Error;
+AudioMgr::State AudioMgr::setStateLocked(State state) {
+    State oldState = mState;
+    mState = state;
+    return oldState;
+}
+
+void AudioMgr::postStateChanged(State oldState, State newState) {
+    if (oldState == newState || mWakeFd < 0) return;
+    {
+        std::lock_guard<std::mutex> lock(mEventMutex);
+        mStateEvents.push({ oldState, newState });
+    }
+    const uint64_t value = 1;
+    const ssize_t result = write(mWakeFd, &value, sizeof(value));
+    if (result < 0 && errno != EAGAIN) {
+        LOGE("AudioMgr wake failed. errno=%d err=%s", errno, std::strerror(errno));
+    }
+}
+
+int AudioMgr::onWake(int fd, int events, void* context) {
+    AudioMgr* audioMgr = static_cast<AudioMgr*>(context);
+    if (audioMgr == nullptr) return 0;
+    audioMgr->drainWakeFd();
+    audioMgr->dispatchStateEvents();
+    return 1;
+}
+
+void AudioMgr::drainWakeFd() {
+    uint64_t value = 0;
+    while (mWakeFd >= 0 && read(mWakeFd, &value, sizeof(value)) > 0) { }
+}
+
+void AudioMgr::dispatchStateEvents() {
+    std::queue<StateEvent> events;
+    {
+        std::lock_guard<std::mutex> lock(mEventMutex);
+        mStateEvents.swap(events);
+    }
+
+    std::lock_guard<std::recursive_mutex> lock(mListenerMutex);
+    while (!events.empty()) {
+        const StateEvent& event = events.front();
+        std::vector<AudioListener*> listeners(mListeners.begin(), mListeners.end());
+        for (AudioListener* listener : listeners) {
+            if (listener != nullptr && mListeners.count(listener) > 0) {
+                listener->onAudioStateChanged(event.oldState, event.newState);
+            }
+        }
+        events.pop();
+    }
 }
 
 void AudioMgr::playbackLoop() {
-#ifndef ENABLE_AUDIO
+#if !defined(ENABLE_AUDIO) && !defined(__VSCODE__)
     return;
 #else
     for (;;) {
@@ -243,18 +343,29 @@ void AudioMgr::playbackLoop() {
 
         if (!error.empty()) {
             if (pcm) snd_pcm_close(pcm);
-            std::lock_guard<std::mutex> lock(mMutex);
-            if (requestId == mRequestId) setErrorLocked(error);
+            State oldState = State::Error;
+            bool changed = false;
+            {
+                std::lock_guard<std::mutex> lock(mMutex);
+                if (requestId == mRequestId) {
+                    mLastError = error;
+                    oldState = setStateLocked(State::Error);
+                    changed = true;
+                }
+            }
+            if (changed) postStateChanged(oldState, State::Error);
             continue;
         }
 
         const uint64_t totalFrames = wav.dataSize / wav.blockAlign;
+        State oldState;
         {
             std::lock_guard<std::mutex> lock(mMutex);
             if (requestId != mRequestId) { snd_pcm_close(pcm); continue; }
             mDurationMs = static_cast<int64_t>(totalFrames * 1000 / wav.sampleRate);
-            mState = State::Playing;
+            oldState = setStateLocked(State::Playing);
         }
+        postStateChanged(oldState, State::Playing);
 
         const size_t framesPerChunk = 2048;
         std::vector<char> buffer(framesPerChunk * wav.blockAlign);
@@ -328,14 +439,25 @@ void AudioMgr::playbackLoop() {
 
         snd_pcm_drop(pcm);
         snd_pcm_close(pcm);
-        std::lock_guard<std::mutex> lock(mMutex);
-        if (requestId == mRequestId) {
-            if (!error.empty()) setErrorLocked(error);
-            else if (mState != State::Stopped) {
-                mPositionMs = mDurationMs;
-                mState = State::Completed;
+        State completionOldState = State::Completed;
+        State newState = State::Completed;
+        bool changed = false;
+        {
+            std::lock_guard<std::mutex> lock(mMutex);
+            if (requestId == mRequestId) {
+                if (!error.empty()) {
+                    mLastError = error;
+                    completionOldState = setStateLocked(State::Error);
+                    newState = State::Error;
+                    changed = true;
+                } else if (mState != State::Stopped) {
+                    mPositionMs = mDurationMs;
+                    completionOldState = setStateLocked(State::Completed);
+                    changed = true;
+                }
             }
         }
+        if (changed) postStateChanged(completionOldState, newState);
     }
 #endif
 }
