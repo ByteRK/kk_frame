@@ -2,7 +2,7 @@
  # @Author: Ricken
  # @Email: me@ricken.cn
  # @Date: 2026-06-17 01:21:46
- # @LastEditTime: 2026-07-05 00:48:17
+ # @LastEditTime: 2026-07-06 00:00:00
  # @FilePath: /kk_frame/fastCheck.sh
  # @Description: 快速编译检验脚本
  # @BugList: 
@@ -97,6 +97,11 @@ fi
 # 编译
 cd $OUT_DIR
 make $NAME $MAKE_JOBS
+BUILD_STATUS=$?
+if [ $BUILD_STATUS -ne 0 ]; then
+    echo "Build failed, skip copying and running."
+    exit $BUILD_STATUS
+fi
 
 # 拷贝文件
 cp $OUT_DIR/apps/$NAME/$NAME*                  $PACKAGE_DIR/
