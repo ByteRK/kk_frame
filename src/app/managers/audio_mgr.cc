@@ -220,8 +220,12 @@ size_t AudioMgr::writeStream(const void* data, size_t size) {
         const size_t frameBytes = mStreamFormat.channels * mStreamFormat.bitsPerSample / 8;
         if (mSourceType != SourceType::Stream || mStreamFinished ||
             (mState != State::Loading && mState != State::Playing && mState != State::Paused) ||
-            frameBytes == 0 || size % frameBytes != 0 ||
-            size > mStreamMaxBufferedBytes - mStreamBufferedBytes) return 0;
+            frameBytes == 0 || size % frameBytes != 0) return 0;
+        if (size > mStreamMaxBufferedBytes - mStreamBufferedBytes) {
+            LOGW("AudioMgr stream buffer full, dropping %zu bytes (buffered: %zu / %zu)",
+                size, mStreamBufferedBytes, mStreamMaxBufferedBytes);
+            return 0;
+        }
         const char* bytes = static_cast<const char*>(data);
         mStreamBuffers.emplace_back(bytes, bytes + size);
         mStreamBufferedBytes += size;
@@ -513,6 +517,10 @@ void AudioMgr::playbackLoop() {
 
             size_t written = 0;
             while (written < frames) {
+                {
+                    std::lock_guard<std::mutex> lock(mMutex);
+                    if (mExit || requestId != mRequestId || mState == State::Stopped) break;
+                }
                 snd_pcm_sframes_t result = snd_pcm_writei(pcm,
                     buffer.data() + written * wav.blockAlign, frames - written);
                 if (result < 0) result = snd_pcm_recover(pcm, static_cast<int>(result), 1);
