@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-07-06 10:30:03
- * @LastEditTime: 2026-07-06 11:01:27
+ * @LastEditTime: 2026-07-06 12:06:34
  * @FilePath: /kk_frame/src/app/protocol/btn_packet.h
  * @Description: 按键板通讯包
  * @BugList:
@@ -14,8 +14,8 @@
 #ifndef __BTN_PACKET_H__
 #define __BTN_PACKET_H__
 
+#include "btn_proto.h"
 #include "packet_base.h"
-#include "proto.h"
 #include "check_utils.h"
 #include "string_utils.h"
 

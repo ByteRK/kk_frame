@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-06-20 15:14:05
- * @LastEditTime: 2026-07-06 11:03:44
+ * @LastEditTime: 2026-07-06 11:54:58
  * @FilePath: /kk_frame/src/app/protocol/tuya_mgr.h
  * @Description: 涂鸦模组通讯
  * @BugList:
@@ -34,6 +34,16 @@ typedef PacketChannel<UartClient> TuyaCommChannel;
 class TuyaMgr : public TickMgr::ITickClass, public PacketHandler,
     public Singleton<TuyaMgr> {
     friend Singleton<TuyaMgr>;
+public:
+    enum {
+        WIFI_NULL = 0,
+        WIFI_1,
+        WIFI_2,
+        WIFI_3,
+        WIFI_4,
+        WIFI_ERROR,
+    };
+
 private: // 涂鸦数据点缓存
     bool              mPower = true;         // 开关
 

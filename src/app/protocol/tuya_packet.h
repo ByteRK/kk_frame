@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-07-06 10:30:03
- * @LastEditTime: 2026-07-06 11:07:31
+ * @LastEditTime: 2026-07-06 12:06:47
  * @FilePath: /kk_frame/src/app/protocol/tuya_packet.h
  * @Description: 涂鸦通讯包
  * @BugList:
@@ -14,8 +14,8 @@
 #ifndef __TUYA_PACKET_H__
 #define __TUYA_PACKET_H__
 
+#include "tuya_proto.h"
 #include "packet_base.h"
-#include "proto.h"
 #include "check_utils.h"
 #include "string_utils.h"
 
