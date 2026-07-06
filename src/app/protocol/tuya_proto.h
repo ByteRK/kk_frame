@@ -1,73 +1,20 @@
-﻿/*
+/*
  * @Author: Ricken
  * @Email: me@ricken.cn
- * @Date: 2025-11-24 09:40:23
- * @LastEditTime: 2025-12-29 11:50:40
- * @FilePath: /kk_frame/src/app/protocol/proto.h
- * @Description: 交互协议定义
- * @BugList: 
- * 
- * Copyright (c) 2025 by Ricken, All Rights Reserved. 
- * 
+ * @Date: 2026-07-06 11:55:45
+ * @LastEditTime: 2026-07-06 12:03:59
+ * @FilePath: /kk_frame/src/app/protocol/tuya_proto.h
+ * @Description: 涂鸦通讯协议
+ * @BugList:
+ *
+ * Copyright (c) 2026 by Ricken, All Rights Reserved.
+ *
 **/
 
-#ifndef __PROTO_H__
-#define __PROTO_H__
+#ifndef __TUYA_PROTO_H__
+#define __TUYA_PROTO_H__
 
-#include <stdint.h>
-
-/**
- * 交互协议相关定义
-*/
-
-enum BufferType {
-    BT_NULL = 0,
-    BT_MCU,
-    BT_BTN,
-    BT_TUYA,
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////
-// WIFI状态
-
-enum {
-    WIFI_NULL = 0,
-    WIFI_1,
-    WIFI_2,
-    WIFI_3,
-    WIFI_4,
-    WIFI_ERROR,
-};
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////
-// 数据发送的结构
-
-enum {
-    S_BUF_HEAD = 0,      // 帧头
-};
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////
-// 数据接收的结构
-
-enum {
-    R_BUF_HEAD1 = 0,      // 帧头
-    R_BUF_HEAD2,          // 帧头
-    R_BUF_COMM,           // 命令类型
-    R_BUF_LEN,            // 数据长度
-    R_BUF_NO,             // 序号
-    R_BUF_DATA,           // 数据
-};
-
-enum {
-    R_COMM_CTRL = 0x01,          // 控制命令
-    R_COMM_OTA,                  // 升级命令
-};
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////
-// 涂鸦
+#include "proto_id.h"
 
 // 消息结构
 enum {
@@ -127,4 +74,4 @@ enum {
     TYDPID_POWER = 1,          // 开关 <bool>
 };
 
-#endif // !__PROTO_H__
+#endif // __TUYA_PROTO_H__
