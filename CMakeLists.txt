@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.13)
 project(kk_frame)
 
 message(STATUS "\n\n\n\n")
@@ -12,7 +12,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # 源文件收集
-file(GLOB_RECURSE PROJECT_SOURCES
+file(GLOB_RECURSE PROJECT_SOURCES CONFIGURE_DEPENDS
     "./main.cc" "./src/*/*.c" "./src/*/*.cc" "./src/*/*.cpp"
 )
 
@@ -36,8 +36,8 @@ set(PROJECT_LIBRARIES "")    # 项目库列表
 set(PROJECT_LIBRARY_DIR "")  # 项目库搜索路径列表
 set(PROJECT_INCLUDE_DIR "")  # 项目头文件目录列表
 
-# 项目配置
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/project.cmake)
+# 项目功能配置
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/features.cmake)
 
 # 项目库配置
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/library)
@@ -45,8 +45,8 @@ list(APPEND PROJECT_LIBRARIES ${LIB_LIBRARIES})
 list(APPEND PROJECT_LIBRARY_DIR ${LIB_LIBRARY_DIR})
 list(APPEND PROJECT_INCLUDE_DIR ${LIB_INCLUDE_DIR})
 
-# 其它配置
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/other.cmake)
+# 预构建配置
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/prebuild.cmake)
 
 # 头文件路径配置
 target_include_directories(${PROJECT_NAME} PRIVATE

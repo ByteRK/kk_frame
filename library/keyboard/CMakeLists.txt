@@ -16,7 +16,7 @@ set(APP_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../..)
 set(TARGET_NAME "${PROJECT_NAME}_${LIB_NAME_LOWER}_lib")
 
 # 4. 源文件收集
-file(GLOB_RECURSE LIB_SOURCES 
+file(GLOB_RECURSE LIB_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/*.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/childs/*.cc"
 )
@@ -65,7 +65,7 @@ if(LIB_SOURCES)
     # 生成库私有头
     configure_file(
         ${CMAKE_CURRENT_SOURCE_DIR}/lib_private_config.h.in
-        ${CMAKE_CURRENT_SOURCE_DIR}/lib_private_config.h
+        ${CMAKE_CURRENT_BINARY_DIR}/lib_private_config.h
     )
 
     # PRODUCT 定义
@@ -75,6 +75,7 @@ if(LIB_SOURCES)
     
     # 设置头文件目录
     target_include_directories(${TARGET_NAME} PRIVATE
+        ${CMAKE_CURRENT_BINARY_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/childs

@@ -20,12 +20,14 @@ cd $(dirname $0)/../ # 切换到项目根路径
 DIRECTORIES="./src"
 
 # 状态文件，记录上次的文件数量
-STATE_FILE="./fileCountCache"
+STATE_DIR="./tmp"
+STATE_FILE="${STATE_DIR}/fileCountCache"
 
 # 当检测到变化时要执行的命令
 ALERT_COMMAND="touch ./CMakeLists.txt"
 
-# 确保状态文件存在
+# 确保临时目录和状态文件存在
+mkdir -p "$STATE_DIR"
 touch "$STATE_FILE"
 
 # 初始化变化标志
