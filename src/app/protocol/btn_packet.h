@@ -1,9 +1,10 @@
 /*
  * @Author: Ricken
  * @Email: me@ricken.cn
- * @Date: 2026-06-26
+ * @Date: 2026-07-06 10:30:03
+ * @LastEditTime: 2026-07-06 11:01:27
  * @FilePath: /kk_frame/src/app/protocol/btn_packet.h
- * @Description: Button protocol packets
+ * @Description: 按键板通讯包
  * @BugList:
  *
  * Copyright (c) 2026 by Ricken, All Rights Reserved.

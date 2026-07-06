@@ -2,16 +2,16 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-11-24 09:40:23
- * @LastEditTime: 2026-07-06 01:24:28
- * @FilePath: /kk_frame/src/app/protocol/conn_mgr.cc
- * @Description:
+ * @LastEditTime: 2026-07-06 11:13:46
+ * @FilePath: /kk_frame/src/app/protocol/mcu_mgr.cc
+ * @Description: 电控通讯
  * @BugList:
  *
  * Copyright (c) 2025 by Ricken, All Rights Reserved.
  *
 **/
 
-#include "conn_mgr.h"
+#include "mcu_mgr.h"
 #include "mcu_packet.h"
 #include "string_utils.h"
 #include "project_utils.h"
@@ -23,21 +23,25 @@
 
 typedef PacketBufferPoolT<BT_MCU, McuAsk, McuAck> McuPacketBufferPool;
 
-ConnMgr::ConnMgr() {
+McuMgr::McuMgr() {
     mPacket = new McuPacketBufferPool();
-    mLastAcceptTime = cdroid::SystemClock::uptimeMillis();
+    mHeartbeat.setCallBack([this](int64_t) {
+        if (mChannel->isConnected())sendHeartbeat();
+    });
+    mHeartbeat.setTick(5000);
+    setTick(TICK_TIME);
 }
 
-ConnMgr::~ConnMgr() {
+McuMgr::~McuMgr() {
     mInitialized = false;
     stopTick();
     __delete(mChannel);
     __delete(mPacket);
 }
 
-int ConnMgr::init() {
+int McuMgr::init() {
     if (mInitialized) return 0;
-    LOGI("ConnMgr init");
+    LOGI("McuMgr init");
 
 #ifdef PRODUCT_X64
     TcpClient::Config config;
@@ -54,29 +58,32 @@ int ConnMgr::init() {
     config.pollIntervalMs = 200;
 #endif
 
-    ConnCommChannel* channel = new ConnCommChannel(mPacket, false, config);
+    ConnCommChannel* channel = new ConnCommChannel(mPacket, true, config);
     const int rc = channel->init();
     if (rc != 0) {
-        LOGE("ConnMgr channel init failed. rc=%d", rc);
+        LOGE("McuMgr channel init failed. rc=%d", rc);
         delete channel;
         return rc;
     }
     if (!g_packetMgr->addHandler(BT_MCU, this)) {
-        LOGE("ConnMgr packet handler registration failed");
+        LOGE("McuMgr packet handler registration failed");
         delete channel;
         return -4;
     }
     mChannel = channel;
 
     // 启动延迟一会后开始发包
-    setTick(TICK_TIME);
     startTick(TICK_TIME * 10);
+    mLastAcceptTime = cdroid::SystemClock::uptimeMillis();
+
+    // 启动心跳
+    mHeartbeat.startTick(TICK_TIME * 10);
 
     mInitialized = true;
     return 0;
 }
 
-void ConnMgr::onTick(int64_t nowMs) {
+void McuMgr::onTick(int64_t nowMs) {
     if (mChannel) {
         if (mMcuUpd > 0) send2Mcu();
 
@@ -87,11 +94,19 @@ void ConnMgr::onTick(int64_t nowMs) {
     }
 }
 
+/// @brief 发送心跳
+void McuMgr::sendHeartbeat() {
+    BuffData* bd = mPacket->obtainSend();
+    McuAsk    snd(bd);
+    snd.checkCode();
+    mChannel->send(bd);
+}
+
 /// @brief 发送串口消息
-void ConnMgr::send2Mcu() {
+void McuMgr::send2Mcu() {
     BuffData* bd = mPacket->obtainSend();
     if (bd == nullptr) {
-        LOGE("ConnMgr packet allocation failed");
+        LOGE("McuMgr packet allocation failed");
         return;
     }
     McuAsk    snd(bd);
@@ -105,7 +120,7 @@ void ConnMgr::send2Mcu() {
 
 /// @brief 处理串口信息
 /// @param ack 
-void ConnMgr::onCommDeal(const IAck* ack) {
+void McuMgr::onCommDeal(const IAck* ack) {
 
     // TODO:解析处理
 

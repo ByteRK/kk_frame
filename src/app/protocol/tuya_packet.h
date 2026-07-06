@@ -1,9 +1,10 @@
 /*
  * @Author: Ricken
  * @Email: me@ricken.cn
- * @Date: 2026-06-26
+ * @Date: 2026-07-06 10:30:03
+ * @LastEditTime: 2026-07-06 11:07:31
  * @FilePath: /kk_frame/src/app/protocol/tuya_packet.h
- * @Description: Tuya protocol packets
+ * @Description: 涂鸦通讯包
  * @BugList:
  *
  * Copyright (c) 2026 by Ricken, All Rights Reserved.

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-07-05 23:28:12
+ * @LastEditTime: 2026-07-06 11:07:22
  * @FilePath: /kk_frame/main.cc
  * @Description: 主程序入口
  * @BugList:
@@ -40,7 +40,7 @@ static const char avs[] = "AVS: " APP_VER_INFO;
 #include "history_mgr.h"     // 历史管理器
 #include "statistics_mgr.h"  // 统计管理器
 
-#include "conn_mgr.h"        // 电控通讯
+#include "mcu_mgr.h"         // 电控通讯
 #include "btn_mgr.h"         // 按键板通讯
 #include "tuya_mgr.h"        // 涂鸦模组通讯
 
@@ -86,7 +86,7 @@ int main(int argc, const char* argv[]) {
     g_statistics->init();
 
     /* 通讯 */
-    g_connMgr->init();
+    g_mcuMgr->init();
     // g_btnMgr->init();
     // g_tuyaMgr->init();
 
