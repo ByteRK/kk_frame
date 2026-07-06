@@ -2,9 +2,9 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-06-20 15:14:05
- * @LastEditTime: 2026-07-05 23:18:50
+ * @LastEditTime: 2026-07-06 11:03:44
  * @FilePath: /kk_frame/src/app/protocol/tuya_mgr.h
- * @Description:
+ * @Description: 涂鸦模组通讯
  * @BugList:
  *
  * Copyright (c) 2025 by Ricken, All Rights Reserved.

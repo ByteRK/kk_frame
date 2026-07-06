@@ -2,9 +2,9 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-06-12 14:49:06
- * @LastEditTime: 2026-07-05 23:17:25
+ * @LastEditTime: 2026-07-06 11:03:14
  * @FilePath: /kk_frame/src/app/protocol/btn_mgr.h
- * @Description:
+ * @Description: 按键板通讯
  * @BugList:
  *
  * Copyright (c) 2025 by Ricken, All Rights Reserved.

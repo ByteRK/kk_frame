@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-06-26 00:47:22
- * @LastEditTime: 2026-07-05 20:57:38
+ * @LastEditTime: 2026-07-06 10:35:49
  * @FilePath: /kk_frame/src/comm/uart/uart_client.cc
  * @Description: 串口通讯客户端
  * @BugList:
@@ -12,6 +12,7 @@
 **/
 
 #include "uart_client.h"
+#include "quick_define.h"
 
 #include <cdlog.h>
 #include <core/systemclock.h>
@@ -24,14 +25,6 @@
 #include <termios.h>
 #include <unistd.h>
 #include <vector>
-
-#define FailFast(condition, fmt, ...)   \
-    do {                                \
-        if (condition) {                \
-            LOGE(fmt, ##__VA_ARGS__);   \
-            std::abort();               \
-        }                               \
-    } while (0)
 
 namespace {
 

@@ -2,9 +2,9 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:54:27
- * @LastEditTime: 2026-07-05 23:17:33
- * @FilePath: /kk_frame/src/app/protocol/conn_mgr.h
- * @Description:
+ * @LastEditTime: 2026-07-06 11:11:53
+ * @FilePath: /kk_frame/src/app/protocol/mcu_mgr.h
+ * @Description: 电控通讯
  * @BugList:
  *
  * Copyright (c) 2025 by Ricken, All Rights Reserved.
@@ -27,23 +27,25 @@ typedef PacketChannel<TcpClient>  ConnCommChannel;
 typedef PacketChannel<UartClient> ConnCommChannel;
 #endif
 
-#define g_connMgr ConnMgr::instance()
+#define g_mcuMgr McuMgr::instance()
 
-class ConnMgr : public TickMgr::ITickClass, public PacketHandler,
-    public Singleton<ConnMgr> {
-    friend Singleton<ConnMgr>;
+class McuMgr : public TickMgr::ITickClass, public PacketHandler,
+    public Singleton<McuMgr> {
+    friend Singleton<McuMgr>;
 private:
     ConnCommChannel*  mChannel{ nullptr };      // 电控通讯通道
     PacketBufferPool* mPacket{ nullptr };       // 电控数据包缓存池
 
 private:
+    TickMgr::ITickVariable mHeartbeat;          // 心跳包
+
     bool              mInitialized{ false };    // 初始化完成标志
     int64_t           mLastAcceptTime{ 0 };     // 上次接收时间
     int               mMcuUpd{ 0 };             // 电控更新标志
 
 protected:
-    ConnMgr();
-    ~ConnMgr();
+    McuMgr();
+    ~McuMgr();
 
 public:
     int init();
@@ -51,6 +53,7 @@ public:
 protected:
     void onTick(int64_t nowMs) override;
 
+    void sendHeartbeat();
     void send2Mcu();
     void onCommDeal(const IAck* ack) override;
 

@@ -5,7 +5,7 @@
 `src/comm` 将通讯拆成三层：
 
 ```text
-业务管理器（ConnMgr / BtnMgr / TuyaMgr / ...）
+业务管理器（McuMgr / BtnMgr / TuyaMgr / ...）
         │ 发送 BuffData / 接收 IAck
         ▼
 PacketChannel<TransportType>
@@ -406,7 +406,7 @@ socket/read()
 
 ## 10. 工程中的实际接入
 
-当前 `ConnMgr`、`BtnMgr`、`TuyaMgr` 都遵循相同模式：
+当前 `McuMgr`、`BtnMgr`、`TuyaMgr` 都遵循相同模式：
 
 ```text
 构造管理器
