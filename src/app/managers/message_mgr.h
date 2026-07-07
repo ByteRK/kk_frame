@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-02 17:38:07
- * @LastEditTime: 2026-05-11 23:04:05
+ * @LastEditTime: 2026-07-07 10:39:09
  * @FilePath: /kk_frame/src/app/managers/message_mgr.h
  * @Description: 消息分发器
  *
@@ -42,8 +42,26 @@
 /// @note 减小性能影响，注册的消息自行通过g_msg->removeAll(this);取消注册
 class MessageListener {
 public:
-    virtual ~MessageListener() { }
+    virtual ~MessageListener();
     virtual void onMessage(int msgType, int msgValue = 0, void* msgPtr = nullptr) = 0;
+};
+
+/// @brief 消息监听变量类
+/// @note 便于不方便继承自 MessageListener 的类使用
+/// @note 析构前必须调用 unregisterAll
+class MessageListenerVariable : public MessageListener {
+public:
+    using MessageCallBack = std::function<void(int msgType, int msgValue, void* msgPtr)>;
+private:
+    MessageCallBack mMsgCB{ nullptr };
+public:
+    virtual ~MessageListenerVariable();
+    void setCallBack(MessageCallBack cb);
+    void registerTo(int msgType);
+    void unregisterFrom(int msgType);
+    void unregisterAll();
+protected:
+    void onMessage(int msgType, int msgValue, void* msgPtr) override;
 };
 
 /// @brief 消息分发器

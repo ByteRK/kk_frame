@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-02 17:41:09
- * @LastEditTime: 2026-04-12 01:26:37
+ * @LastEditTime: 2026-07-07 10:37:07
  * @FilePath: /kk_frame/src/app/managers/message_mgr.cc
  * @Description:
  * @BugList:
@@ -14,6 +14,45 @@
 #include "message_mgr.h"
 #include <core/systemclock.h>
 #include <algorithm>
+
+/// @brief 消息监听类析构
+MessageListener::~MessageListener() {
+#if 0 // 降低性能影响，应用层自行管控
+    g_msg->removeAll(this);
+#endif
+}
+
+/// @brief 消息监听变量析构
+MessageListenerVariable::~MessageListenerVariable() {
+#if 0 // 降低性能影响，应用层自行管控
+    unregisterAll();
+#endif
+}
+
+/// @brief 设置消息回调
+void MessageListenerVariable::setCallBack(MessageCallBack cb) {
+    mMsgCB = cb;
+}
+
+/// @brief 注册到指定消息类型
+void MessageListenerVariable::registerTo(int msgType) {
+    g_msg->add(msgType, this);
+}
+
+/// @brief 从指定消息类型注销
+void MessageListenerVariable::unregisterFrom(int msgType) {
+    g_msg->remove(msgType, this);
+}
+
+/// @brief 从所有消息类型注销
+void MessageListenerVariable::unregisterAll() {
+    g_msg->removeAll(this);
+}
+
+/// @brief 消息回调
+void MessageListenerVariable::onMessage(int msgType, int msgValue, void* msgPtr) {
+    if (mMsgCB) mMsgCB(msgType, msgValue, msgPtr);
+}
 
 MessageManager::MessageManager() { }
 
