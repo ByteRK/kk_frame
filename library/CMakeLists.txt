@@ -23,8 +23,6 @@ list(REMOVE_ITEM lib_subdirs "CMakeLists.txt")
 
 # 4. 定义库管理变量
 set(LIB_LIBRARIES "")
-set(LIB_LIBRARY_DIRS "")
-set(LIB_INCLUDE_DIR "")
 
 # 5. 遍历所有库目录
 foreach(lib_dir IN LISTS lib_subdirs)
@@ -43,28 +41,10 @@ foreach(lib_dir IN LISTS lib_subdirs)
                 # 添加子目录
                 add_subdirectory(${lib_dir})
                 
-                # 获取子库导出的目标名
+                # 子库只导出目标名；头文件和依赖由 target 自身传递。
                 if(DEFINED ${lib_dir}_TARGET_NAME)
                     set(lib_target_name ${${lib_dir}_TARGET_NAME})
                     list(APPEND LIB_LIBRARIES ${lib_target_name})
-                    
-                    # 获取子库的头文件目录
-                    if(DEFINED ${lib_dir}_INCLUDE_DIRS)
-                        list(APPEND LIB_INCLUDE_DIR ${${lib_dir}_INCLUDE_DIRS})
-                    else()
-                        list(APPEND LIB_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${lib_dir})
-                    endif()
-
-                    # 获取子库依赖库
-                    if(DEFINED ${lib_dir}_LIBRARIES)
-                        list(APPEND LIB_LIBRARIES ${${lib_dir}_LIBRARIES})
-                    endif()
-
-                    # 获取子库依赖库搜索目录
-                    if(DEFINED ${lib_dir}_LIBRARY_DIRS)
-                        list(APPEND LIB_LIBRARY_DIRS ${${lib_dir}_LIBRARY_DIRS})
-                    endif()
-
                 else()
                     message(WARNING "Library ${lib_dir} did not set target name")
                 endif()
@@ -158,12 +138,8 @@ endfunction()
 generate_library_config_header()
 
 # ========================================
-# 7. 追加库的包含目录至父变量
+# 7. 导出库目标和生成配置头所在目录
 # ========================================
 
-list(APPEND LIB_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-set(LIB_LINK_DIRS ${LIBRARY_OUTPUT_DIR} ${LIB_LIBRARY_DIRS})
-
 set(LIB_LIBRARIES ${LIB_LIBRARIES} PARENT_SCOPE)
-set(LIB_LIBRARY_DIR ${LIB_LINK_DIRS} PARENT_SCOPE)
-set(LIB_INCLUDE_DIR ${LIB_INCLUDE_DIR} PARENT_SCOPE)
+set(LIB_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
