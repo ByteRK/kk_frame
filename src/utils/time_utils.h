@@ -181,6 +181,11 @@ namespace TimeUtils {
     /// @return 星期几文本
     std::string getDayOnWeek();
 
+    /// @brief 获取今天的星期文本
+    /// @param prefix 前缀，例如 "星期"
+    /// @return XX几文本
+    std::string getDayOnWeek(std::string prefix);
+
     /// @brief 获取星期文本
     /// @param day 星期索引，0 表示星期日，按模 7 归一化
     /// @return 星期几文本

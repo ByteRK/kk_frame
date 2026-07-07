@@ -341,8 +341,12 @@ int TimeUtils::getMaxDay(int year, int month) {
 }
 
 std::string TimeUtils::getDayOnWeek() {
+    return getDayOnWeek("星期");
+}
+
+std::string TimeUtils::getDayOnWeek(std::string prefix) {
     const int day = getTodayDayOnWeek();
-    return day < 0 ? std::string() : getDayOnWeek(day);
+    return day < 0 ? std::string() : getDayOnWeek(day, prefix);
 }
 
 std::string TimeUtils::getDayOnWeek(const int& day) {
