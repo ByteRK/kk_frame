@@ -33,7 +33,6 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 
 # 项目变量定义
 set(PROJECT_LIBRARIES "")    # 项目库列表
-set(PROJECT_LIBRARY_DIR "")  # 项目库搜索路径列表
 set(PROJECT_INCLUDE_DIR "")  # 项目头文件目录列表
 
 # 项目功能配置
@@ -42,7 +41,6 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/features.cmake)
 # 项目库配置
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/library)
 list(APPEND PROJECT_LIBRARIES ${LIB_LIBRARIES})
-list(APPEND PROJECT_LIBRARY_DIR ${LIB_LIBRARY_DIR})
 list(APPEND PROJECT_INCLUDE_DIR ${LIB_INCLUDE_DIR})
 
 # 预构建配置
@@ -84,11 +82,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${PROJECT_INCLUDE_DIR}
 )
 
-# 库搜索路径配置
-target_link_directories(${PROJECT_NAME} PRIVATE
-    ${PROJECT_LIBRARY_DIR}
-)
-
 # 链接库配置
 target_link_libraries(${PROJECT_NAME} PRIVATE
     ${PROJECT_LIBRARIES}
@@ -119,6 +112,5 @@ if(PROJECT_LIBRARIES)
 else()
     message(STATUS "Total libraries to link: 0")
 endif()
-message(STATUS "Library dir: ${PROJECT_LIBRARY_DIR}")
 message(STATUS "Include dir: ${PROJECT_INCLUDE_DIR}")
 message(STATUS "========================================\n\n\n\n-- ")

@@ -1,21 +1,16 @@
 # ========================================
 # 子库模板：<library_name>
+# 使用方式：复制为 library/<library_name>/CMakeLists.txt，再按需调整
+# 源文件、头文件目录、编译定义和依赖库。
 # ========================================
 
-# 1. 设置库信息
-set(LIB_NAME ${CMAKE_CURRENT_SOURCE_DIR})
-get_filename_component(LIB_NAME ${LIB_NAME} NAME)
+# 默认使用当前目录名作为库名，并为目标添加项目名前缀，避免目标重名。
+get_filename_component(LIB_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 string(TOLOWER "${LIB_NAME}" LIB_NAME_LOWER)
-
-message(STATUS "Configuring library: ${LIB_NAME}")
-
-# 2. 推导项目根路径（若需要）
-set(APP_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../..)
-
-# 3. 库目标名
 set(TARGET_NAME "${PROJECT_NAME}_${LIB_NAME_LOWER}_lib")
 
-# 4. 源文件收集
+# 自动收集当前子库的 C/C++ 源文件。新增源文件后 CMake 会自动重新配置。
+# 若需要排除测试或平台专用源码，可在此处改为显式列表或 REMOVE_ITEM。
 file(GLOB_RECURSE LIB_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/*.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/*.cc"
@@ -23,58 +18,39 @@ file(GLOB_RECURSE LIB_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/*.cxx"
 )
 
-# 5. 导出头文件目录到父作用域
-set(${LIB_NAME}_INCLUDE_DIRS 
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    PARENT_SCOPE
-)
+# 没有源文件时不创建空目标，避免后续主库链接不存在的目标。
+if(NOT LIB_SOURCES)
+    message(WARNING "No source files found for library: ${LIB_NAME}")
+    return()
+endif()
 
-# 6. 导出依赖库到父作用域（非必选）
-#set(${LIB_NAME}_LIBRARIES
-#    PARENT_SCOPE
-#)
+add_library(${TARGET_NAME} STATIC ${LIB_SOURCES})
 
-# 7. 导出依赖库搜索目录到父作用域（非必选）
-#set(${LIB_NAME}_LIBRARY_DIRS
-#    PARENT_SCOPE
-#)
-
-# 8. 导出目标名到父作用域
+# library/CMakeLists.txt 通过该变量获取子库目标；新增子库时请保留此导出。
 set(${LIB_NAME}_TARGET_NAME ${TARGET_NAME} PARENT_SCOPE)
 
-# 9. 创建库（子库编译设定）
-if(LIB_SOURCES)
-    # CDROID头文件目录
-    set(LIB_CDROID_INCLUDE_PATHS
-        ${CDROID_INCLUDE_DIRS}
-        ${CDROID_DEPINCLUDES}
-        ${CMAKE_BINARY_DIR}/include
-        ${CMAKE_BINARY_DIR}/include/gui
-        ${CMAKE_BINARY_DIR}/include/porting
-    )
+# 仅子库源码需要的定义使用 PRIVATE；下游也需要时改为 PUBLIC。
+target_compile_definitions(${TARGET_NAME} PRIVATE
+    PRODUCT_${CDROID_CHIPSET_UPPER}
+)
 
-    # 静态库
-    add_library(${TARGET_NAME} STATIC ${LIB_SOURCES})
+# PUBLIC 目录会传递给主程序及依赖此库的目标。
+# 仅实现文件使用的头文件目录应另行以 PRIVATE 添加。
+target_include_directories(${TARGET_NAME} PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
 
-    # PRODUCT 定义
-    target_compile_definitions(${TARGET_NAME} PRIVATE
-        PRODUCT_${CDROID_CHIPSET_UPPER}
-    )
-    
-    # 设置头文件目录
-    target_include_directories(${TARGET_NAME} PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-    )
-    
-    # 设置PIC以及输出目录
-    set_target_properties(${TARGET_NAME} PROPERTIES
-        POSITION_INDEPENDENT_CODE ON
-        OUTPUT_NAME ${LIB_NAME_LOWER}
-    )
-    
-    message(STATUS "  Built library: ${TARGET_NAME}")
-    message(STATUS "  Sources count: ${LIB_SOURCES}")
-else()
-    message(WARNING "No source files found for library: ${LIB_NAME}")
-endif()
+# 外部依赖应直接绑定到目标，例如：
+# find_package(SomePackage REQUIRED)
+# target_link_libraries(${TARGET_NAME} PRIVATE SomePackage::SomePackage)
+
+# PIC 兼容共享库链接场景；OUTPUT_NAME 控制最终生成的库文件名。
+set_target_properties(${TARGET_NAME} PROPERTIES
+    POSITION_INDEPENDENT_CODE ON
+    OUTPUT_NAME ${LIB_NAME_LOWER}
+)
+
+# 配置阶段输出目标名和源文件数量，便于确认子库是否正确加载。
+list(LENGTH LIB_SOURCES LIB_SOURCE_COUNT)
+message(STATUS "  Built library: ${TARGET_NAME} (${LIB_SOURCE_COUNT} sources)")
