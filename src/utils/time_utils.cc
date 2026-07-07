@@ -346,14 +346,16 @@ std::string TimeUtils::getDayOnWeek() {
 }
 
 std::string TimeUtils::getDayOnWeek(const int& day) {
-    static const std::string weekList[7] = {
-        "星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"
-    };
+    return getDayOnWeek(day, "星期");
+}
 
+std::string TimeUtils::getDayOnWeek(const int& day, std::string prefix) {
+    static const std::string weekList[7] = {
+        "日", "一", "二", "三", "四", "五", "六"
+    };
     int index = day % 7;
     if (index < 0) {
         index += 7;
     }
-
-    return weekList[index];
+    return prefix + weekList[index];
 }
