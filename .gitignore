@@ -8,7 +8,7 @@ fonts/fonts.conf
 package
 
 library/library_config.h
-library/*/lib_private_config.h
+library/*/lib_*_config.h
 
 .venv
 /tmp/

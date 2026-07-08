@@ -24,8 +24,8 @@ CreatePAK(
     ${CMAKE_CURRENT_SOURCE_DIR}/R.h
 )
 configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/lib_private_config.h.in
-    ${CMAKE_CURRENT_BINARY_DIR}/lib_private_config.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib_keyboard_config.h.in
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib_keyboard_config.h
 )
 
 target_compile_definitions(${TARGET_NAME} PRIVATE
