@@ -1,4 +1,6 @@
-# Project Notes for Codex
+# Project Instructions for AI Agents
+
+These instructions apply to every AI model or coding agent that reads this file, regardless of vendor or product.
 
 ## Additional Instructions
 
