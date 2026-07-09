@@ -2,14 +2,24 @@
 
 These instructions apply to every AI model or coding agent that reads this file, regardless of vendor or product.
 
-## Additional Instructions
+## Scope
 
-- Before working in this repository, read every regular file under `.agents/` and treat its contents as additional project instructions.
-- If `.agents/` does not exist (for example, in a project generated from this template), continue using this file alone.
+- This file defines the baseline instructions for working in this repository.
+- More specific instructions may live under `.agents/`. Those files are task-specific and should be loaded only when relevant.
 
-## Build & Validation
+## Instruction Loading
 
-- Compile validation for this project should be done by running `./fastCheck.sh` from the project root.
-- Treat `./fastCheck.sh` success as the primary build verification signal. A successful run ends with `[100%] Built target kk_frame`.
-- The script may build outside the app workspace under `/home/ricken/cdroid/outX64-Debug`, so running it can require filesystem escalation in sandboxed sessions.
-- Not every change requires running `./fastCheck.sh`. Run it for C/C++ source, headers, CMake/build configuration, resources that affect packaging/runtime behavior, or any change that could affect compiled output. It is acceptable to skip it for script-only, documentation-only, `.gitignore`, or agent-memory updates that do not touch application logic; mention the skip explicitly in the final response.
+- Do not read every file under `.agents/` by default.
+- Before starting an operation, identify whether that operation has a matching instruction file listed below.
+- If a matching file exists, read it before performing the operation and follow its rules.
+- If `.agents/` or the matching file does not exist, continue with this file and the repository context that is directly relevant to the task.
+
+## Task-Specific Instructions
+
+- Git workflow: for committing, merging, rebasing, branch synchronization, pushing, or other git history operations, read `.agents/git_workflow.md`.
+- Build and validation: for build, compile, test, or validation work, read `.agents/build_validation.md`.
+
+## Adding Instructions
+
+- Add new `.agents/*.md` files for distinct operational areas instead of expanding this file with detailed process rules.
+- Keep this file as the entry point and index for when those task-specific files should be read.
