@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 16:07:53
- * @LastEditTime: 2026-04-24 14:07:51
+ * @LastEditTime: 2026-07-09 14:06:12
  * @FilePath: /kk_frame/src/utils/string_utils.cc
  * @Description: 字符串相关的一些操作函数
  * @BugList:
@@ -396,4 +396,21 @@ std::string StringUtils::truncateWithLimit(const char* str, size_t maxChars, int
         result += suffix;
     }
     return result;
+}
+
+std::string StringUtils::sizeVisualization(size_t byteSize) {
+    static const char* units[] = {"B", "KB", "MB", "GB"};
+    double size = static_cast<double>(byteSize);
+    int unitIndex = 0;
+    while (size >= 1024.0 && unitIndex < 3) {
+        size /= 1024.0;
+        ++unitIndex;
+    }
+    char buf[64];
+    if (unitIndex == 0) {
+        snprintf(buf, sizeof(buf), "%.0f %s", size, units[unitIndex]);
+    } else {
+        snprintf(buf, sizeof(buf), "%.2f %s", size, units[unitIndex]);
+    }
+    return buf;
 }

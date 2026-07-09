@@ -2,8 +2,8 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 16:07:47
- * @LastEditTime: 2026-02-11 00:46:46
- * @FilePath: /X5000/src/utils/string_utils.h
+ * @LastEditTime: 2026-07-09 13:59:46
+ * @FilePath: /kk_frame/src/utils/string_utils.h
  * @Description: 字符串相关的一些操作函数
  * @BugList:
  *
@@ -138,6 +138,11 @@ namespace StringUtils {
     /// @return 处理后的字符串
     std::string truncateWithLimit(const char* str, size_t maxChars, 
                              int chineseWeight = 1, const std::string& suffix = "");
+
+    /// @brief 字节数可视化，如1024 -> 1KB
+    /// @param size 字节数
+    /// @return 可视化后的字符串
+    std::string sizeVisualization(size_t byteSize);
 
 } // StringUtils
 
