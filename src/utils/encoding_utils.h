@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 11:38:20
- * @LastEditTime: 2026-07-06 01:02:48
+ * @LastEditTime: 2026-07-09 17:02:09
  * @FilePath: /kk_frame/src/utils/encoding_utils.h
  * @Description: 编码相关的一些函数
  * @BugList:
@@ -16,6 +16,7 @@
 
 #include <string>
 #include <stdint.h>
+#include <string.h>
 
 namespace EncodingUtils {
 
@@ -69,7 +70,93 @@ namespace EncodingUtils {
     inline uint32_t littleToHost32(uint32_t v) { return hostToLittle32(v); }
     inline uint64_t littleToHost64(uint64_t v) { return hostToLittle64(v); }
 
-    
+    /* 按大端字节序从字节块读取整数，并转换为机器序；允许非对齐地址 */
+    inline uint16_t readBig16(const void* data) {
+        uint16_t value;
+        memcpy(&value, data, sizeof(value));
+        return bigToHost16(value);
+    }
+    inline uint32_t readBig32(const void* data) {
+        uint32_t value;
+        memcpy(&value, data, sizeof(value));
+        return bigToHost32(value);
+    }
+    inline uint64_t readBig64(const void* data) {
+        uint64_t value;
+        memcpy(&value, data, sizeof(value));
+        return bigToHost64(value);
+    }
+
+    /* 按小端字节序从字节块读取整数，并转换为机器序；允许非对齐地址 */
+    inline uint16_t readLittle16(const void* data) {
+        uint16_t value;
+        memcpy(&value, data, sizeof(value));
+        return littleToHost16(value);
+    }
+    inline uint32_t readLittle32(const void* data) {
+        uint32_t value;
+        memcpy(&value, data, sizeof(value));
+        return littleToHost32(value);
+    }
+    inline uint64_t readLittle64(const void* data) {
+        uint64_t value;
+        memcpy(&value, data, sizeof(value));
+        return littleToHost64(value);
+    }
+
+    /* 按指定字节序从字节块读取整数，并转换为机器序；允许非对齐地址 */
+    inline uint16_t read16(const void* data, ByteOrder order) {
+        return (order == ByteOrder::BigEndian) ? readBig16(data) : readLittle16(data);
+    }
+    inline uint32_t read32(const void* data, ByteOrder order) {
+        return (order == ByteOrder::BigEndian) ? readBig32(data) : readLittle32(data);
+    }
+    inline uint64_t read64(const void* data, ByteOrder order) {
+        return (order == ByteOrder::BigEndian) ? readBig64(data) : readLittle64(data);
+    }
+
+    /* 将机器序整数按大端字节序写入字节块；允许非对齐地址 */
+    inline void writeBig16(uint16_t value, void* data) {
+        value = hostToBig16(value);
+        memcpy(data, &value, sizeof(value));
+    }
+    inline void writeBig32(uint32_t value, void* data) {
+        value = hostToBig32(value);
+        memcpy(data, &value, sizeof(value));
+    }
+    inline void writeBig64(uint64_t value, void* data) {
+        value = hostToBig64(value);
+        memcpy(data, &value, sizeof(value));
+    }
+
+    /* 将机器序整数按小端字节序写入字节块；允许非对齐地址 */
+    inline void writeLittle16(uint16_t value, void* data) {
+        value = hostToLittle16(value);
+        memcpy(data, &value, sizeof(value));
+    }
+    inline void writeLittle32(uint32_t value, void* data) {
+        value = hostToLittle32(value);
+        memcpy(data, &value, sizeof(value));
+    }
+    inline void writeLittle64(uint64_t value, void* data) {
+        value = hostToLittle64(value);
+        memcpy(data, &value, sizeof(value));
+    }
+
+    /* 将机器序整数按指定字节序写入字节块；允许非对齐地址 */
+    inline void write16(uint16_t value, void* data, ByteOrder order) {
+        if (order == ByteOrder::BigEndian) writeBig16(value, data);
+        else writeLittle16(value, data);
+    }
+    inline void write32(uint32_t value, void* data, ByteOrder order) {
+        if (order == ByteOrder::BigEndian) writeBig32(value, data);
+        else writeLittle32(value, data);
+    }
+    inline void write64(uint64_t value, void* data, ByteOrder order) {
+        if (order == ByteOrder::BigEndian) writeBig64(value, data);
+        else writeLittle64(value, data);
+    }
+
     /// @brief 将字符串从一种编码转换为另一种编码
     /// @param input 要转换的字符串
     /// @param fromEncoding 原始编码
