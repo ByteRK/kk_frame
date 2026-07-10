@@ -17,7 +17,7 @@ These instructions apply to every AI model or coding agent that reads this file,
 ## Task-Specific Instructions
 
 - Git workflow: for committing, merging, rebasing, branch synchronization, pushing, or other git history operations, read `.agents/git_workflow.md`.
-- Build and validation: for build, compile, test, or validation work, read `.agents/build_validation.md`.
+- Build and validation: before changing C/C++ source, headers, CMake/build configuration, resources that may affect compiled output, or before doing any build, compile, test, or validation work, read `.agents/build_validation.md`.
 
 ## Adding Instructions
 
