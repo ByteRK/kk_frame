@@ -68,7 +68,7 @@ private:
 #if ENABLED(WIFI)
     wpa_ctrl* mCmd = nullptr;                // 命令通道
     wpa_ctrl* mMon = nullptr;                // 事件通道
-    std::mutex mCmdMtx;                      // 命令通道互斥锁
+    mutable std::mutex mCmdMtx;              // 命令通道及其生命周期互斥锁
 #endif
 
     std::thread       mMonThread;            // 事件监听线程

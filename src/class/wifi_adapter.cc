@@ -24,7 +24,8 @@
 
 void B_WifiAdapter::setParent(Interface* parent) {
     mInterface = parent;
-    if (!mInterface) return;
+    mInterfaceLifetime = parent ? parent->mLifetime : std::weak_ptr<int>();
+    if (!getParent()) return;
     // 首次绑定时获取快照；重复绑定直接复用缓存，避免无效加锁。
     if (!mSourceApListInitialized) refreshApList(true);
     dispatchApListChanged();
@@ -35,7 +36,7 @@ void B_WifiAdapter::setConnectedDisplay(CONNECTED_DISPLAY type) {
     mConnectedItemDisplay = type;
     // 显示策略变化只需重新处理原始缓存；无缓存且已绑定时才读取 WifiMgr。
     if (mSourceApListInitialized) processApList();
-    else if (mInterface) refreshApList(true);
+    else if (getParent()) refreshApList(true);
     dispatchApListChanged();
 }
 
@@ -76,7 +77,8 @@ void B_WifiAdapter::onStateChanged() {
     if (g_wifi->getState() != WifiHal::State::Off) return;
 
     clearApList(true);
-    if (mInterface) mInterface->flushEnd();
+    Interface* parent = getParent();
+    if (parent) parent->flushEnd();
 }
 
 void B_WifiAdapter::onScanResult() {
@@ -120,9 +122,19 @@ void B_WifiAdapter::clearApList(bool sourceInitialized) {
 }
 
 void B_WifiAdapter::dispatchApListChanged() {
-    if (!mInterface) return;
-    mInterface->flushEnd();
+    Interface* parent = getParent();
+    if (!parent) return;
+    parent->flushEnd();
     notifyApListChanged();
+}
+
+B_WifiAdapter::Interface* B_WifiAdapter::getParent() {
+    if (!mInterface || mInterfaceLifetime.expired()) {
+        mInterface = nullptr;
+        mInterfaceLifetime.reset();
+        return nullptr;
+    }
+    return mInterface;
 }
 
 WifiAdapter::WifiAdapter() {
@@ -135,13 +147,13 @@ WifiAdapter::~WifiAdapter() {
 
 void WifiAdapter::clear() {
     clearApList(false);
-    if (mInterface) notifyDataSetChanged();
+    if (getParent()) notifyDataSetChanged();
 }
 
 void WifiAdapter::onStateChanged() {
     const size_t oldCount = mApInfoList.size();
     B_WifiAdapter::onStateChanged();
-    if (mInterface && mApInfoList.size() != oldCount) notifyDataSetChanged();
+    if (getParent() && mApInfoList.size() != oldCount) notifyDataSetChanged();
 }
 
 void WifiAdapter::notifyApListChanged() {
@@ -172,23 +184,25 @@ int WifiAdapter::getViewTypeCount() const {
 View* WifiAdapter::getView(int position, View* convertView, ViewGroup* parent) {
     LOGV("position=%d count=%zu", position, mApInfoList.size());
     auto* apInfo = static_cast<WifiHal::ApInfo*>(getItem(position));
-    if (!mInterface || !apInfo) {
+    Interface* interface = getParent();
+    if (!interface || !apInfo) {
         LOGE("getView failed. interface=%p apInfo=%p",
-            static_cast<void*>(mInterface), static_cast<void*>(apInfo));
+            static_cast<void*>(interface), static_cast<void*>(apInfo));
         return convertView;
     }
 
-    if (!convertView) convertView = mInterface->loadItemLayout(apInfo->connected);
+    if (!convertView) convertView = interface->loadItemLayout(apInfo->connected);
     if (!convertView) {
         LOGE("loadItemLayout failed. position=%d", position);
         return nullptr;
     }
 
-    mInterface->setItemLayout(position, convertView, apInfo);
+    interface->setItemLayout(position, convertView, apInfo);
     const std::string bssid = apInfo->bssid;
     const std::string ssid = apInfo->ssid;
     convertView->setOnClickListener([this, bssid, ssid](View& v) {
-        if (!mInterface) return;
+        Interface* interface = getParent();
+        if (!interface) return;
 
         auto iterator = std::find_if(mApInfoList.begin(), mApInfoList.end(),
             [&bssid, &ssid](const WifiHal::ApInfo& ap) {
@@ -204,7 +218,7 @@ View* WifiAdapter::getView(int position, View* convertView, ViewGroup* parent) {
             return;
         }
 
-        mInterface->onClickItem(&v, &*iterator);
+        interface->onClickItem(&v, &*iterator);
         });
 
     return convertView;
@@ -221,13 +235,13 @@ WifiRecycleAdapter::~WifiRecycleAdapter() {
 
 void WifiRecycleAdapter::clear() {
     clearApList(false);
-    if (mInterface) notifyDataSetChanged();
+    if (getParent()) notifyDataSetChanged();
 }
 
 void WifiRecycleAdapter::onStateChanged() {
     const size_t oldCount = mApInfoList.size();
     B_WifiAdapter::onStateChanged();
-    if (mApInfoList.size() != oldCount && mInterface) notifyDataSetChanged();
+    if (mApInfoList.size() != oldCount && getParent()) notifyDataSetChanged();
 }
 
 void WifiRecycleAdapter::notifyApListChanged() {
@@ -251,12 +265,13 @@ int WifiRecycleAdapter::getItemViewType(int position) {
 }
 
 RecyclerView::ViewHolder* WifiRecycleAdapter::onCreateViewHolder(ViewGroup* parent, int viewType) {
-    if (!mInterface) {
+    Interface* interface = getParent();
+    if (!interface) {
         LOGE("onCreateViewHolder failed: interface is null");
         return nullptr;
     }
 
-    View* itemView = mInterface->loadItemLayout(viewType);
+    View* itemView = interface->loadItemLayout(viewType);
     if (!itemView) {
         LOGE("loadItemLayout failed. viewType=%d", viewType);
         return nullptr;
@@ -268,13 +283,14 @@ RecyclerView::ViewHolder* WifiRecycleAdapter::onCreateViewHolder(ViewGroup* pare
 void WifiRecycleAdapter::onBindViewHolder(RecyclerView::ViewHolder& holder, int position) {
     WifiHal::ApInfo* apInfo = getItem(position);
     View* itemView = holder.itemView;
-    if (!mInterface || !apInfo || !itemView) {
+    Interface* interface = getParent();
+    if (!interface || !apInfo || !itemView) {
         LOGE("onBindViewHolder failed. interface=%p apInfo=%p itemView=%p",
-            static_cast<void*>(mInterface), static_cast<void*>(apInfo), static_cast<void*>(itemView));
+            static_cast<void*>(interface), static_cast<void*>(apInfo), static_cast<void*>(itemView));
         return;
     }
 
-    mInterface->setItemLayout(position, itemView, apInfo);
+    interface->setItemLayout(position, itemView, apInfo);
 
     RecyclerView::ViewHolder* h_ptr = &holder;
     itemView->setOnClickListener([this, h_ptr](View& v) {
@@ -283,13 +299,14 @@ void WifiRecycleAdapter::onBindViewHolder(RecyclerView::ViewHolder& holder, int 
 }
 
 void WifiRecycleAdapter::onClickItem(View* v, RecyclerView::ViewHolder* holder) {
-    if (!mInterface || !v || !holder) return;
+    Interface* interface = getParent();
+    if (!interface || !v || !holder) return;
 
     const int position = holder->getAbsoluteAdapterPosition();
     if (position == RecyclerView::NO_POSITION) return;
 
     WifiHal::ApInfo* apInfo = getItem(position);
-    if (apInfo) mInterface->onClickItem(v, apInfo);
+    if (apInfo) interface->onClickItem(v, apInfo);
 }
 
 #endif // !ENABLED(WIFI)

@@ -22,6 +22,7 @@
 #include "template/singleton.h"
 #include <view/view.h>
 #include <stdint.h>
+#include <memory>
 
 #ifndef WIFI_ADAPTER_CLICK_MATCH_BSSID
 #define WIFI_ADAPTER_CLICK_MATCH_BSSID 0
@@ -39,12 +40,16 @@ public:
     } CONNECTED_DISPLAY;
 
     class Interface {
+        friend class B_WifiAdapter;
     public:
         virtual ~Interface() = default;
         virtual void   flushEnd() { };
         virtual void   onClickItem(View* v, WifiHal::ApInfo* apInfo) { };
         virtual View*  loadItemLayout(int type) = 0;
         virtual void   setItemLayout(int position, View* v, WifiHal::ApInfo* apInfo) = 0;
+
+    private:
+        std::shared_ptr<int> mLifetime{ std::make_shared<int>(0) };
     };
 
 public:
@@ -81,10 +86,14 @@ protected:
     /// @brief 依次通知页面接口和具体 Adapter 刷新展示
     void dispatchApListChanged();
 
+    /// @brief 获取仍存活的页面接口；页面销毁后自动使旧绑定失效。
+    Interface* getParent();
+
 protected:
     std::vector<WifiHal::ApInfo> mSourceApInfoList;                          // 未经处理的原始 AP 缓存
     std::vector<WifiHal::ApInfo> mApInfoList;                                // 提供给 Adapter 展示的 AP 列表
     Interface*                   mInterface{ nullptr };                      // 当前绑定的页面接口
+    std::weak_ptr<int>           mInterfaceLifetime;                        // 页面接口生命周期标记
     CONNECTED_DISPLAY            mConnectedItemDisplay{ DISPLAY_TYPE_KEEP }; // 已连接项显示策略
     bool                         mSourceApListInitialized{ false };          // 原始 AP 缓存是否已初始化
 };

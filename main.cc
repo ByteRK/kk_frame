@@ -96,5 +96,12 @@ int main(int argc, const char* argv[]) {
     /* 页面 */
     g_windMgr->init();
 
-    return app.exec();
+    const int exitCode = app.exec();
+
+    // Stop Wi-Fi while App/Looper are still alive. WifiMgr's static destructor
+    // must not be the first point at which worker threads and handlers stop.
+#if ENABLED(WIFI)
+    g_wifi->stop();
+#endif
+    return exitCode;
 }

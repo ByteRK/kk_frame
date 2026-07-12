@@ -119,6 +119,9 @@ private:
     bool runCmd(const std::string& cmd, std::string* reply = nullptr);
 
     bool ensureNetworkConfigured(const std::string& ssid, const std::string& psk);
+    void startDhcpWorker();
+    void stopDhcpWorker();
+    bool runDhcpCommand();
     bool startDhcp();
 
     bool parseScanResults(std::vector<ApInfo>& out);
@@ -154,6 +157,14 @@ private:
     std::string       mLastSsid;
     std::string       mLastPsk;
     std::atomic<bool> mUserDisconnect{ false };
+    std::atomic<bool> mShuttingDown{ false };
+
+    // DHCP worker：禁止 detached，关闭/析构前必须 join。
+    std::thread             mDhcpTh;
+    std::atomic<bool>       mDhcpStop{ false };
+    std::condition_variable mDhcpCv;
+    std::mutex              mDhcpWaitMtx;
+    std::mutex              mDhcpLifecycleMtx;
 
     // 允许同 SSID 下切换不同 BSSID：自动重连时不重建网络配置，复用最近一次 netId
     int mLastNetId = -1;

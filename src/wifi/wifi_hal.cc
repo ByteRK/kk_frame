@@ -19,7 +19,12 @@
 #include <chrono>
 #include <cstring>
 #include <random>
+#include <cctype>
+#include <cerrno>
+#include <limits>
 #include <sys/ioctl.h>
+#include <sys/wait.h>
+#include <signal.h>
 #include <net/if.h>
 #include <arpa/inet.h>
 #include <unistd.h>
@@ -83,6 +88,37 @@ static inline bool starts_with(const std::string& s, const char* prefix) {
     return s.compare(0, ::strlen(prefix), prefix) == 0;
 }
 
+static std::string HexEncode(const std::string& value) {
+    static const char kHex[] = "0123456789abcdef";
+    std::string result;
+    result.reserve(value.size() * 2);
+    for (unsigned char ch : value) {
+        result.push_back(kHex[ch >> 4]);
+        result.push_back(kHex[ch & 0x0f]);
+    }
+    return result;
+}
+
+static bool EncodeWpaQuoted(const std::string& value, std::string& result) {
+    result.clear();
+    result.reserve(value.size() + 2);
+    result.push_back('"');
+    for (unsigned char ch : value) {
+        // Control characters can terminate or alter a wpa control command.
+        if (ch < 0x20 || ch == 0x7f) return false;
+        if (ch == '\\' || ch == '"') result.push_back('\\');
+        result.push_back(static_cast<char>(ch));
+    }
+    result.push_back('"');
+    return true;
+}
+
+static bool IsHexString(const std::string& value) {
+    return std::all_of(value.begin(), value.end(), [](unsigned char ch) {
+        return std::isxdigit(ch) != 0;
+    });
+}
+
 static WpaClient::Options MakeWpaOpt(const WifiHal::Options& opt) {
     WpaClient::Options w;
     w.ctrl_path = opt.ctrl_path;
@@ -129,6 +165,7 @@ void WifiHal::setCallbacks(const Callbacks& cb) {
 bool WifiHal::enable() {
 #if ENABLED(WIFI)
     if (state() != State::Off) return true;
+    mShuttingDown.store(false);
 #ifndef PRODUCT_X64
     std::system(mOpt.ifup_cmd.c_str());
 #else
@@ -140,6 +177,7 @@ bool WifiHal::enable() {
     }
     bool ok = mWpa.startMonitor([this](const std::string& msg) { this->onWpaEvent(msg); });
     if (!ok) {
+        mWpa.close();
         setState(State::Off, "wpa_ctrl_attach failed");
         return false;
     }
@@ -154,17 +192,19 @@ bool WifiHal::enable() {
 
 void WifiHal::disable() {
 #if ENABLED(WIFI)
+    mShuttingDown.store(true);
     cancelReconnect();
 #ifdef PRODUCT_X64
     if (mX64ScanResultTimer) mX64ScanResultTimer->cancel();
     if (mX64ConnectResultTimer) mX64ConnectResultTimer->cancel();
 #endif
-    if (state() == State::Off) return;
-    setState(State::Off, "wifi disabled");
+    const bool wasOff = state() == State::Off;
+    if (!wasOff) setState(State::Off, "wifi disabled");
     mWpa.stopMonitor();
+    stopDhcpWorker();
     mWpa.close();
 #ifndef PRODUCT_X64
-    std::system(mOpt.ifdown_cmd.c_str());
+    if (!wasOff) std::system(mOpt.ifdown_cmd.c_str());
 #else
     LOGI("WifiHal::disable run system(%s)", mOpt.ifdown_cmd.c_str());
 #endif // PRODUCT_X64
@@ -232,6 +272,7 @@ bool WifiHal::disconnect() {
 #if ENABLED(WIFI)
     mUserDisconnect.store(true);
     cancelReconnect();
+    stopDhcpWorker();
 #ifdef PRODUCT_X64
     if (mX64ConnectResultTimer) mX64ConnectResultTimer->cancel();
 #endif
@@ -275,6 +316,7 @@ WifiHal::Callbacks WifiHal::getCallbacks() {
 void WifiHal::onWpaEvent(const std::string& msg) {
 #if ENABLED(WIFI)
     LOGV("onWpaEvent: %s", msg.c_str());
+    if (mShuttingDown.load()) return;
 
     // 常见事件：
     // CTRL-EVENT-SCAN-RESULTS
@@ -302,17 +344,19 @@ void WifiHal::onWpaEvent(const std::string& msg) {
     }
 
     if (starts_with(msg, WPA_EVENT_CONNECTED)) {
+        if (mShuttingDown.load()) return;
         setState(State::Connected, "CTRL-EVENT-CONNECTED");
 
         // 连接已经起来：清理重连抖动控制
         mReconnFailCount.store(0);
         mReconnInFlight.store(false);
 
-        std::thread(&WifiHal::startDhcp, this).detach();
+        startDhcpWorker();
         return;
     }
 
     if (starts_with(msg, WPA_EVENT_DISCONNECTED)) {
+        stopDhcpWorker();
         setState(State::Disconnected, "CTRL-EVENT-DISCONNECTED");
 
         // 允许后续重连再次发起，但避免短时间多次 kick
@@ -363,7 +407,7 @@ bool WifiHal::reconnectLight() {
 bool WifiHal::maybeScanForReconnect() {
     uint64_t now = cdroid::SystemClock::uptimeMillis();
     uint64_t last = mLastScanMs.load();
-    if (now - last < mOpt.scan_min_interval_ms) return false;
+    if (now - last < static_cast<uint64_t>(std::max(mOpt.scan_min_interval_ms, 0))) return false;
     mLastScanMs.store(now);
     std::string reply;
     return runCmd("SCAN", &reply);
@@ -392,32 +436,57 @@ bool WifiHal::runCmd(const std::string& cmd, std::string* reply) {
 }
 
 bool WifiHal::ensureNetworkConfigured(const std::string& ssid, const std::string& psk) {
-    // 简化策略：每次连接都 “REMOVE_NETWORK all -> ADD_NETWORK -> SET_NETWORK -> ENABLE -> SELECT -> SAVE_CONFIG”
-    // 优点：逻辑稳定、不依赖历史残留 network id
-    std::string reply;
-
-    // 先断开，避免状态粘连
-    runCmd("DISCONNECT", nullptr);
-
-    // 清空旧网络
-    runCmd("REMOVE_NETWORK all", nullptr);
-
-    if (!runCmd("ADD_NETWORK", &reply)) return false;
-    // reply 是 network id
-    const std::string netId = reply;
-
-    {
-        std::lock_guard<std::mutex> lk(mMtx);
-        mLastNetId = std::atoi(netId.c_str());
+    if (ssid.empty() || ssid.size() > 32) {
+        LOGE("invalid SSID length: %zu", ssid.size());
+        return false;
     }
 
-    // ssid/psk 需要带引号
-    if (!runCmd("SET_NETWORK " + netId + " ssid " + "\"" + ssid + "\"", nullptr)) return false;
+    std::string encodedPsk;
+    if (!psk.empty()) {
+        const bool rawPsk = psk.size() == 64 && IsHexString(psk);
+        if (!rawPsk && (psk.size() < 8 || psk.size() > 63)) {
+            LOGE("invalid PSK length: %zu", psk.size());
+            return false;
+        }
+        if (rawPsk) encodedPsk = psk;
+        else if (!EncodeWpaQuoted(psk, encodedPsk)) {
+            LOGE("PSK contains control characters");
+            return false;
+        }
+    }
+
+    std::string reply;
+    if (!runCmd("ADD_NETWORK", &reply)) return false;
+
+    char* end = nullptr;
+    errno = 0;
+    const long parsedNetId = std::strtol(reply.c_str(), &end, 10);
+    if (errno != 0 || end == reply.c_str() || *end != '\0' ||
+        parsedNetId < 0 || parsedNetId > std::numeric_limits<int>::max()) {
+        LOGE("invalid ADD_NETWORK reply: %s", reply.c_str());
+        return false;
+    }
+    const int newNetId = static_cast<int>(parsedNetId);
+    const std::string netId = std::to_string(newNetId);
+    auto removeNewNetwork = [&]() { runCmd("REMOVE_NETWORK " + netId, nullptr); };
+
+    // SSID uses the wpa_supplicant hexadecimal representation, so quotes,
+    // backslashes and control bytes cannot alter the control command.
+    if (!runCmd("SET_NETWORK " + netId + " ssid " + HexEncode(ssid), nullptr)) {
+        removeNewNetwork();
+        return false;
+    }
 
     if (psk.empty()) {
-        if (!runCmd("SET_NETWORK " + netId + " key_mgmt NONE", nullptr)) return false;
+        if (!runCmd("SET_NETWORK " + netId + " key_mgmt NONE", nullptr)) {
+            removeNewNetwork();
+            return false;
+        }
     } else {
-        if (!runCmd("SET_NETWORK " + netId + " psk " + "\"" + psk + "\"", nullptr)) return false;
+        if (!runCmd("SET_NETWORK " + netId + " psk " + encodedPsk, nullptr)) {
+            removeNewNetwork();
+            return false;
+        }
     }
 
     // 启用 scan_ssid=1 扫描隐藏 SSID
@@ -427,38 +496,118 @@ bool WifiHal::ensureNetworkConfigured(const std::string& ssid, const std::string
     // 越大越省电/越少扫描
     runCmd("SET_NETWORK " + netId + " bgscan \"simple:120:-67:900\"", nullptr);
 
-    if (!runCmd("ENABLE_NETWORK " + netId, nullptr)) return false;
-    if (!runCmd("SELECT_NETWORK " + netId, nullptr)) return false;
+    if (!runCmd("ENABLE_NETWORK " + netId, nullptr) ||
+        !runCmd("SELECT_NETWORK " + netId, nullptr)) {
+        removeNewNetwork();
+        return false;
+    }
+
+    int oldNetId = -1;
+    {
+        std::lock_guard<std::mutex> lk(mMtx);
+        oldNetId = mLastNetId;
+        mLastNetId = newNetId;
+    }
+    if (oldNetId >= 0 && oldNetId != newNetId) {
+        runCmd("REMOVE_NETWORK " + std::to_string(oldNetId), nullptr);
+    }
 
     // wpa_supplicant.conf 开启了 update_config=1，SAVE_CONFIG 才有效
     runCmd("SAVE_CONFIG", nullptr);
     return true;
 }
 
+void WifiHal::startDhcpWorker() {
+    stopDhcpWorker();
+    std::lock_guard<std::mutex> lk(mDhcpLifecycleMtx);
+    if (mShuttingDown.load() || mUserDisconnect.load()) return;
+    mDhcpStop.store(false);
+    mDhcpTh = std::thread(&WifiHal::startDhcp, this);
+}
+
+void WifiHal::stopDhcpWorker() {
+    std::thread worker;
+    {
+        std::lock_guard<std::mutex> lk(mDhcpLifecycleMtx);
+        mDhcpStop.store(true);
+        mDhcpCv.notify_all();
+        if (mDhcpTh.joinable()) worker = std::move(mDhcpTh);
+    }
+    if (worker.joinable()) worker.join();
+}
+
+bool WifiHal::runDhcpCommand() {
+    const pid_t pid = ::fork();
+    if (pid < 0) {
+        LOGE("fork DHCP command failed. errno=%d", errno);
+        return false;
+    }
+    if (pid == 0) {
+        ::setpgid(0, 0);
+        ::execl("/bin/sh", "sh", "-c", mOpt.dhcp_cmd.c_str(), static_cast<char*>(nullptr));
+        ::_exit(127);
+    }
+
+    // Make the DHCP shell and its descendants independently terminable.
+    ::setpgid(pid, pid);
+    int status = 0;
+    while (true) {
+        const pid_t waitResult = ::waitpid(pid, &status, WNOHANG);
+        if (waitResult == pid) {
+            return WIFEXITED(status) && WEXITSTATUS(status) == 0;
+        }
+        if (waitResult < 0 && errno != EINTR) {
+            LOGE("waitpid DHCP command failed. errno=%d", errno);
+            return false;
+        }
+
+        if (mDhcpStop.load() || mShuttingDown.load()) {
+            if (::kill(-pid, SIGTERM) != 0) ::kill(pid, SIGTERM);
+            for (int i = 0; i < 5; ++i) {
+                if (::waitpid(pid, &status, WNOHANG) == pid) return false;
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
+            if (::kill(-pid, SIGKILL) != 0) ::kill(pid, SIGKILL);
+            while (::waitpid(pid, &status, 0) < 0 && errno == EINTR) { }
+            return false;
+        }
+
+        std::unique_lock<std::mutex> lk(mDhcpWaitMtx);
+        mDhcpCv.wait_for(lk, std::chrono::milliseconds(100), [this]() {
+            return mDhcpStop.load() || mShuttingDown.load();
+        });
+    }
+}
+
 bool WifiHal::startDhcp() {
-    // 运行 DHCP
-    int ret = std::system(mOpt.dhcp_cmd.c_str());
+    const bool commandOk = runDhcpCommand();
+    if (mDhcpStop.load() || mShuttingDown.load()) return false;
 
     // 等待IP出现（最多5秒）
     std::string ip;
     bool ok = false;
-    for (int i = 0; i < 50; ++i) { // 50 * 100ms = 5s
+    for (int i = 0; commandOk && i < 50; ++i) { // 50 * 100ms = 5s
         if (GetIpv4(mOpt.ifname, ip)) { ok = true; break; }
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::unique_lock<std::mutex> lk(mDhcpWaitMtx);
+        if (mDhcpCv.wait_for(lk, std::chrono::milliseconds(100), [this]() {
+            return mDhcpStop.load() || mShuttingDown.load();
+        })) return false;
     }
 
-    if (ok) {
+    if (mDhcpStop.load() || mShuttingDown.load()) return false;
+    if (commandOk && ok) {
         setState(State::IpReady, std::string("dhcp ok ip=") + ip);
         mReconnFailCount.store(0);
         mReconnInFlight.store(false);
     } else {
         // DHCP 失败
-        setState(State::Disconnected, "dhcp failed (no ip)");
+        setState(State::Disconnected,
+            commandOk ? "dhcp failed (no ip)" : "dhcp command failed");
         if (mOpt.auto_reconnect && !mUserDisconnect.load()) {
             scheduleReconnect("dhcp failed");
         }
     }
-    return true;
+    return commandOk && ok;
 }
 
 bool WifiHal::parseScanResults(std::vector<ApInfo>& out) {
@@ -595,7 +744,7 @@ void WifiHal::scheduleReconnect(const std::string& reason) {
             mReconnTh = std::thread(&WifiHal::reconnectThread, this);
         }
     }
-    // reason 预留做日志/上报
+    LOGI("schedule Wi-Fi reconnect. reason=%s", reason.c_str());
     mReconnCv.notify_all();
 }
 

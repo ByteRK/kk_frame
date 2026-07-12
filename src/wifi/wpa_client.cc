@@ -14,6 +14,8 @@
 #include "wpa_client.h"
 #include <cstring>
 #include <chrono>
+#include <cerrno>
+#include <poll.h>
 #include <cdlog.h>
 
 static std::string NormalizeWpaEvent(std::string msg) {
@@ -51,6 +53,7 @@ WpaClient::~WpaClient() {
 bool WpaClient::open() {
 #if ENABLED(WIFI)
 #ifndef PRODUCT_X64
+    std::lock_guard<std::mutex> lk(mCmdMtx);
     if (mCmd) return true;
 
     // ctrl interface socket path 通常是: /var/run/wpa_supplicant/wlan0
@@ -78,6 +81,8 @@ bool WpaClient::open() {
 void WpaClient::close() {
 #if ENABLED(WIFI)
 #ifndef PRODUCT_X64
+    stopMonitor();
+    std::lock_guard<std::mutex> lk(mCmdMtx);
     if (mMon) {
         wpa_ctrl_close(mMon);
         mMon = nullptr;
@@ -98,9 +103,8 @@ bool WpaClient::request(const std::string& cmd, std::string& reply) {
 #if ENABLED(WIFI)
 #ifndef PRODUCT_X64
     reply.clear();
-    if (!mCmd) return false;
-
     std::lock_guard<std::mutex> lk(mCmdMtx);
+    if (!mCmd) return false;
 
     char buf[4096];
     std::memset(buf, 0, sizeof(buf));
@@ -162,17 +166,13 @@ bool WpaClient::startMonitor(const EventCallback& cb) {
 void WpaClient::stopMonitor() {
 #if ENABLED(WIFI)
 #ifndef PRODUCT_X64
-    if (!mMonRunning.exchange(false)) return;
-
-    if (mMon) {
-        wpa_ctrl_detach(mMon);
-        wpa_ctrl_close(mMon);   // 关键：打断阻塞 recv
-        mMon = nullptr;
-    }
+    mMonRunning.store(false);
 
     if (mMonThread.joinable()) {
         mMonThread.join();
     }
+    if (mMon) wpa_ctrl_detach(mMon);
+    mEventCb = nullptr;
 #else
     LOGI("WpaClient::stopMonitor()");
 #endif // PRODUCT_X64
@@ -183,7 +183,12 @@ void WpaClient::stopMonitor() {
 
 bool WpaClient::isOpen() const {
 #if ENABLED(WIFI)
+#ifndef PRODUCT_X64
+    std::lock_guard<std::mutex> lk(mCmdMtx);
     return mCmd != nullptr;
+#else
+    return true;
+#endif
 #else
     LOGE("WIFI is not enabled");
     return false;
@@ -193,13 +198,38 @@ bool WpaClient::isOpen() const {
 void WpaClient::monitorLoop() {
 #if ENABLED(WIFI)
 #ifndef PRODUCT_X64
+    wpa_ctrl* const monitor = mMon;
+    if (!monitor) return;
+    const int monitorFd = wpa_ctrl_get_fd(monitor);
+    if (monitorFd < 0) return;
+
     while (mMonRunning.load()) {
+        struct pollfd pfd;
+        pfd.fd = monitorFd;
+        pfd.events = POLLIN;
+        pfd.revents = 0;
+
+        const int pollResult = ::poll(&pfd, 1, 200);
+        if (!mMonRunning.load()) break;
+        if (pollResult == 0) continue;
+        if (pollResult < 0) {
+            if (errno == EINTR) continue;
+            LOGE("WPA monitor poll failed. errno=%d", errno);
+            break;
+        }
+        if ((pfd.revents & POLLIN) == 0) {
+            if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL)) {
+                LOGE("WPA monitor fd failed. revents=0x%x", pfd.revents);
+                break;
+            }
+            continue;
+        }
+
         char buf[4096];
         std::memset(buf, 0, sizeof(buf));
         size_t len = sizeof(buf) - 1;
 
-        // wpa_ctrl_recv 是阻塞的：如果你希望可中断，可以用 select/poll（这里先保持简洁）
-        int ret = wpa_ctrl_recv(mMon, buf, &len);
+        int ret = wpa_ctrl_recv(monitor, buf, &len);
         if (ret == 0 && len > 0) {
             LOG(VERBOSE) << "WPA-EVENT(raw): " << std::string(buf, len);
             std::string msg(buf, len);
@@ -207,9 +237,6 @@ void WpaClient::monitorLoop() {
                 msg.pop_back();
             }
             if (mEventCb) mEventCb(NormalizeWpaEvent(msg));
-        } else {
-            // 避免异常忙等
-            std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
     }
 #endif // PRODUCT_X64

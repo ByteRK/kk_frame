@@ -20,6 +20,7 @@
 #include <atomic>
 #include <core/looper.h>
 #include <core/preferences.h>
+#include <memory>
 #include <set>
 
 #define g_wifi WifiMgr::instance()
@@ -40,6 +41,7 @@ protected:
 public:
     ~WifiMgr();
     void           init();
+    void           stop();
     void           reset();
     void           addListener(WiFiListener* listener);
     void           removeListener(WiFiListener* listener);
@@ -74,9 +76,12 @@ private:
     cdroid::Preferences           mOption;
     bool                          mAutoConnect{ false };
 
-    WifiHal*                      mWifiHal{ nullptr };
+    std::unique_ptr<WifiHal>      mWifiHal;
+    bool                          mInitialized{ false };
+    bool                          mEventHandlerRegistered{ false };
     int64_t                       mNextEventTime{ 0 };
     std::set<WiFiListener*>       mListeners;
+    std::mutex                    mListenersMutex;
 
     std::vector<WifiHal::ApInfo>  mAps;
     std::mutex                    mApsMutex;

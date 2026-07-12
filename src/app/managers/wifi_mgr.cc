@@ -18,30 +18,34 @@
 #include <cdlog.h>
 #include <core/app.h>
 #include <core/systemclock.h>
+#include <cerrno>
+#include <cstdio>
+#include <cstring>
 
 #define WIFI_SECTION "wifi_options"
 
 WifiMgr::WifiMgr() :
-    AutoSaveItem(2000, 10000) {
-    mWifiHal = nullptr;
-}
+    AutoSaveItem(2000, 10000) { }
 
 WifiMgr::~WifiMgr() {
-    if (mWifiHal)delete mWifiHal;
+    stop();
 }
 
 void WifiMgr::init() {
+    if (mInitialized) return;
     load();
 
     WifiHal::Options opt;
     opt.ifname = "wlan0";
     opt.dhcp_cmd = "udhcpc -i wlan0 -n -q";
     opt.auto_reconnect = true;
-    mWifiHal = new WifiHal(opt);
+    mWifiHal.reset(new WifiHal(opt));
     mWifiHal->setCallbacks({
         [this](WifiHal::State s, const std::string& r) {onStateChanged(s,r);},
         [this](const std::vector<WifiHal::ApInfo>& aps) {onScanResult(aps);}
         });
+
+    mInitialized = true;
 
     // WIFI状态同步
     setSwitch(getSwitch());
@@ -49,23 +53,53 @@ void WifiMgr::init() {
 
     // 延迟三秒
     cdroid::App::getInstance().addEventHandler(this);
+    mEventHandlerRegistered = true;
     mNextEventTime = cdroid::SystemClock::uptimeMillis() + 3000;
 }
 
+void WifiMgr::stop() {
+    if (mEventHandlerRegistered) {
+        cdroid::App::getInstance().removeEventHandler(this);
+        mEventHandlerRegistered = false;
+    }
+
+    if (mWifiHal) {
+        mWifiHal->setCallbacks({});
+        mWifiHal->disable();
+        mWifiHal.reset();
+    }
+
+    {
+        std::lock_guard<std::mutex> lk(mStateMutex);
+        mState = WifiHal::State::Off;
+    }
+    mStateChanged.store(false);
+    mApsChanged.store(false);
+    mAutoConnect = false;
+    mInitialized = false;
+}
+
 void WifiMgr::reset() {
-    std::string command = std::string("rm")\
-        + " " + WIFI_FILE_PATH + " " + WIFI_FILE_BAK_PATH;
-    std::system(command.c_str());
+    const char* paths[] = { WIFI_FILE_PATH, WIFI_FILE_BAK_PATH };
+    for (const char* path : paths) {
+        if (std::remove(path) != 0 && errno != ENOENT) {
+            LOGE("[wifi] remove option failed. file=%s errno=%d(%s)",
+                path, errno, std::strerror(errno));
+        }
+    }
     FileUtils::sync();
     load();
     LOGE("[wifi] reset option.");
 }
 
 void WifiMgr::addListener(WiFiListener* listener) {
+    if (!listener) return;
+    std::lock_guard<std::mutex> lk(mListenersMutex);
     mListeners.insert(listener);
 }
 
 void WifiMgr::removeListener(WiFiListener* listener) {
+    std::lock_guard<std::mutex> lk(mListenersMutex);
     mListeners.erase(listener);
 }
 
@@ -88,9 +122,10 @@ bool WifiMgr::scan() {
 }
 
 bool WifiMgr::connect(const std::string& ssid, const std::string& psk) {
+    if (!mWifiHal || !mWifiHal->connect(ssid, psk)) return false;
     mOption.setValue(WIFI_SECTION, "SSID", ssid);
     mOption.setValue(WIFI_SECTION, "PSK", psk);
-    return mWifiHal ? mWifiHal->connect(ssid, psk) : false;
+    return true;
 }
 
 bool WifiMgr::disconnect() {
@@ -98,22 +133,25 @@ bool WifiMgr::disconnect() {
 }
 
 void WifiMgr::setSwitch(bool enable) {
+    if (!mWifiHal) return;
+
+    const bool wasEnabled = mWifiHal->state() != WifiHal::State::Off;
+    LOGI("[wifi] set switch. switch=%d", enable);
+    if (enable) {
+        if (!mWifiHal->enable()) {
+            LOGE("[wifi] set switch failed. switch=1");
+            if (getSwitch()) mOption.setValue(WIFI_SECTION, "SWITCH", false);
+            return;
+        }
+        if (!wasEnabled) mAutoConnect = true;
+        scan();
+    } else {
+        mWifiHal->disable();
+        mAutoConnect = false;
+    }
+
     if (enable != getSwitch()) {
         mOption.setValue(WIFI_SECTION, "SWITCH", enable);
-    }
-    if (mWifiHal) {
-        bool nowEnable = (mWifiHal->state() != WifiHal::State::Off);
-        LOGE("[wifi] set switch. switch=%d", enable);
-        bool res = true;
-        if (enable) {
-            res = mWifiHal->enable();
-            if (res) scan();
-            if (!nowEnable) mAutoConnect = true;
-        } else mWifiHal->disable();
-        if (!res) {
-            // mOption.setValue(WIFI_SECTION, "SWITCH", !enable);
-            LOGE("[wifi] set switch failed. switch=%d", enable);
-        }
     }
 }
 
@@ -127,6 +165,7 @@ void WifiMgr::getConnectInfo(std::string& ssid, std::string& psk) {
 }
 
 bool WifiMgr::getConnectedAp(WifiHal::ApInfo& ap) {
+    std::lock_guard<std::mutex> lk(mApsMutex);
     for (auto& i_ap : mAps) {
         if (i_ap.connected) {
             ap = i_ap;
@@ -164,13 +203,23 @@ int WifiMgr::handleEvents() {
         mStateChanged.store(false);
         if (isConnected())
             updateResultAfterConnected();
-        for (auto& cb : mListeners)
+        std::vector<WiFiListener*> listeners;
+        {
+            std::lock_guard<std::mutex> lk(mListenersMutex);
+            listeners.assign(mListeners.begin(), mListeners.end());
+        }
+        for (auto* cb : listeners)
             cb->onStateChanged();
     }
 
     if (mApsChanged.load()) { // 扫描结果改变
         mApsChanged.store(false);
-        for (auto& cb : mListeners)
+        std::vector<WiFiListener*> listeners;
+        {
+            std::lock_guard<std::mutex> lk(mListenersMutex);
+            listeners.assign(mListeners.begin(), mListeners.end());
+        }
+        for (auto* cb : listeners)
             cb->onScanResult();
     }
 
@@ -209,15 +258,19 @@ void WifiMgr::load() {
 }
 
 void WifiMgr::onStateChanged(WifiHal::State state, const std::string& reason) {
+    {
+        std::lock_guard<std::mutex> lk(mStateMutex);
+        mState = state;
+    }
     mStateChanged.store(true);
-    std::lock_guard<std::mutex> lk(mStateMutex);
-    mState = state;
 }
 
 void WifiMgr::onScanResult(const std::vector<WifiHal::ApInfo>& aps) {
+    {
+        std::lock_guard<std::mutex> lk(mApsMutex);
+        mAps = aps;
+    }
     mApsChanged.store(true);
-    std::lock_guard<std::mutex> lk(mApsMutex);
-    mAps = aps;
 }
 
 void WifiMgr::updateResultAfterConnected() {
