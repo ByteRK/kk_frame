@@ -93,3 +93,40 @@ bool FileUtils::check(const std::vector<std::string>& fileList, std::function<bo
     }
     return false;
 }
+
+bool FileUtils::isDir(const std::string& path) {
+    ghc::filesystem::path fsPath(path);
+    return ghc::filesystem::exists(fsPath) && ghc::filesystem::is_directory(fsPath);
+}
+
+bool FileUtils::mkdir(const std::string& path) {
+    ghc::filesystem::path fsPath(path);
+    if (ghc::filesystem::exists(fsPath)) {
+        if (ghc::filesystem::is_directory(fsPath)) return true;
+        LOGE("Path exists but is not a directory: %s", path.c_str());
+        return false;
+    }
+    if (!ghc::filesystem::create_directories(fsPath)) {
+        LOGE("Failed to create directory: %s", path.c_str());
+        return false;
+    }
+    sync();
+    return true;
+}
+
+bool FileUtils::clearDir(const std::string& path) {
+    ghc::filesystem::path fsPath(path);
+    if (!ghc::filesystem::exists(fsPath)) return true;
+    if (!ghc::filesystem::is_directory(fsPath)) {
+        LOGE("Path is not a directory: %s", path.c_str());
+        return false;
+    }
+    for (auto& entry : ghc::filesystem::directory_iterator(fsPath)) {
+        if (ghc::filesystem::remove_all(entry.path()) == 0) {
+            LOGE("Failed to remove: %s", entry.path().c_str());
+            return false;
+        }
+    }
+    sync();
+    return true;
+}

@@ -53,6 +53,21 @@ namespace FileUtils {
     /// @note 用于配置文件加载，传入项为文件路径以及备份路径
     bool check(const std::vector<std::string>& fileList, std::function<bool(const std::string&, size_t)> callback);
 
+    /// @brief 判断路径是否为目录
+    /// @param path 路径
+    /// @return true 是目录
+    bool isDir(const std::string& path);
+
+    /// @brief 创建目录（自动创建父目录）
+    /// @param path 目录路径
+    /// @return true 创建成功或目录已存在
+    bool mkdir(const std::string& path);
+
+    /// @brief 清空路径内的所有文件和子目录（不删除目录本身）
+    /// @param path 目录路径
+    /// @return true 清空成功
+    bool clearDir(const std::string& path);
+
 } // FileUtils
 
 #endif // !__FILE_UTILS_H__
