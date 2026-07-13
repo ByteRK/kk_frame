@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-08 22:48:56
- * @LastEditTime: 2026-06-30 01:00:01
+ * @LastEditTime: 2026-07-13 11:14:54
  * @FilePath: /kk_frame/src/app/managers/http_mgr.cc
  * @Description: Http 请求管理
  * @BugList:
@@ -36,6 +36,42 @@ static std::string trimHttpLine(const char* data, size_t size) {
         line.pop_back();
     }
     return line;
+}
+
+static bool isDirectoryPath(const std::string& path) {
+    struct stat pathStat;
+    return !path.empty() && stat(path.c_str(), &pathStat) == 0 && S_ISDIR(pathStat.st_mode);
+}
+
+static std::string extractFileNameFromUrl(const std::string& url) {
+    const size_t pathEnd = url.find_first_of("?#");
+    const std::string urlPath = url.substr(0, pathEnd);
+    const size_t slashPos = urlPath.find_last_of('/');
+
+    if (slashPos == std::string::npos) {
+        return urlPath;
+    }
+    if (slashPos + 1 >= urlPath.size()) {
+        return std::string();
+    }
+    return urlPath.substr(slashPos + 1);
+}
+
+static std::string resolveDownloadFilePath(const std::string& url,
+    const std::string& downloadPath) {
+    if (!isDirectoryPath(downloadPath)) {
+        return downloadPath;
+    }
+
+    const std::string fileName = extractFileNameFromUrl(url);
+    FailFast(fileName.empty(),
+        "cannot extract download file name from url=%s",
+        url.c_str());
+
+    if (downloadPath.back() == '/') {
+        return downloadPath + fileName;
+    }
+    return downloadPath + "/" + fileName;
 }
 
 static size_t resolveDefaultMaxWorkerCount() {
@@ -211,7 +247,7 @@ HttpManager::Request HttpManager::Request::CreateDownload(const std::string& url
     Request request;
     request.method = HttpMethod::GET;
     request.url = url;
-    request.downloadFilePath = downloadFilePath;
+    request.downloadFilePath = resolveDownloadFilePath(url, downloadFilePath);
     request.listener = listener;
     request.tag = tag;
     request.opaque = opaque;

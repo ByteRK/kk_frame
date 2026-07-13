@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-08 22:48:56
- * @LastEditTime: 2026-07-04 04:01:17
+ * @LastEditTime: 2026-07-13 11:14:40
  * @FilePath: /kk_frame/src/app/managers/http_mgr.h
  * @Description: Http 请求管理
  * @BugList:
@@ -121,7 +121,7 @@ public:
         std::vector<std::string> headers; /* 自定义请求头 */
         std::string body;                 /* 内存请求体 */
         std::string uploadFilePath;       /* 上传文件路径 */
-        std::string downloadFilePath;     /* 下载文件路径 */
+        std::string downloadFilePath;     /* 下载文件路径；CreateDownload 传入目录时自动追加 URL 文件名 */
         std::string contentType;          /* 仅便于业务记录或补默认头 */
         std::string caFilePath;           /* 自定义 CA 文件路径 */
         void* opaque;                     /* 业务透传指针 */
