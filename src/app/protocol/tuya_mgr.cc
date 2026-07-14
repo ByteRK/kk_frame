@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-08-01 03:03:02
- * @LastEditTime: 2026-07-14 17:04:01
+ * @LastEditTime: 2026-07-14 23:22:14
  * @FilePath: /kk_frame/src/app/protocol/tuya_mgr.cc
  * @Description: 涂鸦模组通讯
  * @BugList:
@@ -18,34 +18,78 @@
 #include <core/app.h>
 #include <core/systemclock.h>
 
-#include <iostream>
-#include <fstream>
+#include <array>
 #include <cstring>
+#include <limits>
+#include <string>
+#include <vector>
 
-#include "config_mgr.h"
 #include "app_version.h"
 
-#include "mcu_mgr.h"
 #include "wind_mgr.h"
 #include "string_utils.h"
 #include "system_utils.h"
 
 #define TICK_TIME 50 // tick触发时间（毫秒）
 
-/**
- * 分包大小
- * 0x00：默认 256 bytes（兼容旧固件）
- * 0x01：512 bytes
- * 0x02：1024 bytes
-**/
-#define OTA_PACKAGE_LEVEL 0x02
-
-#define OTA_SAVE_PATH  "/tmp/kaidu_t2e_pro.tar.gz"
-#define RM_OTA_PATH  "rm -rf " OTA_SAVE_PATH
-
 //////////////////////////////////////////////////////////////////
 
 typedef PacketBufferPoolT<BT_TUYA, TuyaAsk, TuyaAck> TuyaPacketBufferPool;
+
+namespace {
+
+constexpr uint16_t MAX_PAYLOAD_LEN =
+    TuyaAck::BUFFER_CAPACITY - TuyaAck::FRAME_OVERHEAD;
+
+struct CommandPayloadRule {
+    uint8_t  command;
+    uint16_t minLength;
+    uint16_t maxLength;
+};
+
+// 所有当前处理的模组上行命令都必须先经过此表，再进入业务解析器。
+const CommandPayloadRule COMMAND_PAYLOAD_RULES[] = {
+    { TYCOMM_HEART,        0, 1 },
+    { TYCOMM_INFO,         0, 0 },
+    { TYCOMM_CHECK_MDOE,   0, 0 },
+    { TYCOMM_WIFI_STATUS,  1, 1 },
+    { TYCOMM_ACCEPT,       5, MAX_PAYLOAD_LEN },
+    { TYCOMM_CHECK,        0, 0 },
+    { TYCOMM_WIFITEST,     2, 2 },
+    { TYCOMM_OTA_START,    4, 4 },
+    { TYCOMM_OTA_DATA,     4, MAX_PAYLOAD_LEN },
+    { TYCOMM_GET_TIME,     7, 7 },
+    { TYCOMM_OPEN_WEATHER, 1, 2 },
+    { TYCOMM_WEATHER,      1, MAX_PAYLOAD_LEN },
+    { TYCOMM_OPEN_TIME,    2, 8 },
+};
+
+bool validatePayloadLength(uint8_t command, uint16_t length) {
+    for (const CommandPayloadRule& rule : COMMAND_PAYLOAD_RULES) {
+        if (rule.command != command) continue;
+        if (length >= rule.minLength && length <= rule.maxLength) return true;
+        LOGE("Reject Tuya command payload. cmd=0x%02x len=%u expected=%u..%u",
+            command, length, rule.minLength, rule.maxLength);
+        return false;
+    }
+    return true;
+}
+
+struct DpField {
+    uint8_t        id;
+    uint8_t        type;
+    const uint8_t* value;
+    uint16_t       length;
+};
+
+struct WeatherField {
+    std::string name;
+    bool        isString;
+    std::string stringValue;
+    int32_t     integerValue;
+};
+
+} // namespace
 
 TuyaMgr::TuyaMgr() {
     mPacket = new TuyaPacketBufferPool();
@@ -90,20 +134,19 @@ int TuyaMgr::init() {
         return -4;
     }
     mChannel = channel;
+    mInitialized = true;
 
     // 启动延迟一会后开始发包
     setTick(TICK_TIME);
     startTick(TICK_TIME * 10);
 
-    mInitialized = true;
     return 0;
 }
 
 void TuyaMgr::onTick(int64_t nowMs) {
     if (mIsRunConnectWork) {
         if (nowMs - mLastSendDiffDPTime >= 400) {
-            sendDiffDp();
-            mLastSendDiffDPTime = nowMs;
+            if (sendDiffDp()) mLastSendDiffDPTime = nowMs;
         }
 
         if (nowMs - mLastSyncDateTime >= 1080000) {
@@ -112,39 +155,58 @@ void TuyaMgr::onTick(int64_t nowMs) {
     } else {
         if (mNetWorkDetail == 0x04 &&
             nowMs - mNetWorkConnectTime >= 1000) {
-            openWeatherServe();
+            const bool weatherOpened = openWeatherServe();
             // send2MCU(TYCOMM_GET_TIME);
-            openTimeServe();
-            mIsRunConnectWork = true;
+            const bool timeOpened = openTimeServe();
+            mIsRunConnectWork = weatherOpened && timeOpened;
         }
     }
 }
 
-void TuyaMgr::send2MCU(uint8_t cmd) {
-    send2MCU(0, 0, cmd);
+bool TuyaMgr::send2MCU(uint8_t cmd) {
+    return send2MCU(nullptr, 0, cmd);
 }
 
-void TuyaMgr::send2MCU(uint8_t* buf, uint16_t len, uint8_t cmd) {
-    BuffData* bd = mPacket->obtainSend(len);
+bool TuyaMgr::send2MCU(const uint8_t* buf, size_t len, uint8_t cmd) {
+    if (!mInitialized || mPacket == nullptr || mChannel == nullptr) {
+        LOGE("TuyaMgr send rejected before successful init. cmd=0x%02x", cmd);
+        return false;
+    }
+    if (len > MAX_PAYLOAD_LEN || (len > 0 && buf == nullptr)) {
+        LOGE("TuyaMgr invalid send payload. cmd=0x%02x len=%zu max=%u data=%p",
+            cmd, len, MAX_PAYLOAD_LEN, static_cast<const void*>(buf));
+        return false;
+    }
+
+    const uint16_t payloadLen = static_cast<uint16_t>(len);
+    BuffData* bd = mPacket->obtainSend(payloadLen);
     if (bd == nullptr) {
-        LOGE("TuyaMgr packet allocation failed. data_len=%u cmd=%u", len, cmd);
-        return;
+        LOGE("TuyaMgr packet allocation failed. data_len=%u cmd=%u", payloadLen, cmd);
+        return false;
     }
     TuyaAsk   snd(bd);
 
     snd.setData(TUYA_VERSION, 0x03);
     snd.setData(TUYA_COMM, cmd);
-    snd.setData(TUYA_DATA_LEN_H, (len >> 8) & 0xFF);
-    snd.setData(TUYA_DATA_LEN_L, len & 0xFF);
-    snd.setData(buf, TUYA_DATA_START, len);
+    snd.setData(TUYA_DATA_LEN_H, (payloadLen >> 8) & 0xFF);
+    snd.setData(TUYA_DATA_LEN_L, payloadLen & 0xFF);
+    snd.setData(buf, TUYA_DATA_START, payloadLen);
 
     snd.checkCode();    // 修改检验位
     LOG(VERBOSE) << "send to tuya. bytes=" << StringUtils::hexStr(bd->buf, bd->len);
-    mChannel->send(bd);
+    if (mChannel->send(bd) != 0) {
+        LOGE("TuyaMgr send failed. cmd=0x%02x len=%u", cmd, payloadLen);
+        return false;
+    }
     mLastSendTime = cdroid::SystemClock::uptimeMillis();
+    return true;
 }
 
 void TuyaMgr::onCommDeal(const IAck* ack) {
+    if (!mInitialized || ack == nullptr) {
+        LOGE("Reject Tuya packet while manager is unavailable");
+        return;
+    }
     if (mLastAcceptTime == 0)mLastAcceptTime = cdroid::SystemClock::uptimeMillis();
 
     uint8_t command = 0;
@@ -156,68 +218,64 @@ void TuyaMgr::onCommDeal(const IAck* ack) {
         LOGE("Invalid Tuya packet fields. len=%u", ack->dataLength());
         return;
     }
+    if (!validatePayloadLength(command, payloadLen)) return;
 
     bool show = false;
+    bool handled = true;
     switch (command) {
     case TYCOMM_HEART:
-        sendHeartBeat();
+        handled = sendHeartBeat();
         break;
     case TYCOMM_INFO:
         if (mClearWifi) {
-            sendSetConnectMode(1);
+            handled = sendSetConnectMode(1);
         } else {
-            sendSetConnectMode(2);
+            handled = sendSetConnectMode(2);
         }
         break;
     case TYCOMM_CHECK_MDOE:
-        sendSetWorkMode();
+        handled = sendSetWorkMode();
         break;
-    case TYCOMM_WIFI_STATUS: {
-        uint8_t status = 0;
-        if (!ack->readU8(TUYA_DATA_START, status)) {
-            LOGE("Invalid Tuya WiFi status packet");
-            break;
-        }
-        sendWIFIStatus(status);
-    }   break;
+    case TYCOMM_WIFI_STATUS:
+        handled = sendWIFIStatus(payload[0]);
+        break;
     case TYCOMM_ACCEPT:
-        acceptDP(payload, payloadLen);
+        handled = acceptDP(payload, payloadLen);
         break;
     case TYCOMM_CHECK:
-        sendDp();
+        handled = sendDp();
         break;
-    case TYCOMM_WIFITEST: {
-        uint16_t result = 0;
-        if (!ack->readU16(TUYA_DATA_START, result, IAck::ByteOrder::LittleEndian)) {
-            LOGE("Invalid Tuya WiFi test packet");
-            break;
-        }
-        mWifiTestRes = result;
-    }   break;
+    case TYCOMM_WIFITEST:
+        mWifiTestRes = static_cast<uint16_t>(payload[0])
+            | (static_cast<uint16_t>(payload[1]) << 8);
+        break;
 
     case TYCOMM_GET_TIME:
-        acceptTime(payload);
+        handled = acceptTime(payload, payloadLen);
         break;
     case TYCOMM_OPEN_WEATHER:
-        acceptOpenWeather(payload);
+        handled = acceptOpenWeather(payload, payloadLen);
         break;
     case TYCOMM_WEATHER:
-        acceptWeather(payload, payloadLen);
+        handled = acceptWeather(payload, payloadLen);
         break;
     case TYCOMM_OPEN_TIME:
-        acceptOpenTime(payload);
+        handled = acceptOpenTime(payload, payloadLen);
         break;
 
     case TYCOMM_OTA_START:
-        dealOTAComm(payload, payloadLen);
-        break;
     case TYCOMM_OTA_DATA:
-        dealOTAData(payload, payloadLen);
+        rejectOTA(command, payloadLen);
+        handled = false;
         break;
     default:
         show = true;
         LOG(INFO) << "[default]accept. bytes=" << StringUtils::hexStr(ack->data(), ack->dataLength());
         break;
+    }
+
+    if (!handled) {
+        LOGE("Tuya command was not completed. cmd=0x%02x len=%u", command, payloadLen);
     }
 
     if (!show)
@@ -226,33 +284,36 @@ void TuyaMgr::onCommDeal(const IAck* ack) {
     mLastAcceptTime = cdroid::SystemClock::uptimeMillis();
 }
 
-void TuyaMgr::sendHeartBeat() {
+bool TuyaMgr::sendHeartBeat() {
     LOG(VERBOSE) << "心跳";
     static bool firstSendHeartBeat = false;
     uint8_t data[1] = { 0x01 };
     if (!firstSendHeartBeat) {
         data[0] = 0x00;
-        firstSendHeartBeat = true;
     }
-    send2MCU(data, 1, TYCOMM_HEART);
+    const bool sent = send2MCU(data, sizeof(data), TYCOMM_HEART);
+    if (sent) firstSendHeartBeat = true;
+    return sent;
 }
 
-void TuyaMgr::sendWifiTest() {
+bool TuyaMgr::sendWifiTest() {
     LOG(VERBOSE) << "WIFI测试";
+    if (!send2MCU(TYCOMM_WIFITEST)) return false;
     mWifiTestRes = 0xFFFF; // 复位
-    send2MCU(TYCOMM_WIFITEST);
+    return true;
 }
 
-void TuyaMgr::resetWifi(bool clear) {
-    LOG(VERBOSE) << "重置wifi" << clear ? "[清空]" : "[非清空]";
+bool TuyaMgr::resetWifi(bool clear) {
+    LOG(VERBOSE) << "重置wifi" << (clear ? "[清空]" : "[非清空]");
+    uint8_t data[2] = { 0x00,0x00 };
+    if (!send2MCU(data, sizeof(data), TYCOMM_RESET)) return false;
     mClearWifi = clear;
     mNetWorkDetail = 0;
     mNetWork = WIFI_NULL;
-    uint8_t data[2] = { 0x00,0x00 };
-    send2MCU(data, 2, TYCOMM_RESET);
+    return true;
 }
 
-void TuyaMgr::sendSetConnectMode(uint8_t mode) {
+bool TuyaMgr::sendSetConnectMode(uint8_t mode) {
     LOG(VERBOSE) << "设置配网模式";
 
     std::string version{ APP_VERSION };
@@ -264,16 +325,20 @@ void TuyaMgr::sendSetConnectMode(uint8_t mode) {
 
     std::string str = "{\"p\":\"cdwan0nqtmbyqvx3\",\"v\":\"" + version + "\",\"m\":" + std::to_string(mode % 10) + "}";
     LOGE("[tuyaConfig] -> %s", str.c_str());
-    uint8_t data[0x2a];
-    memcpy(data, str.c_str(), 0x2a);
-    send2MCU(data, 0x2a, TYCOMM_INFO);
+    std::array<uint8_t, 0x2a> data{{ 0 }};
+    if (str.size() > data.size()) {
+        LOGE("Tuya config payload is too long. len=%zu max=%zu", str.size(), data.size());
+        return false;
+    }
+    memcpy(data.data(), str.data(), str.size());
+    return send2MCU(data.data(), data.size(), TYCOMM_INFO);
 }
 
-void TuyaMgr::sendSetWorkMode() {
-    send2MCU(TYCOMM_CHECK_MDOE);
+bool TuyaMgr::sendSetWorkMode() {
+    return send2MCU(TYCOMM_CHECK_MDOE);
 }
 
-void TuyaMgr::sendWIFIStatus(uint8_t status) {
+bool TuyaMgr::sendWIFIStatus(uint8_t status) {
     LOG(VERBOSE) << "获取wifi工作状态";
     mNetWorkDetail = status;
     switch (status) {
@@ -293,25 +358,28 @@ void TuyaMgr::sendWIFIStatus(uint8_t status) {
         mNetWork = WIFI_NULL;
         break;
     }
-    send2MCU(TYCOMM_WIFI_STATUS);
+    const bool sent = send2MCU(TYCOMM_WIFI_STATUS);
 
     if (mClearWifi) { resetWifi(); mClearWifi = false; }
+    return sent;
 }
 
-void TuyaMgr::getTuyaTime() {
+bool TuyaMgr::getTuyaTime() {
     LOG(VERBOSE) << "获取涂鸦时间";
+    if (!send2MCU(TYCOMM_GET_TIME)) return false;
     mLastSyncDateTime = cdroid::SystemClock::uptimeMillis();
-    send2MCU(TYCOMM_GET_TIME);
+    return true;
 }
 
-void TuyaMgr::openTimeServe() {
+bool TuyaMgr::openTimeServe() {
     LOG(VERBOSE) << "开启涂鸦时间服务";
     uint8_t data[2] = { 0x01 ,0x01 };
+    if (!send2MCU(data, sizeof(data), TYCOMM_OPEN_TIME)) return false;
     mLastSyncDateTime = cdroid::SystemClock::uptimeMillis();
-    send2MCU(data, 2, TYCOMM_OPEN_TIME);
+    return true;
 }
 
-void TuyaMgr::openWeatherServe() {
+bool TuyaMgr::openWeatherServe() {
     LOG(VERBOSE) << "开启涂鸦天气服务";
     std::vector<std::string> strings = {
             "w.temp",
@@ -321,198 +389,318 @@ void TuyaMgr::openWeatherServe() {
             "w.date.1"
     };
 
-    uint8_t totalLength = 0;
+    size_t totalLength = 0;
     for (const auto& str : strings) {
+        if (str.size() > std::numeric_limits<uint8_t>::max()) {
+            LOGE("Tuya weather key is too long. len=%zu", str.size());
+            return false;
+        }
         totalLength += str.length() + 1;
     }
+    if (totalLength > std::numeric_limits<uint16_t>::max()) {
+        LOGE("Tuya weather payload is too long. len=%zu", totalLength);
+        return false;
+    }
 
-    uint8_t data[totalLength];
-    uint8_t offset = 0;
+    std::vector<uint8_t> data;
+    data.reserve(totalLength);
 
     for (const auto& str : strings) {
-        data[offset++] = str.length();
-        memcpy(data + offset, str.c_str(), str.length());
-        offset += str.length();
+        data.push_back(static_cast<uint8_t>(str.size()));
+        data.insert(data.end(), str.begin(), str.end());
     }
-    send2MCU(data, totalLength, TYCOMM_OPEN_WEATHER);
+    return send2MCU(data.data(), data.size(), TYCOMM_OPEN_WEATHER);
 }
 
-void TuyaMgr::sendDp() {
+bool TuyaMgr::sendDp() {
     LOG(VERBOSE) << "开机DP全上报";
-    static uint8_t s_SendDpBuf[256];
-    memset(s_SendDpBuf, 0, 256);
-    uint16_t count = 0;
+    std::vector<uint8_t> payload;
+    payload.reserve(32);
 
-    createDp(s_SendDpBuf, count, TYDPID_POWER, TUYATYPE_BOOL, &mCachePower, 1);
+    const bool power = mPower;
+    if (!appendDp(payload, TYDPID_POWER, TUYATYPE_BOOL, &power, 1)) {
+        return false;
+    }
 
+    if (!send2MCU(payload.data(), payload.size(), TYCOMM_SEND)) return false;
+    mCachePower = power;
     mLastSendDiffDPTime = cdroid::SystemClock::uptimeMillis();
-    send2MCU(s_SendDpBuf, count, TYCOMM_SEND);
+    return true;
 }
 
-void TuyaMgr::sendDiffDp() {
-    static uint8_t s_SendDiffDpBuf[256];
-    memset(s_SendDiffDpBuf, 0, 256);
-    uint16_t count = 0;
+bool TuyaMgr::sendDiffDp() {
+    std::vector<uint8_t> payload;
+    payload.reserve(32);
 
     if (mPower != mCachePower) {
-        mCachePower = mPower;
-        createDp(s_SendDiffDpBuf, count, TYDPID_POWER, TUYATYPE_BOOL, &mCachePower, 1);
+        const bool power = mPower;
+        if (!appendDp(payload, TYDPID_POWER, TUYATYPE_BOOL, &power, 1)) {
+            return false;
+        }
+        if (!send2MCU(payload.data(), payload.size(), TYCOMM_SEND)) return false;
+        mCachePower = power;
+        LOG(VERBOSE) << "DP差异上报";
+        return true;
     }
 
-    if (count == 0)return;
-    LOG(VERBOSE) << "DP差异上报";
-    send2MCU(s_SendDiffDpBuf, count, TYCOMM_SEND);
+    return true;
 }
 
 uint8_t TuyaMgr::getOTAProgress() {
-    if (mOTALen == 0)return 0;
-    if (mOTACurLen >= mOTALen)return 100;
-    return (mOTACurLen * 100) / mOTALen;
+    // 可信镜像校验链路完成前，远程OTA保持禁用。
+    return 0;
 }
 
 uint64_t TuyaMgr::getOTAAcceptTime() {
     return mOTAAcceptTime;
 }
 
-void TuyaMgr::createDp(uint8_t* buf, uint16_t& count, uint8_t dp, uint8_t type, void* data, uint16_t dlen, bool reverse) {
-    uint8_t* ui8Data = static_cast<uint8_t*>(data);
-    buf[count + 0] = dp;                     // DP ID
-    buf[count + 1] = type;                   // 类型
-    buf[count + 2] = (dlen >> 8) & 0xFF;     // 数据长度高位
-    buf[count + 3] = dlen & 0xFF;            // 数据长度低位
-
-    if (reverse) { // 逆序复制 ui8Data 到 buf + count + 4
-        for (int i = 0; i < dlen; ++i) buf[count + 4 + i] = ui8Data[dlen - 1 - i];
-    } else { // 正序复制 ui8Data 到 buf + count + 4
-        memcpy(buf + count + 4, ui8Data, dlen);
+bool TuyaMgr::appendDp(std::vector<uint8_t>& payload, uint8_t dp, uint8_t type,
+    const void* data, size_t dlen, bool reverse) {
+    if (data == nullptr || dlen == 0 || dlen > std::numeric_limits<uint16_t>::max()) {
+        LOGE("Invalid Tuya DP value. id=%u len=%zu data=%p",
+            dp, dlen, data);
+        return false;
     }
-    count += (4 + dlen); // 累加计数
+    const size_t maxPayload = std::numeric_limits<uint16_t>::max();
+    if (dlen > maxPayload - 4 || payload.size() > maxPayload - 4 - dlen) {
+        LOGE("Tuya DP payload exceeds protocol limit. current=%zu add=%zu",
+            payload.size(), dlen + 4);
+        return false;
+    }
+
+    const uint16_t valueLength = static_cast<uint16_t>(dlen);
+    payload.push_back(dp);
+    payload.push_back(type);
+    payload.push_back(static_cast<uint8_t>((valueLength >> 8) & 0xFF));
+    payload.push_back(static_cast<uint8_t>(valueLength & 0xFF));
+
+    const uint8_t* bytes = static_cast<const uint8_t*>(data);
+    if (reverse) {
+        for (size_t i = 0; i < dlen; ++i) payload.push_back(bytes[dlen - 1 - i]);
+    } else {
+        payload.insert(payload.end(), bytes, bytes + dlen);
+    }
+    return true;
 }
 
-void TuyaMgr::acceptDP(const uint8_t* data, uint16_t len) {
-    LOGE("len = %d", len);
-    LOG(WARN) << "accept dp[" << StringUtils::fill(data[0], 3) << "]. bytes=" << StringUtils::hexStr(data, len);
-    uint16_t dealCount = 0;
+bool TuyaMgr::acceptDP(const uint8_t* data, uint16_t len) {
+    if (data == nullptr || len < 5) {
+        LOGE("Reject short Tuya DP payload. len=%u", len);
+        return false;
+    }
 
-    do {
-        // 关机状态下，仅处理开机指令
-        if (!mPower && data[dealCount] != TYDPID_POWER) {
-            break;
+    std::vector<DpField> fields;
+    size_t cursor = 0;
+    while (cursor < len) {
+        if (static_cast<size_t>(len) - cursor < 4) {
+            LOGE("Reject truncated Tuya DP header. cursor=%zu len=%u", cursor, len);
+            return false;
         }
 
-        switch (data[dealCount]) {
-        case TYDPID_POWER: {
-            if (data[TUYADP_DATA]) {
-                g_window->hideBlack();
+        DpField field;
+        field.id = data[cursor];
+        field.type = data[cursor + 1];
+        field.length = (static_cast<uint16_t>(data[cursor + 2]) << 8)
+            | static_cast<uint16_t>(data[cursor + 3]);
+        cursor += 4;
+        if (field.length == 0 || field.length > static_cast<size_t>(len) - cursor) {
+            LOGE("Reject invalid Tuya DP length. id=%u value_len=%u remaining=%zu",
+                field.id, field.length, static_cast<size_t>(len) - cursor);
+            return false;
+        }
+        field.value = data + cursor;
+        cursor += field.length;
+
+        if (field.id == TYDPID_POWER
+            && (field.type != TUYATYPE_BOOL || field.length != 1 || field.value[0] > 1)) {
+            LOGE("Reject invalid power DP. type=%u len=%u value=%u",
+                field.type, field.length, field.value[0]);
+            return false;
+        }
+        fields.push_back(field);
+    }
+
+    LOG(WARN) << "accept dp[" << StringUtils::fill(fields.front().id, 3)
+        << "]. bytes=" << StringUtils::hexStr(data, len);
+    MainWindow* window = g_windMgr->getWindow();
+    for (const DpField& field : fields) {
+        if (field.id == TYDPID_POWER && window == nullptr) {
+            LOGE("Reject power DP before window initialization");
+            return false;
+        }
+    }
+    for (const DpField& field : fields) {
+        // 关机状态下，仅处理开机指令。
+        if (!mPower && field.id != TYDPID_POWER) continue;
+
+        switch (field.id) {
+        case TYDPID_POWER:
+            if (field.value[0]) {
+                window->hideBlack();
             } else {
                 g_windMgr->goToHome(false);
-                g_window->showBlack();
+                window->showBlack();
             }
-            mPower = data[TUYADP_DATA];
-        }   break;
+            mPower = field.value[0] != 0;
+            break;
         default:
             break;
         }
-        dealCount += (4 + ((uint16_t)data[dealCount + TUYADP_LEN_H] << 8 | data[dealCount + TUYA_DATA_LEN_L]));
-    } while (false && len - dealCount > 0);
+    }
 
     LOGI("final Deal Tuya Dp");
+    return true;
 }
 
-void TuyaMgr::acceptTime(const uint8_t* data) {
-    if (!data[0])return; // 消息错误
+bool TuyaMgr::acceptTime(const uint8_t* data, uint16_t len) {
+    if (data == nullptr || len != 7) {
+        LOGE("Reject invalid Tuya time payload. len=%u", len);
+        return false;
+    }
+    if (!data[0]) return true; // 模组返回失败状态，不读取后续业务字段
     SystemUtils::setTime(data[1] + 2000, data[2], data[3], data[4], data[5], data[6]);
+    return true;
 }
 
-void TuyaMgr::acceptOpenWeather(const uint8_t* data) {
+bool TuyaMgr::acceptOpenWeather(const uint8_t* data, uint16_t len) {
+    if (data == nullptr || len < 1 || len > 2 || (!data[0] && len != 2)) {
+        LOGE("Reject invalid Tuya weather-open payload. len=%u", len);
+        return false;
+    }
     if (data[0])LOGI("Weather Serve Open Success");
     else LOGE("Weather Serve Open Failed!!!  -> code: %d", data[1]);
+    return true;
 }
 
-void TuyaMgr::acceptWeather(const uint8_t* data, uint16_t len) {
+bool TuyaMgr::acceptWeather(const uint8_t* data, uint16_t len) {
+    if (data == nullptr || len < 1) {
+        LOGE("Reject empty Tuya weather payload");
+        return false;
+    }
     LOG(VERBOSE) << "accept weather. bytes=" << StringUtils::hexStr(data, len);
-    if (len > 1) {
-        uint16_t dealCount = 1;
-        while (len - dealCount > 0) {
-            uint8_t valuelen = data[dealCount];
-            std::string name;
-            for (uint8_t i = 0;i < valuelen;i++)name += data[dealCount + 1 + i];
-            dealCount += (1 + valuelen);
 
-            std::string valueStr = "";
-            uint32_t    valueInt = 0;
+    std::vector<WeatherField> fields;
+    size_t cursor = 1; // 首字节为天气服务状态/版本字段
+    while (cursor < len) {
+        const uint8_t nameLength = data[cursor++];
+        if (nameLength == 0 || nameLength > static_cast<size_t>(len) - cursor) {
+            LOGE("Reject invalid Tuya weather name. name_len=%u remaining=%zu",
+                nameLength, static_cast<size_t>(len) - cursor);
+            return false;
+        }
 
-            if (data[dealCount]) { // 字符串
-                valuelen = data[dealCount + 1];
-                for (uint8_t i = 0;i < valuelen;i++)valueStr += data[dealCount + 2 + i];
-            } else { // 整型
-                valuelen = data[dealCount + 1];
-                for (uint8_t i = 0;i < valuelen;i++)
-                    valueInt = (valueInt << 8) | data[dealCount + 2 + i];
+        WeatherField field;
+        field.name.assign(reinterpret_cast<const char*>(data + cursor), nameLength);
+        field.isString = false;
+        field.integerValue = 0;
+        cursor += nameLength;
+
+        if (static_cast<size_t>(len) - cursor < 2) {
+            LOGE("Reject truncated Tuya weather value header. name=%s", field.name.c_str());
+            return false;
+        }
+        const uint8_t valueType = data[cursor++];
+        const uint8_t valueLength = data[cursor++];
+        if (valueLength == 0 || valueLength > static_cast<size_t>(len) - cursor) {
+            LOGE("Reject invalid Tuya weather value length. name=%s len=%u remaining=%zu",
+                field.name.c_str(), valueLength, static_cast<size_t>(len) - cursor);
+            return false;
+        }
+
+        if (valueType == 0) {
+            if (valueLength > sizeof(uint32_t)) {
+                LOGE("Reject oversized Tuya weather integer. name=%s len=%u",
+                    field.name.c_str(), valueLength);
+                return false;
             }
-            LOGI("name: %s  value: %s  int: %d", name.c_str(), valueStr.c_str(), valueInt);
-            dealCount += (2 + valuelen);
-
-            if (name == "w.temp" || name == "w.temp.0") {
-                mTem = valueInt;
-            } else if (name == "w.conditionNum" || name == "w.conditionNum.0") {
-                mWeather = valueStr;
-            } else if (name == "w.thigh" || name == "w.thigh.0") {
-                mTemMax = valueInt;
-            } else if (name == "w.tlow" || name == "w.tlow.0") {
-                mTemMin = valueInt;
+            uint32_t rawValue = 0;
+            for (uint8_t i = 0; i < valueLength; ++i) {
+                rawValue = (rawValue << 8) | data[cursor + i];
             }
+            int64_t signedValue = rawValue;
+            if ((data[cursor] & 0x80) != 0) {
+                signedValue -= static_cast<int64_t>(uint64_t{ 1 } << (valueLength * 8));
+            }
+            field.integerValue = static_cast<int32_t>(signedValue);
+        } else if (valueType == 1) {
+            field.isString = true;
+            field.stringValue.assign(
+                reinterpret_cast<const char*>(data + cursor), valueLength);
+        } else {
+            LOGE("Reject unknown Tuya weather value type. name=%s type=%u",
+                field.name.c_str(), valueType);
+            return false;
+        }
+        cursor += valueLength;
+        fields.push_back(field);
+    }
+
+    for (const WeatherField& field : fields) {
+        const bool isTemperature = field.name == "w.temp" || field.name == "w.temp.0"
+            || field.name == "w.thigh" || field.name == "w.thigh.0"
+            || field.name == "w.tlow" || field.name == "w.tlow.0";
+        if (isTemperature && (field.isString
+            || field.integerValue < std::numeric_limits<int8_t>::min()
+            || field.integerValue > std::numeric_limits<int8_t>::max())) {
+            LOGE("Reject invalid Tuya weather temperature. name=%s value=%d",
+                field.name.c_str(), field.integerValue);
+            return false;
+        }
+        const bool isCondition = field.name == "w.conditionNum"
+            || field.name == "w.conditionNum.0";
+        if (isCondition && !field.isString) {
+            LOGE("Reject non-string Tuya weather condition");
+            return false;
         }
     }
-    send2MCU(TYCOMM_WEATHER);
+
+    // 全部TLV通过结构和语义校验后再一次性发布，避免畸形尾项造成部分更新。
+    for (const WeatherField& field : fields) {
+        LOGI("name: %s value: %s int: %d", field.name.c_str(),
+            field.stringValue.c_str(), field.integerValue);
+        if (field.name == "w.temp" || field.name == "w.temp.0") {
+            mTem = static_cast<int8_t>(field.integerValue);
+        } else if (field.name == "w.conditionNum" || field.name == "w.conditionNum.0") {
+            mWeather = field.stringValue;
+        } else if (field.name == "w.thigh" || field.name == "w.thigh.0") {
+            mTemMax = static_cast<int8_t>(field.integerValue);
+        } else if (field.name == "w.tlow" || field.name == "w.tlow.0") {
+            mTemMin = static_cast<int8_t>(field.integerValue);
+        }
+    }
+    return send2MCU(TYCOMM_WEATHER);
 }
 
-void TuyaMgr::acceptOpenTime(const uint8_t* data) {
+bool TuyaMgr::acceptOpenTime(const uint8_t* data, uint16_t len) {
+    if (data == nullptr || len < 2) {
+        LOGE("Reject short Tuya time-service payload. len=%u", len);
+        return false;
+    }
     switch (data[0]) {
     case 0x01:
-        if (data[1])getTuyaTime();
-        break;
-    case 0x02:
-        if (!data[1])break;
-        SystemUtils::setTime(data[2] + 2000, data[3], data[4], data[5], data[6], data[7]);
-        break;
-    }
-}
-
-void TuyaMgr::dealOTAComm(const uint8_t* data, uint16_t len) {
-    if (mOTALen != 0) {
-        mOTALen = 0;
-        system(RM_OTA_PATH);
-    }
-
-    mOTALen = (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3];
-    mOTAAcceptTime = cdroid::SystemClock::uptimeMillis(); // 记录接收数据的时间
-    uint8_t send[1] = { OTA_PACKAGE_LEVEL };
-    send2MCU(send, 1, TYCOMM_OTA_START);
-
-    LOGI("[OTA START] allLen=%d oneByte=%d", mOTALen, send[0]);
-    g_windMgr->showPage(PAGE_OTA);
-}
-
-void TuyaMgr::dealOTAData(const uint8_t* data, uint16_t len) {
-    uint32_t dataLen = len - 4;
-    uint32_t dataOffSet = (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3];
-    if (!dataLen || dataOffSet >= mOTALen) { // 数据传输完成
-        system("/customer/upgrade.sh");
-        system("reboot");
-    } else {
-        FILE* fp = fopen(OTA_SAVE_PATH, "ab");
-        if (fp) {
-            size_t ret = fwrite(data + 4, 1, dataLen, fp);
-            if (ret != dataLen) LOGE("write file error");
-            fclose(fp);
-        } else {
-            LOGE("Failed to open file for writing: %s", OTA_SAVE_PATH);
-            // system("reboot");
+        if (len != 2) {
+            LOGE("Reject Tuya time-service status length. len=%u", len);
+            return false;
         }
-        LOGW("[OTA PROGRESS] %d/%d", dataOffSet + dataLen, mOTALen);
+        return !data[1] || getTuyaTime();
+    case 0x02:
+        if (len != 8) {
+            LOGE("Reject Tuya time-service push length. len=%u", len);
+            return false;
+        }
+        if (!data[1]) return true;
+        SystemUtils::setTime(data[2] + 2000, data[3], data[4], data[5], data[6], data[7]);
+        return true;
+    default:
+        LOGE("Reject unknown Tuya time-service subtype. type=%u", data[0]);
+        return false;
     }
-    mOTAAcceptTime = cdroid::SystemClock::uptimeMillis(); // 记录接收数据的时间
-    mOTACurLen = dataOffSet + dataLen;
-    send2MCU(TYCOMM_OTA_DATA);
+}
+
+void TuyaMgr::rejectOTA(uint8_t command, uint16_t len) {
+    mOTAAcceptTime = cdroid::SystemClock::uptimeMillis();
+    LOGE("Reject remote Tuya OTA command. cmd=0x%02x len=%u reason="
+        "trusted digest/signature verification and OTA UI are not configured",
+        command, len);
 }
