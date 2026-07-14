@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2026-07-14 17:05:36
+ * @LastEditTime: 2026-07-14 17:45:54
  * @FilePath: /kk_frame/src/app/data/global_data.h
  * @Description: 全局应用数据
  * @BugList:
@@ -14,7 +14,7 @@
 #ifndef __GLOBAL_DATA_H__
 #define __GLOBAL_DATA_H__
 
-#include "struct.h"
+#include "base_data.h"
 #include "template/singleton.h"
 #include "class/auto_save.h"
 
@@ -32,7 +32,7 @@ typedef enum {
 #define g_data GlobalData::instance()
 
 class GlobalData : public Singleton<GlobalData>,
-    public AutoSaveItem {
+    public BaseData, public AutoSaveItem {
     friend class Singleton<GlobalData>;
 public:  // 特殊信息
     const uint64_t   mAppStart;                         // 应用启动时间
