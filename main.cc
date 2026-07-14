@@ -42,7 +42,6 @@ static const char avs[] = "AVS: " APP_VER_INFO;
 
 #include "mcu_mgr.h"         // 电控通讯
 #include "btn_mgr.h"         // 按键板通讯
-#include "tuya_mgr.h"        // 涂鸦模组通讯
 
 #include "work_mgr.h"        // 工作管理器
 
@@ -88,7 +87,6 @@ int main(int argc, const char* argv[]) {
     /* 通讯 */
     g_mcuMgr->init();
     // g_btnMgr->init();
-    // g_tuyaMgr->init();
 
     /* 工作 */
     g_work->init();
