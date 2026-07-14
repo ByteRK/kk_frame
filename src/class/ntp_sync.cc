@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-06-03 15:23:56
- * @LastEditTime: 2026-06-17 01:00:05
+ * @LastEditTime: 2026-07-14 23:05:47
  * @FilePath: /kk_frame/src/class/ntp_sync.cc
  * @Description: NTP时间同步类
  *
@@ -24,6 +24,8 @@
 #include "system_utils.h"
 #include "library_config.h"
 
+#include <cdlog.h>
+#include <core/systemclock.h>
 #include <errno.h>
 
 #if PRJ_LIB_ENABLED(NTPCLIENT)
@@ -60,7 +62,7 @@ NtpSync* NtpSync::utc(int offsetHour /* = 8 */) {
 /// @note 必须先调用 start() 启动定时同步，才能调用本函数进行立即同步
 void NtpSync::sync() {
     if (mIsStarted) {
-        if (mLastSyncMs > 0 && SystemClock::uptimeMillis() - mLastSyncMs <= mSyncInterval) {
+        if (mLastSyncMs > 0 && cdroid::SystemClock::uptimeMillis() - mLastSyncMs <= mSyncInterval) {
             LOGW("NtpSync is syncing too frequently, please wait for the next scheduled sync");
         } else {
             g_tick->runTickNow(this);
@@ -160,7 +162,7 @@ void NtpSync::onMain(int id, void* data) {
     if (s_NTPResult != 0) {
         int64_t seconds = s_NTPResult / 1000 + mUTC * TimeUtils::HOUR_SECONDS;
         SystemUtils::setTime(seconds);
-        mLastSyncMs = SystemClock::uptimeMillis();
+        mLastSyncMs = cdroid::SystemClock::uptimeMillis();
     }
 }
 

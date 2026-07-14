@@ -103,5 +103,6 @@ int main(int argc, const char* argv[]) {
 #if ENABLED(WIFI)
     g_wifi->stop();
 #endif
+    g_threadMgr->shutdown();
     return exitCode;
 }
