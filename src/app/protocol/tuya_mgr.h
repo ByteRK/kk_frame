@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-06-20 15:14:05
- * @LastEditTime: 2026-07-06 11:54:58
+ * @LastEditTime: 2026-07-14 17:03:09
  * @FilePath: /kk_frame/src/app/protocol/tuya_mgr.h
  * @Description: 涂鸦模组通讯
  * @BugList:
@@ -44,15 +44,27 @@ public:
         WIFI_ERROR,
     };
 
+public:  // 涂鸦网络数据点
+    bool              mNetOK = false;             // 网络是否正常(连接成功)
+    uint8_t           mNetWork = 0;               // 网络状态(信号)
+    uint8_t           mNetWorkDetail = 0;         // 网络详细状态
+
+public:  // 涂鸦数据点
+    bool              mPower = true;              // 电源状态
+    int8_t            mTem = 0;                   // 涂鸦温度
+    int8_t            mTemMin = 0;                // 涂鸦温度最小值
+    int8_t            mTemMax = 0;                // 涂鸦温度最大值
+    std::string       mWeather = "146";           // 涂鸦天气代码
+    uint16_t          mWifiTestRes = 0xFFFF;      // wifi测试结果
+    
 private: // 涂鸦数据点缓存
-    bool              mPower = true;         // 开关
+    bool              mCachePower = true;         // 开关
 
 private:
-
     TuyaCommChannel*  mChannel{ nullptr };        // 涂鸦通讯通道
     PacketBufferPool* mPacket{ nullptr };         // 数据包缓存池
 
-
+private:
     bool              mInitialized{ false };      // 初始化完成标志
     int64_t           mLastSendTime{ 0 };         // 最后一次发送数据时间
     int64_t           mLastAcceptTime{ 0 };       // 最后一次接受数据时间
@@ -63,9 +75,9 @@ private:
     bool              mIsRunConnectWork{ false }; // 是否已完成联网
     int64_t           mNetWorkConnectTime{ 0 };   // 联网成功时间
 
-    uint32_t          mOTALen = 0;           // OTA数据长度
-    uint32_t          mOTACurLen = 0;        // OTA当前接收长度
-    uint64_t          mOTAAcceptTime = 0;    // OTA接收数据时间
+    uint32_t          mOTALen = 0;                // OTA数据长度
+    uint32_t          mOTACurLen = 0;             // OTA当前接收长度
+    uint64_t          mOTAAcceptTime = 0;         // OTA接收数据时间
 
 protected:
     TuyaMgr();

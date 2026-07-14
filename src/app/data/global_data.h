@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2026-05-29 16:53:15
+ * @LastEditTime: 2026-07-14 17:05:36
  * @FilePath: /kk_frame/src/app/data/global_data.h
  * @Description: 全局应用数据
  * @BugList:
@@ -34,27 +34,14 @@ typedef enum {
 class GlobalData : public Singleton<GlobalData>,
     public AutoSaveItem {
     friend class Singleton<GlobalData>;
-public: // 特殊信息
+public:  // 特殊信息
     const uint64_t   mAppStart;                         // 应用启动时间
     DeviceMode       mDeviceMode = DEVICE_MODE_SAMPLE;  // 设备模式
     int              mTestPage = 0;                     // 测试页面
     bool             mHaveChange = false;               // 是否需要保存
     bool             mIsFirstInit = true;               // 是否是首次初始化
 
-public: // 网络状态
-    bool             mNetOK = false;                    // 网络是否正常(连接成功)
-    uint8_t          mNetWork = 0;                      // 网络状态(信号)
-    uint8_t          mNetWorkDetail = 0;                // 网络详细状态
-
-public: // 涂鸦部分
-    bool             mTUYAPower = true;                 // 电源状态
-    int8_t           mTUYATem = 0;                      // 涂鸦温度
-    int8_t           mTUYATemMin = 0;                   // 涂鸦温度最小值
-    int8_t           mTUYATemMax = 0;                   // 涂鸦温度最大值
-    std::string      mTUYAWeather = "146";              // 涂鸦天气代码
-    uint16_t         mTUYAWifiTestRes = 0xFFFF;         // wifi测试结果
-
-public: // 设备信息
+public:  // 设备信息
     bool             mPower = false;                    // 开关机
     bool             mLock = false;                     // 童锁
 

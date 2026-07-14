@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-08-01 03:03:02
- * @LastEditTime: 2026-07-06 11:03:52
+ * @LastEditTime: 2026-07-14 17:04:01
  * @FilePath: /kk_frame/src/app/protocol/tuya_mgr.cc
  * @Description: 涂鸦模组通讯
  * @BugList:
@@ -27,7 +27,6 @@
 
 #include "mcu_mgr.h"
 #include "wind_mgr.h"
-#include "global_data.h"
 #include "string_utils.h"
 #include "system_utils.h"
 
@@ -111,7 +110,7 @@ void TuyaMgr::onTick(int64_t nowMs) {
             getTuyaTime();
         }
     } else {
-        if (g_data->mNetWorkDetail == 0x04 &&
+        if (mNetWorkDetail == 0x04 &&
             nowMs - mNetWorkConnectTime >= 1000) {
             openWeatherServe();
             // send2MCU(TYCOMM_GET_TIME);
@@ -193,7 +192,7 @@ void TuyaMgr::onCommDeal(const IAck* ack) {
             LOGE("Invalid Tuya WiFi test packet");
             break;
         }
-        g_data->mTUYAWifiTestRes = result;
+        mWifiTestRes = result;
     }   break;
 
     case TYCOMM_GET_TIME:
@@ -240,15 +239,15 @@ void TuyaMgr::sendHeartBeat() {
 
 void TuyaMgr::sendWifiTest() {
     LOG(VERBOSE) << "WIFI测试";
-    g_data->mTUYAWifiTestRes = 0xFFFF; // 复位
+    mWifiTestRes = 0xFFFF; // 复位
     send2MCU(TYCOMM_WIFITEST);
 }
 
 void TuyaMgr::resetWifi(bool clear) {
     LOG(VERBOSE) << "重置wifi" << clear ? "[清空]" : "[非清空]";
     mClearWifi = clear;
-    g_data->mNetWorkDetail = 0;
-    g_data->mNetWork = WIFI_NULL;
+    mNetWorkDetail = 0;
+    mNetWork = WIFI_NULL;
     uint8_t data[2] = { 0x00,0x00 };
     send2MCU(data, 2, TYCOMM_RESET);
 }
@@ -276,22 +275,22 @@ void TuyaMgr::sendSetWorkMode() {
 
 void TuyaMgr::sendWIFIStatus(uint8_t status) {
     LOG(VERBOSE) << "获取wifi工作状态";
-    g_data->mNetWorkDetail = status;
+    mNetWorkDetail = status;
     switch (status) {
     case 0x04:
-        if (g_data->mNetWork != 0x04) {
+        if (mNetWork != 0x04) {
             mIsRunConnectWork = false;
             mNetWorkConnectTime = cdroid::SystemClock::uptimeMillis();
         }
-        g_data->mNetWork = WIFI_4;
+        mNetWork = WIFI_4;
         break;
     case 0x02:
-        g_data->mNetWork = WIFI_ERROR;
+        mNetWork = WIFI_ERROR;
         break;
     case 0x00:
     case 0x01:
     default:
-        g_data->mNetWork = WIFI_NULL;
+        mNetWork = WIFI_NULL;
         break;
     }
     send2MCU(TYCOMM_WIFI_STATUS);
@@ -344,7 +343,7 @@ void TuyaMgr::sendDp() {
     memset(s_SendDpBuf, 0, 256);
     uint16_t count = 0;
 
-    createDp(s_SendDpBuf, count, TYDPID_POWER, TUYATYPE_BOOL, &mPower, 1);
+    createDp(s_SendDpBuf, count, TYDPID_POWER, TUYATYPE_BOOL, &mCachePower, 1);
 
     mLastSendDiffDPTime = cdroid::SystemClock::uptimeMillis();
     send2MCU(s_SendDpBuf, count, TYCOMM_SEND);
@@ -355,9 +354,9 @@ void TuyaMgr::sendDiffDp() {
     memset(s_SendDiffDpBuf, 0, 256);
     uint16_t count = 0;
 
-    if (g_data->mTUYAPower != mPower) {
-        mPower = g_data->mTUYAPower;
-        createDp(s_SendDiffDpBuf, count, TYDPID_POWER, TUYATYPE_BOOL, &mPower, 1);
+    if (mPower != mCachePower) {
+        mCachePower = mPower;
+        createDp(s_SendDiffDpBuf, count, TYDPID_POWER, TUYATYPE_BOOL, &mCachePower, 1);
     }
 
     if (count == 0)return;
@@ -397,7 +396,7 @@ void TuyaMgr::acceptDP(const uint8_t* data, uint16_t len) {
 
     do {
         // 关机状态下，仅处理开机指令
-        if (!g_data->mTUYAPower && data[dealCount] != TYDPID_POWER) {
+        if (!mPower && data[dealCount] != TYDPID_POWER) {
             break;
         }
 
@@ -409,7 +408,7 @@ void TuyaMgr::acceptDP(const uint8_t* data, uint16_t len) {
                 g_windMgr->goToHome(false);
                 g_window->showBlack();
             }
-            g_data->mTUYAPower = data[TUYADP_DATA];
+            mPower = data[TUYADP_DATA];
         }   break;
         default:
             break;
@@ -455,13 +454,13 @@ void TuyaMgr::acceptWeather(const uint8_t* data, uint16_t len) {
             dealCount += (2 + valuelen);
 
             if (name == "w.temp" || name == "w.temp.0") {
-                g_data->mTUYATem = valueInt;
+                mTem = valueInt;
             } else if (name == "w.conditionNum" || name == "w.conditionNum.0") {
-                g_data->mTUYAWeather = valueStr;
+                mWeather = valueStr;
             } else if (name == "w.thigh" || name == "w.thigh.0") {
-                g_data->mTUYATemMax = valueInt;
+                mTemMax = valueInt;
             } else if (name == "w.tlow" || name == "w.tlow.0") {
-                g_data->mTUYATemMin = valueInt;
+                mTemMin = valueInt;
             }
         }
     }
