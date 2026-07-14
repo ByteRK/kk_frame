@@ -16,11 +16,15 @@
 
 // ==================== SingleChoiceG 实现 ====================
 
-SingleChoiceG::SingleChoiceG() {
-    mLastID = 0;
+SingleChoiceG::SingleChoiceG()
+    : mLastID(0),
+      mLifetime(std::make_shared<int>(0)) {
 }
 
 SingleChoiceG::~SingleChoiceG() {
+    // View 可能已经销毁，因此不能在此解引用 mButtons 中的非拥有指针。
+    // 先让仍存活 View 中的点击回调失效，避免其随后访问已析构的 ButtonGroup。
+    mLifetime.reset();
 }
 
 /// @brief 添加按键进行托管
@@ -36,7 +40,13 @@ bool SingleChoiceG::addView(View* view) {
         LOG(ERROR) << "button id exists. id=" << view->getId();
         return false;
     }
-    view->setOnClickListener([this](View& v) { onButtonClick(v); });
+    std::weak_ptr<int> lifetime = mLifetime;
+    view->setOnClickListener([this, lifetime](View& v) {
+        // ButtonGroup 和 View 都是 UI 线程对象；guard 用于判定 Group 是否仍存活。
+        auto guard = lifetime.lock();
+        if (!guard) return;
+        onButtonClick(v);
+    });
     mButtons.insert(std::make_pair(view->getId(), view));
     return true;
 }
@@ -126,10 +136,14 @@ void SingleChoiceG::onButtonClick(View& v) {
 
 // ==================== MultiChoiceG 实现 ====================
 
-MultiChoiceG::MultiChoiceG() {
+MultiChoiceG::MultiChoiceG()
+    : mLifetime(std::make_shared<int>(0)) {
 }
 
 MultiChoiceG::~MultiChoiceG() {
+    // View 可能已经销毁，因此不能在此解引用 mButtons 中的非拥有指针。
+    // 先让仍存活 View 中的点击回调失效，避免其随后访问已析构的 ButtonGroup。
+    mLifetime.reset();
 }
 
 /// @brief 添加按键进行托管
@@ -145,7 +159,13 @@ bool MultiChoiceG::addView(View* view) {
         LOG(ERROR) << "button id exists. id=" << view->getId();
         return false;
     }
-    view->setOnClickListener([this](View& v) { onButtonClick(v); });
+    std::weak_ptr<int> lifetime = mLifetime;
+    view->setOnClickListener([this, lifetime](View& v) {
+        // ButtonGroup 和 View 都是 UI 线程对象；guard 用于判定 Group 是否仍存活。
+        auto guard = lifetime.lock();
+        if (!guard) return;
+        onButtonClick(v);
+    });
     mButtons.insert(std::make_pair(view->getId(), view));
     return true;
 }

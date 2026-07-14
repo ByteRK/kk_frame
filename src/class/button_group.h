@@ -16,10 +16,12 @@
 #define __BUTTON_GROUP_H__
 
 #include <map>
+#include <memory>
 #include <set>
 #include <view/view.h>
 
 /// @brief 单选按键组
+/// @note 不持有 View 所有权；ButtonGroup 与关联 View 只能在 UI 线程使用和销毁。
 class SingleChoiceG {
 public:
     typedef std::map<int, View*>             ButtonViews;
@@ -31,6 +33,11 @@ public:
 public:
     SingleChoiceG();
     ~SingleChoiceG();
+    SingleChoiceG(const SingleChoiceG&) = delete;
+    SingleChoiceG& operator=(const SingleChoiceG&) = delete;
+    SingleChoiceG(SingleChoiceG&&) = delete;
+    SingleChoiceG& operator=(SingleChoiceG&&) = delete;
+
     bool addView(View* view);
     void setStrMap(const ButtonSTRValues& values);
     void setIntMap(const ButtonINTValues& values);
@@ -53,9 +60,11 @@ protected:
     ButtonSTRValues         mSTRValues;
     ButtonINTValues         mINTValues;
     OnItemCLickListener     mOnClickListener;
+    std::shared_ptr<int>    mLifetime;
 };
 
 /// @brief 多选按键组
+/// @note 不持有 View 所有权；ButtonGroup 与关联 View 只能在 UI 线程使用和销毁。
 class MultiChoiceG {
 public:
     typedef std::map<int, View*>             ButtonViews;
@@ -68,6 +77,10 @@ public:
 public:
     MultiChoiceG();
     ~MultiChoiceG();
+    MultiChoiceG(const MultiChoiceG&) = delete;
+    MultiChoiceG& operator=(const MultiChoiceG&) = delete;
+    MultiChoiceG(MultiChoiceG&&) = delete;
+    MultiChoiceG& operator=(MultiChoiceG&&) = delete;
 
     bool addView(View* view);
     void setStrMap(const ButtonSTRValues& values);
@@ -96,6 +109,7 @@ protected:
     ButtonSTRValues         mSTRValues;
     ButtonINTValues         mINTValues;
     OnItemCLickListener     mOnClickListener;
+    std::shared_ptr<int>    mLifetime;
 };
 
 #endif // !__BUTTON_GROUP_H__
