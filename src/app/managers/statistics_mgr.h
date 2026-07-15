@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-16 09:20:32
- * @LastEditTime: 2026-06-17 00:45:19
+ * @LastEditTime: 2026-07-15 09:17:43
  * @FilePath: /kk_frame/src/app/managers/statistics_mgr.h
  * @Description: 数据统计管理
  * 
@@ -24,6 +24,7 @@
 #include "template/singleton.h"
 #include "class/auto_save.h"
 #include <array>
+#include <vector>
 
 #define g_statistics StatisticsMgr::instance()
 

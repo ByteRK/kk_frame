@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2026-01-19 17:00:39
+ * @LastEditTime: 2026-07-15 09:17:07
  * @FilePath: /kk_frame/src/app/data/struct.h
  * @Description: 数据结构定义
  * @BugList:
@@ -16,8 +16,6 @@
 
 #include <stdint.h>
 #include <string>
-#include <vector>
-#include <list>
 
 /// @brief 历史数据结构体
 typedef struct HistoryStruct_t {

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-01-19 15:50:12
- * @LastEditTime: 2026-01-19 17:11:30
+ * @LastEditTime: 2026-07-15 09:17:53
  * @FilePath: /kk_frame/src/app/managers/history_mgr.h
  * @Description: 历史记录管理
  * @BugList:
@@ -19,6 +19,7 @@
 #include "template/singleton.h"
 #include "class/auto_save.h"
 #include <list>
+#include <vector>
 
 #define g_history HistoryMgr::instance()
 
