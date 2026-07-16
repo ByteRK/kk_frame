@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2026-06-30 15:22:53
+ * @LastEditTime: 2026-07-16 18:16:09
  * @FilePath: /kk_frame/src/app/page/core/base.h
  * @Description: 页面基类
  * @BugList:
@@ -105,6 +105,16 @@ public:
     /// @brief 设置点击事件
     static inline void click(View* vg, int id, View::OnClickListener l) {
         click(get(vg, id), l);
+    }
+
+    /// @brief 显示控件
+    static inline void showView(View* v) {
+        if (v && v->getVisibility() != View::VISIBLE) v->setVisibility(View::VISIBLE);
+    }
+
+    /// @brief 隐藏控件
+    static inline void hideView(View* v, int visable = View::GONE) {
+        if (v && v->getVisibility() != visable) v->setVisibility(visable);
     }
 
 protected:
