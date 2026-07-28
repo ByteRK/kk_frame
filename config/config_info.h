@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-01-18 11:33:02
- * @LastEditTime: 2026-06-29 15:33:59
+ * @LastEditTime: 2026-07-28 15:56:28
  * @FilePath: /kk_frame/config/config_info.h
  * @Description: 项目信息
  * @BugList:
@@ -17,14 +17,14 @@
 /*********************** 文件信息 ***********************/
 #if defined(PRODUCT_SIGMA)
 #define LOCAL_DEV_DIR  "/appconfigs/"
-#define LOCAL_DATA_DIR "/appconfigs/"
+#define LOCAL_DATA_DIR "/appconfigs/data/"
 #elif defined(PRODUCT_RK3506)
 #define LOCAL_DEV_DIR  "/userdata/"
-#define LOCAL_DATA_DIR "/userdata/app/"
+#define LOCAL_DATA_DIR "/userdata/app/data/"
 #else
 #include "app_version.h"
 #define LOCAL_DEV_DIR  "./apps/" APP_NAME_STR "/"
-#define LOCAL_DATA_DIR "./apps/" APP_NAME_STR "/"
+#define LOCAL_DATA_DIR "./apps/" APP_NAME_STR "/data/"
 #endif
 
 #define DEFINE_DEV_FILE_INFO(name, file) \

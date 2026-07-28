@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:47:17
- * @LastEditTime: 2026-07-05 23:01:32
+ * @LastEditTime: 2026-07-28 16:08:27
  * @FilePath: /kk_frame/src/utils/project_utils.cc
  * @Description: 项目相关的一些操作函数
  * @BugList:
@@ -17,11 +17,13 @@
 #include "env_utils.h"
 
 #include "fonts_info.h"
+#include "config_info.h"
 #include "series_info.h"
 #include "app_version.h"
 
 #include <gui_features.h>
 #include <sys/syscall.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <fstream>
 #include <iostream>
@@ -80,13 +82,32 @@ void ProjectUtils::pInfo(int argc, const char* argv[]) {
 void ProjectUtils::pKeyMap() {
     /**
      * 在此处输出项目映射的按键消息~
-     * */
+    **/
 
     // fprintf(stderr, "\033[1;30m################################### KeyBoardMap ################################### \033[0;37m\n");
     // fprintf(stderr, "\033[1;30m# 6:电源  5:鲜蒸  4:嫩烤  3:湿烤  2:飓风 ┏━━━━━━┓ 8:魔方  9:香炸 10:炖焗 11:智能 12:辅助   \033[0;37m\n");
     // fprintf(stderr, "\033[1;30m# 7:加水  -:一一  -:一一  -:一一  -:一一 ┗━━━━━━┛ -:一一  -:一一  -:一一  -:一一  -:一一   \033[0;37m\n");
     // fprintf(stderr, "\033[1;30m################################################################################### \033[0;37m\n");
     // fprintf(stderr, "\033[0;37m\n");
+}
+
+void ProjectUtils::createDir() {
+    // 构建Data目录
+    const char* path = LOCAL_DATA_DIR;
+    struct stat st = {};
+    if (stat(path, &st) == 0) {
+        if (S_ISDIR(st.st_mode)) {
+            LOGD("[PROJECT] Directory already exists: %s", path);
+            return;
+        }
+        LOGW("[PROJECT] Path exists but is not a directory: %s", path);
+        return;
+    }
+    if (mkdir(path, 0755) == 0) {
+        LOGI("[PROJECT] Directory created: %s", path);
+    } else {
+        LOGE("[PROJECT] Failed to create directory: %s (%s)", path, strerror(errno));
+    }
 }
 
 void ProjectUtils::getDebugServiceInfo(std::string& ip, uint16_t& port) {

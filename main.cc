@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-07-06 11:07:22
+ * @LastEditTime: 2026-07-28 15:55:48
  * @FilePath: /kk_frame/main.cc
  * @Description: 主程序入口
  * @BugList:
@@ -55,6 +55,7 @@ int main(int argc, const char* argv[]) {
     ProjectUtils::env();              // 设定环境变量（x64生效）
     ProjectUtils::pInfo(argc, argv);  // 打印项目信息
     ProjectUtils::pKeyMap();          // 打印项目按键映射
+    ProjectUtils::createDir();        // 创建项目目录
     ArgUtils::parse(argc, argv);      // 解析命令行参数
 
     /* 框架 */

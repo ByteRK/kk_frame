@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:47:17
- * @LastEditTime: 2026-07-05 23:27:16
+ * @LastEditTime: 2026-07-28 14:17:17
  * @FilePath: /kk_frame/src/utils/project_utils.h
  * @Description: 项目相关的一些操作函数
  * @BugList:
@@ -30,6 +30,9 @@ namespace ProjectUtils {
 
     /// @brief 输出按键映射
     void pKeyMap();
+
+    /// @brief 创建数据目录
+    void createDir();
 
     /// @brief 获取调试串口信息
     void getDebugServiceInfo(std::string& ip, uint16_t& port);
