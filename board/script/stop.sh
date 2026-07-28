@@ -1,9 +1,12 @@
-#!/bin/sh
+#!/bin/bash
 #set -x
+
+cd $(dirname $0)
 
 APP=$(sh ./name.sh)
 
 pid=$(pidof $APP)
+touch STOP
 if [ -z "$pid" ]; then
     echo "$APP is not running"
 else

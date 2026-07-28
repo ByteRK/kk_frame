@@ -7,7 +7,8 @@ APP=$(sh ./name.sh)
 
 pid=$(pidof $APP)
 if [ -z "$pid" ]; then
-    echo 0
+    echo "$APP is not running"
 else
-    echo 1
+    kill -9 $pid
+    echo "$APP has been stopped"
 fi
