@@ -2,8 +2,8 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-07-23 13:57:00
- * @LastEditTime: 2026-07-23 15:10:44
- * @FilePath: /ZRPro2/src/widgets/image_animation_view.h
+ * @LastEditTime: 2026-07-29 18:08:44
+ * @FilePath: /kk_frame/src/widgets/image_animation_view.h
  * @Description: 照片动画类 - 基于帧序列的 PNG 动画播放控件
  * @BugList:
  *
@@ -24,11 +24,20 @@ public:
     typedef std::function<std::string(int)> FrameNameProvider;
 
 private:
+    enum class Phase { SINGLE, START, REPEAT };
+
     int               mFrameCount{ 0 };
     int               mCurrentFrame{ 0 };
     std::string       mAnimationPath{};
     ValueAnimator*    mAnimator{ nullptr };
     FrameNameProvider mFrameProvider;
+
+    // 两步动画支持
+    std::string       mStartPath{};
+    std::string       mRepeatPath{};
+    int               mStartFrameCount{ 0 };
+    int               mRepeatFrameCount{ 0 };
+    Phase             mPhase{ Phase::SINGLE };
 
 public:
     explicit ImageAnimationView(int w, int h);
@@ -39,6 +48,7 @@ public:
     void startAnimation();
     void cancelAnimation();
     void setAnimationPath(const std::string& path, FrameNameProvider provider);
+    void setAnimationPath(const std::string& start, const std::string& repeat, FrameNameProvider provider);
 
 protected:
     virtual void onDetachedFromWindow() override;
