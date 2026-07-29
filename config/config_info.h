@@ -41,7 +41,7 @@ DEFINE_DEV_FILE_INFO(DEVCONF,     devices.xml)         // 设备配置文件
 
 DEFINE_DATA_FILE_INFO(APP,        app.json);           // 应用数据文件
 DEFINE_DATA_FILE_INFO(CONFIG,     config.xml);         // 配置文件名
-DEFINE_DATA_FILE_INFO(WIFI,       wifi.xml);           // WIFI配置文件名
+DEFINE_DATA_FILE_INFO(WIFI,       wifi.json);          // WIFI配置文件名
 DEFINE_DATA_FILE_INFO(HISTORY,    history.json)        // 历史记录文件名
 DEFINE_DATA_FILE_INFO(STATISTICS, statistics.json)     // 统计文件名
 
@@ -51,7 +51,7 @@ DEFINE_DATA_FILE_INFO(STATISTICS, statistics.json)     // 统计文件名
 
 #define WIFI_SWITCH           false    // wifi
 #define WIFI_SSID             ""       // wifi SSID
-#define WIFI_PASSWORD         " "      // wifi 密码
+#define WIFI_PASSWORD         ""       // wifi 密码
 
 #define CONFIG_BRIGHTNESS     80       // 亮度
 #define CONFIG_VOLUME         80       // 音量

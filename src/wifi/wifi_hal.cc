@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-27 09:43:34
- * @LastEditTime: 2026-07-05 23:27:53
+ * @LastEditTime: 2026-07-29 11:53:10
  * @FilePath: /kk_frame/src/wifi/wifi_hal.cc
  * @Description: WiFi 管理器
  * @BugList:
@@ -64,7 +64,8 @@ private:
 };
 #endif // PRODUCT_X64
 
-static const char kWpaEventScanFailed[] = "CTRL-EVENT-SCAN-FAILED ";
+static const char kWpaEventScanFailed[]      = "CTRL-EVENT-SCAN-FAILED ";
+static const char kWpaEventNetworkNotFound[] = "CTRL-EVENT-NETWORK-NOT-FOUND ";
 
 static bool GetIpv4(const std::string& ifname, std::string& outIp) {
     outIp.clear();
@@ -249,7 +250,7 @@ bool WifiHal::scan() {
     // setState(State::Scanning, "scan requested");
     std::string reply;
     if (!runCmd("SCAN use_id=1", &reply)) {
-        setState(State::Idle, "SCAN cmd failed");
+        LOGE("SCAN use_id=1 command failed");
         return false;
     }
 
@@ -360,7 +361,7 @@ WifiHal::Callbacks WifiHal::getCallbacks() {
 
 void WifiHal::onWpaEvent(const std::string& msg) {
 #if ENABLED(WIFI)
-    LOGV("onWpaEvent: %s", msg.c_str());
+    LOGV("[WifiHal] onWpaEvent: %s", msg.c_str());
     if (mShuttingDown.load()) return;
 
     // 常见事件：
@@ -395,7 +396,7 @@ void WifiHal::onWpaEvent(const std::string& msg) {
             if (cb.onScanDone) cb.onScanDone(aps);
         } else {
             Callbacks cb = getCallbacks();
-            setState(State::Idle, "scan done but parse failed");
+            LOGE("active scan results parse failed. id=%d", eventScanId);
             if (cb.onScanDone) cb.onScanDone(std::vector<ApInfo>{});
         }
         return;
@@ -403,11 +404,14 @@ void WifiHal::onWpaEvent(const std::string& msg) {
 
     if (starts_with(msg, kWpaEventScanFailed)) {
         int eventScanId = -1;
-        if (GetWpaEventScanId(msg, eventScanId)) {
+        const bool hasScanId = GetWpaEventScanId(msg, eventScanId);
+        if (hasScanId) {
             int expectedScanId = eventScanId;
             if (mPendingScanId.compare_exchange_strong(expectedScanId, -1)) {
                 LOGW("active scan failed. id=%d", eventScanId);
             }
+        } else if (state() == State::Connecting) {
+            finishReconnectAttempt();
         }
         return;
     }
@@ -418,7 +422,7 @@ void WifiHal::onWpaEvent(const std::string& msg) {
 
         // 连接已经起来：清理重连抖动控制
         mReconnFailCount.store(0);
-        mReconnInFlight.store(false);
+        finishReconnectAttempt();
 
         startDhcpWorker();
         return;
@@ -429,7 +433,7 @@ void WifiHal::onWpaEvent(const std::string& msg) {
         setState(State::Disconnected, "CTRL-EVENT-DISCONNECTED");
 
         // 允许后续重连再次发起，但避免短时间多次 kick
-        mReconnInFlight.store(false);
+        finishReconnectAttempt();
 
         // 非人为断开 -> 自动重连
         if (mOpt.auto_reconnect && !mUserDisconnect.load()) {
@@ -441,16 +445,25 @@ void WifiHal::onWpaEvent(const std::string& msg) {
     if (starts_with(msg, WPA_EVENT_TEMP_DISABLED)) {
         // 常见：4WAY_HANDSHAKE / auth fail
         setState(State::AuthFailed, "SSID TEMP DISABLED (auth failed?)");
-        mReconnInFlight.store(false);
+        finishReconnectAttempt();
         // 密码错误场景一般不建议自动重连（避免狂刷）
         return;
     }
 
     if (starts_with(msg, WPA_EVENT_ASSOC_REJECT)) {
         setState(State::ApNotFound, "ASSOC REJECT");
-        mReconnInFlight.store(false);
+        finishReconnectAttempt();
         if (mOpt.auto_reconnect && !mUserDisconnect.load()) {
             scheduleReconnect("assoc reject");
+        }
+        return;
+    }
+
+    if (starts_with(msg, kWpaEventNetworkNotFound)) {
+        setState(State::ApNotFound, "NETWORK NOT FOUND");
+        finishReconnectAttempt();
+        if (mOpt.auto_reconnect && !mUserDisconnect.load()) {
+            scheduleReconnect("network not found");
         }
         return;
     }
@@ -482,6 +495,12 @@ bool WifiHal::maybeScanForReconnect() {
     return runCmd("SCAN", &reply);
 }
 
+void WifiHal::finishReconnectAttempt() {
+    if (mReconnInFlight.exchange(false)) {
+        mReconnCv.notify_all();
+    }
+}
+
 void WifiHal::setState(State s, const std::string& reason) {
     Callbacks cb;
     {
@@ -494,6 +513,8 @@ void WifiHal::setState(State s, const std::string& reason) {
 }
 
 bool WifiHal::runCmd(const std::string& cmd, std::string* reply) {
+    LOGV("[WifiHal] runCmd: %s", cmd.c_str());
+
     std::string r;
     bool ok = mWpa.request(cmd, r);
     if (!ok) return false;
@@ -571,19 +592,49 @@ bool WifiHal::ensureNetworkConfigured(const std::string& ssid, const std::string
         return false;
     }
 
-    int oldNetId = -1;
     {
         std::lock_guard<std::mutex> lk(mMtx);
-        oldNetId = mLastNetId;
         mLastNetId = newNetId;
     }
-    if (oldNetId >= 0 && oldNetId != newNetId) {
-        runCmd("REMOVE_NETWORK " + std::to_string(oldNetId), nullptr);
-    }
+
+    // 本 HAL 只维护一个目标网络。新配置已成功启用后，再清理历史配置，
+    // 避免进程重启导致 wpa_supplicant.conf 中的 network 持续累积。
+    removeNetworksExcept(newNetId);
 
     // wpa_supplicant.conf 开启了 update_config=1，SAVE_CONFIG 才有效
-    runCmd("SAVE_CONFIG", nullptr);
+    if (!runCmd("SAVE_CONFIG", nullptr)) {
+        LOGW("SAVE_CONFIG failed for network id=%d", newNetId);
+    }
     return true;
+}
+
+void WifiHal::removeNetworksExcept(int keepNetId) {
+    std::string reply;
+    if (!runCmd("LIST_NETWORKS", &reply)) {
+        LOGW("LIST_NETWORKS failed while pruning old networks");
+        return;
+    }
+
+    std::istringstream iss(reply);
+    std::string line;
+    bool first = true;
+    while (std::getline(iss, line)) {
+        if (first) {
+            first = false;
+            continue;
+        }
+
+        const size_t separator = line.find('\t');
+        const std::string idText = line.substr(0, separator);
+        int networkId = -1;
+        if (!ParseNonNegativeInt(idText, networkId) || networkId == keepNetId) {
+            continue;
+        }
+
+        if (!runCmd("REMOVE_NETWORK " + std::to_string(networkId), nullptr)) {
+            LOGW("failed to remove stale network id=%d", networkId);
+        }
+    }
 }
 
 void WifiHal::startDhcpWorker() {
@@ -745,7 +796,7 @@ bool WifiHal::parseScanResults(std::vector<ApInfo>& out) {
 
     std::istringstream iss(reply);
     std::string line;
-    LOGV("SCAN_RESULTS RAW:\n %s", reply.c_str());
+    LOGV("[WifiHal] SCAN_RESULTS RAW:\n %s", reply.c_str());
 
     std::string connected_ssid("");
     if (state() == State::IpReady) {
@@ -797,9 +848,6 @@ bool WifiHal::parseScanResults(std::vector<ApInfo>& out) {
 }
 
 void WifiHal::scheduleReconnect(const std::string& reason) {
-    // 如果当前已经有一次自动重连在飞，避免反复 kick
-    if (mReconnInFlight.load()) return;
-
     {
         std::lock_guard<std::mutex> lk(mMtx);
         if (mLastSsid.empty()) return;
@@ -818,40 +866,77 @@ void WifiHal::scheduleReconnect(const std::string& reason) {
 }
 
 void WifiHal::cancelReconnect() {
-    if (!mReconnRunning.exchange(false)) return;
+    const bool wasRunning = mReconnRunning.exchange(false);
+    mReconnInFlight.store(false);
     mReconnCv.notify_all();
-    if (mReconnTh.joinable()) mReconnTh.join();
+    if (wasRunning && mReconnTh.joinable()) mReconnTh.join();
 }
 
 void WifiHal::reconnectThread() {
     std::unique_lock<std::mutex> lk(mReconnMtx);
 
     while (mReconnRunning.load()) {
-        // 等待触发，或定时重试
-        mReconnCv.wait_for(lk, std::chrono::milliseconds(mReconnBackoffMs));
-
-        if (!mReconnRunning.load()) break;
+        // 保留退避时间；普通事件通知不会绕过等待，关闭时可立即唤醒。
+        if (mReconnCv.wait_for(lk, std::chrono::milliseconds(mReconnBackoffMs),
+            [this]() { return !mReconnRunning.load(); })) {
+            break;
+        }
         if (mUserDisconnect.load()) continue;
 
-        // 若已经连接则不重试
-        if (state() == State::IpReady) continue;
-
-        // 重连在飞则跳过本轮
-        if (mReconnInFlight.exchange(true)) continue;
-
-        setState(State::Connecting, "auto reconnect");
-
-        bool ok = reconnectLight();
-        if (!ok) {
-            int fails = ++mReconnFailCount;
-            if (fails >= mOpt.reconn_fail_before_scan) {
-                if (maybeScanForReconnect())
-                    mReconnFailCount.store(0);
-            }
-            mReconnInFlight.store(false);
+        // 已关联、已获取 IP 或认证失败时不再发起重连。
+        const State currentState = state();
+        if (currentState == State::Connected || currentState == State::IpReady ||
+            currentState == State::AuthFailed) {
+            mReconnBackoffMs = std::max(mOpt.reconnect_initial_ms, 100);
+            continue;
         }
 
-        // 指数退避
-        mReconnBackoffMs = std::min(mReconnBackoffMs * 2, mOpt.reconnect_max_ms);
+        mReconnInFlight.store(true);
+
+        lk.unlock();
+        setState(State::Connecting, "auto reconnect");
+        const bool commandAccepted = reconnectLight();
+        lk.lock();
+
+        if (!commandAccepted) {
+            mReconnInFlight.store(false);
+        } else {
+            const int timeoutMs = std::max(mOpt.reconnect_attempt_timeout_ms, 1000);
+            const bool finished = mReconnCv.wait_for(
+                lk, std::chrono::milliseconds(timeoutMs), [this]() {
+                    return !mReconnRunning.load() || !mReconnInFlight.load();
+            });
+            if (!mReconnRunning.load()) break;
+            if (!finished) {
+                mReconnInFlight.store(false);
+                LOGW("Wi-Fi reconnect attempt timed out after %d ms", timeoutMs);
+            }
+        }
+
+        const State outcomeState = state();
+        if (outcomeState == State::Connected || outcomeState == State::IpReady) {
+            mReconnFailCount.store(0);
+            mReconnBackoffMs = std::max(mOpt.reconnect_initial_ms, 100);
+        } else if (outcomeState != State::AuthFailed) {
+            int fails = ++mReconnFailCount;
+            bool shouldScan = fails >= std::max(mOpt.reconn_fail_before_scan, 1);
+            lk.unlock();
+            if (shouldScan && state() != State::Connected && state() != State::IpReady) {
+                if (maybeScanForReconnect()) {
+                    mReconnFailCount.store(0);
+                }
+            }
+            lk.lock();
+        }
+
+        if (outcomeState != State::Connected && outcomeState != State::IpReady &&
+            outcomeState != State::AuthFailed) {
+            const int maxBackoffMs = std::max(mOpt.reconnect_max_ms, 100);
+            const int64_t nextBackoffMs = static_cast<int64_t>(mReconnBackoffMs) * 2;
+            mReconnBackoffMs = static_cast<int>(
+                std::min<int64_t>(nextBackoffMs, maxBackoffMs));
+        }
     }
+
+    mReconnInFlight.store(false);
 }

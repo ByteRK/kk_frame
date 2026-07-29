@@ -14,7 +14,7 @@
 #include "wifi_mgr.h"
 #include "config_info.h"
 #include "file_utils.h"
-#include "global_data.h"
+#include "json_utils.h"
 #include <cdlog.h>
 #include <core/app.h>
 #include <core/systemclock.h>
@@ -22,7 +22,7 @@
 #include <cstdio>
 #include <cstring>
 
-#define WIFI_SECTION "wifi_options"
+static const int WIFI_DATA_VERSION = 1;
 
 WifiMgr::WifiMgr() :
     AutoSaveItem(2000, 10000) { }
@@ -34,6 +34,7 @@ WifiMgr::~WifiMgr() {
 void WifiMgr::init() {
     if (mInitialized) return;
     load();
+    AutoSaveItem::init();
 
     WifiHal::Options opt;
     opt.ifname = "wlan0";
@@ -48,8 +49,9 @@ void WifiMgr::init() {
     mInitialized = true;
 
     // WIFI状态同步
-    setSwitch(getSwitch());
-    if (getSwitch())mAutoConnect = true;
+    const bool enabled = getSwitch();
+    setSwitch(enabled);
+    if (enabled) mAutoConnect = true;
 
     // 延迟三秒
     cdroid::App::getInstance().addEventHandler(this);
@@ -72,6 +74,10 @@ void WifiMgr::stop() {
     {
         std::lock_guard<std::mutex> lk(mStateMutex);
         mState = WifiHal::State::Off;
+    }
+    {
+        std::lock_guard<std::mutex> lk(mApsMutex);
+        mAps.clear();
     }
     mStateChanged.store(false);
     mApsChanged.store(false);
@@ -123,8 +129,11 @@ bool WifiMgr::scan() {
 
 bool WifiMgr::connect(const std::string& ssid, const std::string& psk) {
     if (!mWifiHal || !mWifiHal->connect(ssid, psk)) return false;
-    mOption.setValue(WIFI_SECTION, "SSID", ssid);
-    mOption.setValue(WIFI_SECTION, "PSK", psk);
+    if (mSavedSsid != ssid || mSavedPsk != psk) {
+        mSavedSsid = ssid;
+        mSavedPsk = psk;
+        mHaveChange = true;
+    }
     return true;
 }
 
@@ -140,7 +149,10 @@ void WifiMgr::setSwitch(bool enable) {
     if (enable) {
         if (!mWifiHal->enable()) {
             LOGE("[wifi] set switch failed. switch=1");
-            if (getSwitch()) mOption.setValue(WIFI_SECTION, "SWITCH", false);
+            if (mSwitch) {
+                mSwitch = false;
+                mHaveChange = true;
+            }
             return;
         }
         if (!wasEnabled) mAutoConnect = true;
@@ -150,18 +162,19 @@ void WifiMgr::setSwitch(bool enable) {
         mAutoConnect = false;
     }
 
-    if (enable != getSwitch()) {
-        mOption.setValue(WIFI_SECTION, "SWITCH", enable);
+    if (mSwitch != enable) {
+        mSwitch = enable;
+        mHaveChange = true;
     }
 }
 
 bool WifiMgr::getSwitch() {
-    return mOption.getBool(WIFI_SECTION, "SWITCH", WIFI_SWITCH);
+    return mSwitch;
 }
 
 void WifiMgr::getConnectInfo(std::string& ssid, std::string& psk) {
-    ssid = mOption.getString(WIFI_SECTION, "SSID", WIFI_SSID);
-    psk = mOption.getString(WIFI_SECTION, "PSK", WIFI_PASSWORD);
+    ssid = mSavedSsid;
+    psk = mSavedPsk;
 }
 
 bool WifiMgr::getConnectedAp(WifiHal::ApInfo& ap) {
@@ -199,10 +212,13 @@ int WifiMgr::handleEvents() {
         }
     }
 
-    if (mStateChanged.load()) { // 状态改变
-        mStateChanged.store(false);
-        if (isConnected())
+    if (mStateChanged.exchange(false)) { // 状态改变
+        const WifiHal::State state = getState();
+        if (state == WifiHal::State::Connected || state == WifiHal::State::IpReady) {
             updateResultAfterConnected();
+        } else {
+            clearConnectedResult();
+        }
         std::vector<WiFiListener*> listeners;
         {
             std::lock_guard<std::mutex> lk(mListenersMutex);
@@ -212,8 +228,7 @@ int WifiMgr::handleEvents() {
             cb->onStateChanged();
     }
 
-    if (mApsChanged.load()) { // 扫描结果改变
-        mApsChanged.store(false);
+    if (mApsChanged.exchange(false)) { // 扫描结果改变
         std::vector<WiFiListener*> listeners;
         {
             std::lock_guard<std::mutex> lk(mListenersMutex);
@@ -227,34 +242,66 @@ int WifiMgr::handleEvents() {
 }
 
 bool WifiMgr::save(bool isBackup) {
-    mOption.save(
-        isBackup ? WIFI_FILE_BAK_PATH : WIFI_FILE_PATH
-    );
-    return true;
+    Json::Value wifiJson;
+    wifiJson["version"] = WIFI_DATA_VERSION;
+    wifiJson["switch"] = mSwitch;
+    wifiJson["credentials"]["ssid"] = mSavedSsid;
+    wifiJson["credentials"]["psk"] = mSavedPsk;
+
+    const bool saved = JsonUtils::save(
+        isBackup ? WIFI_FILE_BAK_PATH : WIFI_FILE_PATH,
+        wifiJson);
+    if (saved && !isBackup) mHaveChange = false;
+    return saved;
 }
 
 bool WifiMgr::haveChange() {
-    return mOption.getUpdates();
+    return mHaveChange;
 }
 
 void WifiMgr::load() {
-    mOption = cdroid::Preferences(); // 清空原配置
+    mSwitch = WIFI_SWITCH;
+    mSavedSsid = WIFI_SSID;
+    mSavedPsk = WIFI_PASSWORD;
+    mHaveChange = false;
+
+    Json::Value wifiJson;
     std::string loadingPath = "";
 
     bool res = FileUtils::check(
         { WIFI_FILE_PATH, WIFI_FILE_BAK_PATH },
-        [this, &loadingPath](const std::string& file, size_t size) {
-        if (size <= 0)return false;
-        mOption.load(file);
+        [&wifiJson, &loadingPath](const std::string& file, size_t size) {
+        if (size <= 0) return false;
+
+        Json::Value candidate;
+        if (!JsonUtils::load(file, candidate) || !candidate.isObject()) {
+            return false;
+        }
+        if (JsonUtils::get<int>(candidate, "version", 0) != WIFI_DATA_VERSION) {
+            LOGE("[wifi] unsupported data version. file=%s", file.c_str());
+            return false;
+        }
+
+        wifiJson = candidate;
         loadingPath = file;
         return true;
     });
 
-    if (res) {
-        LOG(INFO) << "[wifi] load option. file=" << loadingPath;
-    } else {
-        LOG(ERROR) << "[wifi] no option file found.";
+    if (!res) {
+        LOG(ERROR) << "[wifi] no local data file found. use default data";
+        mHaveChange = true;
+        return;
     }
+
+    const Json::Value credentials = wifiJson["credentials"];
+    mSwitch = JsonUtils::get<bool>(wifiJson, "switch", WIFI_SWITCH);
+    if (credentials.isObject()) {
+        mSavedSsid =
+            JsonUtils::get<std::string>(credentials, "ssid", WIFI_SSID);
+        mSavedPsk =
+            JsonUtils::get<std::string>(credentials, "psk", WIFI_PASSWORD);
+    }
+    LOG(INFO) << "[wifi] load local data. file=" << loadingPath;
 }
 
 void WifiMgr::onStateChanged(WifiHal::State state, const std::string& reason) {
@@ -277,9 +324,29 @@ void WifiMgr::updateResultAfterConnected() {
     std::string ssid, psk;
     getConnectInfo(ssid, psk);
     std::lock_guard<std::mutex> lk(mApsMutex);
+    bool changed = false;
     for (auto& ap : mAps) {
-        if (ap.ssid == ssid)ap.connected = true;
-        else ap.connected = false;
+        const bool connected = ap.ssid == ssid;
+        if (ap.connected != connected) {
+            ap.connected = connected;
+            changed = true;
+        }
     }
-    mApsChanged.store(true); // 通知扫描结果改变
+    if (changed) {
+        mApsChanged.store(true); // 通知扫描结果改变
+    }
+}
+
+void WifiMgr::clearConnectedResult() {
+    bool changed = false;
+    std::lock_guard<std::mutex> lk(mApsMutex);
+    for (auto& ap : mAps) {
+        if (ap.connected) {
+            ap.connected = false;
+            changed = true;
+        }
+    }
+    if (changed) {
+        mApsChanged.store(true);
+    }
 }

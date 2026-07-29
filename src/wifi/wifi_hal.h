@@ -64,6 +64,7 @@ public:
         // 自动重连退避
         int  reconnect_initial_ms = 2000;
         int  reconnect_max_ms     = 10000;
+        int  reconnect_attempt_timeout_ms = 15000;
 
         // 自动重连失败时触发主动 SCAN
         int scan_min_interval_ms    = 15000; // SCAN最小间隔
@@ -125,10 +126,12 @@ private:
     bool startDhcp();
 
     bool parseScanResults(std::vector<ApInfo>& out);
+    void removeNetworksExcept(int keepNetId);
 
     // auto reconnect helpers
     bool reconnectLight();
     bool maybeScanForReconnect();
+    void finishReconnectAttempt();
 
     // auto reconnect
     void scheduleReconnect(const std::string& reason);

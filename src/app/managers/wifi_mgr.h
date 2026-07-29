@@ -19,7 +19,6 @@
 #include "class/auto_save.h"
 #include <atomic>
 #include <core/looper.h>
-#include <core/preferences.h>
 #include <memory>
 #include <set>
 
@@ -71,9 +70,13 @@ private:
     void           onScanResult(const std::vector<WifiHal::ApInfo>& aps);
 
     void           updateResultAfterConnected();
+    void           clearConnectedResult();
 
 private:
-    cdroid::Preferences           mOption;
+    bool                          mSwitch{ false };
+    std::string                   mSavedSsid;
+    std::string                   mSavedPsk;
+    bool                          mHaveChange{ false };
     bool                          mAutoConnect{ false };
 
     std::unique_ptr<WifiHal>      mWifiHal;
