@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2026-06-30 01:00:15
+ * @LastEditTime: 2026-07-29 14:17:21
  * @FilePath: /kk_frame/src/app/managers/wind_mgr.cc
  * @Description: 页面管理类
  * @BugList:
@@ -26,12 +26,11 @@ WindMgr::~WindMgr() {
     if (mLooper) mLooper->removeMessages(this);
     recyclePop(POP_NULL);
     recyclePage(PAGE_NULL);
-    __delete(mWindow);
 }
 
 /// @brief 获取主窗口
 /// @return 主窗口指针
-MainWindow * WindMgr::getWindow() {
+MainWindow* WindMgr::getWindow() {
     return mWindow;
 }
 

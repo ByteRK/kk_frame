@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 14:40:26
- * @LastEditTime: 2026-07-04 02:49:19
+ * @LastEditTime: 2026-07-29 14:17:16
  * @FilePath: /kk_frame/src/utils/system_utils.cc
  * @Description: 系统相关的一些函数
  * @BugList:
@@ -42,11 +42,7 @@ void SystemUtils::reboot() {
 void SystemUtils::exit() {
     ProjectUtils::saveTime(std::string(LOCAL_DATA_DIR) + TIME_CACHE_FILE);
     sync();
-#ifndef PRODUCT_X64
-    std::system("exit");
-#else
     ::exit(0);
-#endif
 }
 
 void SystemUtils::sync() {
