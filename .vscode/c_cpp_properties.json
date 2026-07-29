@@ -8,6 +8,7 @@
                 "~/cdroid/src/*",
                 "~/cdroid/src/**",
                 "~/vcpkg/packages/**",
+                "~/cdroid/outX64-Debug/include/*",
                 "~/cdroid/outX64-Debug/src/gui/*"
             ],
             "defines": [
