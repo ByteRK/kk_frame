@@ -88,7 +88,7 @@ public:
     bool enable();
     void disable();
 
-    // 扫描（异步：完成后回调 onScanDone）
+    // 主动扫描（异步：仅本次主动扫描完成后回调 onScanDone）
     bool scan();
 
     // 连接（异步：状态变化走 onStateChanged；成功后会跑 DHCP）
@@ -173,6 +173,9 @@ private:
     std::atomic<bool>      mReconnInFlight{ false };
     std::atomic<int>       mReconnFailCount{ 0 };
     std::atomic<uint64_t>  mLastScanMs{ 0 };
+
+    // SCAN use_id=1 返回的 ID；用于过滤 bgscan 和其他来源的扫描事件。
+    std::atomic<int>       mPendingScanId{ -1 };
 
     // 重连线程
     std::thread             mReconnTh;

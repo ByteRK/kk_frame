@@ -64,6 +64,8 @@ private:
 };
 #endif // PRODUCT_X64
 
+static const char kWpaEventScanFailed[] = "CTRL-EVENT-SCAN-FAILED ";
+
 static bool GetIpv4(const std::string& ifname, std::string& outIp) {
     outIp.clear();
     int fd = ::socket(AF_INET, SOCK_DGRAM, 0);
@@ -119,6 +121,32 @@ static bool IsHexString(const std::string& value) {
     });
 }
 
+static bool ParseNonNegativeInt(const std::string& value, int& result) {
+    if (value.empty()) return false;
+
+    char* end = nullptr;
+    errno = 0;
+    const long parsed = std::strtol(value.c_str(), &end, 10);
+    if (errno != 0 || end == value.c_str() || *end != '\0' ||
+        parsed < 0 || parsed > std::numeric_limits<int>::max()) {
+        return false;
+    }
+
+    result = static_cast<int>(parsed);
+    return true;
+}
+
+static bool GetWpaEventScanId(const std::string& msg, int& scanId) {
+    std::istringstream iss(msg);
+    std::string token;
+    while (iss >> token) {
+        static const char kIdPrefix[] = "id=";
+        if (!starts_with(token, kIdPrefix)) continue;
+        return ParseNonNegativeInt(token.substr(sizeof(kIdPrefix) - 1), scanId);
+    }
+    return false;
+}
+
 static WpaClient::Options MakeWpaOpt(const WifiHal::Options& opt) {
     WpaClient::Options w;
     w.ctrl_path = opt.ctrl_path;
@@ -145,8 +173,9 @@ WifiHal::~WifiHal() {
 
 #ifdef PRODUCT_X64
 void WifiHal::onX64ScanResultTimer() {
-    if (state() != State::Off) {
-        onWpaEvent("CTRL-EVENT-SCAN-RESULTS ");
+    const int scanId = mPendingScanId.load();
+    if (state() != State::Off && scanId >= 0) {
+        onWpaEvent("CTRL-EVENT-SCAN-RESULTS id=" + std::to_string(scanId));
     }
 }
 
@@ -193,6 +222,7 @@ bool WifiHal::enable() {
 void WifiHal::disable() {
 #if ENABLED(WIFI)
     mShuttingDown.store(true);
+    mPendingScanId.store(-1);
     cancelReconnect();
 #ifdef PRODUCT_X64
     if (mX64ScanResultTimer) mX64ScanResultTimer->cancel();
@@ -218,13 +248,28 @@ bool WifiHal::scan() {
     if (state() == State::Off) return false;   // state() 自己会加锁
     // setState(State::Scanning, "scan requested");
     std::string reply;
-    if (!runCmd("SCAN", &reply)) {
+    if (!runCmd("SCAN use_id=1", &reply)) {
         setState(State::Idle, "SCAN cmd failed");
         return false;
     }
+
+    int scanId = -1;
 #ifdef PRODUCT_X64
-    if (!mX64ScanResultTimer) return false;
-    if (!mX64ScanResultTimer->schedule(mOpt.x64_scan_delay_ms)) return false;
+    scanId = 1;
+#else
+    if (!ParseNonNegativeInt(reply, scanId)) {
+        LOGE("invalid SCAN use_id=1 reply: %s", reply.c_str());
+        return false;
+    }
+#endif
+    mPendingScanId.store(scanId);
+
+#ifdef PRODUCT_X64
+    if (!mX64ScanResultTimer ||
+        !mX64ScanResultTimer->schedule(mOpt.x64_scan_delay_ms)) {
+        mPendingScanId.store(-1);
+        return false;
+    }
 #endif
     return true;
 #else
@@ -325,6 +370,19 @@ void WifiHal::onWpaEvent(const std::string& msg) {
     // CTRL-EVENT-SSID-TEMP-DISABLED（密码错/握手失败常见）
     // CTRL-EVENT-ASSOC-REJECT（AP 不接受）
     if (starts_with(msg, WPA_EVENT_SCAN_RESULTS)) {
+        int eventScanId = -1;
+        if (!GetWpaEventScanId(msg, eventScanId)) {
+            LOGV("ignore scan results without active scan id (likely bgscan)");
+            return;
+        }
+
+        int expectedScanId = eventScanId;
+        if (!mPendingScanId.compare_exchange_strong(expectedScanId, -1)) {
+            LOGV("ignore scan results id=%d, pending active scan id=%d",
+                eventScanId, expectedScanId);
+            return;
+        }
+
         std::vector<ApInfo> aps;
         if (parseScanResults(aps)) {
             // 信号从大到小
@@ -339,6 +397,17 @@ void WifiHal::onWpaEvent(const std::string& msg) {
             Callbacks cb = getCallbacks();
             setState(State::Idle, "scan done but parse failed");
             if (cb.onScanDone) cb.onScanDone(std::vector<ApInfo>{});
+        }
+        return;
+    }
+
+    if (starts_with(msg, kWpaEventScanFailed)) {
+        int eventScanId = -1;
+        if (GetWpaEventScanId(msg, eventScanId)) {
+            int expectedScanId = eventScanId;
+            if (mPendingScanId.compare_exchange_strong(expectedScanId, -1)) {
+                LOGW("active scan failed. id=%d", eventScanId);
+            }
         }
         return;
     }
