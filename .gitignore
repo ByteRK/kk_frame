@@ -16,3 +16,5 @@ R.h
 ID.xml
 cdroid_changes.patch
 project_changes.patch
+
+__pycache__
