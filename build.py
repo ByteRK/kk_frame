@@ -2,7 +2,7 @@
 Author: Ricken
 Email: me@ricken.cn
 Date: 2025-04-25 12:52:59
-LastEditTime: 2026-02-02 08:01:35
+LastEditTime: 2026-07-30 10:03:49
 FilePath: /kk_frame/build.py
 Description: 项目构建脚本
 BugList: 
@@ -563,16 +563,44 @@ def perform_replacements_in_target(target_dir, project_name):
         cprint(f"已切换回原始目录: {os.getcwd()}", "CYAN")
 
 # 复制模板所有内容到目标位置
-def copy_directory_contents(src, dst):
-    os.makedirs(dst, exist_ok=True)
+def copy_directory_contents(src, dst, ignore=None):
+    """复制目录内容，支持排除指定文件/文件夹。
     
-    # 遍历替换
+    Args:
+        src:    源目录路径
+        dst:    目标目录路径
+        ignore: 要排除的文件/文件夹名列表，如 ['.git', 'tmp', '__pycache__', '*.pyc']
+                支持精确名称匹配和 shutil.ignore_patterns 风格的 glob 模式
+    """
+    os.makedirs(dst, exist_ok=True)
+
+    if ignore is None:
+        ignore = []
+
+    # 构建 shutil.ignore_patterns 风格的过滤函数
+    def _should_ignore(name):
+        for pattern in ignore:
+            # 精确名称匹配
+            if name == pattern:
+                return True
+            # 简单的 glob 模式匹配（* 通配符）
+            if '*' in pattern:
+                import fnmatch
+                if fnmatch.fnmatch(name, pattern):
+                    return True
+        return False
+
+    # 遍历复制
     for item in os.listdir(src):
+        if _should_ignore(item):
+            cprint(f"  - 已跳过: {item}", "YELLOW")
+            continue
+
         src_path = os.path.join(src, item)
         dst_path = os.path.join(dst, item)
-        
+
         if os.path.isdir(src_path):
-            shutil.copytree(src_path, dst_path, symlinks=True, 
+            shutil.copytree(src_path, dst_path, symlinks=True,
                            ignore_dangling_symlinks=True, dirs_exist_ok=True)
         else:
             shutil.copy2(src_path, dst_path)
@@ -653,8 +681,16 @@ def main():
         create_target_directory(new_project_dir)
         
         # e. 复制当前目录内容到目标目录
+        # 默认排除项：构建产物、缓存、临时文件等
+        DEFAULT_IGNORE = [
+            'tmp',            # 临时文件目录
+            '.venv',          # Python 虚拟环境
+            '__pycache__',    # Python 缓存
+            '*.pyc',          # Python 字节码
+        ]
         cprint("\n正在复制项目文件...", "CYAN")
-        copy_directory_contents(current_dir, new_project_dir)
+        cprint(f"已排除: {', '.join(DEFAULT_IGNORE)}", "YELLOW")
+        copy_directory_contents(current_dir, new_project_dir, ignore=DEFAULT_IGNORE)
         cprint(f"已复制所有文件到: {new_project_dir}", "GREEN")
         
         # f. 切换到目标目录并执行替换操作
