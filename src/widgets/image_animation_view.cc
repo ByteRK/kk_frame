@@ -121,6 +121,10 @@ void ImageAnimationView::setAnimationPath(const std::string& path, FrameNameProv
 }
 
 std::string ImageAnimationView::getRepeatPath() const {
+    // 不在播放或已取消时返回空
+    if (!mAnimator || !mAnimator->isRunning()) {
+        return {};
+    }
     // 返回当前循环播放（或即将播放）的路径，便于外部判断是否需要 re-setAnimationPath
     if (mRepeatPath.empty()) {
         return mAnimationPath;
