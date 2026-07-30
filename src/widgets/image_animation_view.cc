@@ -39,13 +39,11 @@ void ImageAnimationView::startAnimation() {
         return;
     }
 
-    if (mAnimator->isRunning()) {
-        LOGD("Animation is already running");
-        return;
-    }
-
-    // 移除监听避免重复
+    // 先移除所有监听，防止 cancel 触发旧的 onAnimationEnd 回调
     mAnimator->removeAllListeners();
+    if (mAnimator->isRunning()) {
+        mAnimator->cancel();
+    }
 
     mCurrentFrame = 0;
 
@@ -104,12 +102,12 @@ void ImageAnimationView::startAnimation() {
 }
 
 void ImageAnimationView::cancelAnimation() {
+    mPhase = Phase::SINGLE;
     if (mAnimator) {
+        mAnimator->removeAllListeners();
         mAnimator->cancel();
     }
     mCurrentFrame = 0;
-    // 防止旧 START → REPEAT 回调在动画切换时被意外触发
-    mPhase = Phase::SINGLE;
 }
 
 void ImageAnimationView::setAnimationPath(const std::string& path, FrameNameProvider provider, int fps) {
