@@ -50,6 +50,7 @@ public:
     void cancelAnimation();
     void setAnimationPath(const std::string& path, FrameNameProvider provider, int fps = 24);
     void setAnimationPath(const std::string& start, const std::string& repeat, FrameNameProvider provider, int fps = 24);
+    std::string getRepeatPath() const;
 
 protected:
     virtual void onDetachedFromWindow() override;

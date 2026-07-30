@@ -14,6 +14,7 @@
 #include "image_animation_view.h"
 #include <dirent.h>
 #include <cstring>
+#include <map>
 
 DECLARE_WIDGET(ImageAnimationView)
 
@@ -109,15 +110,22 @@ void ImageAnimationView::cancelAnimation() {
 
 void ImageAnimationView::setAnimationPath(const std::string& path, FrameNameProvider provider, int fps) {
     mFPS = fps > 0 ? fps : 24;
-    if (mAnimationPath != path) {
-        cancelAnimation();
-        mAnimationPath = path;
-        mFrameCount = path.empty() ? 0 : countPNGFiles(path);
-    }
+    cancelAnimation();
+    mAnimationPath = path;
+    mFrameCount = path.empty() ? 0 : countPNGFiles(path);
     mFrameProvider = provider;
+    mStartPath.clear();
     mRepeatPath.clear();
     mPhase = Phase::SINGLE;
     startAnimation();
+}
+
+std::string ImageAnimationView::getRepeatPath() const {
+    // 返回当前循环播放（或即将播放）的路径，便于外部判断是否需要 re-setAnimationPath
+    if (mRepeatPath.empty()) {
+        return mAnimationPath;
+    }
+    return mRepeatPath;
 }
 
 void ImageAnimationView::setAnimationPath(const std::string& start, const std::string& repeat, FrameNameProvider provider, int fps) {
@@ -169,6 +177,7 @@ void ImageAnimationView::initAnimator() {
 }
 
 int ImageAnimationView::countPNGFiles(const std::string& path) {
+    // 静态缓存：资源目录在运行期固定不变，无需刷新
     static std::map<std::string, int> sCache;
     auto it = sCache.find(path);
     if (it != sCache.end() && it->second > 0) {
