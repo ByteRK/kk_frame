@@ -76,6 +76,8 @@ void ImageAnimationView::startAnimation() {
 
         Animator::AnimatorListener listener;
         listener.onAnimationEnd = [this](Animator& animator, bool isReverse) {
+            // cancelAnimation 已重置 phase，说明动画被外部打断，跳过
+            if (mPhase != Phase::START) return;
             mPhase = Phase::REPEAT;
             mAnimationPath = mRepeatPath;
             mFrameCount = mRepeatFrameCount;
@@ -102,10 +104,12 @@ void ImageAnimationView::startAnimation() {
 }
 
 void ImageAnimationView::cancelAnimation() {
-    if (mAnimator && mAnimator->isRunning()) {
+    if (mAnimator) {
         mAnimator->cancel();
     }
     mCurrentFrame = 0;
+    // 防止旧 START → REPEAT 回调在动画切换时被意外触发
+    mPhase = Phase::SINGLE;
 }
 
 void ImageAnimationView::setAnimationPath(const std::string& path, FrameNameProvider provider, int fps) {
