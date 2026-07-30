@@ -49,9 +49,26 @@ void ImageAnimationView::startAnimation() {
     mCurrentFrame = 0;
 
     if (mPhase == Phase::START && !mRepeatPath.empty() && mRepeatFrameCount > 0) {
-        // 两阶段：先播放一次开始动画，然后切换到重复播放模式
+        // 两阶段：先切换到 start 路径
         mAnimationPath = mStartPath;
         mFrameCount = mStartFrameCount;
+    }
+
+    // 单帧：直接显示，无需启动动画
+    if (mFrameCount <= 1) {
+        setImageResource(mAnimationPath + "/" + mFrameProvider(0));
+        if (mPhase == Phase::START && !mRepeatPath.empty() && mRepeatFrameCount > 0) {
+            // start 只有一帧，立即切换到 repeat 阶段
+            mPhase = Phase::REPEAT;
+            mAnimationPath = mRepeatPath;
+            mFrameCount = mRepeatFrameCount;
+            startAnimation();
+        }
+        return;
+    }
+
+    if (mPhase == Phase::START && !mRepeatPath.empty() && mRepeatFrameCount > 0) {
+        // 两阶段：先播放一次开始动画，然后切换到重复播放模式
         mAnimator->setIntValues({ 0, mFrameCount - 1 });
         mAnimator->setDuration(mFrameCount * 1000 / static_cast<float>(mFPS));
         mAnimator->setRepeatCount(0);
@@ -62,6 +79,11 @@ void ImageAnimationView::startAnimation() {
             mAnimationPath = mRepeatPath;
             mFrameCount = mRepeatFrameCount;
             mCurrentFrame = 0;
+            // repeat 只有一帧时直接显示，无需启动动画
+            if (mFrameCount <= 1) {
+                setImageResource(mAnimationPath + "/" + mFrameProvider(0));
+                return;
+            }
             mAnimator->removeAllListeners();
             mAnimator->setIntValues({ 0, mFrameCount - 1 });
             mAnimator->setDuration(mFrameCount * 1000 / static_cast<float>(mFPS));
