@@ -28,6 +28,7 @@ private:
 
     int               mFrameCount{ 0 };
     int               mCurrentFrame{ 0 };
+    int               mFPS{ 24 };
     std::string       mAnimationPath{};
     ValueAnimator*    mAnimator{ nullptr };
     FrameNameProvider mFrameProvider;
@@ -47,8 +48,8 @@ public:
 public:
     void startAnimation();
     void cancelAnimation();
-    void setAnimationPath(const std::string& path, FrameNameProvider provider);
-    void setAnimationPath(const std::string& start, const std::string& repeat, FrameNameProvider provider);
+    void setAnimationPath(const std::string& path, FrameNameProvider provider, int fps = 24);
+    void setAnimationPath(const std::string& start, const std::string& repeat, FrameNameProvider provider, int fps = 24);
 
 protected:
     virtual void onDetachedFromWindow() override;

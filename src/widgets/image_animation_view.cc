@@ -53,7 +53,7 @@ void ImageAnimationView::startAnimation() {
         mAnimationPath = mStartPath;
         mFrameCount = mStartFrameCount;
         mAnimator->setIntValues({ 0, mFrameCount - 1 });
-        mAnimator->setDuration(mFrameCount * 1000 / 24.f);
+        mAnimator->setDuration(mFrameCount * 1000 / static_cast<float>(mFPS));
         mAnimator->setRepeatCount(0);
 
         Animator::AnimatorListener listener;
@@ -64,14 +64,14 @@ void ImageAnimationView::startAnimation() {
             mCurrentFrame = 0;
             mAnimator->removeAllListeners();
             mAnimator->setIntValues({ 0, mFrameCount - 1 });
-            mAnimator->setDuration(mFrameCount * 1000 / 24.f);
+            mAnimator->setDuration(mFrameCount * 1000 / static_cast<float>(mFPS));
             mAnimator->setRepeatCount(-1);
             mAnimator->start();
         };
         mAnimator->addListener(listener);
     } else {
         mAnimator->setIntValues({ 0, mFrameCount - 1 });
-        mAnimator->setDuration(mFrameCount * 1000 / 24.f);
+        mAnimator->setDuration(mFrameCount * 1000 / static_cast<float>(mFPS));
         mAnimator->setRepeatCount(-1);
     }
 
@@ -85,7 +85,8 @@ void ImageAnimationView::cancelAnimation() {
     mCurrentFrame = 0;
 }
 
-void ImageAnimationView::setAnimationPath(const std::string& path, FrameNameProvider provider) {
+void ImageAnimationView::setAnimationPath(const std::string& path, FrameNameProvider provider, int fps) {
+    mFPS = fps > 0 ? fps : 24;
     if (mAnimationPath != path) {
         cancelAnimation();
         mAnimationPath = path;
@@ -97,7 +98,8 @@ void ImageAnimationView::setAnimationPath(const std::string& path, FrameNameProv
     startAnimation();
 }
 
-void ImageAnimationView::setAnimationPath(const std::string& start, const std::string& repeat, FrameNameProvider provider) {
+void ImageAnimationView::setAnimationPath(const std::string& start, const std::string& repeat, FrameNameProvider provider, int fps) {
+    mFPS = fps > 0 ? fps : 24;
     cancelAnimation();
     mFrameProvider = provider;
     mStartPath = start;
