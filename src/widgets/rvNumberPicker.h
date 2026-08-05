@@ -2,13 +2,12 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:07
- * @LastEditTime: 2026-08-04 18:41:25
+ * @LastEditTime: 2026-08-05 18:18:33
  * @FilePath: /kk_frame/src/widgets/rvNumberPicker.h
  * @Description: 使用RecycleView实现数字选择器
  *
  * @BugList: 1、暂时不要使用SmoothscrolltoPosition
- *           2、layout_width以及layout_height必须指定数值
- *           3、textColor全透颜色请使用#01000000,暂不支持全0透明度
+ *           2、textColor全透颜色请使用#01000000,暂不支持全0透明度
  *
  * Copyright (c) 2024 by Ricken, All Rights Reserved.
  *
@@ -163,12 +162,12 @@ private:
     TextTheme   mTextTheme2;                                 // 默认文字主题2(两边使用)
     TextTheme   mCenterTextTheme;                            // 中间项文字主题
 
-    int         mTextStyle{ Typeface::NORMAL };                                            // 文字Style
-    int         mGravity{ Gravity::CENTER };                                              // 文字对齐方式
-    int         mSelectVisibility{ View::VISIBLE };                                     // 选中项的可见性
-    std::string mItemBackground{ "@null" };                                       // 背景
-    int         mXMLWidth{ 0 };                                  // 宽
-    int         mXMLHeight{ 0 };                                 // 高
+    int         mTextStyle{ Typeface::NORMAL };                        // 文字Style
+    int         mGravity{ Gravity::CENTER };                           // 文字对齐方式
+    int         mSelectVisibility{ View::VISIBLE };                    // 选中项的可见性
+    std::string mItemBackground{ "@null" };                            // 背景
+    int         mPickerWidth{ 0 };                                     // 宽
+    int         mPickerHeight{ 0 };                                    // 高
     std::string mFontFamily{ "" };                                     // 字体
     std::string mOverlayLayout{ "" };                                  // 叠层绘制
     std::string mSelectOverlayLayout{ "" };                            // 选中项叠层绘制
@@ -229,6 +228,7 @@ public:
 protected:
     void onItemClick(View& v, int position);
     void onItemLongClick(View& v, int position);
+    void onSizeChanged(int w, int h, int oldw, int oldh) override;
     void onValueChanged(int n);
     void onCenterViewChanged(int o, int n);
 };

@@ -2,13 +2,12 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:07
- * @LastEditTime: 2026-08-04 18:44:29
+ * @LastEditTime: 2026-08-05 18:17:20
  * @FilePath: /kk_frame/src/widgets/rvNumberPicker.cc
  * @Description: 使用RecycleView实现数字选择器
  *
  * @BugList: 1、暂时不要使用SmoothscrolltoPosition
- *           2、layout_width以及layout_height必须指定数值
- *           3、textColor全透颜色请使用#01000000,暂不支持全0透明度
+ *           2、textColor全透颜色请使用#01000000,暂不支持全0透明度
  *
  * Copyright (c) 2024 by Ricken, All Rights Reserved.
  *
@@ -84,12 +83,12 @@ View* RVNumberPicker::PickerAdapter::createImageItem(ViewGroup* parent) {
     ImageView* imageView;
     if (mFriend->mOrientation == HORIZONTAL) {
         imageView = new ImageView(LayoutParams::WRAP_CONTENT, LayoutParams::MATCH_PARENT);
-        imageView->setLayoutParams(new LayoutParams(mFriend->mXMLWidth / mFriend->mDisplayCount, LayoutParams::MATCH_PARENT));
-        LOGV("[IMAGE]view w:%d", mFriend->mXMLWidth / mFriend->mDisplayCount);
+        imageView->setLayoutParams(new LayoutParams(mFriend->mPickerWidth / mFriend->mDisplayCount, LayoutParams::MATCH_PARENT));
+        LOGV("[IMAGE]view w:%d", mFriend->mPickerWidth / mFriend->mDisplayCount);
     } else {
         imageView = new ImageView(LayoutParams::MATCH_PARENT, LayoutParams::WRAP_CONTENT);
-        imageView->setLayoutParams(new LayoutParams(LayoutParams::MATCH_PARENT, mFriend->mXMLHeight / mFriend->mDisplayCount));
-        LOGV("[IMAGE]view h:%d", mFriend->mXMLHeight / mFriend->mDisplayCount);
+        imageView->setLayoutParams(new LayoutParams(LayoutParams::MATCH_PARENT, mFriend->mPickerHeight / mFriend->mDisplayCount));
+        LOGV("[IMAGE]view h:%d", mFriend->mPickerHeight / mFriend->mDisplayCount);
     }
     imageView->setScaleType(ScaleType::CENTER_INSIDE);
     imageView->setTag((void*)PICKER_TYPE_IMAGE);
@@ -100,12 +99,12 @@ View* RVNumberPicker::PickerAdapter::createSimpleTextItem(ViewGroup* parent) {
     TextView* textView;
     if (mFriend->mOrientation == HORIZONTAL) {
         textView = new TextView("", LayoutParams::WRAP_CONTENT, LayoutParams::MATCH_PARENT);
-        textView->setLayoutParams(new LayoutParams(mFriend->mXMLWidth / mFriend->mDisplayCount, LayoutParams::MATCH_PARENT));
-        LOGV("[TEXT]view w:%d", mFriend->mXMLWidth / mFriend->mDisplayCount);
+        textView->setLayoutParams(new LayoutParams(mFriend->mPickerWidth / mFriend->mDisplayCount, LayoutParams::MATCH_PARENT));
+        LOGV("[TEXT]view w:%d", mFriend->mPickerWidth / mFriend->mDisplayCount);
     } else {
         textView = new TextView("", LayoutParams::MATCH_PARENT, LayoutParams::WRAP_CONTENT);
-        textView->setLayoutParams(new LayoutParams(LayoutParams::MATCH_PARENT, mFriend->mXMLHeight / mFriend->mDisplayCount));
-        LOGV("[TEXT]view h:%d", mFriend->mXMLHeight / mFriend->mDisplayCount);
+        textView->setLayoutParams(new LayoutParams(LayoutParams::MATCH_PARENT, mFriend->mPickerHeight / mFriend->mDisplayCount));
+        LOGV("[TEXT]view h:%d", mFriend->mPickerHeight / mFriend->mDisplayCount);
     }
     textView->setBreakStrategy(Layout::BREAK_STRATEGY_SIMPLE);
     textView->setGravity(mFriend->mGravity);
@@ -131,12 +130,12 @@ View* RVNumberPicker::PickerAdapter::createSelectTextItem(ViewGroup* parent) {
     RelativeLayout* layout;
     if (mFriend->mOrientation == HORIZONTAL) {
         layout = new RelativeLayout(LayoutParams::WRAP_CONTENT, LayoutParams::MATCH_PARENT);
-        layout->setLayoutParams(new LayoutParams(mFriend->mXMLWidth / mFriend->mDisplayCount, LayoutParams::MATCH_PARENT));
-        selectView->setLayoutParams(new LayoutParams(mFriend->mXMLWidth / mFriend->mDisplayCount, LayoutParams::MATCH_PARENT));
+        layout->setLayoutParams(new LayoutParams(mFriend->mPickerWidth / mFriend->mDisplayCount, LayoutParams::MATCH_PARENT));
+        selectView->setLayoutParams(new LayoutParams(mFriend->mPickerWidth / mFriend->mDisplayCount, LayoutParams::MATCH_PARENT));
     } else {
         layout = new RelativeLayout(LayoutParams::MATCH_PARENT, LayoutParams::WRAP_CONTENT);
-        layout->setLayoutParams(new LayoutParams(LayoutParams::MATCH_PARENT, mFriend->mXMLHeight / mFriend->mDisplayCount));
-        selectView->setLayoutParams(new LayoutParams(LayoutParams::MATCH_PARENT, mFriend->mXMLHeight / mFriend->mDisplayCount));
+        layout->setLayoutParams(new LayoutParams(LayoutParams::MATCH_PARENT, mFriend->mPickerHeight / mFriend->mDisplayCount));
+        selectView->setLayoutParams(new LayoutParams(LayoutParams::MATCH_PARENT, mFriend->mPickerHeight / mFriend->mDisplayCount));
     }
     selectView->setGravity(mFriend->mGravity);
     selectView->setVisibility(View::INVISIBLE);
@@ -261,8 +260,16 @@ void RVNumberPicker::PickerManager::smoothScrollToPosition(RecyclerView& recycle
 
 void RVNumberPicker::PickerManager::onMeasure(RecyclerView::Recycler& recycler, RecyclerView::State& state, int widthSpec, int heightSpec) {
     if (getItemCount() != 0 && mFriend->mDisplayCount != 0) {
-        int itemViewWidth = mRecyclerView->getLayoutParams()->width / mFriend->mDisplayCount;
-        int itemViewHeight = mRecyclerView->getLayoutParams()->height / mFriend->mDisplayCount;
+        // 优先读 LayoutParams 中的显式数值；若为 match_parent(-1)/wrap_content(-2)，回退到 MeasureSpec
+        int rvWidth = mRecyclerView->getLayoutParams()->width;
+        int rvHeight = mRecyclerView->getLayoutParams()->height;
+        if (rvWidth <= 0)  rvWidth = View::MeasureSpec::getSize(widthSpec);
+        if (rvHeight <= 0) rvHeight = View::MeasureSpec::getSize(heightSpec);
+        // 同步到 mFriend 供 Adapter 创建 item 时使用
+        if (rvWidth > 0)  mFriend->mPickerWidth = rvWidth;
+        if (rvHeight > 0) mFriend->mPickerHeight = rvHeight;
+        int itemViewWidth = rvWidth / mFriend->mDisplayCount;
+        int itemViewHeight = rvHeight / mFriend->mDisplayCount;
 
         mRecyclerView->setClipToPadding(false);
         if (mOrientation == HORIZONTAL) {
@@ -664,8 +671,8 @@ RVNumberPicker::RVNumberPicker(Context* context, const AttributeSet& attr) :Recy
     mFontFamily = attr.getString("fontFamily", mFontFamily);
     mFontTypeface = Typeface::create(mFontFamily, mTextStyle);
 
-    mXMLWidth = attr.getLayoutDimension("layout_width", LayoutParams::WRAP_CONTENT);
-    mXMLHeight = attr.getLayoutDimension("layout_height", LayoutParams::WRAP_CONTENT);
+    mPickerWidth = attr.getLayoutDimension("layout_width", LayoutParams::MATCH_PARENT);
+    mPickerHeight = attr.getLayoutDimension("layout_height", LayoutParams::MATCH_PARENT);
     init();
 }
 
@@ -873,6 +880,20 @@ void RVNumberPicker::onItemClick(View& v, int position) {
 /// @param position 
 void RVNumberPicker::onItemLongClick(View& v, int position) {
     if (mOnItemLongClickListener)mOnItemLongClickListener(*this, v, position);
+}
+
+/// @brief 布局尺寸变化回调，同步实际宽高到 mPickerWidth/mPickerHeight，
+///        使 Adapter 创建 item 时无需依赖 XML 写死的 layout_width/layout_height
+/// @param w 新宽度
+/// @param h 新高度
+/// @param oldw 旧宽度
+/// @param oldh 旧高度
+void RVNumberPicker::onSizeChanged(int w, int h, int oldw, int oldh) {
+    RecyclerView::onSizeChanged(w, h, oldw, oldh);
+    if (w > 0 && h > 0 && (w != mPickerWidth || h != mPickerHeight)) {
+        mPickerWidth = w;
+        mPickerHeight = h;
+    }
 }
 
 /// @brief 选中项改变回调
