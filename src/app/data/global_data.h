@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2026-07-14 17:45:54
+ * @LastEditTime: 2026-08-05 09:54:09
  * @FilePath: /kk_frame/src/app/data/global_data.h
  * @Description: 全局应用数据
  * @BugList:
@@ -41,11 +41,7 @@ public:  // 特殊信息
     bool             mHaveChange = false;               // 是否需要保存
     bool             mIsFirstInit = true;               // 是否是首次初始化
 
-public:  // 设备信息
-    bool             mPower = false;                    // 开关机
-    bool             mLock = false;                     // 童锁
-
-private: // 状态数据
+public:  // 状态数据
     bool             mCoffee = false;                   // 咖啡机[🎐演示保存逻辑的数据]
 
 private:
