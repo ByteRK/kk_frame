@@ -2,20 +2,21 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:07
- * @LastEditTime: 2026-08-05 18:17:20
+ * @LastEditTime: 2026-08-06 11:57:21
  * @FilePath: /kk_frame/src/widgets/rvNumberPicker.cc
  * @Description: 使用RecycleView实现数字选择器
  *
  * @BugList: 1、暂时不要使用SmoothscrolltoPosition
  *           2、textColor全透颜色请使用#01000000,暂不支持全0透明度
  *
- * Copyright (c) 2024 by Ricken, All Rights Reserved.
+ * Copyright (c) 2026 by Ricken, All Rights Reserved.
  *
 **/
 
 #include "rvNumberPicker.h"
 #include <view/layoutinflater.h>
 #include <view/viewoverlay.h>
+#include <widget/linearlayout.h>
 #include <widget/relativelayout.h>
 #include <widgetEx/recyclerview/orientationhelper.h>
 
@@ -27,13 +28,75 @@ static constexpr float  GRADIENT_MIN = 0.01f;          // 变换最小阈值（�
 static constexpr float  DECEL_COEFFICIENT = 0.3356f;   // 滚动减速度系数
 static constexpr int    RECYCLED_VIEW_MULT = 5;        // 回收池容量倍数
 
-// overlay 布局坐标（需与 XML 中 overlay 布局尺寸一致）
-static constexpr int    OVERLAY_LAYOUT_L = 153, OVERLAY_LAYOUT_T = 27, OVERLAY_LAYOUT_R = 10, OVERLAY_LAYOUT_B = 10;
-static constexpr int    SEL_OVERLAY_L = 165, SEL_OVERLAY_T = 24, SEL_OVERLAY_R = 34, SEL_OVERLAY_B = 34;
+// ============ Overlay 布局辅助 ============
+
+/// @brief 为添加到 ViewOverlay 的子 View 设置正确的绘制区域
+///        ViewOverlay 不参与 measure/layout 流程，必须手动调用
+/// @param parent  父 View（overlay 所属的宿主 View）
+/// @param overlay 要添加到 overlay 层的子 View
+/// @param gravity 对齐方式，默认右下角（适合角标场景）
+/// @param fallbackW 父 View 可能尚未 layout，提供回退宽度（通常为 item 预期宽度）
+/// @param fallbackH 父 View 可能尚未 layout，提供回退高度（通常为 item 预期高度）
+static void setupOverlayBounds(View* parent, View* overlay,
+    int gravity = Gravity::END | Gravity::BOTTOM,
+    int fallbackW = 0, int fallbackH = 0) {
+    int pw = parent->getWidth();
+    int ph = parent->getHeight();
+    if (pw <= 0) pw = fallbackW;
+    if (ph <= 0) ph = fallbackH;
+    if (pw <= 0 || ph <= 0) return;
+
+    // inflate(nullptr) 不会创建 LayoutParams，先空防护
+    LayoutParams* olp = overlay->getLayoutParams();
+    int olpW = olp ? olp->width : 0;
+    int olpH = olp ? olp->height : 0;
+
+    // 有显式尺寸用 EXACTLY，否则 AT_MOST
+    int wMode = (olpW > 0) ? View::MeasureSpec::EXACTLY : View::MeasureSpec::AT_MOST;
+    int hMode = (olpH > 0) ? View::MeasureSpec::EXACTLY : View::MeasureSpec::AT_MOST;
+    int wSpec = View::MeasureSpec::makeMeasureSpec(
+        (olpW > 0) ? std::min(olpW, pw) : pw, wMode);
+    int hSpec = View::MeasureSpec::makeMeasureSpec(
+        (olpH > 0) ? std::min(olpH, ph) : ph, hMode);
+
+    overlay->measure(wSpec, hSpec);
+
+    int w = overlay->getMeasuredWidth();
+    int h = overlay->getMeasuredHeight();
+
+    // 空文本等场景下 AT_MOST 可能测得宽度为 0，用高度作为最小宽度兜底
+    if (w <= 0 && h > 0) {
+        w = h;
+        overlay->measure(
+            View::MeasureSpec::makeMeasureSpec(w, View::MeasureSpec::EXACTLY),
+            View::MeasureSpec::makeMeasureSpec(h, View::MeasureSpec::EXACTLY));
+        w = overlay->getMeasuredWidth();
+        h = overlay->getMeasuredHeight();
+    }
+
+    // 根据 gravity 计算位置
+    int l, t;
+    if (gravity & Gravity::END)          l = pw - w;
+    else if (gravity & Gravity::CENTER_HORIZONTAL) l = (pw - w) / 2;
+    else                                 l = 0;
+
+    if (gravity & Gravity::BOTTOM)        t = ph - h;
+    else if (gravity & Gravity::CENTER_VERTICAL)   t = (ph - h) / 2;
+    else                                  t = 0;
+
+    // cdroid 的 layout() 签名是 (left, top, width, height)，不是 Android 的 (l, t, r, b)
+    overlay->layout(l, t, w, h);
+}
 
 /*****************************************适配器***********************************************/
 
-RVNumberPicker::PickerAdapter::PickerAdapter(RVNumberPicker* pickerView) :mFriend(pickerView) { }
+RVNumberPicker::PickerAdapter::PickerAdapter(RVNumberPicker* pickerView) :mFriend(pickerView) {
+    mOverlayInflateParent = new LinearLayout(0, 0);
+}
+
+RVNumberPicker::PickerAdapter::~PickerAdapter() {
+    delete mOverlayInflateParent;
+}
 
 RecyclerView::ViewHolder* RVNumberPicker::PickerAdapter::onCreateViewHolder(ViewGroup* parent, int viewType) {
     View* view = (viewType == PICKER_TYPE_IMAGE) ? createImageItem(parent)
@@ -111,9 +174,23 @@ View* RVNumberPicker::PickerAdapter::createSimpleTextItem(ViewGroup* parent) {
     textView->setTypeface(mFriend->mFontTypeface);
     textView->setTag((void*)PICKER_TYPE_TEXT);
     if (!mFriend->mOverlayLayout.empty()) {
-        View *overlayView = LayoutInflater::from(parent->getContext())->inflate(mFriend->mOverlayLayout, nullptr);
-        overlayView->layout(OVERLAY_LAYOUT_L, OVERLAY_LAYOUT_T, OVERLAY_LAYOUT_R, OVERLAY_LAYOUT_B);
-        textView->getOverlay()->getOverlayView()->addView(overlayView);
+        // 复用成员容器 inflate，确保 XML layout_width/height 被解析为 LayoutParams
+        mOverlayInflateParent->removeAllViews();
+        View* overlayView = LayoutInflater::from(parent->getContext())->inflate(mFriend->mOverlayLayout, mOverlayInflateParent);
+        if (overlayView) overlayView = mOverlayInflateParent->getChildAt(0);
+        if (overlayView) {
+            mOverlayInflateParent->removeView(overlayView);
+            int fw, fh;
+            if (mFriend->mOrientation == HORIZONTAL) {
+                fw = mFriend->mPickerWidth / mFriend->mDisplayCount;
+                fh = mFriend->mPickerHeight;
+            } else {
+                fw = mFriend->mPickerWidth;
+                fh = mFriend->mPickerHeight / mFriend->mDisplayCount;
+            }
+            setupOverlayBounds(textView, overlayView, Gravity::END | Gravity::TOP, fw, fh);
+            textView->getOverlay()->getOverlayView()->addView(overlayView);
+        }
     }
     return textView;
 }
@@ -140,9 +217,19 @@ View* RVNumberPicker::PickerAdapter::createSelectTextItem(ViewGroup* parent) {
     selectView->setGravity(mFriend->mGravity);
     selectView->setVisibility(View::INVISIBLE);
     if (!mFriend->mSelectOverlayLayout.empty()) {
-        View* selOverlay = LayoutInflater::from(parent->getContext())->inflate(mFriend->mSelectOverlayLayout, nullptr);
-        selOverlay->layout(SEL_OVERLAY_L, SEL_OVERLAY_T, SEL_OVERLAY_R, SEL_OVERLAY_B);
-        selectView->getOverlay()->getOverlayView()->addView(selOverlay);
+        // 复用成员容器 inflate，确保 XML layout_width/height 被解析为 LayoutParams
+        mOverlayInflateParent->removeAllViews();
+        View* selOverlay = LayoutInflater::from(parent->getContext())->inflate(mFriend->mSelectOverlayLayout, mOverlayInflateParent);
+        if (selOverlay) selOverlay = mOverlayInflateParent->getChildAt(0);
+        if (selOverlay) {
+            mOverlayInflateParent->removeView(selOverlay);
+            int fw = mFriend->mOrientation == HORIZONTAL
+                ? mFriend->mPickerWidth / mFriend->mDisplayCount : mFriend->mPickerWidth;
+            int fh = mFriend->mOrientation == HORIZONTAL
+                ? mFriend->mPickerHeight : mFriend->mPickerHeight / mFriend->mDisplayCount;
+            setupOverlayBounds(selectView, selOverlay, Gravity::END | Gravity::TOP, fw, fh);
+            selectView->getOverlay()->getOverlayView()->addView(selOverlay);
+        }
     }
     layout->addView(textView);
     layout->addView(selectView);
@@ -164,11 +251,18 @@ void RVNumberPicker::PickerAdapter::bindSimpleTextItem(TextView* textView, int r
     else
         textView->setText(std::to_string(realPosition));
     textView->setBackgroundResource(mFriend->mItemBackground);
-    // 检查 overlay 可见性
-    if (!mFriend->mOverlayLayout.empty()) {
+    // overlay 回调（外抛 View 给外部控制，未设置回调时不干预）
+    if (mFriend->mOverlayFormatter) {
         View* overlayView = textView->getOverlay()->getOverlayView()->getChildAt(0);
-        bool visible = mFriend->mOverlayFormatter && mFriend->mOverlayFormatter(realPosition) != "0";
-        overlayView->setVisibility(visible ? View::VISIBLE : View::GONE);
+        if (overlayView) {
+            // 确保 overlay 布局有效后再回调
+            int fw = mFriend->mOrientation == HORIZONTAL
+                ? mFriend->mPickerWidth / mFriend->mDisplayCount : mFriend->mPickerWidth;
+            int fh = mFriend->mOrientation == HORIZONTAL
+                ? mFriend->mPickerHeight : mFriend->mPickerHeight / mFriend->mDisplayCount;
+            setupOverlayBounds(textView, overlayView, Gravity::END | Gravity::TOP, fw, fh);
+            mFriend->mOverlayFormatter(realPosition, *overlayView);
+        }
     }
 }
 
@@ -187,15 +281,16 @@ void RVNumberPicker::PickerAdapter::bindSelectTextItem(ViewGroup* layout, int po
         selectTv->setText(std::to_string(realPosition));
     }
 
-    if (!mFriend->mSelectOverlayLayout.empty()) {
+    // overlay 回调（外抛 View 给外部控制，未设置回调时不干预）
+    if (mFriend->mOverlayFormatter) {
         View* selOverlay = selectTv->getOverlay()->getOverlayView()->getChildAt(0);
-        if (dynamic_cast<TextView*>(selOverlay)) {
-            if (mFriend->mOverlayFormatter && mFriend->mOverlayFormatter(realPosition) != "0") {
-                static_cast<TextView*>(selOverlay)->setText(mFriend->mOverlayFormatter(realPosition));
-                selOverlay->setVisibility(View::VISIBLE);
-            } else {
-                selOverlay->setVisibility(View::GONE);
-            }
+        if (selOverlay) {
+            int fw = mFriend->mOrientation == HORIZONTAL
+                ? mFriend->mPickerWidth / mFriend->mDisplayCount : mFriend->mPickerWidth;
+            int fh = mFriend->mOrientation == HORIZONTAL
+                ? mFriend->mPickerHeight : mFriend->mPickerHeight / mFriend->mDisplayCount;
+            setupOverlayBounds(selectTv, selOverlay, Gravity::END | Gravity::TOP, fw, fh);
+            mFriend->mOverlayFormatter(realPosition, *selOverlay);
         }
     }
 }
@@ -814,7 +909,7 @@ void RVNumberPicker::setSelectFormatter(TextFormatter l) {
     notifyUpdate(false);
 }
 
-void RVNumberPicker::setOverlayFormatter(TextFormatter l) {
+void RVNumberPicker::setOverlayFormatter(OverlayFormatter l) {
     mOverlayFormatter = l;
     notifyUpdate(false);
 }
