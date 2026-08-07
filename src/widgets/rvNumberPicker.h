@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:07
- * @LastEditTime: 2026-08-07 10:12:05
+ * @LastEditTime: 2026-08-07 10:26:02
  * @FilePath: /kk_frame/src/widgets/rvNumberPicker.h
  * @Description: 使用RecycleView实现数字选择器
  *
@@ -30,6 +30,7 @@ class RVNumberPicker :public cdroid::RecyclerView {
 public:
     DECLARE_UIEVENT(std::string, TextFormatter, int);
     DECLARE_UIEVENT(void, OverlayFormatter, int, View&);
+    DECLARE_UIEVENT(void, SelectOverlayFormatter, int, View&);
     DECLARE_UIEVENT(void, OnItemClickListener, RVNumberPicker&, View&, int);
     DECLARE_UIEVENT(bool, OnItemLongClickListener, RVNumberPicker&, View&, int);
     DECLARE_UIEVENT(void, OnValueChangeListener, RVNumberPicker&, int, int);
@@ -190,6 +191,7 @@ private:
     TextFormatter              mNumberFormatter{ nullptr };             // 数字格式化
     TextFormatter              mSelectNumberFormatter{ nullptr };       // 选中项数字格式化
     OverlayFormatter           mOverlayFormatter{ nullptr };            // 叠层回调（外抛Overlay View）
+    SelectOverlayFormatter     mSelectOverlayFormatter{ nullptr };      // 选中项叠层回调（外抛Overlay View）
 
 
     OnItemClickListener        mOnItemClickListener{ nullptr };         // 点击事件
@@ -223,6 +225,7 @@ public:
     void setFormatter(TextFormatter l);
     void setSelectFormatter(TextFormatter l);
     void setOverlayFormatter(OverlayFormatter l);
+    void setSelectOverlayFormatter(SelectOverlayFormatter l);
     void setSmoothScrollerDuration(int duration);
     void setImageList(const std::vector<std::string>& list, bool update = false, int newValue = -1);
     void setConvertList(std::vector<ConvertStruct> list);

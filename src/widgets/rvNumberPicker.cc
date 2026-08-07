@@ -285,8 +285,8 @@ void RVNumberPicker::PickerAdapter::bindSelectTextItem(ViewGroup* layout, int po
         selectTv->setText(std::to_string(realPosition));
     }
 
-    // overlay 回调（外抛 View 给外部控制，未设置回调时不干预）
-    if (mFriend->mOverlayFormatter) {
+    // 选中项 overlay 回调（外抛 View 给外部控制，未设置回调时不干预）
+    if (mFriend->mSelectOverlayFormatter) {
         View* selOverlay = selectTv->getOverlay()->getOverlayView()->getChildAt(0);
         if (selOverlay) {
             int fw = mFriend->mOrientation == HORIZONTAL
@@ -294,7 +294,7 @@ void RVNumberPicker::PickerAdapter::bindSelectTextItem(ViewGroup* layout, int po
             int fh = mFriend->mOrientation == HORIZONTAL
                 ? mFriend->mPickerHeight : mFriend->mPickerHeight / mFriend->mDisplayCount;
             setupOverlayBounds(selectTv, selOverlay, mFriend->mSelectOverlayGravity, fw, fh);
-            mFriend->mOverlayFormatter(realPosition, *selOverlay);
+            mFriend->mSelectOverlayFormatter(realPosition, *selOverlay);
         }
     }
 }
@@ -914,6 +914,11 @@ void RVNumberPicker::setSelectFormatter(TextFormatter l) {
 
 void RVNumberPicker::setOverlayFormatter(OverlayFormatter l) {
     mOverlayFormatter = l;
+    notifyUpdate(false);
+}
+
+void RVNumberPicker::setSelectOverlayFormatter(SelectOverlayFormatter l) {
+    mSelectOverlayFormatter = l;
     notifyUpdate(false);
 }
 
