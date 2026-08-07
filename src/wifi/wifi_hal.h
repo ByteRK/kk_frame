@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-27 09:43:34
- * @LastEditTime: 2026-02-28 14:21:08
+ * @LastEditTime: 2026-08-07 09:28:31
  * @FilePath: /kk_frame/src/wifi/wifi_hal.h
  * @Description: WiFi 适配层
  * @BugList:
@@ -52,6 +52,9 @@ public:
 
         // 扫描结束通知
         std::function<void(const std::vector<ApInfo>& aps)> onScanDone;
+
+        // 驱动异常通知（WiFi已关闭，平台可做自定义处理）
+        std::function<void()> onDriverFault;
     };
 
     struct Options {
@@ -78,6 +81,12 @@ public:
         std::string dhcp_cmd   = "udhcpc -i wlan0 -n -q";
         std::string ifup_cmd   = "ifconfig wlan0 up";
         std::string ifdown_cmd = "ifconfig wlan0 down";
+
+        // 驱动故障自动恢复（CONN_FAILED 连续出现时触发驱动重载）
+        std::string driver_unload_cmd;                  // 卸载驱动命令（如 rmmod rtl88x2bu），为空则跳过
+        std::string driver_load_cmd;                    // 加载驱动命令（如 modprobe rtl88x2bu），为空则跳过
+        int         driver_reload_after_fails  = 0;     // 连续 CONN_FAILED 次数阈值，0 = 禁用
+        int         driver_reload_cooldown_sec = 300;   // 两次重载最小间隔（秒）
     };
 
     explicit WifiHal(const Options& opt);
@@ -138,6 +147,9 @@ private:
     void cancelReconnect();
     void reconnectThread();
 
+    // driver recovery
+    bool tryReloadDriver();
+
 private:
 #ifdef PRODUCT_X64
     class X64DelayTimer;
@@ -186,6 +198,11 @@ private:
     std::condition_variable mReconnCv;
     std::mutex              mReconnMtx;
     int                     mReconnBackoffMs = 0;
+
+    // 驱动故障检测
+    std::atomic<int>        mConnFailCount{ 0 };        // 连续 CONN_FAILED 计数
+    std::atomic<uint64_t>   mLastDriverReloadMs{ 0 };   // 上次重载时间戳（毫秒）
+    std::atomic<bool>       mDriverReloading{ false };  // 驱动重载进行中，拒绝外部操作
 };
 
 #endif // !__WIFI_HAL_H__

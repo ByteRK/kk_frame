@@ -148,6 +148,15 @@ static bool GetWpaEventScanId(const std::string& msg, int& scanId) {
     return false;
 }
 
+static std::string getWpaEventParam(const std::string& msg, const std::string& key) {
+    const std::string needle = key + "=";
+    auto pos = msg.find(needle);
+    if (pos == std::string::npos) return {};
+    pos += needle.size();
+    auto end = msg.find_first_of(" \t\r\n", pos);
+    return msg.substr(pos, end == std::string::npos ? end : end - pos);
+}
+
 static WpaClient::Options MakeWpaOpt(const WifiHal::Options& opt) {
     WpaClient::Options w;
     w.ctrl_path = opt.ctrl_path;
@@ -247,6 +256,10 @@ void WifiHal::disable() {
 bool WifiHal::scan() {
 #if ENABLED(WIFI)
     if (state() == State::Off) return false;   // state() 自己会加锁
+    if (mDriverReloading.load()) {
+        LOGW("scan rejected: driver reload in progress");
+        return false;
+    }
     // setState(State::Scanning, "scan requested");
     std::string reply;
     if (!runCmd("SCAN use_id=1", &reply)) {
@@ -282,6 +295,10 @@ bool WifiHal::scan() {
 bool WifiHal::connect(const std::string& ssid, const std::string& psk) {
 #if ENABLED(WIFI)
     if (state() == State::Off) return false;
+    if (mDriverReloading.load()) {
+        LOGW("connect rejected: driver reload in progress");
+        return false;
+    }
     {
         std::lock_guard<std::mutex> lk(mMtx);
         mUserDisconnect.store(false);
@@ -422,6 +439,7 @@ void WifiHal::onWpaEvent(const std::string& msg) {
 
         // 连接已经起来：清理重连抖动控制
         mReconnFailCount.store(0);
+        mConnFailCount.store(0);
         finishReconnectAttempt();
 
         startDhcpWorker();
@@ -443,10 +461,20 @@ void WifiHal::onWpaEvent(const std::string& msg) {
     }
 
     if (starts_with(msg, WPA_EVENT_TEMP_DISABLED)) {
-        // 常见：4WAY_HANDSHAKE / auth fail
-        setState(State::AuthFailed, "SSID TEMP DISABLED (auth failed?)");
         finishReconnectAttempt();
-        // 密码错误场景一般不建议自动重连（避免狂刷）
+        const std::string reason = getWpaEventParam(msg, "reason");
+        if (reason == "CONN_FAILED") {
+            // 驱动拒绝关联，非密码错误，允许重连
+            setState(State::ApNotFound, "SSID TEMP DISABLED (CONN_FAILED)");
+            ++mConnFailCount;
+            if (mOpt.auto_reconnect && !mUserDisconnect.load()) {
+                scheduleReconnect("temp disabled conn failed");
+            }
+        } else {
+            // 密码错误 / 握手失败等，不再自动重连
+            setState(State::AuthFailed, "SSID TEMP DISABLED (auth failed?)");
+            mConnFailCount.store(0);
+        }
         return;
     }
 
@@ -872,6 +900,94 @@ void WifiHal::cancelReconnect() {
     if (wasRunning && mReconnTh.joinable()) mReconnTh.join();
 }
 
+bool WifiHal::tryReloadDriver() {
+    // 冷却检查
+    const uint64_t now = cdroid::SystemClock::uptimeMillis();
+    const uint64_t last = mLastDriverReloadMs.load();
+    const int64_t cooldownMs = static_cast<int64_t>(
+        std::max(mOpt.driver_reload_cooldown_sec, 0)) * 1000;
+    if (cooldownMs > 0 && now - last < static_cast<uint64_t>(cooldownMs)) {
+        LOGW("driver reload cooldown not met, skip");
+        return false;
+    }
+    mLastDriverReloadMs.store(now);
+
+    // 标记重载进行中，外部 scan/connect 将被拒绝，cancelReconnect 不会阻塞等待
+    mDriverReloading.store(true);
+
+    // 可中断 sleep：每 100ms 检查是否被取消，避免 join 长时间阻塞
+    auto reloadSleep = [this](int ms) -> bool {
+        const auto end = std::chrono::steady_clock::now() + std::chrono::milliseconds(ms);
+        while (std::chrono::steady_clock::now() < end) {
+            if (!mReconnRunning.load()) return false;
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+        return true;
+    };
+
+    LOGW("Wi-Fi driver fault detected, reloading driver...");
+
+    // 1. 停止 DHCP
+    stopDhcpWorker();
+
+    // 2. 关闭 wpa_ctrl 通道
+    mWpa.stopMonitor();
+    mWpa.close();
+
+    // 3. 接口 down
+    if (!mOpt.ifdown_cmd.empty()) {
+        LOGI("driver reload: ifdown (%s)", mOpt.ifdown_cmd.c_str());
+        std::system(mOpt.ifdown_cmd.c_str());
+    }
+
+    // 4. 平台回调（WiFi 已关闭）
+    {
+        Callbacks cb = getCallbacks();
+        if (cb.onDriverFault) cb.onDriverFault();
+    }
+
+    // 5. 卸载驱动
+    if (!mOpt.driver_unload_cmd.empty()) {
+        LOGI("driver reload: unloading (%s)", mOpt.driver_unload_cmd.c_str());
+        std::system(mOpt.driver_unload_cmd.c_str());
+    }
+
+    // 6. 卸载与加载之间留出间隔，避免竞争
+    if (!reloadSleep(1000)) {
+        mDriverReloading.store(false);
+        return false;
+    }
+
+    // 7. 加载驱动
+    if (!mOpt.driver_load_cmd.empty()) {
+        LOGI("driver reload: loading (%s)", mOpt.driver_load_cmd.c_str());
+        std::system(mOpt.driver_load_cmd.c_str());
+    }
+
+    // 8. 等待驱动初始化
+    if (!reloadSleep(2000)) {
+        mDriverReloading.store(false);
+        return false;
+    }
+
+    // 9. 重新启用 WiFi（检查是否已被用户关闭或取消）
+    if (mShuttingDown.load() || mUserDisconnect.load() || !mReconnRunning.load()) {
+        LOGI("driver reload: WiFi re-enable skipped (cancelled)");
+        mDriverReloading.store(false);
+        return false;
+    }
+
+    if (enable()) {
+        LOGI("driver reload complete, WiFi re-enabled");
+        mDriverReloading.store(false);
+        return true;
+    }
+
+    LOGE("driver reload failed: WiFi re-enable failed");
+    mDriverReloading.store(false);
+    return false;
+}
+
 void WifiHal::reconnectThread() {
     std::unique_lock<std::mutex> lk(mReconnMtx);
 
@@ -887,6 +1003,40 @@ void WifiHal::reconnectThread() {
         const State currentState = state();
         if (currentState == State::Connected || currentState == State::IpReady ||
             currentState == State::AuthFailed) {
+            mReconnBackoffMs = std::max(mOpt.reconnect_initial_ms, 100);
+            continue;
+        }
+
+        // 驱动异常：连续 CONN_FAILED 达到阈值，尝试重载驱动
+        if (mOpt.driver_reload_after_fails > 0 &&
+            mConnFailCount.load() >= mOpt.driver_reload_after_fails) {
+            LOGW("driver fault: CONN_FAILED count=%d >= threshold=%d",
+                 mConnFailCount.load(), mOpt.driver_reload_after_fails);
+            mConnFailCount.store(0);
+            mReconnInFlight.store(false);
+            lk.unlock();
+            const bool reloadOk = tryReloadDriver();
+            lk.lock();
+            if (!mReconnRunning.load()) break;
+            if (!reloadOk) {
+                LOGE("driver reload failed, abort auto reconnect");
+                mReconnRunning.store(false);
+                break;
+            }
+
+            // 重载后 wpa_supplicant 丢失了运行时网络配置，
+            // 必须走完整的 ADD_NETWORK / SET_NETWORK / SELECT_NETWORK 流程
+            std::string ssid, psk;
+            {
+                std::lock_guard<std::mutex> guard(mMtx);
+                ssid = mLastSsid;
+                psk = mLastPsk;
+            }
+            lk.unlock();
+            setState(State::Connecting, "auto reconnect after driver reload");
+            ensureNetworkConfigured(ssid, psk);
+            lk.lock();
+
             mReconnBackoffMs = std::max(mOpt.reconnect_initial_ms, 100);
             continue;
         }
