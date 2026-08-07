@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:07
- * @LastEditTime: 2026-08-07 10:11:14
+ * @LastEditTime: 2026-08-07 11:42:24
  * @FilePath: /kk_frame/src/widgets/rvNumberPicker.cc
  * @Description: 使用RecycleView实现数字选择器
  *
@@ -869,7 +869,8 @@ void RVNumberPicker::notifyUpdate(bool isItemChange) {
 }
 
 /// @brief 通知更新
-void RVNumberPicker::notifyUpdatePosition(int position) {
+void RVNumberPicker::notifyUpdateValue(int value) {
+    int position = std::max(mMinNum, std::min(value, mMaxNum)) - mMinNum;
     mAdapter->notifyItemChanged(position);
 }
 

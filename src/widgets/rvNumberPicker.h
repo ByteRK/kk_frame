@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:07
- * @LastEditTime: 2026-08-07 10:26:02
+ * @LastEditTime: 2026-08-07 11:40:24
  * @FilePath: /kk_frame/src/widgets/rvNumberPicker.h
  * @Description: 使用RecycleView实现数字选择器
  *
@@ -218,7 +218,7 @@ public:
     void setMaxValue(int value);
     void setMinValue(int value);
     void notifyUpdate(bool isItemChange = true);
-    void notifyUpdatePosition(int position);
+    void notifyUpdateValue(int value);
     void updateStruct(int min, int max);
     void updateStruct(int min, int max, int value);
     void setSelectVisibility(int visibility);
