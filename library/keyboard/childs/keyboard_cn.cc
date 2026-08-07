@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-17 14:15:07
- * @LastEditTime: 2026-06-30 00:57:43
+ * @LastEditTime: 2026-08-07 16:03:54
  * @FilePath: /kk_frame/library/keyboard/childs/keyboard_cn.cc
  * @Description:
  * @BugList:
@@ -12,7 +12,6 @@
 **/
 
 #include "keyboard_cn.h"
-#include "config_info.h"
 
 #if ENABLED(KEYBOARD_PINYIN)
 #include <pinyinime.h>
@@ -123,10 +122,10 @@ void Keyboard_CN::onBindViewHolder(RecyclerView::ViewHolder& holder, int positio
 void Keyboard_CN::pinyinOpen() {
     if (mPinyinhandle) return;
 #if ENABLED(KEYBOARD_PINYIN)
-    if (access(PINYIN_DAT_PATH "dict_pinyin.dat", F_OK) != 0) LOGE("pinyin dat[%s] file not exist", PINYIN_DAT_PATH "dict_pinyin.dat");
-    if (access(PINYIN_DAT_PATH "user.dat", F_OK) != 0) LOGE("pinyin dat[%s] file not exist", PINYIN_DAT_PATH "user.dat");
+    if (access("dict_pinyin.dat", F_OK) != 0) LOGE("pinyin dat[%s] file not exist", "dict_pinyin.dat");
+    if (access("user.dat", F_OK) != 0) LOGE("pinyin dat[%s] file not exist", "user.dat");
 
-    mPinyinhandle = ime_pinyin::im_open_decoder(PINYIN_DAT_PATH "dict_pinyin.dat", PINYIN_DAT_PATH "user.dat");
+    mPinyinhandle = ime_pinyin::im_open_decoder("dict_pinyin.dat", "user.dat");
     LOGI("pinyinOpen: %p", mPinyinhandle);
 #else
     LOGE("please enable pinyin support");

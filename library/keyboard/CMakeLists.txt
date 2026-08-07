@@ -49,7 +49,6 @@ target_include_directories(${TARGET_NAME}
         ${CMAKE_BINARY_DIR}/include/gui
         ${CMAKE_BINARY_DIR}/include/porting
         ${APP_ROOT_DIR}/src
-        ${APP_ROOT_DIR}/config
         ${APP_ROOT_DIR}/src/utils
         ${APP_ROOT_DIR}/src/class
 )
