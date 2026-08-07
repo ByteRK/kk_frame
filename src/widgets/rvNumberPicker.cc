@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:07
- * @LastEditTime: 2026-08-07 09:58:47
+ * @LastEditTime: 2026-08-07 10:11:14
  * @FilePath: /kk_frame/src/widgets/rvNumberPicker.cc
  * @Description: 使用RecycleView实现数字选择器
  *
@@ -192,7 +192,7 @@ View* RVNumberPicker::PickerAdapter::createSimpleTextItem(ViewGroup* parent) {
                 fw = mFriend->mPickerWidth;
                 fh = mFriend->mPickerHeight / mFriend->mDisplayCount;
             }
-            setupOverlayBounds(textView, overlayView, Gravity::END | Gravity::TOP, fw, fh);
+            setupOverlayBounds(textView, overlayView, mFriend->mOverlayGravity, fw, fh);
             textView->getOverlay()->getOverlayView()->addView(overlayView);
         }
     }
@@ -231,7 +231,7 @@ View* RVNumberPicker::PickerAdapter::createSelectTextItem(ViewGroup* parent) {
                 ? mFriend->mPickerWidth / mFriend->mDisplayCount : mFriend->mPickerWidth;
             int fh = mFriend->mOrientation == HORIZONTAL
                 ? mFriend->mPickerHeight : mFriend->mPickerHeight / mFriend->mDisplayCount;
-            setupOverlayBounds(selectView, selOverlay, Gravity::END | Gravity::TOP, fw, fh);
+            setupOverlayBounds(selectView, selOverlay, mFriend->mSelectOverlayGravity, fw, fh);
             selectView->getOverlay()->getOverlayView()->addView(selOverlay);
         }
     }
@@ -264,7 +264,7 @@ void RVNumberPicker::PickerAdapter::bindSimpleTextItem(TextView* textView, int r
                 ? mFriend->mPickerWidth / mFriend->mDisplayCount : mFriend->mPickerWidth;
             int fh = mFriend->mOrientation == HORIZONTAL
                 ? mFriend->mPickerHeight : mFriend->mPickerHeight / mFriend->mDisplayCount;
-            setupOverlayBounds(textView, overlayView, Gravity::END | Gravity::TOP, fw, fh);
+            setupOverlayBounds(textView, overlayView, mFriend->mOverlayGravity, fw, fh);
             mFriend->mOverlayFormatter(realPosition, *overlayView);
         }
     }
@@ -293,7 +293,7 @@ void RVNumberPicker::PickerAdapter::bindSelectTextItem(ViewGroup* layout, int po
                 ? mFriend->mPickerWidth / mFriend->mDisplayCount : mFriend->mPickerWidth;
             int fh = mFriend->mOrientation == HORIZONTAL
                 ? mFriend->mPickerHeight : mFriend->mPickerHeight / mFriend->mDisplayCount;
-            setupOverlayBounds(selectTv, selOverlay, Gravity::END | Gravity::TOP, fw, fh);
+            setupOverlayBounds(selectTv, selOverlay, mFriend->mSelectOverlayGravity, fw, fh);
             mFriend->mOverlayFormatter(realPosition, *selOverlay);
         }
     }
@@ -748,7 +748,9 @@ RVNumberPicker::RVNumberPicker(Context* context, const AttributeSet& attr) :Recy
         { "visible", (int)View::VISIBLE }
     }, mSelectVisibility);
     mOverlayLayout = attr.getString("overlayLayout", mOverlayLayout);
+    mOverlayGravity = attr.getGravity("overlayGravity", mOverlayGravity);
     mSelectOverlayLayout = attr.getString("selectOverlayLayout", mOverlayLayout);
+    mSelectOverlayGravity = attr.getGravity("selectOverlayGravity", mSelectOverlayGravity);
     mOrientation = attr.getInt("orientation", std::unordered_map<std::string, int>{
         { "horizontal", LinearLayout::HORIZONTAL },
         { "vertical", LinearLayout::VERTICAL }
