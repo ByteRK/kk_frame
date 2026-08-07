@@ -31,6 +31,11 @@ configure_file(
 target_compile_definitions(${TARGET_NAME} PRIVATE
     PRODUCT_${CDROID_CHIPSET_UPPER}
 )
+if(ENABLED_KEYBOARD_PINYIN)
+    target_compile_definitions(${TARGET_NAME} PRIVATE
+        ENABLE_KEYBOARD_PINYIN=1
+    )
+endif()
 target_include_directories(${TARGET_NAME}
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
