@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:07
- * @LastEditTime: 2026-08-07 11:42:24
+ * @LastEditTime: 2026-08-07 14:16:52
  * @FilePath: /kk_frame/src/widgets/rvNumberPicker.cc
  * @Description: 使用RecycleView实现数字选择器
  *
@@ -26,7 +26,7 @@ DECLARE_WIDGET(RVNumberPicker)
 static constexpr float  GRADIENT_MAX = 0.49f;          // 变换最大阈值（视同两边）
 static constexpr float  GRADIENT_MIN = 0.01f;          // 变换最小阈值（视同中心）
 static constexpr float  DECEL_COEFFICIENT = 0.3356f;   // 滚动减速度系数
-static constexpr int    RECYCLED_VIEW_MULT = 5;        // 回收池容量倍数
+static constexpr int    RECYCLED_VIEW_MULT = 3;        // 回收池容量倍数
 
 // ============ Overlay 布局辅助 ============
 
@@ -794,8 +794,14 @@ void RVNumberPicker::init() {
 
     setAdapter(mAdapter);
     setLayoutManager(mLayoutManager);
+    setItemAnimator(nullptr);
     mSnapHelper->attachToRecyclerView(this);
     getRecycledViewPool().setMaxRecycledViews(0, RECYCLED_VIEW_MULT * mDisplayCount);
+
+    setOnItemClickListener([this](RVNumberPicker&, View&, int value) {
+        if (value == getValue()) return;
+        setValue(value, true, true);
+    });
 }
 
 int RVNumberPicker::getValue() {
@@ -976,14 +982,14 @@ void RVNumberPicker::setOnCenterViewChangeListener(OnCenterViewChangeListener l)
 /// @param v 
 /// @param position 
 void RVNumberPicker::onItemClick(View& v, int position) {
-    if (mOnItemClickListener)mOnItemClickListener(*this, v, position);
+    if (mOnItemClickListener)mOnItemClickListener(*this, v, position + mMinNum);
 }
 
 /// @brief 长按回调
 /// @param v 
 /// @param position 
 void RVNumberPicker::onItemLongClick(View& v, int position) {
-    if (mOnItemLongClickListener)mOnItemLongClickListener(*this, v, position);
+    if (mOnItemLongClickListener)mOnItemLongClickListener(*this, v, position + mMinNum);
 }
 
 /// @brief 布局尺寸变化回调，同步实际宽高到 mPickerWidth/mPickerHeight，
