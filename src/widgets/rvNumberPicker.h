@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:07
- * @LastEditTime: 2026-08-06 11:40:58
+ * @LastEditTime: 2026-08-07 09:59:04
  * @FilePath: /kk_frame/src/widgets/rvNumberPicker.h
  * @Description: 使用RecycleView实现数字选择器
  *
@@ -153,31 +153,33 @@ private:
     };
 
 private:
-    bool        mReverse{ false };                           // 是否反向布局
-    int         mOrientation{ LinearLayout::VERTICAL };      // 布局方向
-    int         mDisplayCount{ 3 };                          // 显示数量
-    int         mSmoothDuration{ 300 };                      // 滚动时间
+    int         mPickerWidth{ 0 };                           // 宽
+    int         mPickerHeight{ 0 };                          // 高
+
     int         mMinNum{ 0 };                                // 最小值
     int         mMaxNum{ 5 };                                // 最大值
     int         mRealCount{ 6 };                             // 实际数量
+    int         mDisplayCount{ 3 };                          // 显示数量
+    int         mPosition{ 0 };                              // 当前项位置
+    std::string mItemBackground{ "@null" };                  // 子项背景
+    int         mTextStyle{ Typeface::NORMAL };              // 字体
+    std::string mFontFamily{ "" };                           // 字体
+    Typeface*   mFontTypeface{ nullptr };                    // 字体
+    int         mGravity{ Gravity::CENTER };                 // 文字对齐方式
+    std::string mSelectLayout{ "" };                         // 选中项布局（与picker的editeText类似）
+    int         mSelectVisibility{ View::VISIBLE };          // 选中项的可见性
+    std::string mOverlayLayout{ "" };                        // 叠层绘制
+    std::string mSelectOverlayLayout{ "" };                  // 选中项叠层绘制
+    int         mOrientation{ LinearLayout::VERTICAL };      // 布局方向
+    bool        mReverse{ false };                           // 是否反向布局
+    int         mSmoothDuration{ 300 };                      // 滚动时间
 
     TextTheme   mTextTheme;                                  // 默认文字主题
     TextTheme   mTextTheme2;                                 // 默认文字主题2(两边使用)
     TextTheme   mCenterTextTheme;                            // 中间项文字主题
 
-    int         mTextStyle{ Typeface::NORMAL };                        // 文字Style
-    int         mGravity{ Gravity::CENTER };                           // 文字对齐方式
-    int         mSelectVisibility{ View::VISIBLE };                    // 选中项的可见性
-    std::string mItemBackground{ "@null" };                            // 背景
-    int         mPickerWidth{ 0 };                                     // 宽
-    int         mPickerHeight{ 0 };                                    // 高
-    std::string mFontFamily{ "" };                                     // 字体
-    std::string mOverlayLayout{ "" };                                  // 叠层绘制
-    std::string mSelectOverlayLayout{ "" };                            // 选中项叠层绘制
-    std::string mSelectLayout{ "" };                                   // 选中项布局（与picker的editeText类似）
-    Typeface*   mFontTypeface{ nullptr };                              // 字体
-    std::vector<std::string>   mImageList;                             // 图片列表
-    std::vector<ConvertStruct> mConvertList;                           // 转换信息列表
+    std::vector<std::string>   mImageList;                   // 图片列表
+    std::vector<ConvertStruct> mConvertList;                 // 转换信息列表
 
 private:
     PickerAdapter*             mAdapter{ nullptr };                     // 适配器
@@ -187,7 +189,6 @@ private:
     TextFormatter              mSelectNumberFormatter{ nullptr };       // 选中项数字格式化
     OverlayFormatter           mOverlayFormatter{ nullptr };            // 叠层回调（外抛Overlay View）
 
-    int                        mPosition{ 0 };                          // 当前项位置
 
     OnItemClickListener        mOnItemClickListener{ nullptr };         // 点击事件
     OnItemLongClickListener    mOnItemLongClickListener{ nullptr };     // 长按事件

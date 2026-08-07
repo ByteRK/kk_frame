@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:07
- * @LastEditTime: 2026-08-06 11:57:21
+ * @LastEditTime: 2026-08-07 09:58:47
  * @FilePath: /kk_frame/src/widgets/rvNumberPicker.cc
  * @Description: 使用RecycleView实现数字选择器
  *
@@ -34,11 +34,11 @@ static constexpr int    RECYCLED_VIEW_MULT = 5;        // 回收池容量倍数
 ///        ViewOverlay 不参与 measure/layout 流程，必须手动调用
 /// @param parent  父 View（overlay 所属的宿主 View）
 /// @param overlay 要添加到 overlay 层的子 View
-/// @param gravity 对齐方式，默认右下角（适合角标场景）
+/// @param gravity 对齐方式，默认右上角（适合角标场景）
 /// @param fallbackW 父 View 可能尚未 layout，提供回退宽度（通常为 item 预期宽度）
 /// @param fallbackH 父 View 可能尚未 layout，提供回退高度（通常为 item 预期高度）
 static void setupOverlayBounds(View* parent, View* overlay,
-    int gravity = Gravity::END | Gravity::BOTTOM,
+    int gravity = Gravity::END | Gravity::TOP,
     int fallbackW = 0, int fallbackH = 0) {
     int pw = parent->getWidth();
     int ph = parent->getHeight();
@@ -75,16 +75,20 @@ static void setupOverlayBounds(View* parent, View* overlay,
     }
 
     // 根据 gravity 计算位置
+    // 使用 axis mask 提取纯轴向 gravity，避免不同轴向 bit 相互干扰
+    int hGrav = gravity & Gravity::HORIZONTAL_GRAVITY_MASK;
+    int vGrav = gravity & Gravity::VERTICAL_GRAVITY_MASK;
+
     int l, t;
-    if (gravity & Gravity::END)          l = pw - w;
-    else if (gravity & Gravity::CENTER_HORIZONTAL) l = (pw - w) / 2;
-    else                                 l = 0;
+    if (hGrav == Gravity::RIGHT)                     l = pw - w;
+    else if (hGrav == Gravity::CENTER_HORIZONTAL)    l = (pw - w) / 2;
+    else                                             l = 0;
 
-    if (gravity & Gravity::BOTTOM)        t = ph - h;
-    else if (gravity & Gravity::CENTER_VERTICAL)   t = (ph - h) / 2;
-    else                                  t = 0;
+    if (vGrav == Gravity::BOTTOM)                    t = ph - h;
+    else if (vGrav == Gravity::CENTER_VERTICAL)      t = (ph - h) / 2;
+    else                                             t = 0;
 
-    // cdroid 的 layout() 签名是 (left, top, width, height)，不是 Android 的 (l, t, r, b)
+    // 设置 Layout
     overlay->layout(l, t, w, h);
 }
 
@@ -722,22 +726,35 @@ RVNumberPicker::RVNumberPicker(int w, int h) :RecyclerView(w, h) {
 }
 
 RVNumberPicker::RVNumberPicker(Context* context, const AttributeSet& attr) :RecyclerView(context, attr) {
-    mReverse = attr.getBoolean("reverseLayout", mReverse);
-    mOrientation = attr.getInt("orientation", std::unordered_map<std::string, int>{
-        { "horizontal", LinearLayout::HORIZONTAL },
-        { "vertical", LinearLayout::VERTICAL }
-    }, mOrientation);
-    mDisplayCount = attr.getInt("wheelItemCount", mDisplayCount);
-    mSmoothDuration = attr.getInt("smoothDuration", mSmoothDuration);
+    mPickerWidth = attr.getLayoutDimension("layout_width", LayoutParams::MATCH_PARENT);
+    mPickerHeight = attr.getLayoutDimension("layout_height", LayoutParams::MATCH_PARENT);
+
     mMinNum = attr.getInt("min", mMinNum);
     mMaxNum = attr.getInt("max", mMaxNum);
-
+    mDisplayCount = attr.getInt("wheelItemCount", mDisplayCount);
+    mItemBackground = attr.getString("itemBackground", mItemBackground);
+    mTextStyle = attr.getInt("textStyle", std::unordered_map<std::string, int>{
+        { "normal", (int)Typeface::NORMAL },
+        { "bold"  , (int)Typeface::BOLD },
+        { "italic", (int)Typeface::ITALIC }
+    }, mTextStyle);
+    mFontFamily = attr.getString("fontFamily", mFontFamily);
+    mFontTypeface = Typeface::create(mFontFamily, mTextStyle);
+    mGravity = attr.getGravity("gravity", mGravity);
+    mSelectLayout = attr.getString("internalLayout", mSelectLayout);
     mSelectVisibility = attr.getInt("selectVisibility", std::unordered_map<std::string, int>{
         { "gone", (int)View::GONE },
         { "invisible", (int)View::INVISIBLE },
         { "visible", (int)View::VISIBLE }
     }, mSelectVisibility);
-    mGravity = attr.getGravity("gravity", mGravity);
+    mOverlayLayout = attr.getString("overlayLayout", mOverlayLayout);
+    mSelectOverlayLayout = attr.getString("selectOverlayLayout", mOverlayLayout);
+    mOrientation = attr.getInt("orientation", std::unordered_map<std::string, int>{
+        { "horizontal", LinearLayout::HORIZONTAL },
+        { "vertical", LinearLayout::VERTICAL }
+    }, mOrientation);
+    mReverse = attr.getBoolean("reverseLayout", mReverse);
+    mSmoothDuration = attr.getInt("smoothDuration", mSmoothDuration);
 
     mTextTheme.size = attr.getDimensionPixelSize("textSize", mTextTheme.size);
     mTextTheme.color = attr.getColor("textColor", mTextTheme.color);
@@ -752,22 +769,6 @@ RVNumberPicker::RVNumberPicker(Context* context, const AttributeSet& attr) :Recy
     mCenterTextTheme.activeSize = attr.getDimensionPixelSize("activeCenterTextSize", mCenterTextTheme.size);
     mCenterTextTheme.activeColor = attr.getColor("activeCenterTextColor", mCenterTextTheme.color);
 
-    mItemBackground = attr.getString("itemBackground", mItemBackground);
-
-    mSelectLayout = attr.getString("internalLayout", mSelectLayout);
-    mOverlayLayout = attr.getString("overlayLayout", mOverlayLayout);
-    mSelectOverlayLayout = attr.getString("selectOverlayLayout", mOverlayLayout);
-
-    mTextStyle = attr.getInt("textStyle", std::unordered_map<std::string, int>{
-        { "normal", (int)Typeface::NORMAL },
-        { "bold"  , (int)Typeface::BOLD },
-        { "italic", (int)Typeface::ITALIC }
-    }, mTextStyle);
-    mFontFamily = attr.getString("fontFamily", mFontFamily);
-    mFontTypeface = Typeface::create(mFontFamily, mTextStyle);
-
-    mPickerWidth = attr.getLayoutDimension("layout_width", LayoutParams::MATCH_PARENT);
-    mPickerHeight = attr.getLayoutDimension("layout_height", LayoutParams::MATCH_PARENT);
     init();
 }
 
