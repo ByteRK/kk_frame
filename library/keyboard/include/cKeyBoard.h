@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-16 16:03:05
- * @LastEditTime: 2026-03-19 00:05:01
+ * @LastEditTime: 2026-08-10 09:53:10
  * @FilePath: /kk_frame/library/keyboard/include/cKeyBoard.h
  * @Description: 输入法 CDROID 版
  * @BugList:
@@ -29,6 +29,8 @@ class CKeyBoard : public RelativeLayout {
 public:
     // 完成回调
     typedef std::function<void(bool, const std::string&)> OnFinishListener;
+    // 输入框内容改变回调
+    typedef std::function<void(const std::string&)>       OnEditChangeListener;
 
     // 键盘类型
     typedef enum {
@@ -54,6 +56,7 @@ public:   // 外部用
     void setMaxInputCount(int count);
     void setEnableChilds(const std::vector<KeyBoardType>& childs);
     void setFinishListener(OnFinishListener finishListener);
+    void setEditChangeListener(OnEditChangeListener editChangeListener);
     void setChineseWeight(int weight);
 
 public:   // 真实按键
@@ -71,14 +74,15 @@ private: // 内部用
     CKeyBoardChild* createChild(KeyBoardType t);
 
 private:
-    bool             mIsInit{ false };              // 是否已初始化
+    bool                 mIsInit{ false };                // 是否已初始化
 
-    KeyBoardType     mKBType{ KB_TYPE_NONE };       // 键盘加载类型
-    std::string      mInputText{ "" };              // 输入框内容
-    std::string      mDescription{ "" };            // 描述文本
-    int              mMaxInputCount{ 20 };          // 最大输入长度
-    OnFinishListener mFinishListener{ nullptr };    // 完成回调
-    int              mChineseWeight{ 2 };           // 中文字符权重
+    KeyBoardType         mKBType{ KB_TYPE_NONE };         // 键盘加载类型
+    std::string          mInputText{ "" };                // 输入框内容
+    std::string          mDescription{ "" };              // 描述文本
+    int                  mMaxInputCount{ 20 };            // 最大输入长度
+    OnFinishListener     mFinishListener{ nullptr };      // 完成回调
+    OnEditChangeListener mEditChangeListener{ nullptr };  // 输入框内容改变回调
+    int                  mChineseWeight{ 2 };             // 中文字符权重
 
 private:
     ViewGroup*       mKeyboardRoot{ nullptr };      // 键盘根布局

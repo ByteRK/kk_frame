@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-10 22:50:08
- * @LastEditTime: 2026-06-30 01:00:33
+ * @LastEditTime: 2026-08-10 10:03:13
  * @FilePath: /kk_frame/src/app/page/components/wind_keyboard.cc
  * @Description: 键盘组件
  * @BugList:
@@ -48,6 +48,7 @@ void WindKeyboard::hideKeyboard() {
     mIsShow = false;
     mEnterListener = nullptr;
     mCancelListener = nullptr;
+    setKeyboardEditChangeCallBack(nullptr);
 }
 
 bool WindKeyboard::isKeyboardShow()const {
@@ -67,6 +68,13 @@ void WindKeyboard::setKeyboardMaxInputCount(int count) {
     if (!checkInit()) return;
 #if ENABLED(KEYBOARD)
     mKeyBoard->setMaxInputCount(count);
+#endif
+}
+
+void WindKeyboard::setKeyboardEditChangeCallBack(OnCloseListener listener) {
+    if (!checkInit()) return;
+#if ENABLED(KEYBOARD)
+    mKeyBoard->setEditChangeListener(listener);
 #endif
 }
 

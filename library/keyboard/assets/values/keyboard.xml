@@ -52,6 +52,7 @@
         <item name="android:textColor">@color/keyboard_color_func</item>
         <item name="android:textSize">34sp</item>
         <item name="android:background">@drawable/keyboard_func</item>
+        <item name="android:stateListAnimator">@animator/btn_click_scale</item>
     </style>
     <style name="keyboard_enter">
         <item name="android:layout_width">100dp</item>
@@ -62,6 +63,7 @@
         <item name="android:textColor">@color/keyboard_color_func</item>
         <item name="android:textSize">34sp</item>
         <item name="android:background">@drawable/keyboard_func</item>
+        <item name="android:stateListAnimator">@animator/btn_click_scale</item>
     </style>
     <!--    容器-->
     <style name="keyboard_box">
@@ -94,6 +96,7 @@
         <item name="android:textColor">@color/keyboard_color_key</item>
         <item name="android:background">@drawable/keyboard_key</item>
         <item name="android:text">key</item>
+        <item name="android:stateListAnimator">@animator/btn_click_scale</item>
     </style>
     <!--    特殊KEY-->
     <style name="keyboard_key_sp">
@@ -104,6 +107,7 @@
         <item name="android:textColor">@color/keyboard_color_key_sp</item>
         <item name="android:background">@drawable/keyboard_key_sp</item>
         <item name="android:text">spk</item>
+        <item name="android:stateListAnimator">@animator/btn_click_scale</item>
     </style>
     <!--    空格键-->
     <style name="keyboard_key_space">
@@ -114,6 +118,7 @@
         <item name="android:textColor">@color/keyboard_color_key</item>
         <item name="android:background">@drawable/keyboard_key</item>
         <item name="android:text">spk</item>
+        <item name="android:stateListAnimator">@animator/btn_click_scale</item>
     </style>
     <!--    回退键-->
     <style name="keyboard_key_backspace">
@@ -124,6 +129,7 @@
         <item name="android:textColor">@color/keyboard_color_key_sp</item>
         <item name="android:background">@drawable/keyboard_backspace</item>
         <item name="android:text"> </item>
+        <item name="android:stateListAnimator">@animator/btn_click_scale</item>
     </style>
     <!--    大写键-->
     <style name="keyboard_key_shift">
@@ -134,6 +140,7 @@
         <item name="android:textColor">@color/keyboard_color_key_sp</item>
         <item name="android:background">@drawable/keyboard_shift</item>
         <item name="android:text"> </item>
+        <item name="android:stateListAnimator">@animator/btn_click_scale</item>
     </style>
     <!--    语言键-->
     <style name="keyboard_key_lang">
@@ -144,5 +151,6 @@
         <item name="android:textColor">@color/keyboard_color_key_sp</item>
         <item name="android:background">@drawable/keyboard_lang</item>
         <item name="android:text"> </item>
+        <item name="android:stateListAnimator">@animator/btn_click_scale</item>
     </style>
 </resources>

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-10 22:49:59
- * @LastEditTime: 2026-06-30 00:58:01
+ * @LastEditTime: 2026-08-10 10:03:06
  * @FilePath: /kk_frame/src/app/page/components/wind_keyboard.h
  * @Description: 键盘组件
  * @BugList:
@@ -45,6 +45,7 @@ public:
     bool         isKeyboardShow() const;
 
     void         setKeyboardMaxInputCount(int count);
+    void         setKeyboardEditChangeCallBack(OnCloseListener listener);
     void         setKeyboardCallBack(OnCloseListener enter, OnCloseListener cancel);
 
 protected:

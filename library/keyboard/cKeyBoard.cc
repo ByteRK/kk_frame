@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-16 16:03:05
- * @LastEditTime: 2026-06-30 00:57:06
+ * @LastEditTime: 2026-08-10 09:57:43
  * @FilePath: /kk_frame/library/keyboard/cKeyBoard.cc
  * @Description: 输入法 CDROID 版
  * @BugList:
@@ -67,6 +67,10 @@ void CKeyBoard::setEnableChilds(const std::vector<KeyBoardType>& childs) {
 
 void CKeyBoard::setFinishListener(OnFinishListener finishListener) {
     mFinishListener = finishListener;
+}
+
+void CKeyBoard::setEditChangeListener(OnEditChangeListener editChangeListener) {
+    mEditChangeListener = editChangeListener;
 }
 
 void CKeyBoard::setChineseWeight(int weight) {
@@ -172,6 +176,8 @@ void CKeyBoard::setEditText(const std::string& txt) {
         mInputTextEdit->setCaretPos(pos);
         LOGI("setEditText: [CaretPos: %d][%s]", pos, txt.c_str());
     }
+
+    if (mEditChangeListener)mEditChangeListener(mInputText);
 }
 
 CKeyBoardChild* CKeyBoard::createChild(KeyBoardType t) {
@@ -199,11 +205,9 @@ CKeyBoardChild::CKeyBoardChild(CKeyBoard* parent, const std::string& layout) :mP
     mRootView->setVisibility(View::GONE);
 }
 
-CKeyBoardChild::~CKeyBoardChild() {
-}
+CKeyBoardChild::~CKeyBoardChild() { }
 
-void CKeyBoardChild::init() {
-}
+void CKeyBoardChild::init() { }
 
 void CKeyBoardChild::onShow() {
     mRootView->setVisibility(View::VISIBLE);
@@ -213,8 +217,7 @@ void CKeyBoardChild::onHide() {
     mRootView->setVisibility(View::GONE);
 }
 
-void CKeyBoardChild::onRealKey(int keyCode) {
-}
+void CKeyBoardChild::onRealKey(int keyCode) { }
 
 void CKeyBoardChild::updateParentBtn(const std::string& conplete, const std::string& cancel) {
     mParent->mCompleteBtn->setText(conplete);
