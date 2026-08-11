@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <View
+        android:id="@+id/child_lock_cover"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#EE000000"/>
+
+    <RelativeLayout
+        android:id="@+id/child_lock_box"
+        android:layout_width="520dp"
+        android:layout_height="180dp"
+        android:layout_centerInParent="true"
+        android:background="@drawable/bg_pop">
+        <ArcSeekBar
+            android:id="@+id/child_lock_seekbar"
+            android:layout_width="98dp"
+            android:layout_height="98dp"
+            android:layout_centerVertical="true"
+            android:layout_marginStart="80dp"
+            android:radius="45dp"
+            android:widthBackground="4dp"
+            android:colorBackground="#33FFFFFF"
+            android:colorForeground="#FFFFFFFF"
+            android:strokeCap="butt"
+            android:min="0"
+            android:max="100"
+            android:progress="0"
+            android:startAngle="270"
+            android:endAngle="630"
+            android:showSlider="false"/>
+        <ImageView
+            android:layout_width="98dp"
+            android:layout_height="98dp"
+            android:layout_alignStart="@id/child_lock_seekbar"
+            android:layout_alignTop="@id/child_lock_seekbar"
+            android:scaleType="centerInside"
+            android:src="@drawable/icon_child_lock" />
+        <TextView style="@style/font_medium"
+            android:id="@+id/child_lock_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignTop="@id/child_lock_seekbar"
+            android:layout_toEndOf="@id/child_lock_seekbar"
+            android:layout_marginTop="12dp"
+            android:layout_marginStart="20dp"
+            android:textColor="#FFFFFF"
+            android:textSize="28sp"
+            android:text="童锁已锁定"/>
+        <TextView style="@style/font_medium"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignStart="@id/child_lock_text"
+            android:layout_alignBottom="@id/child_lock_seekbar"
+            android:layout_marginBottom="12dp"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:text="长按任意区域3秒进行解锁"/>
+    </RelativeLayout>
+</RelativeLayout>

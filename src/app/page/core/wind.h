@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-08-11 11:53:27
+ * @LastEditTime: 2026-08-11 17:06:51
  * @FilePath: /kk_frame/src/app/page/core/wind.h
  * @Description: 主窗口类
  * @BugList:
@@ -19,6 +19,7 @@
 #include "wind_logo.h"
 #include "wind_black.h"
 #include "wind_screensave.h"
+#include "wind_child_lock.h"
 #include "wind_page.h"
 #include "wind_pop.h"
 #include "wind_sidebar.h"
@@ -28,12 +29,12 @@
 #include <widget/cdwindow.h>
 
 class MainWindow : public Window,
-    public WindLogo, public WindBlack, public WindScreenSave,
+    public WindLogo, public WindBlack, public WindScreenSave, public WindChildLock,
     public WindPage, public WindPop, public WindSidebar,
     public WindToast, public WindKeyboard {
 
 public:
-    uint64_t          mLastAction{ 0 };       // 上次用户动作时间
+    uint64_t          mLastAction{ 0 };         // 上次用户动作时间
 
 protected:
     Context*          mContext{ nullptr };      // 上下文
@@ -41,9 +42,9 @@ protected:
     View*             mRegularLayer{ nullptr }; // 常规视图
 
 protected:
-    int64_t                mExitTime{ 0 };    // 退出时间
-    int64_t                mRebootTime{ 0 };  // 重启时间
-    TickMgr::ITickVariable mEndTicker;        // 结束心跳器
+    int64_t                mExitTime{ 0 };      // 退出时间
+    int64_t                mRebootTime{ 0 };    // 重启时间
+    TickMgr::ITickVariable mEndTicker;          // 结束心跳器
 
 public:
     MainWindow();

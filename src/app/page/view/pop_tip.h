@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-23 00:04:23
- * @LastEditTime: 2026-01-04 14:06:58
+ * @LastEditTime: 2026-08-11 16:57:26
  * @FilePath: /kk_frame/src/app/page/view/pop_tip.h
  * @Description:
  * @BugList:
@@ -18,10 +18,12 @@
 
 class TipPop :public PopBase {
 private:
+
 public:
     TipPop();
     ~TipPop();
     int8_t getType() const override;
+
 protected:
     void initUI() override;
 };

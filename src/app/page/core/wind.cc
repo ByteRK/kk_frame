@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-08-11 11:53:22
+ * @LastEditTime: 2026-08-11 16:47:26
  * @FilePath: /kk_frame/src/app/page/core/wind.cc
  * @Description: 窗口类
  * @BugList:
@@ -54,6 +54,7 @@ void MainWindow::init() {
     WindLogo::init(mRootView);
     WindBlack::init(mRootView);
     WindScreenSave::init(mRootView);
+    WindChildLock::init(mRootView);
     WindPage::init(mRootView);
     WindPop::init(mRootView);
     WindSidebar::init(mRootView);
@@ -124,7 +125,7 @@ bool MainWindow::dispatchTouchEvent(MotionEvent& evt) {
 /// @brief 重载按键事件入口，方便计时最后一次触摸时间
 /// @param evt 事件
 /// @return 操作结果
-bool MainWindow::dispatchKeyEvent(KeyEvent & evt) {
+bool MainWindow::dispatchKeyEvent(KeyEvent& evt) {
     if (isAppWillEnd()) return true;
     mLastAction = SystemClock::uptimeMillis();
     return (
@@ -132,6 +133,7 @@ bool MainWindow::dispatchKeyEvent(KeyEvent & evt) {
         || WindLogo::onKey(evt)
         || WindBlack::onKey(evt)
         || WindScreenSave::onKey(evt)
+        || WindChildLock::onKey(evt)
         || selfKey(evt)
         || WindPop::onKey(evt)
         || WindPage::onKey(evt)

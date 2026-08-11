@@ -3,9 +3,9 @@
  * @Email: me@ricken.cn
  * @Description: 相关ID定义
  *               页面、弹窗、消息、语言
- * 
- * Copyright (c) 2026 by Ricken, All Rights Reserved. 
- * 
+ *
+ * Copyright (c) 2026 by Ricken, All Rights Reserved.
+ *
 **/
 
 #ifndef __BASE_ID_H__
@@ -29,9 +29,8 @@ typedef enum {
 /// @brief 弹窗类型
 typedef enum {
     POP_NULL,          // 空状态
-    POP_LOCK,          // 童锁
     POP_TIP,           // 提示
-    
+
     POP_MAX,           // 弹窗类型数量
 } POP_TYPE;
 
@@ -39,7 +38,6 @@ typedef enum {
 typedef enum {
     MSG_GENERAL = 0,   // 通用消息
     MSG_AUTH_CODE,     // 授权码消息
-    
 
     MSG_MAX,           // 消息类型数量
 } MSG_TYPE;
