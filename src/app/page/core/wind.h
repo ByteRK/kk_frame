@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-06-30 17:44:54
+ * @LastEditTime: 2026-08-11 11:53:27
  * @FilePath: /kk_frame/src/app/page/core/wind.h
  * @Description: 主窗口类
  * @BugList:
@@ -14,7 +14,6 @@
 #ifndef __WIND_H__
 #define __WIND_H__
 
-#include "template/singleton.h"
 #include "tick_mgr.h"
 
 #include "wind_logo.h"
@@ -28,11 +27,10 @@
 
 #include <widget/cdwindow.h>
 
-class MainWindow :public Singleton<MainWindow>, public Window,
+class MainWindow : public Window,
     public WindLogo, public WindBlack, public WindScreenSave,
     public WindPage, public WindPop, public WindSidebar,
     public WindToast, public WindKeyboard {
-    friend Singleton<MainWindow>;
 
 public:
     uint64_t          mLastAction{ 0 };       // 上次用户动作时间
@@ -47,10 +45,8 @@ protected:
     int64_t                mRebootTime{ 0 };  // 重启时间
     TickMgr::ITickVariable mEndTicker;        // 结束心跳器
 
-private:
-    MainWindow();
-
 public:
+    MainWindow();
     ~MainWindow();
 
     void  init();
@@ -64,14 +60,14 @@ public:
 
 protected:
     WindLogo::LOGO_INFO
-              getLogo() override;
+            getLogo() override;
 
-    bool      dispatchTouchEvent(MotionEvent& evt) override;
-    bool      dispatchKeyEvent(KeyEvent& evt) override;
+    bool    dispatchTouchEvent(MotionEvent& evt) override;
+    bool    dispatchKeyEvent(KeyEvent& evt) override;
 
 private:
-    bool      selfKey(KeyEvent& evt);
-    void      endTick(int64_t now);
+    bool    selfKey(KeyEvent& evt);
+    void    endTick(int64_t now);
 };
 
 #endif // !__WIND_H__

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-06-30 18:00:06
+ * @LastEditTime: 2026-08-11 11:53:22
  * @FilePath: /kk_frame/src/app/page/core/wind.cc
  * @Description: 窗口类
  * @BugList:
@@ -116,7 +116,7 @@ WindLogo::LOGO_INFO MainWindow::getLogo() {
 /// @param evt 事件
 /// @return 操作结果
 bool MainWindow::dispatchTouchEvent(MotionEvent& evt) {
-    if(isAppWillEnd()) return true;
+    if (isAppWillEnd()) return true;
     mLastAction = SystemClock::uptimeMillis();
     return Window::dispatchTouchEvent(evt);
 }
@@ -125,7 +125,7 @@ bool MainWindow::dispatchTouchEvent(MotionEvent& evt) {
 /// @param evt 事件
 /// @return 操作结果
 bool MainWindow::dispatchKeyEvent(KeyEvent & evt) {
-    if(isAppWillEnd()) return true;
+    if (isAppWillEnd()) return true;
     mLastAction = SystemClock::uptimeMillis();
     return (
         evt.getKeyCode() == KeyEvent::KEYCODE_WINDOW   // 刷新mLastAction用

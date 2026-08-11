@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2026-07-29 14:17:21
+ * @LastEditTime: 2026-08-11 11:54:40
  * @FilePath: /kk_frame/src/app/managers/wind_mgr.cc
  * @Description: 页面管理类
  * @BugList:
@@ -37,7 +37,7 @@ MainWindow* WindMgr::getWindow() {
 /// @brief 初始化
 void WindMgr::init() {
     mLooper = Looper::getMainLooper();
-    mWindow = MainWindow::instance();
+    mWindow = new MainWindow();
     mWindow->init();
 
     mAutoRecyclePageMsg.what = MSG_AUTO_RECYCLE_PAGE;

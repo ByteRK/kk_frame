@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-25 10:31:08
- * @LastEditTime: 2026-06-25 14:48:08
+ * @LastEditTime: 2026-08-11 13:51:52
  * @FilePath: /kk_frame/src/app/page/components/wind_logo.h
  * @Description: Logo组件
  * @BugList:
@@ -38,6 +38,7 @@ private:
     Runnable          mRuner;                    // 计时回调(用于图片LOGO)
     Animatable2::AnimationCallback mCallback;    // 动画回调(用于动画LOGO)
 
+    View*             mLogo{ nullptr };          // LOGO
     ImageView*        mImage{ nullptr };         // 图片LOGO
     VideoView*        mVideo{ nullptr };         // 视频LOGO
 

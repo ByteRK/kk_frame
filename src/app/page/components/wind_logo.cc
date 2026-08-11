@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-25 10:31:16
- * @LastEditTime: 2026-06-25 18:49:05
+ * @LastEditTime: 2026-08-11 14:01:28
  * @FilePath: /kk_frame/src/app/page/components/wind_logo.cc
  * @Description: Logo组件
  * @BugList:
@@ -24,7 +24,7 @@ WindLogo::~WindLogo() {
 
 /// @brief 显示Logo
 void WindLogo::showLogo() {
-    if (!checkInit()) return;
+    if (!checkInit() || isLogoShow()) return;
 
     // 获取LOGO类型以及地址
     LOGO_INFO info = getLogo();
@@ -50,21 +50,23 @@ void WindLogo::showLogo() {
             mImage->postDelayed(mRuner, info.duration);
         }
     }   break;
-    case LOGO_TYPE_VIDEO:
+    case LOGO_TYPE_VIDEO: {
         mVideo->setVisibility(View::VISIBLE);
         mVideo->setURL(info.path);
         mVideo->play();
-        break;
-    default:
+    }   break;
+    default: {
         LOGE("unknow logo type");
         mIsRunning = false;
-        break;
+    }   break;
     }
+
+    if (mIsRunning) mLogo->setVisibility(View::VISIBLE);
 }
 
 /// @brief 隐藏Logo
 void WindLogo::hideLogo() {
-    if (!checkInit()) return;
+    if (!checkInit() || !isLogoShow()) return;
 
     // 清除状态
     mImage->removeCallbacks(mRuner);
@@ -72,6 +74,7 @@ void WindLogo::hideLogo() {
     mVideo->over();
 
     // 隐藏原有页面
+    mLogo->setVisibility(View::GONE);
     mImage->setVisibility(View::GONE);
     mVideo->setVisibility(View::GONE);
 }
@@ -87,28 +90,29 @@ bool WindLogo::isLogoShow() const {
 void WindLogo::init(ViewGroup* parent) {
     if (mIsInit) return;
 
+    mLogo = PBase::get(parent, AppRid::logo);
+    FailFast(mLogo == nullptr, "WindLogo init failed");
+
     if (
-        !(mImage = PBase::get<ImageView>(parent, AppRid::logo)) ||
-        !(mVideo = PBase::get<VideoView>(parent, AppRid::logo_video))
+        !(mImage = PBase::get<ImageView>(mLogo, AppRid::logo_image)) ||
+        !(mVideo = PBase::get<VideoView>(mLogo, AppRid::logo_video))
         ) {
         LOGE("WindLogo init failed");
         return;
     }
 
     // 隐藏LOGO
+    mLogo->setVisibility(View::GONE);
     mImage->setVisibility(View::GONE);
     mVideo->setVisibility(View::GONE);
 
     // 锁定点击事件
-    mImage->setOnTouchListener([](View&, MotionEvent&) { return true; });
-    mVideo->setOnTouchListener([](View&, MotionEvent&) { return true; });
-
-    // 消除点击声音
-    mImage->setSoundEffectsEnabled(false);
-    mVideo->setSoundEffectsEnabled(false);
+    mLogo->setOnTouchListener([](View&, MotionEvent&) { return true; });
+    mLogo->setSoundEffectsEnabled(false);
 
     // 静态图LOGO回调
     mRuner = [this] {
+        mLogo->setVisibility(View::GONE);
         mImage->setVisibility(View::GONE);
         AnimatedImageDrawable* drawable = dynamic_cast<AnimatedImageDrawable*>(mImage->getDrawable());
         if (drawable) drawable->stop();
@@ -117,6 +121,7 @@ void WindLogo::init(ViewGroup* parent) {
     // 动图LOGO回调
     mCallback.onAnimationStart = nullptr;
     mCallback.onAnimationEnd = [this](Drawable&) {
+        mLogo->setVisibility(View::GONE);
         mImage->setVisibility(View::GONE);
         mIsRunning = false;
     };
@@ -125,6 +130,7 @@ void WindLogo::init(ViewGroup* parent) {
     mVideo->setOnPlayStatusChange([this](View& v, int dutation, int progress, int status) {
         LOGE("video play status = %d", status);
         if (status == VideoView::VS_OVER) {
+            mLogo->setVisibility(View::GONE);
             mVideo->setVisibility(View::GONE);
             mVideo->over();
             mIsRunning = false;
