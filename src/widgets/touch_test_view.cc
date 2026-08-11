@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-26 18:06:25
- * @LastEditTime: 2026-03-26 22:21:52
+ * @LastEditTime: 2026-08-11 10:26:29
  * @FilePath: /kk_frame/src/widgets/touch_test_view.cc
  * @Description: 触摸测试组件
  * @BugList:
@@ -73,6 +73,10 @@ void TouchTestView::setPointRadius(int r) {
     invalidate(mPt.x - mPt.r, mPt.y - mPt.r, 2 * mPt.r, 2 * mPt.r);
     mPt.r = r;
     invalidate(mPt.x - mPt.r, mPt.y - mPt.r, 2 * mPt.r, 2 * mPt.r);
+}
+
+void TouchTestView::setInvertNearestMode(bool enable) {
+    mInvertNearestMode = enable;
 }
 
 void TouchTestView::setOnAllBlocksActivated(OnAllBlocksActivated cb) {
@@ -218,7 +222,27 @@ bool TouchTestView::onTouchEvent(cdroid::MotionEvent& e) {
     int idx = hitTest(x, y);
 
     if (idx < 0) {
-        resetBlocks();
+        if (mInvertNearestMode) {
+            // 以触摸点为中心的九宫格区域：上下各 blockH，左右各 blockW
+            int areaLeft   = x - mCfg.blockW;
+            int areaRight  = x + mCfg.blockW;
+            int areaTop    = y - mCfg.blockH;
+            int areaBottom = y + mCfg.blockH;
+
+            for (int i = 0; i < (int)mBlocks.size(); ++i) {
+                auto& b = mBlocks[i];
+                if (!b.active) continue;
+                if (b.x + b.w >= areaLeft && b.x <= areaRight &&
+                    b.y + b.h >= areaTop  && b.y <= areaBottom) {
+                    b.active = false;
+                    mActiveCount--;
+                    mCompleted = false;
+                    invalidateBlock(i);
+                }
+            }
+        } else {
+            resetBlocks();
+        }
     } else {
         activateBlock(idx);
     }

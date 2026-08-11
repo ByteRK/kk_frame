@@ -40,6 +40,8 @@ public:
     void setPointColor(double red, double green, double blue);
     void setPointRadius(int r);
 
+    void setInvertNearestMode(bool enable);
+
     void setOnAllBlocksActivated(OnAllBlocksActivated cb);
     void setOnTouchPointChanged(OnTouchPointChange cb);
 
@@ -81,6 +83,7 @@ private:
 
     bool mLayoutDirty{ true };
     bool mHasTouch{ false };
+    bool mInvertNearestMode{ true };
 
 private:
     void validateConfig();
