@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-06-26 00:44:10
- * @LastEditTime: 2026-07-06 01:00:24
+ * @LastEditTime: 2026-08-12 11:32:31
  * @FilePath: /kk_frame/src/comm/packet/packet_base.cc
  * @Description: 通讯数据包基类
  * @BugList:
@@ -16,6 +16,14 @@
 #include <cdlog.h>
 
 IAsk::~IAsk() { }
+
+uint8_t* IAsk::data() {
+    if (mBuf == nullptr) {
+        LOGE("IAsk data failed: packet buffer is null");
+        return nullptr;
+    }
+    return mBuf->buf;
+}
 
 /// @brief 数据源绑定
 /// @param buf 数据源

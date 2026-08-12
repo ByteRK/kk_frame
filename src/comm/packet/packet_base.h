@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-06-26 00:44:10
- * @LastEditTime: 2026-07-06 00:54:10
+ * @LastEditTime: 2026-08-12 11:30:46
  * @FilePath: /kk_frame/src/comm/packet/packet_base.h
  * @Description: 通讯数据包基类
  * @BugList:
@@ -37,6 +37,7 @@ protected:
 
 public:
     virtual ~IAsk();
+    uint8_t* data();
     virtual void parse(BuffData* buf);
     virtual void setData(size_t pos, uint8_t data);
     virtual void setData(const uint8_t* data, size_t pos, size_t len);
