@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2026-07-16 18:16:09
+ * @LastEditTime: 2026-08-13 17:45:22
  * @FilePath: /kk_frame/src/app/page/core/base.h
  * @Description: 页面基类
  * @BugList:
@@ -31,6 +31,7 @@
  *************************************** 基类 ***************************************
 **/
 
+using namespace APP_NAME;
 namespace AppRid = APP_NAME::R::id;
 
 /// @brief 页面/弹窗加载参数基类

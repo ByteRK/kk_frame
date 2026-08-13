@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2026-06-24 17:29:27
+ * @LastEditTime: 2026-08-13 17:42:06
  * @FilePath: /kk_frame/src/app/data/global_data.cc
  * @Description:
  * @BugList:
@@ -19,7 +19,7 @@
 #include "base_data.h"
 #include "config_info.h"
 #include "system_utils.h"
-#include "id.h"
+#include "base.h"
 
 #include <unistd.h>
 #include <core/app.h>
