@@ -68,10 +68,16 @@ void WindLogo::showLogo() {
 void WindLogo::hideLogo() {
     if (!checkInit() || !isLogoShow()) return;
 
-    // 清除状态
+    // 清除状态，先置位避免回调重入
     mImage->removeCallbacks(mRuner);
-    mRuner();
+    mIsRunning = false;
+
+    // 停止视频播放
     mVideo->over();
+
+    // 停止动画
+    AnimatedImageDrawable* drawable = dynamic_cast<AnimatedImageDrawable*>(mImage->getDrawable());
+    if (drawable) drawable->stop();
 
     // 隐藏原有页面
     mLogo->setVisibility(View::GONE);
@@ -112,28 +118,19 @@ void WindLogo::init(ViewGroup* parent) {
 
     // 静态图LOGO回调
     mRuner = [this] {
-        mLogo->setVisibility(View::GONE);
-        mImage->setVisibility(View::GONE);
-        AnimatedImageDrawable* drawable = dynamic_cast<AnimatedImageDrawable*>(mImage->getDrawable());
-        if (drawable) drawable->stop();
-        mIsRunning = false;
+        hideLogo();
     };
     // 动图LOGO回调
     mCallback.onAnimationStart = nullptr;
     mCallback.onAnimationEnd = [this](Drawable&) {
-        mLogo->setVisibility(View::GONE);
-        mImage->setVisibility(View::GONE);
-        mIsRunning = false;
+        hideLogo();
     };
     // 视频LOGO回调
     mVideo->setOnTouchListener([this](View& v, MotionEvent& evt) { return true; });
     mVideo->setOnPlayStatusChange([this](View& v, int dutation, int progress, int status) {
         LOGE("video play status = %d", status);
         if (status == VideoView::VS_OVER) {
-            mLogo->setVisibility(View::GONE);
-            mVideo->setVisibility(View::GONE);
-            mVideo->over();
-            mIsRunning = false;
+            hideLogo();
         }
     });
 
