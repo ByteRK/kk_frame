@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-07-01 22:42:41
- * @LastEditTime: 2026-07-05 22:20:22
+ * @LastEditTime: 2026-08-13 11:58:12
  * @FilePath: /kk_frame/src/comm/packet/packet_channel.h
  * @Description: 通讯数据包处理管道
  * @BugList:
@@ -61,6 +61,17 @@ private:
     static bool isSamePacket(const BuffData* lhs, const BuffData* rhs);
 };
 
+/// @brief 通讯管道事件监听器
+/// @note 由 PacketChannel 在完成内部处理后主动转发连接/断开/错误事件
+/// @note 回调运行于 Transport 事件分发线程（即主循环线程，与上层 Tick 同线程）
+class PacketChannelListener {
+public:
+    virtual ~PacketChannelListener() { }
+    virtual void onChannelConnected(int id = -1) { }     // 通道连接事件
+    virtual void onChannelDisconnected(int id = -1) { }  // 通道断开事件
+    virtual void onChannelError(int err) { }             // 通道错误事件
+};
+
 /// @brief 通讯数据管道 Transport -> PacketStreamDecoder
 /// @tparam 数据源类型(Transport派生)
 template <typename TransportType>
@@ -69,6 +80,7 @@ private:
     TransportType                mTransport;              // 通讯数据通道
     PacketBufferPool*            mPacketPool;             // 通讯数据包缓存池
     PacketStreamDecoder          mDecoder;                // 默认数据流解码工具
+    PacketChannelListener*       mListener{ nullptr };    // 上层事件监听器
     int64_t                      mSendCount{ 0 };         // 发送统计
     int64_t                      mRecvCount{ 0 };         // 接收统计
     int                          mLastError{ 0 };         // 最后一次错误码
@@ -133,6 +145,13 @@ public:
         return mTransport.isConnected();
     }
 
+    /// @brief 设置上层事件监听器
+    /// @note 仅支持一个监听器，重复调用会覆盖
+    /// @note 监听器生命周期必须不短于管道，销毁管道前应先置空
+    void setListener(PacketChannelListener* listener) {
+        mListener = listener;
+    }
+
     /// @brief 原始数据发送
     /// @param data 数据
     /// @param len 数据长度
@@ -180,6 +199,7 @@ public:
         }
 #endif
         LOGI("PacketChannel connected. id=%d", id);
+        if (mListener) mListener->onChannelConnected(id);
     }
 
     /// @brief 设备断开事件处理
@@ -199,6 +219,7 @@ public:
         mDecoder.reset();
 #endif
         LOGW("PacketChannel disconnected. id=%d", id);
+        if (mListener) mListener->onChannelDisconnected(id);
     }
 
     /// @brief 原始数据接收事件处理
@@ -238,6 +259,7 @@ public:
     void onError(int err) override {
         mLastError = err;
         LOGE("PacketChannel error. err=%d", err);
+        if (mListener) mListener->onChannelError(err);
     }
 
     /// @brief 返回累计发送包数量
