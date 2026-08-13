@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-08-11 17:06:51
+ * @LastEditTime: 2026-08-13 16:05:27
  * @FilePath: /kk_frame/src/app/page/core/wind.h
  * @Description: 主窗口类
  * @BugList:
@@ -54,6 +54,7 @@ public:
     void  hideAll();
 
     View* getRegularLayer();
+    void  playSoundEffect();
 
     void  postExit(int64_t delay = 2000);
     void  postReboot(int64_t delay = 2000);

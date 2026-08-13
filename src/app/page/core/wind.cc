@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-08-11 16:47:26
+ * @LastEditTime: 2026-08-13 16:07:50
  * @FilePath: /kk_frame/src/app/page/core/wind.cc
  * @Description: 窗口类
  * @BugList:
@@ -16,8 +16,8 @@
 #include <core/app.h>
 
 /// @brief 点击时系统自动调用
-/// @param sound 音量大小(一般不用)
-static void playSound(int sound) {
+/// @param type 类型(一般为SoundEffectConstants::CLICK)
+static void playSound(int type) {
     LOGI("bi~~~~~~~~~~~~~~~~~~~~~~~~");
 }
 
@@ -76,6 +76,11 @@ void MainWindow::hideAll() {
 /// @return 
 View* MainWindow::getRegularLayer() {
     return mRegularLayer;
+}
+
+/// @brief 播放音效
+void MainWindow::playSoundEffect() {
+    if (mAttachInfo->mPlaySoundEffect)mAttachInfo->mPlaySoundEffect(SoundEffectConstants::CLICK);
 }
 
 /// @brief 退出计时
