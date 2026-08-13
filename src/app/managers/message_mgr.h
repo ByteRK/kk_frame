@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-02 17:38:07
- * @LastEditTime: 2026-07-07 10:39:09
+ * @LastEditTime: 2026-08-13 18:09:19
  * @FilePath: /kk_frame/src/app/managers/message_mgr.h
  * @Description: 消息分发器
  *
@@ -34,6 +34,8 @@
 #include <vector>
 #include <cstdio>
 #include <cstdlib>
+
+#include "base.h"
 
 #define g_msg MessageManager::instance()
 #define MESSAGE_DEAL_INTERVAL 100
