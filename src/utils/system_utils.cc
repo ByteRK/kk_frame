@@ -30,7 +30,7 @@
 #define TIME_CACHE_FILE "timeCache"
 
 void SystemUtils::reboot() {
-    ProjectUtils::saveTime(std::string(LOCAL_DATA_DIR) + TIME_CACHE_FILE);
+    ProjectUtils::saveTime(std::string(APP_DATA_DIR) + TIME_CACHE_FILE);
     sync();
 #ifndef PRODUCT_X64
     std::system("reboot");
@@ -40,7 +40,7 @@ void SystemUtils::reboot() {
 }
 
 void SystemUtils::exit() {
-    ProjectUtils::saveTime(std::string(LOCAL_DATA_DIR) + TIME_CACHE_FILE);
+    ProjectUtils::saveTime(std::string(APP_DATA_DIR) + TIME_CACHE_FILE);
     sync();
     ::exit(0);
 }
@@ -173,11 +173,11 @@ void SystemUtils::setVolume(int value) {
 }
 
 void SystemUtils::recoverTime() {
-    ProjectUtils::loadTime(std::string(LOCAL_DATA_DIR) + TIME_CACHE_FILE);
+    ProjectUtils::loadTime(std::string(APP_DATA_DIR) + TIME_CACHE_FILE);
 }
 
 void SystemUtils::clearTimeCache() {
-    std::string cacheFile = std::string(LOCAL_DATA_DIR) + TIME_CACHE_FILE;
+    std::string cacheFile = std::string(APP_DATA_DIR) + TIME_CACHE_FILE;
     system(std::string("rm -f ") + cacheFile);
     sync();
 }

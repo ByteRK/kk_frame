@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2026-08-13 17:42:06
+ * @LastEditTime: 2026-08-14 15:59:12
  * @FilePath: /kk_frame/src/app/data/global_data.cc
  * @Description:
  * @BugList:
@@ -40,7 +40,7 @@ GlobalData::~GlobalData() { }
 
 /// @brief 初始化
 void GlobalData::init() {
-    mIsFirstInit = !FileUtils::check(APP_INITIALIZED_TAG);
+    mIsFirstInit = !FileUtils::check(APP_FIRST_TAG);
 
     // 恢复系统时间
     if (mIsFirstInit) SystemUtils::clearTimeCache();
@@ -75,7 +75,7 @@ void GlobalData::reset() {
 void GlobalData::setFirstInit(bool first) {
     std::string command;
     command += first ? "rm -f " : "touch ";
-    command += APP_INITIALIZED_TAG;
+    command += APP_FIRST_TAG;
     std::system(command.c_str());
     mIsFirstInit = first;
     FileUtils::sync();

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:47:17
- * @LastEditTime: 2026-07-28 16:08:27
+ * @LastEditTime: 2026-08-14 16:12:08
  * @FilePath: /kk_frame/src/utils/project_utils.cc
  * @Description: 项目相关的一些操作函数
  * @BugList:
@@ -93,7 +93,7 @@ void ProjectUtils::pKeyMap() {
 
 void ProjectUtils::createDir() {
     // 构建Data目录
-    const char* path = LOCAL_DATA_DIR;
+    const char* path = APP_DATA_DIR;
     struct stat st = {};
     if (stat(path, &st) == 0) {
         if (S_ISDIR(st.st_mode)) {

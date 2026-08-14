@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-17 14:15:07
- * @LastEditTime: 2026-08-07 16:03:54
+ * @LastEditTime: 2026-08-14 16:19:51
  * @FilePath: /kk_frame/library/keyboard/childs/keyboard_cn.cc
  * @Description:
  * @BugList:
@@ -17,7 +17,6 @@
 #include <pinyinime.h>
 #include <utils/textutils.h>
 #include <unistd.h>
-#define PINYIN_DAT_PATH LOCAL_DATA_DIR "pinyin/"
 #endif
 
 
