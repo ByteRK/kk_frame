@@ -748,10 +748,16 @@ bool WifiHal::startDhcp() {
         mReconnFailCount.store(0);
         mReconnInFlight.store(false);
     } else {
-        // DHCP 失败
+        // DHCP 失败：先断开链路层再安排重连。否则 wpa 仍处于关联状态，
+        // RECONNECT 不会产生任何事件，重连线程只能干等超时后盲目重试，
+        // 表现为周期性的 "reconnect attempt timed out" 且永远拿不到 IP。
+        const bool willReconnect = mOpt.auto_reconnect && !mUserDisconnect.load();
+        if (willReconnect) {
+            runCmd("DISCONNECT", nullptr);
+        }
         setState(State::Disconnected,
             commandOk ? "dhcp failed (no ip)" : "dhcp command failed");
-        if (mOpt.auto_reconnect && !mUserDisconnect.load()) {
+        if (willReconnect) {
             scheduleReconnect("dhcp failed");
         }
     }
@@ -901,12 +907,14 @@ void WifiHal::cancelReconnect() {
 }
 
 bool WifiHal::tryReloadDriver() {
-    // 冷却检查
+    // 冷却检查。last == 0 表示从未重载过：首次重载不受冷却限制，
+    // 否则设备启动时间小于冷却时长时，第一次重载会被错误跳过。
     const uint64_t now = cdroid::SystemClock::uptimeMillis();
     const uint64_t last = mLastDriverReloadMs.load();
     const int64_t cooldownMs = static_cast<int64_t>(
         std::max(mOpt.driver_reload_cooldown_sec, 0)) * 1000;
-    if (cooldownMs > 0 && now - last < static_cast<uint64_t>(cooldownMs)) {
+    if (last != 0 && cooldownMs > 0 &&
+        now - last < static_cast<uint64_t>(cooldownMs)) {
         LOGW("driver reload cooldown not met, skip");
         return false;
     }
@@ -1060,6 +1068,12 @@ void WifiHal::reconnectThread() {
             if (!finished) {
                 mReconnInFlight.store(false);
                 LOGW("Wi-Fi reconnect attempt timed out after %d ms", timeoutMs);
+                // 超时说明 wpa 未产生任何事件（可能仍处于关联状态，
+                // RECONNECT 无效）。强制断开链路，让下一轮重连走完整关联
+                // 流程，避免超时-重试死循环。
+                lk.unlock();
+                runCmd("DISCONNECT", nullptr);
+                lk.lock();
             }
         }
 
