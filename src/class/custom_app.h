@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-18 09:33:55
- * @LastEditTime: 2026-03-18 10:15:32
+ * @LastEditTime: 2026-08-19 11:10:18
  * @FilePath: /kk_frame/src/class/custom_app.h
  * @Description: 自定义APP
  * @BugList:
@@ -20,8 +20,10 @@
 class CustomApp : public cdroid::App {
 private:
     std::set<std::string> mAddPackagesTag;
+
 public:
     CustomApp(int argc = 0, const char* argv[] = NULL);
+
 public:
     bool checkPackage(const std::string& name);
     void addPackage(const std::string& path, const std::string& name);

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 01:53:51
- * @LastEditTime: 2026-06-26 11:42:58
+ * @LastEditTime: 2026-08-19 10:58:35
  * @FilePath: /kk_frame/src/utils/cdroid_utils.h
  * @Description: Cdroid相关的一些函数
  * @BugList:
@@ -31,6 +31,11 @@ namespace CdroidUtils {
     /// @param code 按键码
     /// @param value 按键值
     void analogInput(int code, int value);
+
+    /// @brief 创建Logo.dat
+    /// @param input Logo源图片路径(如 logo.png)
+    /// @param output 输出的dat文件路径(如 logo.dat)
+    bool createLogoDat(std::string input, std::string output);
 
     /// @brief 设置View的filter(带递归)
     /// @param view View对象

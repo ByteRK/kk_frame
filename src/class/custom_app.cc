@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-18 09:34:51
- * @LastEditTime: 2026-03-18 10:28:28
+ * @LastEditTime: 2026-08-19 11:16:01
  * @FilePath: /kk_frame/src/class/custom_app.cc
  * @Description: 自定义APP
  * @BugList:
@@ -14,8 +14,12 @@
 #include "custom_app.h"
 #include <unistd.h>
 #include <cdlog.h>
+#include "cdroid_utils.h"
 
-CustomApp::CustomApp(int argc, const char * argv[]) :cdroid::App(argc, argv) {
+CustomApp::CustomApp(int argc, const char* argv[]) :cdroid::App(argc, argv) {
+#ifdef PRODUCT_X64
+    CdroidUtils::createLogoDat("./logo.png", "./logo.dat");
+#endif
 }
 
 bool CustomApp::checkPackage(const std::string& name) {

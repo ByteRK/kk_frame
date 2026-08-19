@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 01:53:51
- * @LastEditTime: 2026-06-26 11:43:43
+ * @LastEditTime: 2026-08-19 11:15:05
  * @FilePath: /kk_frame/src/utils/cdroid_utils.cc
  * @Description: Cdroid相关的一些函数
  * @BugList:
@@ -12,8 +12,11 @@
 **/
 
 #include "cdroid_utils.h"
+#include <unistd.h>
+#include <cstdio>
 #include <cdinput.h>
 #include <core/inputeventsource.h>
+#include <cairomm/surface.h>
 
 #include <gui/drawables/statelistdrawable.h>
 #include <gui/drawables/levellistdrawable.h>
@@ -39,7 +42,22 @@ void CdroidUtils::analogInput(int code, int value) {
     InputInjectEvents(&i, 1, 1);
 }
 
-void CdroidUtils::setFilterBitmap(View * view, bool filter) {
+bool CdroidUtils::createLogoDat(std::string input, std::string output) {
+    if (access(input.c_str(), F_OK) == 0) {
+        Cairo::RefPtr<Cairo::ImageSurface> bitmap = Cairo::ImageSurface::create_from_png(input);
+        FILE *fp = fopen(output.c_str(), "wb");
+        if (fp == NULL) return false;
+        fwrite(bitmap->get_data(), 1, bitmap->get_stride() * bitmap->get_height(), fp);
+        fclose(fp);
+        LOGI("[LOGO.DAT CREATE] input=%s -> output=%s | stride=%d ,width=%d ,height=%d",
+             input.c_str(), output.c_str(), bitmap->get_stride(), bitmap->get_width(), bitmap->get_height());
+        return true;
+    } else {
+        return false;
+    }
+}
+
+void CdroidUtils::setFilterBitmap(View* view, bool filter) {
     if (!view) return;
     ImageView* iv = dynamic_cast<ImageView*>(view);
     if (iv) setFilterBitmap(iv->getDrawable(), filter);
