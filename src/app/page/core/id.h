@@ -12,11 +12,12 @@
 #define __BASE_ID_H__
 
 #include <string>
+#include <stdint.h>
 
 namespace kk_frame {
 
     /// @brief 页面类型
-    typedef enum {
+    typedef enum : uint8_t {
         PAGE_NULL,         // 空状态
         PAGE_DEMO,         // 示例页面（自动进入）
         PAGE_HOME,         // 主页面
@@ -29,7 +30,7 @@ namespace kk_frame {
     } PAGE_TYPE;
 
     /// @brief 弹窗类型
-    typedef enum {
+    typedef enum : uint8_t {
         POP_NULL,          // 空状态
         POP_TIP,           // 提示
 
@@ -37,7 +38,7 @@ namespace kk_frame {
     } POP_TYPE;
 
     /// @brief 消息类型
-    typedef enum {
+    typedef enum : uint8_t {
         MSG_GENERAL = 0,   // 通用消息
         MSG_AUTH_CODE,     // 授权码消息
 
@@ -45,7 +46,7 @@ namespace kk_frame {
     } MSG_TYPE;
 
     // 语言定义
-    typedef enum {
+    typedef enum : uint8_t {
         LANG_ZH_CN,        // 简体中文
         LANG_ZH_TC,        // 繁体中文
         LANG_EN_US,        // 英文
