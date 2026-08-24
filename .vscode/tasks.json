@@ -1,0 +1,32 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "FastCheck build",
+            "type": "shell",
+            "command": "${workspaceFolder}/fastCheck.sh",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$gcc"],
+            "detail": "快速编译"
+        },
+        {
+            "label": "FastCheck run only",
+            "type": "shell",
+            "command": "${workspaceFolder}/fastCheck.sh",
+            "args": ["-R"],
+            "problemMatcher": [],
+            "detail": "仅运行已有编译产物"
+        },
+        {
+            "label": "FastCheck build & run",
+            "type": "shell",
+            "command": "${workspaceFolder}/fastCheck.sh",
+            "args": ["-r"],
+            "problemMatcher": ["$gcc"],
+            "detail": "编译并运行"
+        }
+    ]
+}

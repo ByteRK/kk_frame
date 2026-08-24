@@ -1,0 +1,50 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "快速运行",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/home/ricken/cdroid/outX64-Debug/apps/kk_frame/kk_frame",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "/home/ricken/cdroid/outX64-Debug",
+            "environment": [
+                { "name": "DISPLAY", "value": "localhost:10.0" }
+            ],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "setupCommands": [
+                {
+                    "description": "为 gdb 启用整齐打印",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "编译并运行",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/home/ricken/cdroid/outX64-Debug/apps/kk_frame/kk_frame",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "/home/ricken/cdroid/outX64-Debug",
+            "environment": [
+                { "name": "DISPLAY", "value": "localhost:10.0" }
+            ],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "setupCommands": [
+                {
+                    "description": "为 gdb 启用整齐打印",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "FastCheck build"
+        }
+    ]
+}
