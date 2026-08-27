@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:26
- * @LastEditTime: 2026-06-30 15:23:19
+ * @LastEditTime: 2026-08-27 15:35:11
  * @FilePath: /kk_frame/src/app/page/core/base.cc
  * @Description: 页面基类
  * @BugList:
@@ -15,10 +15,21 @@
 
 #include <core/app.h>
 #include <widget/imageview.h>
+#include <widget/relativelayout.h>
 
 /*
  *************************************** 基类 ***************************************
 **/
+
+PBase::PBase() {
+    mContext = &App::getInstance();
+    mLooper = Looper::getMainLooper();
+    mInflater = LayoutInflater::from(mContext);
+
+    mRootView = new RelativeLayout(LayoutParams::MATCH_PARENT, LayoutParams::MATCH_PARENT);
+    mRootView->setLayoutParams(new LayoutParams(LayoutParams::MATCH_PARENT, LayoutParams::MATCH_PARENT));
+    LOGI("Un passed resource path, using default layout");
+}
 
 PBase::PBase(std::string resource) {
     mContext = &App::getInstance();
