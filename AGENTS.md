@@ -19,6 +19,15 @@ These instructions apply to every AI model or coding agent that reads this file,
 - Git workflow: for committing, merging, rebasing, branch synchronization, pushing, or other git history operations, read `.agents/git_workflow.md`.
 - Build and validation: before changing C/C++ source, headers, CMake/build configuration, resources that may affect compiled output, or before doing any build, compile, test, or validation work, read `.agents/build_validation.md`.
 
+## Header Resolution
+
+- When analyzing project logic and the relevant file (e.g. a header or dependency) does not exist under the current workspace, resolve its location through the `includePath` in `.vscode/c_cpp_properties.json` before proceeding.
+
+## Clarification
+
+- When the user's request contains ambiguity, ask clarifying questions promptly before proceeding with the task.
+- Ask only one question at a time.
+
 ## Adding Instructions
 
 - Add new `.agents/*.md` files for distinct operational areas instead of expanding this file with detailed process rules.
