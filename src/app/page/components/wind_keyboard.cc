@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-10 22:50:08
- * @LastEditTime: 2026-08-10 10:03:13
+ * @LastEditTime: 2026-09-02 15:34:46
  * @FilePath: /kk_frame/src/app/page/components/wind_keyboard.cc
  * @Description: 键盘组件
  * @BugList:
@@ -48,6 +48,7 @@ void WindKeyboard::hideKeyboard() {
     mIsShow = false;
     mEnterListener = nullptr;
     mCancelListener = nullptr;
+    setKeyboardMaxInputCount(0);
     setKeyboardEditChangeCallBack(nullptr);
 }
 
