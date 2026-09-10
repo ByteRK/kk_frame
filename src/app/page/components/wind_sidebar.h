@@ -14,8 +14,6 @@
 #ifndef __WIND_SIDEBAR_H__
 #define __WIND_SIDEBAR_H__
 
-#include "tick_mgr.h"
-
 #include <view/view.h>
 #include <widget/textview.h>
 
@@ -26,10 +24,8 @@ private:
     bool    mHasStoredState{ false };    // 是否已暂存状态
     bool    mStoredShowState{ false };   // 暂存的显示状态
 
-    TickMgr::ITickVariable mTicker;      // 定时器
-
 private:
-    TextView* mTimeTextView{ nullptr };  // 屏保时间文本
+    TextView* mTimeTextView{ nullptr }; // 侧边栏时间文本
 
 public:
     WindSidebar();
@@ -46,7 +42,6 @@ protected:
 
 private:
     bool checkInit();
-    void onTick(int64_t nowMs);
 };
 
 #endif // !__WIND_SIDEBAR_H__

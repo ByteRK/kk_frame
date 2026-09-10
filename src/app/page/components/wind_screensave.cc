@@ -14,7 +14,7 @@
 #include "wind_screensave.h"
 #include "wind_mgr.h"
 #include "config_mgr.h"
-#include "time_utils.h"
+#include "time_update.h"
 
 WindScreenSave::WindScreenSave() {
     mTicker.setTick(1000);
@@ -22,6 +22,9 @@ WindScreenSave::WindScreenSave() {
 }
 
 WindScreenSave::~WindScreenSave() {
+    if (mTimeTextView && TimeUpdate::instance()->contains(mTimeTextView)) {
+        TimeUpdate::instance()->remove(mTimeTextView);
+    }
     mTicker.stopTick();
 }
 
@@ -36,13 +39,16 @@ void WindScreenSave::showScreenSave() {
     if (!checkInit() || isScreenSaveShow()) return;
     mScreenSave->setVisibility(View::VISIBLE);
     mStartTime = SystemClock::uptimeMillis();
-    updateScreenSave();
+
+    TimeUpdate::instance()->add(mTimeTextView, "%Y-%m-%d %H:%M:%S");
 }
 
 /// @brief 隐藏屏保
 void WindScreenSave::hideScreenSave() {
     if (!checkInit() || !isScreenSaveShow()) return;
     mScreenSave->setVisibility(View::GONE);
+
+    TimeUpdate::instance()->remove(mTimeTextView);
 }
 
 /// @brief 是否在显示屏保
@@ -99,8 +105,6 @@ void WindScreenSave::onTick(int64_t nowMs) {
         toWhat = "black";
         if (diff >= 120 * 1000)
             g_window->showBlack();
-
-        updateScreenSave();
     } else {
         diff = nowMs - g_window->mLastAction;
 #ifdef PRODUCT_X64
@@ -111,9 +115,4 @@ void WindScreenSave::onTick(int64_t nowMs) {
             showScreenSave();
     }
     LOGV("WindScreenSave onTick diff:%.3llds -> %s", diff / 1000, toWhat);
-}
-
-/// @brief 更新内容
-void WindScreenSave::updateScreenSave() {
-    mTimeTextView->setText(TimeUtils::getTimeFmtStr("%Y-%m-%d %H:%M:%S"));
 }

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-06-25 14:05:21
- * @LastEditTime: 2026-06-30 01:00:48
+ * @LastEditTime: 2026-09-10 17:16:27
  * @FilePath: /kk_frame/src/app/page/components/wind_sidebar.cc
  * @Description: 侧边栏组件
  * @BugList:
@@ -13,30 +13,32 @@
 
 #include "wind_sidebar.h"
 #include "wind_mgr.h"
-#include "time_utils.h"
 #include <widget/imageview.h>
 
-WindSidebar::WindSidebar() {
-    mTicker.setTick(1000);
-    mTicker.setCallBack(std::bind(&WindSidebar::onTick, this, std::placeholders::_1));
-}
+#include "time_update.h"
+
+WindSidebar::WindSidebar() { }
 
 WindSidebar::~WindSidebar() {
-    mTicker.stopTick();
+    if (mTimeTextView && TimeUpdate::instance()->contains(mTimeTextView)) {
+        TimeUpdate::instance()->remove(mTimeTextView);
+    }
 }
 
 /// @brief 显示侧边栏
 void WindSidebar::showSidebar() {
     if (!checkInit() || isSidebarShow()) return;
     mSidebar->setVisibility(View::VISIBLE);
-    mTicker.startTick(-1);
+
+    TimeUpdate::instance()->add(mTimeTextView);
 }
 
 /// @brief 隐藏侧边栏
 void WindSidebar::hideSidebar() {
     if (!checkInit() || !isSidebarShow()) return;
     mSidebar->setVisibility(View::GONE);
-    mTicker.stopTick();
+
+    TimeUpdate::instance()->remove(mTimeTextView);
 }
 
 /// @brief 侧边栏是否显示
@@ -92,10 +94,4 @@ bool WindSidebar::checkInit() {
     if (mIsInit) return true;
     LOGE("Sidebar uninit");
     return false;
-}
-
-/// @brief 定时器回调
-/// @param nowMs 
-void WindSidebar::onTick(int64_t nowMs) {
-    mTimeTextView->setText(TimeUtils::getTimeStr());
 }

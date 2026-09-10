@@ -6,7 +6,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:showIn="@layout/wind">
 
-    <TextView
+    <TimeTextView
         style="@style/font_bebas"
         android:id="@+id/time"
         android:layout_width="84dp"
