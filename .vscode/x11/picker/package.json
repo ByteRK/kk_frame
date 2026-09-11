@@ -1,0 +1,33 @@
+{
+    "name": "x11-picker",
+    "displayName": "X11 Display Picker",
+    "description": "调试前弹窗选择当前可用的 X11 DISPLAY（MobaXterm X11 转发）",
+    "version": "0.0.1",
+    "publisher": "ricken",
+    "author": {
+        "name": "Ricken"
+    },
+    "license": "MIT",
+    "engines": {
+        "vscode": "^1.60.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "extensionKind": [
+        "workspace"
+    ],
+    "main": "./extension.js",
+    "activationEvents": [
+        "onCommand:pickX11Display"
+    ],
+    "contributes": {
+        "commands": [
+            {
+                "command": "pickX11Display",
+                "title": "选择 X11 DISPLAY",
+                "category": "X11"
+            }
+        ]
+    }
+}

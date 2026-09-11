@@ -27,6 +27,29 @@
             "args": ["-r"],
             "problemMatcher": ["$gcc"],
             "detail": "编译并运行"
+        },
+        {
+            "label": "FastCheck prepare X11",
+            "type": "shell",
+            "command": "python3",
+            "args": ["${workspaceFolder}/.vscode/x11/displays.py", "--write"],
+            "problemMatcher": [],
+            "detail": "探测可用的 X11 DISPLAY 并写入 .vscode/x11/display.env"
+        },
+        {
+            "label": "FastCheck build & prepare X11",
+            "dependsOn": ["FastCheck prepare X11", "FastCheck build"],
+            "dependsOrder": "sequence",
+            "problemMatcher": [],
+            "detail": "先探测 X11 环境，再快速编译"
+        },
+        {
+            "label": "FastCheck install X11 picker",
+            "type": "shell",
+            "command": "python3",
+            "args": ["${workspaceFolder}/.vscode/x11/install.py"],
+            "problemMatcher": [],
+            "detail": "打包并安装弹窗选择 DISPLAY 的本地扩展"
         }
     ]
 }

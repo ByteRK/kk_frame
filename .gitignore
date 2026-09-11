@@ -1,5 +1,9 @@
 .venv
 
+# VS Code 调试用的本机 X11 环境（由 .vscode/x11/ 下的脚本与扩展生成）
+.vscode/x11/display.env
+.vscode/x11/picker.vsix
+
 /tmp/
 /todo/
 /dist/

@@ -9,9 +9,7 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "/home/ricken/cdroid/outX64-Debug",
-            "environment": [
-                { "name": "DISPLAY", "value": "localhost:10.0" }
-            ],
+            "envFile": "${workspaceFolder}/.vscode/x11/display.env",
             "externalConsole": false,
             "MIMode": "gdb",
             "miDebuggerPath": "/usr/bin/gdb",
@@ -21,7 +19,8 @@
                     "text": "-enable-pretty-printing",
                     "ignoreFailures": true
                 }
-            ]
+            ],
+            "preLaunchTask": "FastCheck prepare X11"
         },
         {
             "name": "编译并运行",
@@ -31,8 +30,29 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "/home/ricken/cdroid/outX64-Debug",
+            "envFile": "${workspaceFolder}/.vscode/x11/display.env",
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "setupCommands": [
+                {
+                    "description": "为 gdb 启用整齐打印",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "FastCheck build & prepare X11"
+        },
+        {
+            "name": "编译并运行(带X11选择)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/home/ricken/cdroid/outX64-Debug/apps/kk_frame/kk_frame",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "/home/ricken/cdroid/outX64-Debug",
             "environment": [
-                { "name": "DISPLAY", "value": "localhost:10.0" }
+                { "name": "DISPLAY", "value": "${input:x11Display}" }
             ],
             "externalConsole": false,
             "MIMode": "gdb",
@@ -45,6 +65,13 @@
                 }
             ],
             "preLaunchTask": "FastCheck build"
+        }
+    ],
+    "inputs": [
+        {
+            "id": "x11Display",
+            "type": "command",
+            "command": "pickX11Display"
         }
     ]
 }
