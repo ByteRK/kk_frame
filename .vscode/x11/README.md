@@ -128,7 +128,13 @@ python3 .vscode/x11/install.py
 
 1. **收集候选**：`xauth list` 里登记过的 display 号，加上本机 `127.0.0.1:6000~6063` 中实际在监听的端口。
 2. **逐个实测**：用 `XOpenDisplay()`（与程序运行期完全相同的 API）尝试连接，只有真正连得上的才保留。
+   每个实测都跑在**子进程**里并带超时（3s，见下），失败/超时都当作不可用；多个候选并行实测，整体耗时不超过一个超时周期。
 3. **排序**：按编号降序，即**最新会话优先**。
+
+> 为什么要放子进程：`XOpenDisplay` 在建立连接阶段**没有超时**。转发通道已经死掉的
+> “僵尸”端口（`ss` 里在 LISTEN、连上也不被拒绝）会 accept 连接却永不回握手指包，
+> 此时程序会永远阻塞在 `poll()` 上，而且进程内无法打断（SIGALRM 也不行：Xlib 对
+> EINTR 是内部重试）。只有“子进程 + kill”能可靠把整体耗时控制在 3s 内。
 
 ## 排查
 
@@ -137,6 +143,7 @@ python3 .vscode/x11/install.py
 | `command 'pickX11Display' not found` | 扩展未安装、未重载，或装到了别的 profile。跑一次 `FastCheck install X11 picker` 任务，再执行 `Developer: Reload Window` |
 | 弹窗里没有你要的 display | 确认 MobaXterm 的 X11 转发已开启；手动跑 `displays.py` 看探测结果 |
 | 提示 `Authorisation not recognised` | 该端口属于别的会话，不可用。这是正常现象，探测会自动跳过 |
+| 手动跑 `displays.py` 长时间无输出 | 旧版表现为卡死（僵尸端口永不应答且 `XOpenDisplay` 无超时）。现已改为子进程 + 3s 超时，最坏 3s 返回；若始终探测不到，重启 MobaXterm 会话恢复 X11 转发 |
 | `install.py` 长时间无响应 | `code --install-extension` 是 IPC 调用，会转发给运行中的窗口并阻塞等待。脚本已设超时（安装 120s / 校验 30s），超时会提示；稍后重试或改用 `Extensions: Install from VSIX...` |
 | 程序连不上 X 服务器 | 用 `displays.py` 确认当前有哪些可用，然后重选或重新探测 |
 
