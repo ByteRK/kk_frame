@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-08-13 16:07:50
+ * @LastEditTime: 2026-09-21 17:31:33
  * @FilePath: /kk_frame/src/app/page/core/wind.cc
  * @Description: 窗口类
  * @BugList:
@@ -65,10 +65,11 @@ void MainWindow::init() {
     mAttachInfo->mPlaySoundEffect = playSound;
 }
 
-/// @brief 隐藏全部元素
-void MainWindow::hideAll() {
-    hidePopBox();
-    hideToast();
+/// @brief 唤醒屏幕，关闭屏保与黑屏遮罩，并重置屏保计时
+/// @note 不影响弹窗与 Toast，避免唤醒时打断正在进行中的交互
+void MainWindow::wakeUp() {
+    mLastAction = SystemClock::uptimeMillis(); // 先重置计时，避免 onTick 再次进入屏保
+    hideScreenSave();
     hideBlack();
 }
 

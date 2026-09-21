@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-08-13 16:05:27
+ * @LastEditTime: 2026-09-21 17:26:44
  * @FilePath: /kk_frame/src/app/page/core/wind.h
  * @Description: 主窗口类
  * @BugList:
@@ -51,7 +51,7 @@ public:
     ~MainWindow();
 
     void  init();
-    void  hideAll();
+    void  wakeUp();
 
     View* getRegularLayer();
     void  playSoundEffect();
