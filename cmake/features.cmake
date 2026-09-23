@@ -13,7 +13,7 @@ endif()
 set(ENABLED_OPENSSL         OFF)       # CURL 显式 OpenSSL 链接
 
 set(ENABLED_KEYBOARD        ON)        # 键盘支持
-set(ENABLED_KEYBOARD_PINYIN OFF)       # 键盘拼音输入支持
+set(ENABLED_KEYBOARD_PINYIN ON)        # 键盘拼音输入支持
 set(ENABLED_GAUSS_VIEW      OFF)       # 高斯模糊视图
 set(ENABLED_GAUSS_DRAWABLE  ON)        # 高斯模糊绘图
 set(ENABLED_FILE_SYSTEM     ON)        # 文件系统支持

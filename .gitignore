@@ -16,6 +16,9 @@ fonts/fonts.conf
 library/library_config.h
 library/*/lib_*_config.h
 
+# 拼音数据源：仓库只存 gzip，解压出的原始文件不入库（约 3.5MB）
+library/keyboard/pinyin/data/*.txt
+
 R.h
 ID.xml
 cdroid_changes.patch
