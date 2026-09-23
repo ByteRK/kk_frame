@@ -23,7 +23,9 @@
     <!--    语言键-->
     <color name="keyboard_color_key_lang_bg">#5c8d89</color>
     <color name="keyboard_color_key_lang_bg_pressed">#74b49b</color>
-
+    <!--    中文候选框-->
+    <color name="keyboard_color_cn_candidate_text_bg">#00718093</color>
+    <color name="keyboard_color_cn_candidate_text_bg_pressed">#bb718093</color>
 
     <!--    输入框-->
     <style name="keyboard_input_box">
@@ -43,7 +45,7 @@
     </style>
     <!--    功能键-->
     <style name="keyboard_cancel">
-        <item name="android:layout_width">100dp</item>
+        <item name="android:layout_width">180dp</item>
         <item name="android:layout_height">60dp</item>
         <item name="android:layout_marginTop">10dp</item>
         <item name="android:layout_marginStart">10dp</item>
@@ -55,7 +57,7 @@
         <item name="android:stateListAnimator">@animator/btn_click_scale</item>
     </style>
     <style name="keyboard_enter">
-        <item name="android:layout_width">100dp</item>
+        <item name="android:layout_width">180dp</item>
         <item name="android:layout_height">60dp</item>
         <item name="android:layout_marginTop">10dp</item>
         <item name="android:layout_marginEnd">10dp</item>
@@ -111,7 +113,7 @@
     </style>
     <!--    空格键-->
     <style name="keyboard_key_space">
-        <item name="android:layout_width">380dp</item>
+        <item name="android:layout_width">740dp</item>
         <item name="android:layout_height">match_parent</item>
         <item name="android:gravity">center</item>
         <item name="android:textSize">24sp</item>
