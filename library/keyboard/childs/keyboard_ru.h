@@ -14,59 +14,34 @@
 #ifndef __KEYBOARD_RU_H__
 #define __KEYBOARD_RU_H__
 
-#include "keyboard_base.h"
-#include <array>
+#include "keyboard_qwerty.h"
 
 /// @brief 俄语键盘
-class Keyboard_RU : public CKeyBoardChild {
+class Keyboard_RU : public Keyboard_Qwerty {
 protected:
-    static constexpr int ID_START = 20000;
+    /// @note 枚举值即 mKeyList 下标，必须与按键表、collectKeys() 顺序保持一致
     enum {
-        KEY_EN_1_1, KEY_EN_1_2, KEY_EN_1_3, KEY_EN_1_4, KEY_EN_1_5, KEY_EN_1_6, KEY_EN_1_7, KEY_EN_1_8, KEY_EN_1_9, KEY_EN_1_10, KEY_EN_1_11, KEY_EN_1_12,
-        KEY_EN_2_1, KEY_EN_2_2, KEY_EN_2_3, KEY_EN_2_4, KEY_EN_2_5, KEY_EN_2_6, KEY_EN_2_7, KEY_EN_2_8, KEY_EN_2_9, KEY_EN_2_10, KEY_EN_2_11,
-        KEY_EN_3_1, KEY_EN_3_2, KEY_EN_3_3, KEY_EN_3_4, KEY_EN_3_5, KEY_EN_3_6, KEY_EN_3_7, KEY_EN_3_8, KEY_EN_3_9, KEY_EN_3_10,
-        KEY_EN_LEFT, KEY_EN_SPACE, KEY_EN_RIGHT,
+        KEY_RU_1_1, KEY_RU_1_2, KEY_RU_1_3, KEY_RU_1_4, KEY_RU_1_5, KEY_RU_1_6, KEY_RU_1_7, KEY_RU_1_8, KEY_RU_1_9, KEY_RU_1_10, KEY_RU_1_11, KEY_RU_1_12,
+        KEY_RU_2_1, KEY_RU_2_2, KEY_RU_2_3, KEY_RU_2_4, KEY_RU_2_5, KEY_RU_2_6, KEY_RU_2_7, KEY_RU_2_8, KEY_RU_2_9, KEY_RU_2_10, KEY_RU_2_11,
+        KEY_RU_3_1, KEY_RU_3_2, KEY_RU_3_3, KEY_RU_3_4, KEY_RU_3_5, KEY_RU_3_6, KEY_RU_3_7, KEY_RU_3_8, KEY_RU_3_9, KEY_RU_3_10,
+        KEY_RU_LEFT, KEY_RU_SPACE, KEY_RU_RIGHT,
 
-        KEY_EN_MATH, KEY_EN_MORE, KEY_EN_LANG, KEY_EN_SHIFT, KEY_EN_BACKSPACE,
+        KEY_RU_MATH, KEY_RU_MORE, KEY_RU_LANG, KEY_RU_SHIFT, KEY_RU_BACKSPACE,
 
-        KEY_EN_MAX
+        KEY_RU_MAX
     };
-    typedef enum {
-        DISPLAY_TYPE_DEFAULT = 0,   // 常规
-        DISPLAY_TYPE_UPPER,         // 大写
-        DISPLAY_TYPE_UPPER_PLUS,    // 大写锁定
-        DISPLAY_TYPE_NUMBER,        // 数字
-        DISPLAY_TYPE_MORE,          // 更多
-
-        DISPLAY_TYPE_MAX
-    } DISPLAY_TYPE;
-    using KeyTextType = const char*;
-
-protected:
-    DISPLAY_TYPE         mDisplayType{ DISPLAY_TYPE_DEFAULT };                   // 显示模式
-    std::vector<Button*>                                              mKeyList;  // 按键列表
-    std::array<std::array<KeyTextType, KEY_EN_MAX>, DISPLAY_TYPE_MAX> mKeyStr;   // 按键字符
-
-private:
-    int64_t mShiftLastClickTime{ 0 };  // 上次shift按键点击时间
+    /// @brief 字母区按键数量（其后为 左/空格/右 等尾部按键）
+    static constexpr int MAIN_KEY_COUNT = KEY_RU_LEFT;
 
 public:
     Keyboard_RU(CKeyBoard* parent);
 
 protected:
     virtual CKeyBoard::KeyBoardType getType() override;
-    virtual void init() override;
     virtual void onShow() override;
-    virtual void onHide() override;
 
 protected:
-    void setKeyAction();
-    virtual void onKeyClick(int key);
-    virtual void refreshDisplay();
-
-private:
-    void getKeyList();
-    void setKeyStr();
+    virtual void collectKeys() override;
 };
 
 #endif // __KEYBOARD_RU_H__

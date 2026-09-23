@@ -6,4 +6,17 @@
 #define PROJECT_NAME  "@PROJECT_NAME@"
 #define THIS_LIB_NAME @TARGET_NAME@
 
+/// @brief 拼音字库目录（相对程序运行目录，与 pinyin/README.md 的说明一致）
+#ifndef KEYBOARD_PINYIN_DIR
+#define KEYBOARD_PINYIN_DIR "pinyin/"
+#endif
+/// @brief 拼音系统字库文件名
+#ifndef KEYBOARD_PINYIN_SYS_DICT
+#define KEYBOARD_PINYIN_SYS_DICT "dict_pinyin.dat"
+#endif
+/// @brief 拼音用户字库文件名
+#ifndef KEYBOARD_PINYIN_USR_DICT
+#define KEYBOARD_PINYIN_USR_DICT "userdict.dat"
+#endif
+
 #endif // __LIB_KEYBOARD_CONFIG__

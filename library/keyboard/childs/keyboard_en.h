@@ -14,13 +14,12 @@
 #ifndef __KEYBOARD_EN_H__
 #define __KEYBOARD_EN_H__
 
-#include "keyboard_base.h"
-#include <array>
+#include "keyboard_qwerty.h"
 
 /// @brief 英文键盘
-class Keyboard_EN : public CKeyBoardChild {
+class Keyboard_EN : public Keyboard_Qwerty {
 protected:
-    static constexpr int ID_START = 20000;
+    /// @note 枚举值即 mKeyList 下标，必须与按键表、collectKeys() 顺序保持一致
     enum {
         KEY_EN_Q, KEY_EN_W, KEY_EN_E, KEY_EN_R, KEY_EN_T, KEY_EN_Y, KEY_EN_U, KEY_EN_I, KEY_EN_O, KEY_EN_P,
         KEY_EN_A, KEY_EN_S, KEY_EN_D, KEY_EN_F, KEY_EN_G, KEY_EN_H, KEY_EN_J, KEY_EN_K, KEY_EN_L,
@@ -31,43 +30,19 @@ protected:
 
         KEY_EN_MAX
     };
-    typedef enum {
-        DISPLAY_TYPE_DEFAULT = 0,   // 常规
-        DISPLAY_TYPE_UPPER,         // 大写
-        DISPLAY_TYPE_UPPER_PLUS,    // 大写锁定
-        DISPLAY_TYPE_NUMBER,        // 数字
-        DISPLAY_TYPE_MORE,          // 更多
-
-        DISPLAY_TYPE_MAX
-    } DISPLAY_TYPE;
-    using KeyTextType = const char*;
-
-protected:
-    DISPLAY_TYPE         mDisplayType{ DISPLAY_TYPE_DEFAULT };                   // 显示模式
-    std::vector<Button*>                                              mKeyList;  // 按键列表
-    std::array<std::array<KeyTextType, KEY_EN_MAX>, DISPLAY_TYPE_MAX> mKeyStr;   // 按键字符
-
-private:
-    int64_t mShiftLastClickTime{ 0 };  // 上次shift按键点击时间
+    /// @brief 字母区按键数量（其后为 左/空格/右 等尾部按键）
+    static constexpr int MAIN_KEY_COUNT = KEY_EN_LEFT;
 
 public:
     Keyboard_EN(CKeyBoard* parent, const std::string& layout = "@keyboard:layout/keyboard_en");
 
 protected:
     virtual CKeyBoard::KeyBoardType getType() override;
-    virtual void init() override;
     virtual void onShow() override;
-    virtual void onHide() override;
     virtual void onRealKey(int key) override;
 
 protected:
-    void setKeyAction();
-    virtual void onKeyClick(int key);
-    virtual void refreshDisplay();
-
-private:
-    void getKeyList();
-    void setKeyStr();
+    virtual void collectKeys() override;
 };
 
 #endif // __KEYBOARD_EN_H__
