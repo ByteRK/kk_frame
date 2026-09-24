@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-16 16:03:05
- * @LastEditTime: 2026-09-23 14:59:13
+ * @LastEditTime: 2026-09-24 11:41:19
  * @FilePath: /kk_frame/library/keyboard/cKeyBoard.cc
  * @Description: 输入法 CDROID 版
  * @BugList:
@@ -53,6 +53,10 @@ CKeyBoard::~CKeyBoard() {
     mCurChild = nullptr;
     for (auto& kv : mChilds) delete kv.second;
     mChilds.clear();
+}
+
+ViewGroup* CKeyBoard::getRootView() {
+    return mKeyboardRoot;
 }
 
 void CKeyBoard::show() {

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-16 16:03:05
- * @LastEditTime: 2026-08-10 09:53:10
+ * @LastEditTime: 2026-09-24 11:41:12
  * @FilePath: /kk_frame/library/keyboard/include/cKeyBoard.h
  * @Description: 输入法 CDROID 版
  * @BugList:
@@ -56,6 +56,7 @@ public:   // 构造
     ~CKeyBoard();
 
 public:   // 外部用
+    ViewGroup* getRootView();
     void show();
     void setType(KeyBoardType t);
     void setInputText(const std::string& txt);
