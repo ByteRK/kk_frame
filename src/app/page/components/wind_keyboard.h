@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-10 22:49:59
- * @LastEditTime: 2026-08-10 10:03:06
+ * @LastEditTime: 2026-09-24 11:57:40
  * @FilePath: /kk_frame/src/app/page/components/wind_keyboard.h
  * @Description: 键盘组件
  * @BugList:
@@ -30,15 +30,19 @@ static constexpr int KEYBOARD_DEFAULT_INPUT_LIMIT = 20;
 class WindKeyboard {
 public:
     DECLARE_UIEVENT(void, OnCloseListener, const std::string &text);
-    /// @brief 输入长度达到上限回调（参数为上限值）
     DECLARE_UIEVENT(void, OnMaxLengthListener, int maxCount);
 
 private:
     CKeyBoard*            mKeyBoard{ nullptr };       // 键盘
+    ViewGroup*            mKeyBoardRoot{ nullptr };   // 键盘根布局
 
     bool                  mIsInit{ false };           // 是否初始化
     bool                  mIsShow{ false };           // 是否显示
     int                   mMaxInputCount{ KEYBOARD_DEFAULT_INPUT_LIMIT };  // 最大输入长度（<=0 不限制）
+
+    bool                  mGaussEnable{ true };        // 是否启用背景模糊
+    int                   mGaussRadius{ 10 };          // 背景模糊半径
+    uint64_t              mGaussColor{ 0xaa000000 };   // 背景模糊蒙版颜色
 
     OnCloseListener       mEnterListener{ nullptr };     // 回调函数
     OnCloseListener       mCancelListener{ nullptr };    // 回调函数
@@ -48,20 +52,14 @@ public:
     virtual ~WindKeyboard();
 
     virtual void showKeyboard(const std::string& text = "", const std::string& hint = "");
-    /// @brief 隐藏键盘
-    /// @note 隐藏时会一并清空所有回调（enter/cancel/editChange），
-    ///       请务必在每次 showKeyboard 之前重新设置回调，避免回调捕获的对象先被销毁
     virtual void hideKeyboard();
     bool         isKeyboardShow() const;
 
     void         setKeyboardMaxInputCount(int count);
     void         setKeyboardEditChangeCallBack(OnCloseListener listener);
-    /// @brief 设置确认/取消回调
-    /// @note 回调仅在本次显示期间有效，hideKeyboard 后自动清空，需在下次显示前重新设置
     void         setKeyboardCallBack(OnCloseListener enter, OnCloseListener cancel);
-    /// @brief 设置输入长度达到上限的回调（用于提示用户，仅在设了长度上限时触发）
-    /// @note 同 setKeyboardCallBack，隐藏后会自动清空
     void         setKeyboardMaxLengthCallBack(OnMaxLengthListener listener);
+    void         setKeyboardGauss(bool enable = true, int radius = 10, uint64_t color = 0xaa000000);
 
 protected:
     void         init(ViewGroup* parent);
@@ -69,9 +67,9 @@ protected:
 
 private:
     bool         checkInit();
-    /// @brief 清空所有回调，避免持有已失效的调用方对象
     void         clearCallbacks();
     void         onKeyBoardFinish(bool isEnter, const std::string& text);
+    void         applyGauss();
 };
 
 #endif // !__WIND_KEYBOARD_H__
