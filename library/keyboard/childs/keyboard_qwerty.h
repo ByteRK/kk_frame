@@ -55,7 +55,7 @@ protected:
     virtual void collectKeys() = 0;
     /// @brief 按键响应
     virtual void onKeyClick(int key);
-    /// @brief 退格键长按（默认清空输入内容，子键盘可重写）
+    /// @brief 退格键长按（默认清除光标前的内容，子键盘可重写）
     virtual void onBackspaceLongPress();
     /// @brief 刷新按键显示（文案 + 功能键状态）
     virtual void refreshDisplay();

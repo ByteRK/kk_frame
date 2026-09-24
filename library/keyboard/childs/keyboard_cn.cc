@@ -197,9 +197,14 @@ void Keyboard_CN::onKeyClick(int key) {
 }
 
 void Keyboard_CN::onBackspaceLongPress() {
-    // 拼音未上屏时先清拼音，否则清空已输入内容
+    // 拼音未上屏时先清拼音，否则清除光标前的内容
     if (!mPinyinRaw.empty())clearCandidate();
     else Keyboard_EN::onBackspaceLongPress();
+}
+
+void Keyboard_CN::onTextCleared() {
+    // 内容被清空，同时丢弃未上屏的拼音与候选
+    clearCandidate();
 }
 
 int Keyboard_CN::getItemCount() {

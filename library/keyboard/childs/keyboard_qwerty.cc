@@ -84,7 +84,8 @@ void Keyboard_Qwerty::stopBackspaceTimer() {
 }
 
 void Keyboard_Qwerty::onBackspaceLongPress() {
-    mParent->clearText();
+    // 长按退格：清除光标前的内容（保留光标后的内容）
+    mParent->clearBeforeCaret();
 }
 
 void Keyboard_Qwerty::onKeyClick(int key) {

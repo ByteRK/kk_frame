@@ -48,6 +48,7 @@ protected:
     void onHide() override;
     void onKeyClick(int key) override;
     void onBackspaceLongPress() override;
+    void onTextCleared() override;
 
 protected:
     int getItemCount() override;
