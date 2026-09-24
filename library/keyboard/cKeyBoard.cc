@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-16 16:03:05
- * @LastEditTime: 2026-08-10 09:57:43
+ * @LastEditTime: 2026-09-23 14:59:13
  * @FilePath: /kk_frame/library/keyboard/cKeyBoard.cc
  * @Description: 输入法 CDROID 版
  * @BugList:
@@ -15,6 +15,9 @@
 #include "string_utils.h"
 #include "custom_app.h"
 #include "quick_define.h"
+#include "keyboard_edittext.h"
+
+#include <core/textutils.h>
 
 #include "keyboard_en.h"
 #include "keyboard_cn.h"
@@ -69,6 +72,7 @@ void CKeyBoard::setType(KeyBoardType t) {
 
 void CKeyBoard::setInputText(const std::string& txt) {
     mInputText = txt;
+    mCaretIndex = txt.size();  // 外部灌入内容时光标置于末尾
 }
 
 void CKeyBoard::setDescription(const std::string& txt) {
@@ -131,25 +135,80 @@ void CKeyBoard::onRealKey(int keyCode) {
 }
 
 void CKeyBoard::appendText(const std::string& txt) {
-    std::string cacheText = mInputText + txt;
+    if (txt.empty())return;
+
+    // 在光标处插入：光标按 utf8 字节偏移保存，这里统一用宽字符做插入，避免切在半个字符上
+    std::wstring wideText = cdroid::TextUtils::utf8tounicode(mInputText);
+    const int wideCaret = (int)cdroid::TextUtils::utf8tounicode(mInputText.substr(0, mCaretIndex)).size();
+    const std::wstring wideIns = cdroid::TextUtils::utf8tounicode(txt);
+
+    wideText.insert(wideCaret, wideIns);
+    std::string result = cdroid::TextUtils::unicode2utf8(wideText);
+
     bool truncated = false;
-    if (mMaxInputCount > 0 && StringUtils::characterCount(cacheText.c_str(), mChineseWeight) > mMaxInputCount) {
-        cacheText = StringUtils::substringByChars(cacheText.c_str(), mMaxInputCount, mChineseWeight);
+    if (mMaxInputCount > 0 && StringUtils::characterCount(result.c_str(), mChineseWeight) > mMaxInputCount) {
+        result = StringUtils::substringByChars(result.c_str(), mMaxInputCount, mChineseWeight);
         truncated = true;
     }
-    if (cacheText != mInputText)setEditText(cacheText);
+
+    // 光标停在插入内容之后（截断后按结果长度收敛到字符边界）
+    mInputText = result;
+    const std::wstring wideResult = cdroid::TextUtils::utf8tounicode(result);
+    int newWideCaret = wideCaret + (int)wideIns.size();
+    if (newWideCaret > (int)wideResult.size())newWideCaret = (int)wideResult.size();
+    mCaretIndex = (int)cdroid::TextUtils::unicode2utf8(wideResult.substr(0, newWideCaret)).size();
+
+    setEditText(mInputText);
     // 触顶提示放在最后，避免回调内再次输入造成重入
     if (truncated && mMaxLengthListener)mMaxLengthListener(mMaxInputCount);
 }
 
 void CKeyBoard::backspaceText() {
-    if (mInputText.empty())return;
-    setEditText(StringUtils::removeLastCharacter(mInputText.c_str()));
+    // 删除光标左侧的字符（光标感知）
+    if (mInputText.empty() || mCaretIndex <= 0)return;
+
+    std::wstring wideText = cdroid::TextUtils::utf8tounicode(mInputText);
+    const int wideCaret = (int)cdroid::TextUtils::utf8tounicode(mInputText.substr(0, mCaretIndex)).size();
+    if (wideCaret <= 0)return;
+
+    wideText.erase(wideCaret - 1, 1);
+    mInputText = cdroid::TextUtils::unicode2utf8(wideText);
+    mCaretIndex = (int)cdroid::TextUtils::unicode2utf8(wideText.substr(0, wideCaret - 1)).size();
+
+    setEditText(mInputText);
 }
 
-void CKeyBoard::clearText() {
-    if (mInputText.empty())return;
-    setEditText("");
+void CKeyBoard::clearBeforeCaret() {
+    // 删除光标前的内容，光标移到最前，光标后的内容保留
+    if (mInputText.empty() || mCaretIndex <= 0)return;
+
+    mInputText = mInputText.substr(mCaretIndex);
+    mCaretIndex = 0;
+    setEditText(mInputText);
+}
+
+void CKeyBoard::clearAllText() {
+    // 内容为空时也需通知子键盘清理临时状态（如残留的候选栏）
+    if (!mInputText.empty()) {
+        mInputText.clear();
+        mCaretIndex = 0;
+        setEditText(mInputText);
+    }
+    // 通知当前子键盘清理临时状态（如中文候选、拼音）
+    if (mCurChild)mCurChild->onTextCleared();
+}
+
+void CKeyBoard::setCaretIndex(int index) {
+    if (index < 0)index = 0;
+    else if (index > (int)mInputText.size())index = mInputText.size();
+    if (index == mCaretIndex)return;
+
+    mCaretIndex = index;
+    // 只移动光标，内容不变
+    if (mInputTextEdit) {
+        const std::wstring widePrefix = cdroid::TextUtils::utf8tounicode(mInputText.substr(0, mCaretIndex));
+        mInputTextEdit->setCaretOffset((int)widePrefix.size());
+    }
 }
 
 void CKeyBoard::showNextType() {
@@ -186,24 +245,34 @@ void CKeyBoard::init() {
 
     mKeyboardRoot = __dc(ViewGroup, LayoutInflater::from(getContext())->inflate("@keyboard:layout/keyboard", this));
 
-    mInputTextEdit = __dc(EditText, mKeyboardRoot ? mKeyboardRoot->findViewById(LibRid::input_box) : nullptr);
+    mInputTextEdit = __dc(KeyboardEditText, mKeyboardRoot ? mKeyboardRoot->findViewById(LibRid::input_box) : nullptr);
+    mClearBtn = __dc(ImageView, mKeyboardRoot ? mKeyboardRoot->findViewById(LibRid::clear) : nullptr);
     mCompleteBtn = __dc(Button, mKeyboardRoot ? mKeyboardRoot->findViewById(LibRid::enter) : nullptr);
     mCancelBtn = __dc(Button, mKeyboardRoot ? mKeyboardRoot->findViewById(LibRid::cancel) : nullptr);
     mChildBox = __dc(ViewGroup, mKeyboardRoot ? mKeyboardRoot->findViewById(LibRid::key_box) : nullptr);
-    FailFast(!mKeyboardRoot || !mInputTextEdit || !mCompleteBtn || !mCancelBtn || !mChildBox,
-        "CKeyBoard init failed, check @keyboard:layout/keyboard and the ids in R.h");
+    FailFast(!mKeyboardRoot || !mInputTextEdit || !mClearBtn || !mCompleteBtn || !mCancelBtn || !mChildBox,
+        "CKeyBoard init failed, check @keyboard:layout/keyboard (input_box needs KeyboardEditText) and the ids in R.h");
 
     mInputColor = App::getInstance().getColor("@keyboard:color/keyboard_color_input");
     mDescriptionColor = App::getInstance().getColor("@keyboard:color/keyboard_color_description");
     if (!mInputColor)mInputColor = 0xFFF9F9F9;
     if (!mDescriptionColor)mDescriptionColor = 0x88F9F9F9;
 
-    // 输入框仅用于显示内容：屏蔽触摸，避免用户拖动光标/选中文本后与 mInputText 失步
-    mInputTextEdit->setOnTouchListener([](View&, MotionEvent&) { return true; });
+    // 点击输入框可改光标位置（插入点），光标变化后同步回 mCaretIndex
+    mInputTextEdit->setOnCaretChangeListener([this](int wideOffset) {
+        onInputCaretChanged(wideOffset);
+    });
+
+    // 清除按键：点击即清空全部内容
+    mClearBtn->setOnClickListener([this](View&) {
+        clearAllText();
+    });
+    mClearBtn->getDrawable()->setFilterBitmap(true);
 
     auto btnClick = [this](View&v) {
         if (mFinishListener)mFinishListener(v.getId() == LibRid::enter, mInputText);
         mInputText.clear();
+        mCaretIndex = 0;
         mDescription.clear();
         showType(KeyBoardType::KB_TYPE_NONE);
         // setVisibility(View::GONE); // 交给外部控制
@@ -241,22 +310,38 @@ void CKeyBoard::showType(KeyBoardType t) {
 
 void CKeyBoard::setEditText(const std::string& txt) {
     mInputText = txt;
-    if (txt.empty()) {
+    if (mCaretIndex > (int)mInputText.size())mCaretIndex = mInputText.size();
+    syncEditText();
+}
+
+void CKeyBoard::syncEditText() {
+    if (mInputText.empty()) {
         mInputTextEdit->setText(" " + mDescription);
         mInputTextEdit->setTextColor(mDescriptionColor);
-        mInputTextEdit->setCaretPos(0);
+        mInputTextEdit->setCaretOffset(0);
         LOGD("setEditText: [%s]", mDescription.c_str());
     } else {
-        std::string endText(txt + " ");
-        int pos = StringUtils::characterCount(endText.c_str()) - 1;
-
-        mInputTextEdit->setText(endText);
+        mInputTextEdit->setText(mInputText);
         mInputTextEdit->setTextColor(mInputColor);
-        mInputTextEdit->setCaretPos(pos);
-        LOGI("setEditText: [CaretPos: %d][%s]", pos, txt.c_str());
+        // 光标位置（utf8 字节偏移 -> 宽字符索引）
+        const std::wstring widePrefix = cdroid::TextUtils::utf8tounicode(mInputText.substr(0, mCaretIndex));
+        const int wideCaret = (int)widePrefix.size();
+        mInputTextEdit->setCaretOffset(wideCaret);
+        LOGI("setEditText: [Caret: %d][%s]", wideCaret, mInputText.c_str());
     }
 
     if (mEditChangeListener)mEditChangeListener(mInputText);
+}
+
+void CKeyBoard::onInputCaretChanged(int wideOffset) {
+    // 输入框点击改了光标：宽字符索引 -> utf8 字节偏移
+    const std::wstring wideText = cdroid::TextUtils::utf8tounicode(mInputText);
+    int wideCaret = wideOffset;
+    if (wideCaret < 0)wideCaret = 0;
+    else if (wideCaret > (int)wideText.size())wideCaret = (int)wideText.size();
+
+    mCaretIndex = (int)cdroid::TextUtils::unicode2utf8(wideText.substr(0, wideCaret)).size();
+    LOGD("onInputCaretChanged: wide=%d -> utf8=%d", wideCaret, mCaretIndex);
 }
 
 void CKeyBoard::setInputBoxFocus(bool focus) {
@@ -316,6 +401,8 @@ void CKeyBoardChild::onHide() {
 }
 
 void CKeyBoardChild::onRealKey(int keyCode) { }
+
+void CKeyBoardChild::onTextCleared() { }
 
 void CKeyBoardChild::setSoundEffectsEnabled(bool enabled) {
     applySoundEffects(mRootView, enabled);

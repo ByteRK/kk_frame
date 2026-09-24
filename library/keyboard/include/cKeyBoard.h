@@ -18,9 +18,11 @@
 #include <vector>
 #include <widget/button.h>
 #include <widget/edittext.h>
+#include <widget/imageview.h>
 #include <widget/relativelayout.h>
 
 class CKeyBoardChild;
+class KeyboardEditText;
 
 /// @brief 输入法 CDROID 版
 class CKeyBoard : public RelativeLayout {
@@ -76,11 +78,19 @@ public:   // 真实按键
 public:   // 子键盘用
     void appendText(const std::string& txt);
     void backspaceText();
-    /// @brief 清空输入内容（退格键长按使用）
-    void clearText();
+    /// @brief 清除光标前的内容（退格键长按使用），光标移到最前
+    void clearBeforeCaret();
+    /// @brief 清空全部内容（清除按键使用）
+    void clearAllText();
     void showNextType();
     /// @brief 设置确认/取消按钮文案（子键盘可借此按自身语言定制）
     void setBtnText(const std::string& complete, const std::string& cancel);
+
+public:   // 输入光标
+    /// @brief 设置光标位置（utf8 字节偏移，越界会自动限制到 [0, 内容长度]）
+    void setCaretIndex(int index);
+    /// @brief 获取光标位置（utf8 字节偏移）
+    int  getCaretIndex() const { return mCaretIndex; }
 
 protected:
     /// @brief 可见性变化：引擎只在自身 GONE 时清理焦点，这里补齐"祖先隐藏"与"重新显示"的焦点处理
@@ -89,8 +99,13 @@ protected:
 private: // 内部用
     void init();
     void showType(KeyBoardType t);
+    /// @brief 刷新输入框文本与光标（caretIndex 为 utf8 字节偏移）
     void setEditText(const std::string& txt);
     void setInputBoxFocus(bool focus);
+    /// @brief 输入框点击改光标后的同步
+    void onInputCaretChanged(int wideOffset);
+    /// @brief 把光标位置（utf8 字节偏移）写到输入框，并刷新文本
+    void syncEditText();
     CKeyBoardChild* createChild(KeyBoardType t);
     bool isTypeEnable(KeyBoardType t) const;
     static bool isTypeValid(KeyBoardType t);
@@ -100,6 +115,7 @@ private:
 
     KeyBoardType         mKBType{ KB_TYPE_NONE };                   // 键盘加载类型
     std::string          mInputText{ "" };                          // 输入框内容
+    int                  mCaretIndex{ 0 };                          // 光标位置(utf8 字节偏移，插入/删除的锚点)
     std::string          mDescription{ "" };                        // 描述文本
     int                  mMaxInputCount{ DEFAULT_INPUT_LIMIT };     // 最大输入长度（<=0 不限制）
     OnFinishListener     mFinishListener{ nullptr };                // 完成回调
@@ -113,7 +129,8 @@ private:
 private:
     ViewGroup*       mKeyboardRoot{ nullptr };      // 键盘根布局
 
-    EditText*        mInputTextEdit{ nullptr };     // 输入框
+    KeyboardEditText* mInputTextEdit{ nullptr };    // 输入框
+    ImageView*       mClearBtn{ nullptr };          // 清除按键
     Button*          mCompleteBtn{ nullptr };       // 确认按钮
     Button*          mCancelBtn{ nullptr };         // 取消按钮
     ViewGroup*       mChildBox{ nullptr };          // 子键盘容器
@@ -138,6 +155,8 @@ public:
     virtual void onShow();
     virtual void onHide();
     virtual void onRealKey(int keyCode);
+    /// @brief 输入内容被清空时的通知（子键盘可借此清理候选、拼音等临时状态）
+    virtual void onTextCleared();
     /// @brief 按键音效开关（应用到本子键盘视图）
     void setSoundEffectsEnabled(bool enabled);
 

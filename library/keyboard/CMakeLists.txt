@@ -43,6 +43,7 @@ target_include_directories(${TARGET_NAME}
         ${CMAKE_CURRENT_BINARY_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/childs
+        ${CMAKE_CURRENT_SOURCE_DIR}/widgets
         ${CDROID_INCLUDE_DIRS}
         ${CDROID_DEPINCLUDES}
         ${CMAKE_BINARY_DIR}/include

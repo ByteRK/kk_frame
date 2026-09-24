@@ -6,6 +6,7 @@
     <!--    输入框-->
     <color name="keyboard_color_input">#f9f9f9</color>
     <color name="keyboard_color_description">#88f9f9f9</color>
+    <color name="keyboard_color_cursor">#88f9f9f9</color>
     <color name="keyboard_color_input_bg">#57606f</color>
     <color name="keyboard_color_input_bg_stroke">#d6e6f2</color>
     <!--    功能键-->
@@ -28,8 +29,8 @@
     <color name="keyboard_color_cn_candidate_text_bg_pressed">#bb718093</color>
 
     <!--    输入框-->
-    <style name="keyboard_input_box">
-        <item name="android:layout_width">0dp</item>
+    <style name="keyboard_input_box" parent="font_regular">
+        <item name="android:layout_width">880dp</item>
         <item name="android:layout_height">60dp</item>
         <item name="android:layout_weight">1</item>
         <item name="android:layout_marginTop">10dp</item>
@@ -37,14 +38,27 @@
         <item name="android:gravity">start|center_vertical</item>
         <item name="android:textColor">@color/keyboard_color_input</item>
         <item name="android:textSize">34sp</item>
+        <item name="android:singleLine">true</item>
         <item name="android:paddingStart">10dp</item>
+        <!-- 右侧留出清除按键的位置，避免文字被图标遮挡 -->
+        <item name="android:paddingEnd">70dp</item>
         <item name="android:background">@drawable/keyboard_input</item>
         <item name="android:focusable">true</item>
         <item name="android:focusableInTouchMode">true</item>
         <item name="android:cursorVisible">true</item>
     </style>
+    <!--    清除按键-->
+    <style name="keyboard_clear">
+        <item name="android:layout_width">60dp</item>
+        <item name="android:layout_height">60dp</item>
+        <item name="android:layout_alignTop">@id/input_box</item>
+        <item name="android:layout_alignEnd">@id/input_box</item>
+        <item name="android:stateListAnimator">@animator/btn_click_scale</item>
+        <item name="android:scaleType">centerInside</item>
+        <item name="android:src">@mipmap/icon_clear</item>
+    </style>
     <!--    功能键-->
-    <style name="keyboard_cancel">
+    <style name="keyboard_cancel" parent="font_medium">
         <item name="android:layout_width">180dp</item>
         <item name="android:layout_height">60dp</item>
         <item name="android:layout_marginTop">10dp</item>
@@ -56,7 +70,7 @@
         <item name="android:background">@drawable/keyboard_func</item>
         <item name="android:stateListAnimator">@animator/btn_click_scale</item>
     </style>
-    <style name="keyboard_enter">
+    <style name="keyboard_enter" parent="font_medium">
         <item name="android:layout_width">180dp</item>
         <item name="android:layout_height">60dp</item>
         <item name="android:layout_marginTop">10dp</item>
@@ -89,7 +103,7 @@
         <item name="android:divider">@drawable/keyboard_space_h</item>
     </style>
     <!--    KEY-->
-    <style name="keyboard_key">
+    <style name="keyboard_key" parent="font_regular">
         <item name="android:layout_width">0dp</item>
         <item name="android:layout_height">match_parent</item>
         <item name="android:layout_weight">1</item>
@@ -101,7 +115,7 @@
         <item name="android:stateListAnimator">@animator/btn_click_scale</item>
     </style>
     <!--    特殊KEY-->
-    <style name="keyboard_key_sp">
+    <style name="keyboard_key_sp" parent="font_regular">
         <item name="android:layout_width">100dp</item>
         <item name="android:layout_height">match_parent</item>
         <item name="android:gravity">center</item>
@@ -112,7 +126,7 @@
         <item name="android:stateListAnimator">@animator/btn_click_scale</item>
     </style>
     <!--    空格键-->
-    <style name="keyboard_key_space">
+    <style name="keyboard_key_space" parent="font_regular">
         <item name="android:layout_width">740dp</item>
         <item name="android:layout_height">match_parent</item>
         <item name="android:gravity">center</item>
@@ -123,7 +137,7 @@
         <item name="android:stateListAnimator">@animator/btn_click_scale</item>
     </style>
     <!--    回退键-->
-    <style name="keyboard_key_backspace">
+    <style name="keyboard_key_backspace" parent="font_regular">
         <item name="android:layout_width">100dp</item>
         <item name="android:layout_height">match_parent</item>
         <item name="android:gravity">center</item>
@@ -134,7 +148,7 @@
         <item name="android:stateListAnimator">@animator/btn_click_scale</item>
     </style>
     <!--    大写键-->
-    <style name="keyboard_key_shift">
+    <style name="keyboard_key_shift" parent="font_regular">
         <item name="android:layout_width">100dp</item>
         <item name="android:layout_height">match_parent</item>
         <item name="android:gravity">center</item>
@@ -145,7 +159,7 @@
         <item name="android:stateListAnimator">@animator/btn_click_scale</item>
     </style>
     <!--    语言键-->
-    <style name="keyboard_key_lang">
+    <style name="keyboard_key_lang" parent="font_regular">
         <item name="android:layout_width">100dp</item>
         <item name="android:layout_height">match_parent</item>
         <item name="android:gravity">center</item>
