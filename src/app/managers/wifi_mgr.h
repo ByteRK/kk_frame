@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-27 17:11:43
- * @LastEditTime: 2026-07-02 13:43:33
+ * @LastEditTime: 2026-09-24 15:25:43
  * @FilePath: /kk_frame/src/app/managers/wifi_mgr.h
  * @Description: WIFI 管理器
  * @BugList:
@@ -69,6 +69,8 @@ private:
     void           onStateChanged(WifiHal::State state, const std::string& reason);
     void           onScanResult(const std::vector<WifiHal::ApInfo>& aps);
 
+    bool           tryEnable();
+
     void           updateResultAfterConnected();
     void           clearConnectedResult();
 
@@ -78,6 +80,8 @@ private:
     std::string                   mSavedPsk;
     bool                          mHaveChange{ false };
     bool                          mAutoConnect{ false };
+    bool                          mEnablePending{ false };   // 开关为开但尚未开启成功（等待驱动就绪）
+    int64_t                       mNextEnableTime{ 0 };      // 下次尝试开启的时间
 
     std::unique_ptr<WifiHal>      mWifiHal;
     bool                          mInitialized{ false };

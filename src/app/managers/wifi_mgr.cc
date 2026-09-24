@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-27 18:59:51
- * @LastEditTime: 2026-07-02 13:43:38
+ * @LastEditTime: 2026-09-24 15:26:06
  * @FilePath: /kk_frame/src/app/managers/wifi_mgr.cc
  * @Description: WIFI 管理器
  * @BugList:
@@ -22,7 +22,8 @@
 #include <cstdio>
 #include <cstring>
 
-static const int WIFI_DATA_VERSION = 1;
+static const int WIFI_DATA_VERSION = 1;       // WIFI数据版本号
+static const int WIFI_ENABLE_RETRY_MS = 2000; // WIFI开启失败重试间隔
 
 WifiMgr::WifiMgr() :
     AutoSaveItem(2000, 10000) { }
@@ -48,10 +49,8 @@ void WifiMgr::init() {
 
     mInitialized = true;
 
-    // WIFI状态同步
-    const bool enabled = getSwitch();
-    setSwitch(enabled);
-    if (enabled) mAutoConnect = true;
+    // WIFI状态恢复
+    setSwitch(getSwitch());
 
     // 延迟三秒
     cdroid::App::getInstance().addEventHandler(this);
@@ -82,6 +81,8 @@ void WifiMgr::stop() {
     mStateChanged.store(false);
     mApsChanged.store(false);
     mAutoConnect = false;
+    mEnablePending = false;
+    mNextEnableTime = 0;
     mInitialized = false;
 }
 
@@ -95,6 +96,7 @@ void WifiMgr::reset() {
     }
     FileUtils::sync();
     load();
+    mEnablePending = false;
     LOGE("[wifi] reset option.");
 }
 
@@ -144,28 +146,24 @@ bool WifiMgr::disconnect() {
 void WifiMgr::setSwitch(bool enable) {
     if (!mWifiHal) return;
 
-    const bool wasEnabled = mWifiHal->state() != WifiHal::State::Off;
     LOGI("[wifi] set switch. switch=%d", enable);
-    if (enable) {
-        if (!mWifiHal->enable()) {
-            LOGE("[wifi] set switch failed. switch=1");
-            if (mSwitch) {
-                mSwitch = false;
-                mHaveChange = true;
-            }
-            return;
-        }
-        if (!wasEnabled) mAutoConnect = true;
-        scan();
-    } else {
-        mWifiHal->disable();
-        mAutoConnect = false;
-    }
 
     if (mSwitch != enable) {
         mSwitch = enable;
         mHaveChange = true;
     }
+
+    if (!enable) {
+        mEnablePending = false;
+        mAutoConnect = false;
+        mWifiHal->disable();
+        return;
+    }
+
+    mEnablePending = true;
+    mNextEnableTime = cdroid::SystemClock::uptimeMillis() + WIFI_ENABLE_RETRY_MS;
+    if (!tryEnable())
+        LOGE("[wifi] enable failed, keep switch on and retry until driver ready");
 }
 
 bool WifiMgr::getSwitch() {
@@ -193,7 +191,12 @@ int WifiMgr::checkEvents() {
 }
 
 int WifiMgr::handleEvents() {
-    mNextEventTime = cdroid::SystemClock::uptimeMillis() + 1000;
+    const int64_t nowTime = cdroid::SystemClock::uptimeMillis();
+    mNextEventTime = nowTime + 1000;
+
+    if (mEnablePending && mSwitch && nowTime >= mNextEnableTime) { // 开启重试
+        if (!tryEnable()) mNextEnableTime = nowTime + WIFI_ENABLE_RETRY_MS;
+    }
 
     if (mAutoConnect) { // 自动连接
         mAutoConnect = false;
@@ -318,6 +321,23 @@ void WifiMgr::onScanResult(const std::vector<WifiHal::ApInfo>& aps) {
         mAps = aps;
     }
     mApsChanged.store(true);
+}
+
+/// @brief 尝试开启 WIFI
+/// @return true: 成功；false: 失败
+/// @note 驱动异步加载时可能尚未就绪，返回 false 由 handleEvents 重试
+bool WifiMgr::tryEnable() {
+    if (!mWifiHal) return false;
+
+    if (mWifiHal->state() == WifiHal::State::Off) { // 尚未开启，尝试开启
+        if (!mWifiHal->enable()) return false;      // 驱动 / wpa_supplicant 还没就绪，等待重试
+        mAutoConnect = true;
+        LOGI("[wifi] enable ok");
+    }
+
+    mEnablePending = false;
+    scan();
+    return true;
 }
 
 void WifiMgr::updateResultAfterConnected() {
