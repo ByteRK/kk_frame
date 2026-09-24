@@ -46,7 +46,20 @@ cat <<EOL > "$FONT_HEADER_DIR/fonts_info.h"
 #endif // __FONTS_INFO_H__
 EOL
 
+# 让 fontconfig 的目录缓存失效。
+# 原地替换字体文件（同名覆盖）不会改变目录 mtime，而 fontconfig 只看目录 mtime
+# 判断缓存是否有效，于是会一直复用旧字体的元数据（字体族名/样式），
+# 出现"字体文件已换、日志里族名还是旧的"或"@font/xxx 解析到错误字体"。
+# 这里顶起目录 mtime，并删除本目录对应的缓存文件（缓存名 = md5(字体目录)）。
+touch "$FONT_DIR"
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/fontconfig"
+FONT_DIR_HASH="$(printf '%s' "$FONT_DIR" | md5sum 2>/dev/null | cut -d' ' -f1)"
+if [ -n "$FONT_DIR_HASH" ]; then
+    rm -f "$CACHE_DIR/$FONT_DIR_HASH"-*.cache-*
+fi
+
 # 输出log
 echo "fonts.conf 文件已生成在 $FONT_DIR"
 echo "fonts_info.h 文件已生成在 $FONT_HEADER_DIR"
+echo "已刷新字体目录 mtime 并清理 fontconfig 缓存: $CACHE_DIR/$FONT_DIR_HASH-*.cache-*"
 

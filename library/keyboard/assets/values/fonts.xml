@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    注意：这里必须写成不带 "@" 的 "font/xxx"，不能写成 "@font/xxx"。
+    包内资源引用会被归一化成 "<包名>:font/xxx"，而键盘 pak 的包名是 "keyboard"，
+    但字体是按应用包名注册的（typeface.cc: "<应用包名>:font/<文件名>"），
+    因此 "@font/xxx" 永远查不到字体，只能拿到默认字体。
+    不带 "@" 时引擎会在 getSystemDefaultTypeface 里自动补上应用包名，
+    从而解析到应用字体，且不依赖硬编码的应用名。
+-->
+<resources>
+    <style name="font_light">
+        <item name="android:fontFamily">font/light</item>
+    </style>
+    <style name="font_regular">
+        <item name="android:fontFamily">font/regular</item>
+    </style>
+    <style name="font_medium">
+        <item name="android:fontFamily">font/medium</item>
+    </style>
+    <style name="font_bold">
+        <item name="android:fontFamily">font/bold</item>
+    </style>
+    <style name="font_bebas">
+        <item name="android:fontFamily">font/bebas</item>
+    </style>
+</resources>

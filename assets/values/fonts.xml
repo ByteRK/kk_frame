@@ -1,13 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="font_regular">
-        <item name="android:fontFamily">@font/regular</item>
-    </style>
     <style name="font_light">
         <item name="android:fontFamily">@font/light</item>
     </style>
+    <style name="font_regular">
+        <item name="android:fontFamily">@font/regular</item>
+    </style>
     <style name="font_medium">
         <item name="android:fontFamily">@font/medium</item>
+    </style>
+    <style name="font_bold">
+        <item name="android:fontFamily">font/bold</item>
     </style>
     <style name="font_bebas">
         <item name="android:fontFamily">@font/bebas</item>
