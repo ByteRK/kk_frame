@@ -59,6 +59,7 @@ public:   // 外部用
     void show();
     void setType(KeyBoardType t);
     void setInputText(const std::string& txt);
+    /// @brief 设置描述文本（作为输入框 hint，仅在输入内容为空时显示）
     void setDescription(const std::string& txt);
     /// @brief 设置最大输入长度
     /// @note count <= 0 表示不限制长度（注意与"重置为默认值"的区别，默认值见 DEFAULT_INPUT_LIMIT）

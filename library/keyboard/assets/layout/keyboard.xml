@@ -4,13 +4,13 @@
     android:layout_height="match_parent"
     android:background="@color/keyboard_color_bg">
 
+    <!-- 输入框内容与描述均在运行时设置：描述走 hint，仅在内容为空时显示 -->
     <KeyboardEditText style="@style/keyboard_input_box"
         android:id="@+id/input_box"
         android:cursorWidth="3dp"
         android:cursorColor="@color/keyboard_color_cursor"
         android:cursorBlinkPeriod="500"
-        android:cursorBlinkIdle="1000"
-        android:text="输入框 "/>
+        android:cursorBlinkIdle="1000"/>
     <ImageView style="@style/keyboard_clear"
         android:id="@+id/clear"/>
 

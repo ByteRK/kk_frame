@@ -315,19 +315,30 @@ void CKeyBoard::setEditText(const std::string& txt) {
 }
 
 void CKeyBoard::syncEditText() {
+    // 描述文本交给输入框的 hint 显示：引擎只在真实内容为空时才绘制它。
+    // 不能把描述写进真实文本（原实现是 setText(" " + mDescription)），否则：
+    //   1) 用户点击时 indexAtX 会把描述字符算进去，光标落到描述文字上；
+    //   2) getContentLength 把描述算作内容，插入/删除的锚点错位。
+    // 前缀一个空格：让光标与描述文字之间留出间距（光标画在文本起点处）。
+    const std::string hint = mDescription.empty() ? std::string() : (" " + mDescription);
+    if (mInputTextEdit->getHint() != hint)
+        mInputTextEdit->setHint(hint);
+
+    mInputTextEdit->setText(mInputText);
+    // EditText 绘制 hint 走的是 mCurTextColor（它把 hint 塞进临时 Layout 再交给
+    // TextView 绘制），所以描述颜色仍需用 setTextColor 设置，而非 setHintTextColor
+    mInputTextEdit->setTextColor(mInputText.empty() ? mDescriptionColor : mInputColor);
+
+    // 光标位置（utf8 字节偏移 -> 宽字符索引）。
+    // 必须放在 setText 之后：引擎的 setText 会把 mCaretPos 改写成"末字符索引"。
+    const std::wstring widePrefix = cdroid::TextUtils::utf8tounicode(mInputText.substr(0, mCaretIndex));
+    const int wideCaret = (int)widePrefix.size();
+    mInputTextEdit->setCaretOffset(wideCaret);
+
     if (mInputText.empty()) {
-        mInputTextEdit->setText(" " + mDescription);
-        mInputTextEdit->setTextColor(mDescriptionColor);
-        mInputTextEdit->setCaretOffset(0);
-        LOGD("setEditText: [%s]", mDescription.c_str());
+        LOGD("syncEditText: hint=[%s]", mDescription.c_str());
     } else {
-        mInputTextEdit->setText(mInputText);
-        mInputTextEdit->setTextColor(mInputColor);
-        // 光标位置（utf8 字节偏移 -> 宽字符索引）
-        const std::wstring widePrefix = cdroid::TextUtils::utf8tounicode(mInputText.substr(0, mCaretIndex));
-        const int wideCaret = (int)widePrefix.size();
-        mInputTextEdit->setCaretOffset(wideCaret);
-        LOGI("setEditText: [Caret: %d][%s]", wideCaret, mInputText.c_str());
+        LOGI("syncEditText: [Caret: %d][%s]", wideCaret, mInputText.c_str());
     }
 
     if (mEditChangeListener)mEditChangeListener(mInputText);
