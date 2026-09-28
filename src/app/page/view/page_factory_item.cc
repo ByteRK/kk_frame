@@ -22,6 +22,7 @@
 #include "string_utils.h"
 #include "arg_utils.h"
 #include "network_utils.h"
+#include "brand_utils.h"
 
 #include "app_version.h"
 #include "series_info.h"
@@ -48,6 +49,7 @@ void FactoryInfo::setInfo() {
     info += "打包时间: " BUILD_DATE "\n";
     info += "打包详情: " APP_VER_INFO "\n";
     info += "运行命令: " + ArgUtils::getRawString() + "\n";
+    info += "版权署名: " + BrandUtils::copyrightLine() + "\n";
 
     info += "\n";
 

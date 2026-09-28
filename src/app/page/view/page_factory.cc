@@ -17,6 +17,7 @@
 #include "wind_mgr.h"
 
 #include "arg_utils.h"
+#include "brand_utils.h"
 
 PAGE_REGISTER(PAGE_FACTORY, PageFactory);
 
@@ -68,10 +69,12 @@ void PageFactory::setView() {
         click(menuG->getChildAt(i), clickL);
     }
 
+    // 署名信息统一由 BrandUtils 提供，禁止在此处硬编码
     TextView* copyright = get<TextView>(AppRid::copyright);
-    std::string copyrightText("Copyright (c) 2026 by Ric" "ken, All Rights Reserved.");
+    std::string copyrightText = BrandUtils::copyrightLine();
     copyrightText += ("\n" + copyright->getText());
-    copyrightText += ("\n" "Project Based On k" "k_frame [https://github.com/Byte" "RK/k" "k_frame]");
+    copyrightText += ("\n" + BrandUtils::basedOnLine());
+    copyrightText += ("\n" + BrandUtils::licenseLine());
     copyright->setText(copyrightText);
 }
 

@@ -15,6 +15,7 @@
 #include "time_utils.h"
 #include "system_utils.h"
 #include "env_utils.h"
+#include "brand_utils.h"
 
 #include "fonts_info.h"
 #include "config_info.h"
@@ -76,7 +77,9 @@ void ProjectUtils::pInfo(int argc, const char* argv[]) {
     fprintf(stderr, "\033[1;35m# Git:%s\033[m\n", GIT_VERSION);
     fprintf(stderr, "\033[1;35m# Cdroid:V%s_%s_%s\033[m\n", CDROID_VERSION, CDROID_COMMITID, std::to_string(CDROID_BUILD_NUMBER).c_str());
     fprintf(stderr, "\033[1;35m# KK Frame:V2.1.0\033[m\n");
-    fprintf(stderr, "\033[1;35m############ Ricken #############\n\n\033[0m");
+    fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", BrandUtils::copyrightLine().c_str());
+    fprintf(stderr, "\033[1;35m# %s\033[0;39m\n", BrandUtils::basedOnLine().c_str());
+    fprintf(stderr, "\033[1;35m############ %s #############\n\n\033[0m", BrandUtils::owner().c_str());
 }
 
 void ProjectUtils::pKeyMap() {
