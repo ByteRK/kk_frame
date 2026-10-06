@@ -7,6 +7,9 @@ set(USE_NTPCLIENT ${ENABLED_WIFI})
 # 键盘库（跟随 ENABLED_KEYBOARD）
 set(USE_KEYBOARD ${ENABLED_KEYBOARD})
 
+# 视频库（常驻编译，库内部决定开关逻辑）
+set(USE_VIDEO            ON)
+
 # 可独立配置的工具库
 set(USE_HVTOOLS          OFF)       # hvTools 网络工具库
 set(USE_FASTGAUSSIANBLUR ON)        # 快速高斯模糊库

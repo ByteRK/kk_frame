@@ -103,17 +103,7 @@ endif()
 
 # 视频配置（ENABLED_VIDEO）
 if (ENABLED_VIDEO)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE ENABLE_VIDEO=1 ENABLE_RGB_VIDEO=1)
-    if(CDROID_CHIPSET STREQUAL x64)
-        find_package(FFMPEG REQUIRED)
-        find_library(SWSCALE_LIBRARIES swscale HINTS ${FFMPEG_LIBRARY_DIRS})
-        find_library(SWRESAMPLE_LIBRARIES swresample HINTS ${FFMPEG_LIBRARY_DIRS})
-        if(NOT SWSCALE_LIBRARIES OR NOT SWRESAMPLE_LIBRARIES)
-            message(FATAL_ERROR "FFmpeg swscale and swresample libraries are required")
-        endif()
-        list(APPEND PROJECT_INCLUDE_DIR ${FFMPEG_INCLUDE_DIRS})
-        list(APPEND PROJECT_LIBRARIES ${FFMPEG_LIBRARIES} ${SWSCALE_LIBRARIES} ${SWRESAMPLE_LIBRARIES})
-    endif()
+    target_compile_definitions(${PROJECT_NAME} PRIVATE ENABLE_VIDEO=1)
 endif()
 
 # 音频配置（ENABLED_AUDIO）

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-25 10:31:16
- * @LastEditTime: 2026-08-11 14:01:28
+ * @LastEditTime: 2026-09-30 17:55:14
  * @FilePath: /kk_frame/src/app/page/components/wind_logo.cc
  * @Description: Logo组件
  * @BugList:
@@ -18,8 +18,8 @@
 WindLogo::WindLogo() { }
 
 WindLogo::~WindLogo() {
-    mImage->removeCallbacks(mRuner);
-    mVideo->over();
+    if (mImage) mImage->removeCallbacks(mRuner);
+    if (mVideo) mVideo->over();
 }
 
 /// @brief 显示Logo
@@ -53,7 +53,10 @@ void WindLogo::showLogo() {
     case LOGO_TYPE_VIDEO: {
         mVideo->setVisibility(View::VISIBLE);
         mVideo->setURL(info.path);
-        mVideo->play();
+        if (!mVideo->play()) {
+            LOGW("video logo play failed, hide after %dms", info.duration);
+            mVideo->postDelayed(mRuner, info.duration);
+        }
     }   break;
     default: {
         LOGE("unknow logo type");
@@ -127,9 +130,9 @@ void WindLogo::init(ViewGroup* parent) {
     };
     // 视频LOGO回调
     mVideo->setOnTouchListener([this](View& v, MotionEvent& evt) { return true; });
-    mVideo->setOnPlayStatusChange([this](View& v, int dutation, int progress, int status) {
-        LOGE("video play status = %d", status);
-        if (status == VideoView::VS_OVER) {
+    mVideo->setOnPlayStatusChange([this](View& v, double duration, double progress, int status) {
+        LOGI("video play status = %d", status);
+        if (status == VideoView::VS_OVER || status == VideoView::VS_ERROR) {
             hideLogo();
         }
     });
