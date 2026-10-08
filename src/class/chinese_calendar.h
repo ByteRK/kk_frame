@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-11 00:51:34
- * @LastEditTime: 2026-04-11 02:07:15
+ * @LastEditTime: 2026-10-08 17:41:00
  * @FilePath: /kk_frame/src/class/chinese_calendar.h
  * @Description: 农历+干支+生肖+节气 计算
  * @BugList:
@@ -63,6 +63,12 @@ public:
         SolarTermInfo solarTerm;  // 节气信息
     };
 
+    /// @brief 节气判定方式
+    enum SolarTermMode {
+        SOLAR_TERM_BY_TIME = 0,  // 按节气的精确时刻判定（交节当刻生效）
+        SOLAR_TERM_BY_DATE = 1,  // 按节气所在的日历日期判定（当天零点生效）
+    };
+
 public:
     static Result        get();
     static Result        get(std::time_t t);
@@ -93,6 +99,16 @@ public:
         int hour = 0, int minute = 0, int second = 0);
     static SolarTermInfo getSolarTerm(int year, int month, int day,
         int hour = 0, int minute = 0, int second = 0);
+
+public:
+    static void setTimeZone(int hours);
+    static int  getTimeZone();
+
+    static void setSolarTermMode(SolarTermMode mode);
+    static SolarTermMode getSolarTermMode();
+
+    static void setGanzhiFollowSolarTerm(bool follow);
+    static bool getGanzhiFollowSolarTerm();
 
 private:
     struct DateTime {
@@ -128,6 +144,7 @@ private:
     static int         daysFromCivil(int year, int month, int day);
     static void        civilFromDays(int z, int& year, int& month, int& day);
     static DateTime    civilFromSeconds(int64_t totalSeconds);
+    static DateTime    addHours(const DateTime& dt, int hours);
 
     static DateTime    makeDateTime(int year, int month, int day,
         int hour, int minute, int second);
@@ -154,6 +171,7 @@ private:
 
     static const char* solarTermName(int idx);
     static DateTime    solarTermDateTime(int year, int termIndex);
+    static DateTime    solarTermBoundary(int year, int termIndex, bool byDate);
     static SolarTermInfo currentSolarTermInfo(int year, int month, int day,
         int hour, int minute, int second);
     static Ganzhi      calcGanzhi(int year, int month, int day,
@@ -162,6 +180,12 @@ private:
 private:
     static const uint32_t lunarInfo[200];
     static const int      sTermInfo[24];
+
+    // 配置项
+
+    static int            timeZone;         // 时区（相对 UTC 的偏移，小时），默认 8
+    static SolarTermMode  solarTermMode;          // 节气判定方式
+    static bool           ganzhiFollowSolarTerm;  // 干支是否跟随节气判定方式
 };
 
 #endif // __CHINESE_CALENDAR_H__

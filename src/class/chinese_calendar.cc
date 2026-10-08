@@ -2,8 +2,8 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-11 00:51:34
- * @LastEditTime: 2026-04-11 02:07:15
- * @FilePath: /kk_frame/src/class/chinese_calendar.h
+ * @LastEditTime: 2026-10-08 17:43:16
+ * @FilePath: /kk_frame/src/class/chinese_calendar.cc
  * @Description: 农历+干支+生肖+节气 计算
  * @BugList:
  *
@@ -15,6 +15,9 @@
 
 #include <sstream>
 #include <stdexcept>
+
+/// 节气查表数据的基准时区（东八区），solarTermDateTime() 的结果为其墙钟时间
+static const int kTermBaseZone = 8;
 
 /**
  * @brief 获取闰月前缀文本
@@ -150,6 +153,73 @@ ChineseCalendar::Result ChineseCalendar::get(const std::tm& tmVal) {
 ChineseCalendar::Result ChineseCalendar::get(int year, int month, int day,
     int hour, int minute, int second) {
     return getInternal(year, month, day, hour, minute, second, CALC_ALL);
+}
+
+/**
+ * @brief 设置当前时区
+ *
+ * 说明：节气时刻以该时区（相对 UTC 的偏移）的墙钟时间表示，
+ *       传入的年月日时分秒（含 get() 取得的本地时间）须按同一时区解释；
+ *       默认 8，即东八区（北京时间）。
+ *
+ * @param hours 时区相对 UTC 的偏移小时数，超出 [-12, 14] 时按边界取值
+ */
+void ChineseCalendar::setTimeZone(int hours) {
+    if (hours < -12) {
+        hours = -12;
+    }
+    if (hours > 14) {
+        hours = 14;
+    }
+    timeZone = hours;
+}
+
+/**
+ * @brief 获取当前时区
+ *
+ * @return 时区相对 UTC 的偏移小时数，默认 8
+ */
+int ChineseCalendar::getTimeZone() {
+    return timeZone;
+}
+
+/**
+ * @brief 设置节气判定方式
+ *
+ * @param mode 判定方式，非法值将被忽略；默认 SOLAR_TERM_BY_DATE
+ */
+void ChineseCalendar::setSolarTermMode(SolarTermMode mode) {
+    if (mode != SOLAR_TERM_BY_TIME && mode != SOLAR_TERM_BY_DATE) {
+        return;
+    }
+    solarTermMode = mode;
+}
+
+/**
+ * @brief 获取当前配置的节气判定方式
+ *
+ * @return 节气判定方式
+ */
+ChineseCalendar::SolarTermMode ChineseCalendar::getSolarTermMode() {
+    return solarTermMode;
+}
+
+/**
+ * @brief 设置干支（年柱、月柱）是否跟随节气判定方式
+ *
+ * @param follow true 与节气使用同一判定方式，false 则始终按精确时刻判定
+ */
+void ChineseCalendar::setGanzhiFollowSolarTerm(bool follow) {
+    ganzhiFollowSolarTerm = follow;
+}
+
+/**
+ * @brief 获取干支是否跟随节气判定方式
+ *
+ * @return 跟随返回 true，否则返回 false
+ */
+bool ChineseCalendar::getGanzhiFollowSolarTerm() {
+    return ganzhiFollowSolarTerm;
 }
 
 /**
@@ -593,6 +663,25 @@ std::tm ChineseCalendar::toLocalTm(std::time_t t) {
 }
 
 /**
+ * @brief 将日期时间整体平移指定小时数
+ *
+ * @param dt 原始日期时间
+ * @param hours 平移小时数，可为负
+ * @return 平移后的日期时间
+ */
+ChineseCalendar::DateTime ChineseCalendar::addHours(const DateTime& dt, int hours) {
+    if (hours == 0) {
+        return dt;
+    }
+
+    const int64_t seconds =
+        static_cast<int64_t>(daysFromCivil(dt.year, dt.month, dt.day)) * 86400LL +
+        dt.hour * 3600 + dt.minute * 60 + dt.second;
+
+    return civilFromSeconds(seconds + static_cast<int64_t>(hours) * 3600);
+}
+
+/**
  * @brief 内部统一计算入口，按位掩码控制实际计算项
  *
  * @param year 公历年
@@ -787,19 +876,40 @@ const char* ChineseCalendar::solarTermName(int idx) {
  *
  * @param year 公历年
  * @param termIndex 节气索引，范围 [0, 23]
- * @return 节气对应的日期时间
+ * @return 节气对应的日期时间（东八区墙钟，未含时区换算）
  */
 ChineseCalendar::DateTime ChineseCalendar::solarTermDateTime(int year, int termIndex) {
     const int64_t minutes =
         static_cast<int64_t>(525948.76 * (year - 1900)) +
         static_cast<int64_t>(sTermInfo[termIndex]);
 
-    // 基准：1900-01-06 10:05（按东八区使用）
+    // 基准：1900-01-06 02:05（东八区），即 1900 年小寒的天文时刻
     const int64_t baseDays = daysFromCivil(1900, 1, 6);
-    const int64_t baseSeconds = baseDays * 86400LL + (10 * 3600 + 5 * 60);
+    const int64_t baseSeconds = baseDays * 86400LL + (2 * 3600 + 5 * 60);
 
     const int64_t totalSeconds = baseSeconds + minutes * 60LL;
     return civilFromSeconds(totalSeconds);
+}
+
+/**
+ * @brief 计算节气在指定时区下的判定边界
+ *
+ * @param year 公历年
+ * @param termIndex 节气索引，范围 [0, 23]
+ * @param byDate true 按日历日期判定（当天零点生效），false 按精确时刻判定
+ * @return 用于比较的节气边界时间
+ */
+ChineseCalendar::DateTime ChineseCalendar::solarTermBoundary(int year, int termIndex, bool byDate) {
+    // 查表结果按东八区标定，需按“配置时区与基准时区之差”换算
+    DateTime dt = addHours(solarTermDateTime(year, termIndex), timeZone - kTermBaseZone);
+
+    if (byDate) {
+        dt.hour = 0;
+        dt.minute = 0;
+        dt.second = 0;
+    }
+
+    return dt;
 }
 
 /**
@@ -816,6 +926,7 @@ ChineseCalendar::DateTime ChineseCalendar::solarTermDateTime(int year, int termI
 ChineseCalendar::SolarTermInfo ChineseCalendar::currentSolarTermInfo(int year, int month, int day,
     int hour, int minute, int second) {
     const DateTime now = makeDateTime(year, month, day, hour, minute, second);
+    const bool byDate = (solarTermMode == SOLAR_TERM_BY_DATE);
     SolarTermInfo info;
     info.current.clear();
     info.dayIndex = 0;
@@ -827,19 +938,19 @@ ChineseCalendar::SolarTermInfo ChineseCalendar::currentSolarTermInfo(int year, i
     DateTime currentDt;
     DateTime nextDt;
 
-    const DateTime firstTermOfYear = solarTermDateTime(year, 0);
+    const DateTime firstTermOfYear = solarTermBoundary(year, 0, byDate);
 
     if (lessThan(now, firstTermOfYear)) {
         currentIdx = 23;
         nextIdx = 0;
-        currentDt = solarTermDateTime(year - 1, 23);
+        currentDt = solarTermBoundary(year - 1, 23, byDate);
         nextDt = firstTermOfYear;
     } else {
         currentIdx = 0;
         currentDt = firstTermOfYear;
 
         for (int i = 1; i < 24; ++i) {
-            DateTime dt = solarTermDateTime(year, i);
+            DateTime dt = solarTermBoundary(year, i, byDate);
             if (greaterEqual(now, dt)) {
                 currentIdx = i;
                 currentDt = dt;
@@ -850,10 +961,10 @@ ChineseCalendar::SolarTermInfo ChineseCalendar::currentSolarTermInfo(int year, i
 
         if (currentIdx == 23) {
             nextIdx = 0;
-            nextDt = solarTermDateTime(year + 1, 0);
+            nextDt = solarTermBoundary(year + 1, 0, byDate);
         } else {
             nextIdx = currentIdx + 1;
-            nextDt = solarTermDateTime(year, nextIdx);
+            nextDt = solarTermBoundary(year, nextIdx, byDate);
         }
     }
 
@@ -891,9 +1002,10 @@ ChineseCalendar::Ganzhi ChineseCalendar::calcGanzhi(int year, int month, int day
     int hour, int minute, int second) {
     Ganzhi out;
     const DateTime now = makeDateTime(year, month, day, hour, minute, second);
+    const bool byDate = ganzhiFollowSolarTerm && (solarTermMode == SOLAR_TERM_BY_DATE);
 
     // 年柱：以立春为界
-    const DateTime lichun = solarTermDateTime(year, 2);
+    const DateTime lichun = solarTermBoundary(year, 2, byDate);
     int gzYear = lessThan(now, lichun) ? (year - 1) : year;
 
     // 1984 甲子年
@@ -906,17 +1018,17 @@ ChineseCalendar::Ganzhi ChineseCalendar::calcGanzhi(int year, int month, int day
     int monthOrder = 0;
     int gzYearForMonth = gzYear;
 
-    const DateTime xiaohan = solarTermDateTime(year, 0);
-    const DateTime jingzhe = solarTermDateTime(year, 4);
-    const DateTime qingming = solarTermDateTime(year, 6);
-    const DateTime lixia = solarTermDateTime(year, 8);
-    const DateTime mangzhong = solarTermDateTime(year, 10);
-    const DateTime xiaoshu = solarTermDateTime(year, 12);
-    const DateTime liqiu = solarTermDateTime(year, 14);
-    const DateTime bailu = solarTermDateTime(year, 16);
-    const DateTime hanlu = solarTermDateTime(year, 18);
-    const DateTime lidong = solarTermDateTime(year, 20);
-    const DateTime daxue = solarTermDateTime(year, 22);
+    const DateTime xiaohan = solarTermBoundary(year, 0, byDate);
+    const DateTime jingzhe = solarTermBoundary(year, 4, byDate);
+    const DateTime qingming = solarTermBoundary(year, 6, byDate);
+    const DateTime lixia = solarTermBoundary(year, 8, byDate);
+    const DateTime mangzhong = solarTermBoundary(year, 10, byDate);
+    const DateTime xiaoshu = solarTermBoundary(year, 12, byDate);
+    const DateTime liqiu = solarTermBoundary(year, 14, byDate);
+    const DateTime bailu = solarTermBoundary(year, 16, byDate);
+    const DateTime hanlu = solarTermBoundary(year, 18, byDate);
+    const DateTime lidong = solarTermBoundary(year, 20, byDate);
+    const DateTime daxue = solarTermBoundary(year, 22, byDate);
 
     if (lessThan(now, lichun)) {
         gzYearForMonth = year - 1;
@@ -1003,3 +1115,7 @@ const int ChineseCalendar::sTermInfo[24] = {
     173149, 195551, 218072, 240693, 263343, 285989, 308563, 331033,
     353350, 375494, 397447, 419210, 440795, 462224, 483532, 504758
 };
+
+int ChineseCalendar::timeZone = kTermBaseZone;  // 默认东八区
+ChineseCalendar::SolarTermMode ChineseCalendar::solarTermMode = SOLAR_TERM_BY_DATE;
+bool ChineseCalendar::ganzhiFollowSolarTerm = true;
