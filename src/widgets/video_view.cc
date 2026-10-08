@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-24 10:07:01
- * @LastEditTime: 2026-10-08 10:43:39
+ * @LastEditTime: 2026-10-08 14:41:15
  * @FilePath: /kk_frame/src/widgets/video_view.cc
  * @Description: 视频播放组件
  * @BugList:
@@ -127,11 +127,17 @@ bool VideoView::resume() {
 void VideoView::over() {
     stopPolling();
     mPendingPlay = false;
+    mCoverShowing = false;
     if (mPlayer) mPlayer->stop();
 
     mStatus = VS_NULL;
     mDuration = 0;
     mProgress = 0;
+
+    // 清空残留帧：避免下次显示时画出上一段视频的最后一帧
+    mFrameSurface = nullptr;
+    mFrameWidth = 0;
+    mFrameHeight = 0;
     invalidate();
 }
 
@@ -228,6 +234,22 @@ void VideoView::setPointsFile(const std::string& fpath) {
     LOGI("Read point over. count=%d", mPoints.size());
 }
 
+/// @brief 设置视频封面图
+/// @param path 图片资源路径；传空则清除封面
+/// @note 播放前/暂停时用于替代黑屏。显示期间按控件区域绘制封面（不走 overlay 挖洞分支），
+///       VM_FRAME 在首个真实帧上屏后自动撤下，VM_OVERLAY 在起播后自动撤下。
+void VideoView::setCoverImage(const std::string& path) {
+    if (path.empty()) {
+        mCoverShowing = false;
+        invalidate();
+        return;
+    }
+
+    setImageResource(path);
+    mCoverShowing = true;
+    invalidate();
+}
+
 /// @brief 设置平台不支持时显示的文案
 /// @param text 文案
 void VideoView::setUnsupportedText(const std::string& text) {
@@ -271,6 +293,15 @@ void VideoView::onDraw(Canvas& canvas) {
         return;
     }
 
+    // 封面显示中：直接绘制封面图
+    if (mCoverShowing) {
+        canvas.save();
+        clipRegion(canvas);
+        ImageView::onDraw(canvas);
+        canvas.restore();
+        return;
+    }
+
     if (video::VideoPlayer::getMode() == video::VM_FRAME) {
         if (mFrameSurface == nullptr) return;
         canvas.save();
@@ -307,6 +338,9 @@ void VideoView::onVideoStatus(int status, double duration, double position) {
     // 结束统一归位到总时长（部分后端 EOF 回填的 position 为 0）
     if (status == VS_OVER) mProgress = mDuration;
 
+    // overlay 后端没有帧回调，起播即撒下封面；VM_FRAME 由首个真实帧撒下，避免闪黑
+    if (status == VS_PLAY && video::VideoPlayer::getMode() == video::VM_OVERLAY) mCoverShowing = false;
+
     notifyStatus(status);
     invalidate(false);
 }
@@ -340,10 +374,11 @@ bool VideoView::isLayoutReady() const {
     return getWidth() > 0 && getHeight() > 0;
 }
 
-/// @brief 真正发起播放（调用前需确保尺寸已就绪）
+/// @brief 打开媒体并准备播放（调用前需确保尺寸已就绪）
 /// @return true 成功，false 失败
-bool VideoView::startPlay() {
-    if (mPlayer == nullptr) return false;
+/// @note 内部按需创建播放器：起播（startPlay）前需先保证 mPlayer 已就绪
+bool VideoView::openMedia() {
+    if (!ensurePlayer()) return false;
 
     syncGeometry();   // 窗口参数必须先于起播下发
 
@@ -358,6 +393,14 @@ bool VideoView::startPlay() {
     // 起播前再兜底下发一次几何：open 内部会先 stop 旧资源，避免遗漏（各后端 setGeometry 均幂等）
     mPlayer->setGeometry(mGeometry);
     mStatus = VS_INIT;
+    return true;
+}
+
+/// @brief 真正发起播放（调用前需确保尺寸已就绪）
+/// @return true 成功，false 失败
+bool VideoView::startPlay() {
+    if (!openMedia()) return false;
+
     mDuration = 0;
     mProgress = 0;
 
@@ -370,6 +413,32 @@ bool VideoView::startPlay() {
 
     startPolling();   // 播放器已起播，开始取走帧/状态事件
     invalidate(true);
+    return true;
+}
+
+/// @brief 把一帧 BGRA32 数据写入绘制图面
+/// @param frame 帧描述（width/height/stride/data 需有效）
+/// @return true 成功，false 格式不支持或图面创建失败
+bool VideoView::applyFrame(const video::VideoFrame& frame) {
+    if (frame.data == nullptr || frame.format != video::VF_BGRA32) return false;
+
+    if (mFrameSurface == nullptr || mFrameWidth != frame.width || mFrameHeight != frame.height) {
+        mFrameWidth = frame.width;
+        mFrameHeight = frame.height;
+        mFrameSurface = Cairo::ImageSurface::create(Cairo::Surface::Format::RGB24, mFrameWidth, mFrameHeight);
+        if (mFrameSurface == nullptr) return false;
+        // BGRA32 与 cairo RGB24 图面内存布局一致，可直接整行拷贝
+        setImageBitmap(mFrameSurface);
+    }
+
+    unsigned char* dst = mFrameSurface->get_data();
+    const int      dstStride = mFrameSurface->get_stride();
+    for (int y = 0; y < frame.height; y++) {
+        std::memcpy(dst + static_cast<size_t>(y) * dstStride,
+            frame.data + static_cast<size_t>(y) * frame.stride,
+            static_cast<size_t>(frame.width) * 4);
+    }
+    mFrameSurface->mark_dirty();
     return true;
 }
 
@@ -506,32 +575,10 @@ void VideoView::drawFrame() {
     video::VideoFrame frame;
     if (!mPlayer->pullFrame(frame)) return;
 
-    if (frame.format != video::VF_BGRA32 || frame.data == nullptr) {
+    if (applyFrame(frame))
+        mCoverShowing = false;   // 首个真实帧已上屏，封面完成使命
+    else
         LOGW("unsupported video frame format: %d", frame.format);
-        mPlayer->releaseFrame(frame);
-        return;
-    }
-
-    if (mFrameSurface == nullptr || mFrameWidth != frame.width || mFrameHeight != frame.height) {
-        mFrameWidth = frame.width;
-        mFrameHeight = frame.height;
-        mFrameSurface = Cairo::ImageSurface::create(Cairo::Surface::Format::RGB24, mFrameWidth, mFrameHeight);
-        if (mFrameSurface == nullptr) {
-            mPlayer->releaseFrame(frame);
-            return;
-        }
-        // BGRA32 与 cairo RGB24 图面内存布局一致，可直接整行拷贝
-        setImageBitmap(mFrameSurface);
-    }
-
-    unsigned char* dst = mFrameSurface->get_data();
-    const int      dstStride = mFrameSurface->get_stride();
-    for (int y = 0; y < frame.height; y++) {
-        std::memcpy(dst + static_cast<size_t>(y) * dstStride,
-            frame.data + static_cast<size_t>(y) * frame.stride,
-            static_cast<size_t>(frame.width) * 4);
-    }
-    mFrameSurface->mark_dirty();
 
     mPlayer->releaseFrame(frame);
     invalidate();

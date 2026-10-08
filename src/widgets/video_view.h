@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-24 10:07:01
- * @LastEditTime: 2026-10-08 10:45:41
+ * @LastEditTime: 2026-10-08 14:41:07
  * @FilePath: /kk_frame/src/widgets/video_view.h
  * @Description: 视频播放组件
  * @BugList:
@@ -69,6 +69,7 @@ public:
     void   setVolume(int volume);
     void   setPoints(const std::vector<Point>& points);
     void   setPointsFile(const std::string& fpath);
+    void   setCoverImage(const std::string& path);
 
     void   setUnsupportedText(const std::string& text);
     void   setOnPlayStatusChange(OnPlayStatusChange l);
@@ -83,7 +84,9 @@ protected:
 private:
     bool ensurePlayer();
     bool isLayoutReady() const;
+    bool openMedia();
     bool startPlay();
+    bool applyFrame(const video::VideoFrame& frame);
     void syncGeometry();
     void startPolling();
     void stopPolling();
@@ -106,6 +109,7 @@ private:
     bool                               mLoadPlay{ false };
     bool                               mLoop{ false };
     bool                               mPendingPlay{ false };
+    bool                               mCoverShowing{ false };
     int                                mVolume{ 70 };
     int                                mProgressInterval{ 0 };
     int                                mUnsupportedTextSize{ 30 };
