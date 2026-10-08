@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-24 10:07:01
- * @LastEditTime: 2026-10-06 14:40:23
+ * @LastEditTime: 2026-10-08 10:45:41
  * @FilePath: /kk_frame/src/widgets/video_view.h
  * @Description: 视频播放组件
  * @BugList:
@@ -25,8 +25,7 @@
 /// @note 后端有两种输出模式：
 ///       - VM_OVERLAY：画面由硬件图层直接输出，组件负责挖洞；
 ///       - VM_FRAME  ：后端输出 RGB 帧，组件负责拷贝并绘制；
-class VideoView : public ImageView,
-    public EventHandler, public video::VideoPlayer::Listener {
+class VideoView : public ImageView, public video::VideoPlayer::Listener {
 public:
     /// @brief 播放状态
     /// @note 与 video::VideoStatus 保持一致
@@ -68,7 +67,7 @@ public:
     void   setURL(const std::string& url);
     void   setLoop(bool loop);
     void   setVolume(int volume);
-    void   setPoints(std::vector<Point>& points);
+    void   setPoints(const std::vector<Point>& points);
     void   setPointsFile(const std::string& fpath);
 
     void   setUnsupportedText(const std::string& text);
@@ -77,8 +76,6 @@ public:
 protected:
     void onLayout(bool changed, int l, int t, int w, int h) override;
     void onDraw(Canvas& canvas) override;
-    int  checkEvents() override;
-    int  handleEvents() override;
 
     void onVideoStatus(int status, double duration, double position) override;
     void onVideoFrame() override;
@@ -88,13 +85,17 @@ private:
     bool isLayoutReady() const;
     bool startPlay();
     void syncGeometry();
-    void startTicker();
-    void stopTicker();
+    void startPolling();
+    void stopPolling();
     void onTick();
     void clipRegion(Canvas& canvas);
     void drawUnsupported(Canvas& canvas);
     void drawFrame();
     void notifyStatus(int status);
+
+private:
+    static constexpr int POLL_INTERVAL_PLAY_MS = 5;   // 播放中轮询间隔
+    static constexpr int POLL_INTERVAL_IDLE_MS = 50;  // 非播放中轮询间隔
 
 private:
     video::VideoPlayer*                mPlayer{ nullptr };
@@ -115,8 +116,8 @@ private:
     Cairo::RefPtr<Cairo::ImageSurface> mFrameSurface;
     int                                mFrameWidth{ 0 };
     int                                mFrameHeight{ 0 };
-    bool                               mTicking{ false };
-    bool                               mRegistered{ false };
+    int64_t                            mLastNotifyMs{ 0 };
+    bool                               mPolling{ false };
     OnPlayStatusChange                 mChangeCallback;
 };
 

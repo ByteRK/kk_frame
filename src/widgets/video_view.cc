@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-24 10:07:01
- * @LastEditTime: 2026-10-06 14:25:20
+ * @LastEditTime: 2026-10-08 10:43:39
  * @FilePath: /kk_frame/src/widgets/video_view.cc
  * @Description: 视频播放组件
  * @BugList:
@@ -14,6 +14,7 @@
 #include "video_view.h"
 #include "env_utils.h"
 
+#include <chrono>
 #include <cstring>
 #include <unistd.h>
 
@@ -50,32 +51,20 @@ VideoView::VideoView(cdroid::Context* ctx, const AttributeSet& attrs) : ImageVie
 }
 
 VideoView::~VideoView() {
-    stopTicker();
+    // 必须先同步摘掉定时回调（removeCallbacks 会直接从消息队列删除），
+    // 否则回调可能在对象析构后触发
+    stopPolling();
     if (mPlayer) {
         mPlayer->setListener(nullptr);
         mPlayer->stop();
         delete mPlayer;
         mPlayer = nullptr;
     }
-    if (mRegistered) {
-        Looper* looper = Looper::getForThread();
-        if (looper) looper->removeEventHandler(this);
-        mRegistered = false;
-    }
 }
 
 /// @brief 初始化控件
 void VideoView::initViewData() {
     mTicker = std::bind(&VideoView::onTick, this);
-
-    // 状态回调依赖Looper
-    Looper* looper = Looper::getForThread();
-    if (looper) {
-        looper->addEventHandler(this);
-        mRegistered = true;
-    } else {
-        LOGW("video view has no looper, status callback will not be dispatched");
-    }
 }
 
 /// @brief 当前平台是否支持视频
@@ -120,9 +109,9 @@ bool VideoView::play() {
 
 /// @brief 暂停
 /// @return true 成功，false 失败
+/// @note 不停轮询：暂停只是不再产生帧，但状态事件仍需被取走派发
 bool VideoView::pause() {
     if (mPlayer == nullptr) return false;
-    stopTicker();
     return mPlayer->pause();
 }
 
@@ -134,9 +123,9 @@ bool VideoView::resume() {
 }
 
 /// @brief 停止播放
-/// @note 会释放播放资源，并取消挂起的起播请求
+/// @note 会释放播放资源，并取消挂起的起播请求与事件轮询
 void VideoView::over() {
-    stopTicker();
+    stopPolling();
     mPendingPlay = false;
     if (mPlayer) mPlayer->stop();
 
@@ -146,8 +135,8 @@ void VideoView::over() {
     invalidate();
 }
 
-/// @brief 是否处于播放中
-/// @return true 播放中，false 暂停或停止
+/// @brief 是否存在进行中的播放会话
+/// @return true 播放中或已暂停，false 未开始/已停止/已结束
 bool VideoView::isPlay() const {
     return mStatus == VS_PLAY || mStatus == VS_PAUSE;
 }
@@ -201,7 +190,7 @@ void VideoView::setVolume(int volume) {
 
 /// @brief 自定义视频窗口形状
 /// @param points 形状点，至少 3 个点
-void VideoView::setPoints(std::vector<Point>& points) {
+void VideoView::setPoints(const std::vector<Point>& points) {
     mPoints = points;
 }
 
@@ -300,43 +289,23 @@ void VideoView::onDraw(Canvas& canvas) {
     canvas.restore();
 }
 
-/// @brief 检查事件
-/// @return 
-int VideoView::checkEvents() {
-    if (mPlayer && mPlayer->hasEvents()) return 1;
-    return 0;
-}
-
-/// @brief 处理事件
-/// @return 
-int VideoView::handleEvents() {
-    if (mPlayer == nullptr) return 0;
-    mPlayer->dispatchEvents();
-    return 1;
-}
-
 /// @brief 视频状态改变
 /// @param status 播放状态
 /// @param duration 视频总时长，单位毫秒
 /// @param position 当前播放进度，单位毫秒
+/// @note 由 onTick 在 UI 线程派发；轮询间隔按当前状态自适应（见 startPolling）
 void VideoView::onVideoStatus(int status, double duration, double position) {
     mStatus = status;
-    if (duration > 0) mDuration = duration;
+
+    // 后端在状态事件里携带的 duration/position 语义并不统一：
+    //  - x64(ffmpeg) / generic(mp) 携带真实时长与进度；
+    //  - rk3506(rkadk) 的 setStatus 只回填 position=0（进度靠 onTick 轮询 getPosition 补上）。
+    // 因此用「> 0」作有效值判定，避免把占位的 0 当真实进度、覆盖掉轮询得到的位置。
+    if (duration > 0)  mDuration = duration;
     if (position > 0) mProgress = position;
 
-    switch (status) {
-    case VS_PLAY:
-        startTicker();
-        break;
-    case VS_PAUSE:
-    case VS_OVER:
-    case VS_ERROR:
-        stopTicker();
-        if (status == VS_OVER) mProgress = mDuration;
-        break;
-    default:
-        break;
-    }
+    // 结束统一归位到总时长（部分后端 EOF 回填的 position 为 0）
+    if (status == VS_OVER) mProgress = mDuration;
 
     notifyStatus(status);
     invalidate(false);
@@ -376,7 +345,6 @@ bool VideoView::isLayoutReady() const {
 bool VideoView::startPlay() {
     if (mPlayer == nullptr) return false;
 
-    stopTicker();
     syncGeometry();   // 窗口参数必须先于起播下发
 
     if (!mPlayer->open(mURL)) {
@@ -387,6 +355,7 @@ bool VideoView::startPlay() {
         return false;
     }
 
+    // 起播前再兜底下发一次几何：open 内部会先 stop 旧资源，避免遗漏（各后端 setGeometry 均幂等）
     mPlayer->setGeometry(mGeometry);
     mStatus = VS_INIT;
     mDuration = 0;
@@ -399,6 +368,7 @@ bool VideoView::startPlay() {
         return false;
     }
 
+    startPolling();   // 播放器已起播，开始取走帧/状态事件
     invalidate(true);
     return true;
 }
@@ -449,31 +419,57 @@ void VideoView::syncGeometry() {
     if (mPlayer) mPlayer->setGeometry(geometry);
 }
 
-/// @brief 启动Tick心跳
-void VideoView::startTicker() {
-    if (mProgressInterval <= 0 || mTicking) return;
-    mTicking = true;
-    postDelayed(mTicker, mProgressInterval);
+/// @brief 开始轮询播放器事件
+/// @note 幂等；播放器就绪起播时调用，over()/析构时停止
+/// @note 后端在解码线程把帧/状态投入事件队列，必须在 UI 线程取走派发，
+///       所以用控件自身的定时队列轮询（而非 Looper::EventHandler，
+///       后者对本类这种运行期反复创建销毁的对象会留下悬垂指针）
+void VideoView::startPolling() {
+    if (mPolling || mPlayer == nullptr) return;
+    mPolling = true;
+    mLastNotifyMs = 0;
+    postDelayed(mTicker, POLL_INTERVAL_PLAY_MS);
 }
 
-/// @brief 停止Tick心跳
-void VideoView::stopTicker() {
-    mTicking = false;
+/// @brief 停止轮询播放器事件
+/// @note removeCallbacks 会同步从消息队列摘除，保证回调不再触发
+void VideoView::stopPolling() {
+    mPolling = false;
     removeCallbacks(mTicker);
 }
 
-/// @brief Tick心跳回调
+/// @brief 轮询回调（UI 线程定时触发）
+/// @note 取走解码线程投递的事件并派发；播放中按 progressInterval 节流补发进度通知
 void VideoView::onTick() {
-    mTicking = false;
-    if (mStatus != VS_PLAY || mProgressInterval <= 0) return;
+    if (!mPolling) return;
+    if (mPlayer == nullptr) {
+        stopPolling();
+        return;
+    }
 
-    if (mPlayer) mProgress = mPlayer->getPosition();
-    notifyStatus(VS_PLAY);
-    startTicker();
+    // 取走解码线程投递的事件（帧 -> onVideoFrame，状态 -> onVideoStatus）
+    if (mPlayer->hasEvents()) mPlayer->dispatchEvents();
+
+    // 播放中按 progressInterval 节流补发进度通知（供进度条/时间刷新）
+    if (mProgressInterval > 0 && mStatus == VS_PLAY) {
+        const int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now().time_since_epoch()).count();
+        if (now - mLastNotifyMs >= mProgressInterval) {
+            mLastNotifyMs = now;
+            mProgress = mPlayer->getPosition();
+            notifyStatus(VS_PLAY);
+        }
+    }
+
+    // 回调中可能已 over()/析构（stopPolling），故重新判定
+    if (mPolling) {
+        postDelayed(mTicker, mStatus == VS_PLAY ? POLL_INTERVAL_PLAY_MS : POLL_INTERVAL_IDLE_MS);
+    }
 }
 
-/// @brief 绘制裁剪区域
+/// @brief 裁剪控件显示区域
 /// @param canvas 画布
+/// @note 无自定义形状时按矩形裁剪；有形状点时用平滑曲线（curve_to 取相邻点中点为控制点）逼近轮廓
 void VideoView::clipRegion(Canvas& canvas) {
     if (mPoints.empty()) {
         canvas.rectangle(0, 0, getWidth(), getHeight());

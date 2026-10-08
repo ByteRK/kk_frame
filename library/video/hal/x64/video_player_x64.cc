@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-09-30 10:00:00
- * @LastEditTime: 2026-09-30 17:51:30
+ * @LastEditTime: 2026-10-08 10:43:54
  * @FilePath: /kk_frame/library/video/hal/x64/video_player_x64.cc
  * @Description: x64 视频后端（FFmpeg 软解 + 帧输出，供开发机预览）
  * @BugList:
@@ -34,10 +34,19 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
-namespace video {
-    namespace {
 
 #define X64_VIDEO_FRAME_SLOTS 4
+/**
+ * 帧槽尾部预留字节数。
+ * swscale 的输出器是 SIMD 分块写入的，最后一行会写过一个寄存器宽度
+ * （实测会越过缓冲区末端 8 字节），若缓冲区恰好是 stride*height 就会
+ * 踩坏相邻堆块的 chunk 头，后续 free 时爆 "corrupted size vs. prev_size"。
+ * 参考：FFmpeg swscale 要求目标缓冲区尾部留有余量。
+**/
+#define X64_VIDEO_FRAME_PADDING 64
+
+namespace video {
+    namespace {
 
         static double nowMs() {
             return std::chrono::duration<double, std::milli>(
@@ -187,8 +196,9 @@ namespace video {
                 : 0;
 
             mSlots.assign(X64_VIDEO_FRAME_SLOTS, std::vector<uint8_t>());
+            /* 尾部额外留出 padding，供 swscale 的 SIMD 尾写使用（不能只分配 stride*height） */
             for (size_t i = 0; i < mSlots.size(); ++i)
-                mSlots[i].resize(static_cast<size_t>(mStride) * mHeight);
+                mSlots[i].resize(static_cast<size_t>(mStride) * mHeight + X64_VIDEO_FRAME_PADDING);
 
             {
                 std::lock_guard<std::mutex> lock(mQueueLock);
@@ -350,7 +360,8 @@ namespace video {
             frame.stride = mStride;
             frame.format = VF_BGRA32;
             frame.pts = ready.pts;
-            frame.priv = reinterpret_cast<void*>(static_cast<intptr_t>(ready.slot));
+            /* 槽位从 0 开始，+1 编码以避免槽位 0 变成 nullptr（会被 releaseFrame 当成无效帧丢弃） */
+            frame.priv = reinterpret_cast<void*>(static_cast<intptr_t>(ready.slot + 1));
 
             mQueueCond.notify_all();
             return true;
@@ -359,7 +370,7 @@ namespace video {
         void VideoPlayerFfmpeg::releaseFrame(VideoFrame& frame) {
             if (frame.priv == nullptr) return;
 
-            const int slot = static_cast<int>(reinterpret_cast<intptr_t>(frame.priv));
+            const int slot = static_cast<int>(reinterpret_cast<intptr_t>(frame.priv)) - 1;
             frame.data = nullptr;
             frame.priv = nullptr;
             if (slot < 0 || slot >= static_cast<int>(mSlots.size())) return;
