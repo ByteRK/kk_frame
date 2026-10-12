@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-17 14:15:07
- * @LastEditTime: 2026-09-22 17:44:26
+ * @LastEditTime: 2026-10-12 00:00:00
  * @FilePath: /kk_frame/library/keyboard/childs/keyboard_cn.cc
  * @Description:
  * @BugList:
@@ -277,6 +277,12 @@ void Keyboard_CN::pinyinClose() {
 
 void Keyboard_CN::pinyinAdd(const std::string& pinyin) {
     if (pinyin.empty())return;
+    // 原串长度硬限制：见 PINYIN_MAX_LEN 的说明 —— 超长且歧义高的串会让引擎越界崩溃，
+    // 达到上限后忽略后续字母（退格仍可正常删除，不会卡死）
+    if (mPinyinRaw.size() >= PINYIN_MAX_LEN) {
+        LOGD("pinyin raw reached length limit %d, ignore [%s]", (int)PINYIN_MAX_LEN, pinyin.c_str());
+        return;
+    }
     mPinyinRaw.push_back(pinyin[0]);
 #if ENABLED(KEYBOARD_PINYIN)
     if (!mPinyinUsable) {
