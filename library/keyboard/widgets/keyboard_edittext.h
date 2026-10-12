@@ -22,12 +22,14 @@
 #include <vector>
 
 /// @brief 键盘输入框
-/// @note 相对引擎 EditText 补齐两点：
+/// @note 相对引擎 EditText 补齐三点：
 ///       1. 自绘细光标：引擎光标宽度取"光标所在字符的宽度"，且在文本末尾不绘制，
 ///          导致光标过粗、且末尾无光标；
-///       2. 支持点击定位光标，便于在文本中间插入。
-///       闪烁由独立定时器驱动并整控件重绘，避免局部重绘（引擎按字符宽度失效一块区域）
-///       与绘制驱动翻转（引擎在 onDraw 末尾翻转状态）叠加造成的残影。
+///       2. 支持点击定位光标，便于在文本中间插入；
+///       3. 光标闪烁不依赖焦点：本控件不可聚焦（焦点会让输入框抢走物理按键与输入法事件），
+///          显隐由 setCaretVisible 驱动，闪烁由独立定时器驱动并整控件重绘。
+///       整控件重绘避免局部重绘（引擎按字符宽度失效一块区域）与绘制驱动翻转
+///       （引擎在 onDraw 末尾翻转状态）叠加造成的残影。
 class KeyboardEditText : public EditText {
 public:
     /// @brief 光标位置变化回调（仅由用户点击触发），参数为宽字符索引
@@ -51,17 +53,22 @@ public:
 
     void setOnCaretChangeListener(OnCaretChangeListener listener);
 
+    /// @brief 光标显隐开关（不依赖焦点，由键盘在显示/隐藏时驱动闪烁）
+    void setCaretVisible(bool visible);
+    /// @brief 光标是否处于显示（闪烁）状态
+    bool isCaretVisible() const { return mCaretVisible; }
+
 protected:
     void onDraw(Canvas& canvas) override;
     /// @brief 屏蔽引擎光标（宽度为字符宽，与自绘冲突）
     void onDrawCaret(Canvas& canvas, const Rect& r) override;
     bool onTouchEvent(MotionEvent& evt) override;
-    void onFocusChanged(bool focus, int direction, Rect* prevfocusrect) override;
+    /// @brief 可见性变化：不可见时停闪，可见且光标开关打开时恢复
     void onVisibilityChanged(View& changedView, int visibility) override;
     void onDetachedFromWindow() override;
 
 private:
-    /// @brief 光标当前是否允许显示/闪烁
+    /// @brief 光标当前是否允许显示/闪烁（不依赖焦点，只看显隐开关/可用性/可见性）
     bool canBlink() const;
     void startBlink();
     void stopBlink();
@@ -85,6 +92,7 @@ private:
     int mBlinkPeriod{ DEFAULT_BLINK_PERIOD };  // 闪烁周期
     int mIdleDelay{ DEFAULT_IDLE_DELAY };      // 输入后暂停闪烁时长
 
+    bool    mCaretVisible{ false };    // 光标显隐开关（由 setCaretVisible 驱动，不依赖焦点）
     bool    mCursorOn{ true };         // 光标当前是否点亮
     int64_t mLastInputTime{ 0 };       // 最近一次输入时间
     Runnable mBlinkTimer;              // 闪烁定时器

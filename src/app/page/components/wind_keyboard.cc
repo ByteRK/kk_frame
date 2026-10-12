@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-02-10 22:50:08
- * @LastEditTime: 2026-09-02 15:34:46
+ * @LastEditTime: 2026-10-12 10:13:52
  * @FilePath: /kk_frame/src/app/page/components/wind_keyboard.cc
  * @Description: 键盘组件
  * @BugList:
@@ -42,7 +42,7 @@ void WindKeyboard::showKeyboard(const std::string& text, const std::string& hint
     mIsShow = true;
     // 模糊只计算一次并缓存首帧，因此每次显示都重建，避免用到上一次显示时的模糊画面
     applyGauss();
-    // 先显示再刷新内容：键盘内部会在"变为可见"时申请焦点，隐藏状态下申请会导致光标空转
+    // 先显示再刷新内容：键盘在"变为可见"时才点亮输入框光标，隐藏状态下点亮会空转
     mKeyBoard->setVisibility(View::VISIBLE);
 #if ENABLED(KEYBOARD)
     mKeyBoard->setInputText(text);
@@ -163,7 +163,6 @@ void WindKeyboard::init(ViewGroup* parent) {
 bool WindKeyboard::onKey(int keyCode, KeyEvent& evt, bool& result) {
     if (!isKeyboardShow() || evt.getAction() != KeyEvent::ACTION_DOWN) return false;
 #if ENABLED(KEYBOARD)
-    // 暂时不生效，会被editText抢占
     mKeyBoard->onRealKey(keyCode);
 #endif
     return false;

@@ -63,7 +63,7 @@ void CKeyBoard::show() {
     // setVisibility(View::VISIBLE); // 交给外部控制
     showType(mKBType);
     setEditText(mInputText);
-    setInputBoxFocus(true);
+    setInputBoxCaret(true);
 }
 
 void CKeyBoard::setType(KeyBoardType t) {
@@ -234,8 +234,8 @@ void CKeyBoard::setBtnText(const std::string& complete, const std::string& cance
 
 void CKeyBoard::onVisibilityChanged(View& changedView, int visibility) {
     RelativeLayout::onVisibilityChanged(changedView, visibility);
-    // 引擎只在本视图自身 GONE 时清理焦点，祖先隐藏时子视图仍持有焦点（光标空转、IMM 不释放）
-    setInputBoxFocus(isShown());
+    // 可见性变化时同步光标显隐（隐藏停闪、显示恢复），不再依赖焦点
+    setInputBoxCaret(isShown());
 }
 
 void CKeyBoard::init() {
@@ -359,13 +359,11 @@ void CKeyBoard::onInputCaretChanged(int wideOffset) {
     LOGD("onInputCaretChanged: wide=%d -> utf8=%d", wideCaret, mCaretIndex);
 }
 
-void CKeyBoard::setInputBoxFocus(bool focus) {
+void CKeyBoard::setInputBoxCaret(bool visible) {
     if (!mInputTextEdit)return;
-    if (focus) {
-        if (isShown())mInputTextEdit->requestFocus();
-    } else if (mInputTextEdit->isFocused()) {
-        mInputTextEdit->clearFocus();
-    }
+    // 不走焦点：焦点会让输入框抢走物理按键与输入法事件。
+    // 光标闪烁由输入框内部定时器 + 自绘实现，这里只负责开关。
+    mInputTextEdit->setCaretVisible(visible && isShown());
 }
 
 CKeyBoardChild* CKeyBoard::createChild(KeyBoardType t) {

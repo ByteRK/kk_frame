@@ -43,9 +43,7 @@
         <!-- 右侧留出清除按键的位置，避免文字被图标遮挡 -->
         <item name="android:paddingEnd">70dp</item>
         <item name="android:background">@drawable/keyboard_input</item>
-        <item name="android:focusable">true</item>
-        <item name="android:focusableInTouchMode">true</item>
-        <item name="android:cursorVisible">true</item>
+        <!-- 输入框不参与焦点：焦点会让它抢走物理按键与输入法事件，光标由 KeyboardEditText 自绘 -->
     </style>
     <!--    清除按键-->
     <style name="keyboard_clear">

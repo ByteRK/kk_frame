@@ -95,7 +95,7 @@ public:   // 输入光标
     int  getCaretIndex() const { return mCaretIndex; }
 
 protected:
-    /// @brief 可见性变化：引擎只在自身 GONE 时清理焦点，这里补齐"祖先隐藏"与"重新显示"的焦点处理
+    /// @brief 可见性变化：同步输入框光标显隐（隐藏停闪、显示恢复）
     void onVisibilityChanged(View& changedView, int visibility) override;
 
 private: // 内部用
@@ -103,7 +103,8 @@ private: // 内部用
     void showType(KeyBoardType t);
     /// @brief 刷新输入框文本与光标（caretIndex 为 utf8 字节偏移）
     void setEditText(const std::string& txt);
-    void setInputBoxFocus(bool focus);
+    /// @brief 输入框光标显隐开关（不再走焦点：焦点会让输入框抢走物理按键与输入法事件）
+    void setInputBoxCaret(bool visible);
     /// @brief 输入框点击改光标后的同步
     void onInputCaretChanged(int wideOffset);
     /// @brief 把光标位置（utf8 字节偏移）写到输入框，并刷新文本

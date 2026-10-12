@@ -30,11 +30,15 @@ KeyboardEditText::KeyboardEditText(int w, int h) : EditText(w, h) {
     mBlinkTimer = std::bind(&KeyboardEditText::onBlinkTick, this);
     // 光标定位基于单行累加宽度，且键盘输入框本就只应单行
     setSingleLine(true);
+    // 不可聚焦：焦点会让输入框抢走物理按键与输入法事件，光标闪烁由本控件自绘 + 定时器实现
+    setFocusable(false);
 }
 
 KeyboardEditText::KeyboardEditText(Context* ctx, const AttributeSet& attr) : EditText(ctx, attr) {
     mBlinkTimer = std::bind(&KeyboardEditText::onBlinkTick, this);
     setSingleLine(true);
+    // 覆盖 style 中可能设置的 focusable，理由同上
+    setFocusable(false);
 
     // 光标配置（均在 xml 中可配）
     mCursorWidth = attr.getDimensionPixelSize("cursorWidth", DEFAULT_CURSOR_WIDTH);
@@ -76,12 +80,21 @@ void KeyboardEditText::setOnCaretChangeListener(OnCaretChangeListener listener) 
     mCaretChangeListener = listener;
 }
 
+void KeyboardEditText::setCaretVisible(bool visible) {
+    if (mCaretVisible == visible)return;
+    mCaretVisible = visible;
+    if (visible)markInput();  // 点亮并重启计时（含输入后的短暂常亮）
+    else stopBlink();
+    invalidate(true);
+}
+
 void KeyboardEditText::onDrawCaret(Canvas& canvas, const Rect& r) {
     // 引擎光标按字符宽度绘制且在文本末尾不绘制，这里全部交给自绘光标
 }
 
 bool KeyboardEditText::canBlink() const {
-    return isFocused() && isEnabled() && isShown() && (getContentLength() >= 0);
+    // 只看显隐开关，不再依赖焦点：焦点会抢走物理按键与输入法事件
+    return mCaretVisible && isEnabled() && isShown();
 }
 
 void KeyboardEditText::startBlink() {
@@ -119,24 +132,12 @@ void KeyboardEditText::onBlinkTick() {
     postDelayed(mBlinkTimer, mBlinkPeriod);
 }
 
-void KeyboardEditText::onFocusChanged(bool focus, int direction, Rect* prevfocusrect) {
-    EditText::onFocusChanged(focus, direction, prevfocusrect);
-
-    if (focus) {
-        markInput();
-        startBlink();
-    } else {
-        stopBlink();
-        invalidate(true);
-    }
-}
-
 void KeyboardEditText::onVisibilityChanged(View& changedView, int visibility) {
     EditText::onVisibilityChanged(changedView, visibility);
 
-    // 不可见时停止闪烁，可见且已聚焦时恢复
-    if (isShown() && isFocused()) startBlink();
-    else if (!isShown()) stopBlink();
+    // 不可见时停止闪烁，可见且光标开关打开时恢复
+    if (!isShown()) stopBlink();
+    else if (mCaretVisible) startBlink();
 }
 
 void KeyboardEditText::onDetachedFromWindow() {
