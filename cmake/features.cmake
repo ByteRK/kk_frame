@@ -20,7 +20,7 @@ set(ENABLED_FILE_SYSTEM     ON)        # 文件系统支持
 set(ENABLED_JSON            ON)        # JsonCpp 支持
 set(ENABLED_PIXMAN          ON)        # Pixman 支持
 set(ENABLED_VIDEO           ON)        # 视频支持
-set(ENABLED_AUDIO           OFF)       # ALSA 音频播放
+set(ENABLED_ALSA            OFF)       # ALSA 音频播放
 
 
 ################################## 配置 ##################################
@@ -106,10 +106,10 @@ if (ENABLED_VIDEO)
     target_compile_definitions(${PROJECT_NAME} PRIVATE ENABLE_VIDEO=1)
 endif()
 
-# 音频配置（ENABLED_AUDIO）
-if (ENABLED_AUDIO)
+# 音频配置（ENABLED_ALSA）
+if (ENABLED_ALSA)
     find_package(ALSA REQUIRED)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE ENABLE_AUDIO=1)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE ENABLE_ALSA=1)
     list(APPEND PROJECT_INCLUDE_DIR ${ALSA_INCLUDE_DIRS})
     list(APPEND PROJECT_LIBRARIES ${ALSA_LIBRARIES})
 endif()

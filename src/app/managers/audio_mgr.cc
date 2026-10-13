@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-07-06 22:53:00
- * @LastEditTime: 2026-07-06 23:15:29
+ * @LastEditTime: 2026-10-13 18:30:23
  * @FilePath: /kk_frame/src/app/managers/audio_mgr.cc
  * @Description: ALSA 音频播放管理器
  * @BugList:
@@ -12,6 +12,7 @@
 **/
 
 #include "audio_mgr.h"
+#include "quick_define.h"
 
 #include <algorithm>
 #include <cerrno>
@@ -22,7 +23,7 @@
 #include <sys/eventfd.h>
 #include <unistd.h>
 
-#if defined(ENABLE_AUDIO) || defined(__VSCODE__)
+#if ENABLED(ALSA) || defined(__VSCODE__)
 #include <alsa/asoundlib.h>
 #endif
 
@@ -37,7 +38,7 @@ namespace {
         uint16_t channels{ 0 };       ///< 声道数
         uint32_t sampleRate{ 0 };     ///< 采样率
         uint16_t bitsPerSample{ 0 };  ///< 位深度
-        uint32_t blockAlign{ 0 };     ///< 帧大小 = channels * bitsPerSample / 8
+        uint16_t blockAlign{ 0 };     ///< 帧大小 = channels * bitsPerSample / 8（WAV 头中为 16 位字段）
         uint64_t dataOffset{ 0 };     ///< data chunk 数据起始偏移
         uint64_t dataSize{ 0 };       ///< data chunk 数据字节数
     };
@@ -132,6 +133,19 @@ namespace {
         }
     }
 
+    /// @brief 播放状态转可读字符串（仅用于日志输出）。
+    const char* stateName(AudioMgr::State state) {
+        switch (state) {
+        case AudioMgr::State::Stopped:   return "Stopped";
+        case AudioMgr::State::Loading:   return "Loading";
+        case AudioMgr::State::Playing:   return "Playing";
+        case AudioMgr::State::Paused:    return "Paused";
+        case AudioMgr::State::Completed: return "Completed";
+        case AudioMgr::State::Error:     return "Error";
+        }
+        return "Unknown";
+    }
+
 } // namespace
 
 // ============================================================================
@@ -157,9 +171,12 @@ AudioMgr::AudioMgr() {
     }
     // 启动播放线程
     mThread = std::thread(&AudioMgr::playbackLoop, this);
+    LOGI("AudioMgr created. support=%d wakeFd=%d", isSupported(), mWakeFd);
+    if (mWakeFd < 0) LOGW("AudioMgr state callback unavailable. wakeFd=%d", mWakeFd);
 }
 
 AudioMgr::~AudioMgr() {
+    LOGI("AudioMgr destroy. state=%s", stateName(getState()));
     // 1. 通知播放线程退出
     {
         std::lock_guard<std::mutex> lock(mMutex);
@@ -168,6 +185,7 @@ AudioMgr::~AudioMgr() {
     }
     mCondition.notify_all();
     if (mThread.joinable()) mThread.join();
+    LOGI("AudioMgr playback thread exited.");
 
     // 2. 清理 eventfd / Looper
     if (mCallbackLooper != nullptr && mWakeFd >= 0) mCallbackLooper->removeFd(mWakeFd);
@@ -188,8 +206,12 @@ AudioMgr::~AudioMgr() {
 // ============================================================================
 
 bool AudioMgr::play(const std::string& filePath, bool loop) {
-    if (filePath.empty() || !isSupported()) return false;
+    if (filePath.empty() || !isSupported()) {
+        LOGE("AudioMgr play rejected. support=%d file=%s", isSupported(), filePath.c_str());
+        return false;
+    }
     State oldState;
+    uint64_t requestId;
     {
         std::lock_guard<std::mutex> lock(mMutex);
         // 重置为文件播放模式，清空流缓冲
@@ -205,7 +227,10 @@ bool AudioMgr::play(const std::string& filePath, bool loop) {
         mStreamFinished = true;  // 文件模式下不使用流完成标记
         oldState = setStateLocked(State::Loading);
         ++mRequestId;  // 递增请求 ID，取消播放线程中的旧请求
+        requestId = mRequestId;
     }
+    LOGI("AudioMgr play. file=%s loop=%d requestId=%llu",
+        filePath.c_str(), loop, (unsigned long long)requestId);
     postStateChanged(oldState, State::Loading);
     mCondition.notify_all();  // 唤醒播放线程
     return true;
@@ -214,12 +239,21 @@ bool AudioMgr::play(const std::string& filePath, bool loop) {
 bool AudioMgr::startStream(const PcmFormat& format, size_t maxBufferedBytes) {
     if (!isSupported() || format.sampleRate == 0 || format.channels == 0 ||
         (format.bitsPerSample != 8 && format.bitsPerSample != 16 &&
-         format.bitsPerSample != 24 && format.bitsPerSample != 32)) return false;
+         format.bitsPerSample != 24 && format.bitsPerSample != 32)) {
+        LOGE("AudioMgr startStream rejected. support=%d rate=%u channels=%u bits=%u",
+            isSupported(), static_cast<unsigned>(format.sampleRate),
+            static_cast<unsigned>(format.channels), static_cast<unsigned>(format.bitsPerSample));
+        return false;
+    }
 
     const size_t frameBytes = format.channels * format.bitsPerSample / 8;
-    if (frameBytes == 0 || maxBufferedBytes < frameBytes) return false;
+    if (frameBytes == 0 || maxBufferedBytes < frameBytes) {
+        LOGE("AudioMgr startStream rejected. frameBytes=%zu maxBuffered=%zu", frameBytes, maxBufferedBytes);
+        return false;
+    }
 
     State oldState;
+    uint64_t requestId;
     {
         std::lock_guard<std::mutex> lock(mMutex);
         // 切换到流模式
@@ -237,7 +271,11 @@ bool AudioMgr::startStream(const PcmFormat& format, size_t maxBufferedBytes) {
         mSeekMs = -1;
         oldState = setStateLocked(State::Loading);
         ++mRequestId;
+        requestId = mRequestId;
     }
+    LOGI("AudioMgr startStream. rate=%u channels=%u bits=%u maxBuffered=%zu requestId=%llu",
+        static_cast<unsigned>(format.sampleRate), static_cast<unsigned>(format.channels),
+        static_cast<unsigned>(format.bitsPerSample), maxBufferedBytes, (unsigned long long)requestId);
     postStateChanged(oldState, State::Loading);
     mCondition.notify_all();
     return true;
@@ -251,7 +289,12 @@ size_t AudioMgr::writeStream(const void* data, size_t size) {
         // 校验：必须为流模式、未结束、处于有效状态、帧对齐
         if (mSourceType != SourceType::Stream || mStreamFinished ||
             (mState != State::Loading && mState != State::Playing && mState != State::Paused) ||
-            frameBytes == 0 || size % frameBytes != 0) return 0;
+            frameBytes == 0 || size % frameBytes != 0) {
+            LOGW("AudioMgr writeStream rejected. source=%s state=%s finished=%d size=%zu frameBytes=%zu",
+                mSourceType == SourceType::Stream ? "stream" : "file", stateName(mState),
+                mStreamFinished, size, frameBytes);
+            return 0;
+        }
         // 缓冲区满：拒绝写入并打印警告
         if (size > mStreamMaxBufferedBytes - mStreamBufferedBytes) {
             LOGW("AudioMgr stream buffer full, dropping %zu bytes (buffered: %zu / %zu)",
@@ -270,8 +313,13 @@ bool AudioMgr::finishStream() {
     {
         std::lock_guard<std::mutex> lock(mMutex);
         if (mSourceType != SourceType::Stream || mStreamFinished ||
-            (mState != State::Loading && mState != State::Playing && mState != State::Paused)) return false;
+            (mState != State::Loading && mState != State::Playing && mState != State::Paused)) {
+            LOGW("AudioMgr finishStream rejected. source=%s state=%s finished=%d",
+                mSourceType == SourceType::Stream ? "stream" : "file", stateName(mState), mStreamFinished);
+            return false;
+        }
         mStreamFinished = true;  // 标记流结束，播放线程消费完队列后进入 Completed
+        LOGI("AudioMgr finishStream. buffered=%zu", mStreamBufferedBytes);
     }
     mCondition.notify_all();
     return true;
@@ -280,7 +328,10 @@ bool AudioMgr::finishStream() {
 bool AudioMgr::pause() {
     {
         std::lock_guard<std::mutex> lock(mMutex);
-        if (mState != State::Playing) return false;
+        if (mState != State::Playing) {
+            LOGW("AudioMgr pause rejected. state=%s", stateName(mState));
+            return false;
+        }
         setStateLocked(State::Paused);
         // 注意：实际 ALSA pause 由播放线程在锁外执行
     }
@@ -291,7 +342,10 @@ bool AudioMgr::pause() {
 bool AudioMgr::resume() {
     {
         std::lock_guard<std::mutex> lock(mMutex);
-        if (mState != State::Paused) return false;
+        if (mState != State::Paused) {
+            LOGW("AudioMgr resume rejected. state=%s", stateName(mState));
+            return false;
+        }
         setStateLocked(State::Playing);
     }
     postStateChanged(State::Paused, State::Playing);
@@ -339,7 +393,12 @@ bool AudioMgr::seek(int64_t positionMs) {
     std::lock_guard<std::mutex> lock(mMutex);
     // seek 仅支持文件模式下的 Playing/Paused 状态
     if (mSourceType != SourceType::File ||
-        (mState != State::Playing && mState != State::Paused)) return false;
+        (mState != State::Playing && mState != State::Paused)) {
+        LOGW("AudioMgr seek rejected. source=%s state=%s position=%lld",
+            mSourceType == SourceType::Stream ? "stream" : "file", stateName(mState),
+            (long long)positionMs);
+        return false;
+    }
     mSeekMs = std::max<int64_t>(0, std::min(positionMs, mDurationMs));
     mPositionMs = mSeekMs;  // 立即更新位置供 getPosition() 查询
     return true;
@@ -357,7 +416,7 @@ std::string AudioMgr::getCurrentFile() const { std::lock_guard<std::mutex> lock(
 std::string AudioMgr::getLastError() const { std::lock_guard<std::mutex> lock(mMutex); return mLastError; }
 
 bool AudioMgr::isSupported() {
-#if defined(ENABLE_AUDIO) || defined(__VSCODE__)
+#if ENABLED(ALSA) || defined(__VSCODE__)
     return true;
 #else
     return false;
@@ -372,6 +431,7 @@ bool AudioMgr::isSupported() {
 AudioMgr::State AudioMgr::setStateLocked(State state) {
     State oldState = mState;
     mState = state;
+    if (oldState != state) LOGI("AudioMgr state. %s -> %s", stateName(oldState), stateName(state));
     return oldState;
 }
 
@@ -395,6 +455,10 @@ void AudioMgr::postStateChanged(State oldState, State newState) {
 int AudioMgr::onWake(int fd, int events, void* context) {
     AudioMgr* audioMgr = static_cast<AudioMgr*>(context);
     if (audioMgr == nullptr) return 0;
+    if ((events & cdroid::Looper::EVENT_INPUT) == 0) {
+        LOGW("AudioMgr wake fd unexpected event. fd=%d events=%d", fd, events);
+        return 1;
+    }
     audioMgr->drainWakeFd();
     audioMgr->dispatchStateEvents();
     return 1;  // 保持 fd 注册
@@ -420,6 +484,8 @@ void AudioMgr::dispatchStateEvents() {
         const StateEvent& event = events.front();
         // 拷贝监听器列表防止回调中修改集合
         std::vector<AudioListener*> listeners(mListeners.begin(), mListeners.end());
+        LOGI("AudioMgr dispatch. %s -> %s listeners=%zu",
+            stateName(event.oldState), stateName(event.newState), listeners.size());
         for (AudioListener* listener : listeners) {
             // 分发前二次确认监听器仍有效
             if (listener != nullptr && mListeners.count(listener) > 0) {
@@ -443,9 +509,11 @@ void AudioMgr::dispatchStateEvents() {
 // ============================================================================
 
 void AudioMgr::playbackLoop() {
-#if !defined(ENABLE_AUDIO) && !defined(__VSCODE__)
+#if !ENABLED(ALSA)  && !defined(__VSCODE__)
+    LOGI("AudioMgr playback thread exit. ALSA is not enabled.");
     return;
 #else
+    LOGI("AudioMgr playback thread started.");
     for (;;) {
         // ================================================================
         // 阶段 1：等待进入 Loading 状态（由 play()/startStream() 触发）
@@ -469,6 +537,8 @@ void AudioMgr::playbackLoop() {
         // 阶段 2：解析音频源信息（文件模式解析 WAV 头，流模式构造 WavInfo）
         // ================================================================
         const bool isStream = sourceType == SourceType::Stream;
+        LOGI("AudioMgr request start. mode=%s requestId=%llu file=%s",
+            isStream ? "stream" : "file", (unsigned long long)requestId, isStream ? "-" : path.c_str());
         std::ifstream fileStream;
         WavInfo wav;
         std::string error;
@@ -504,6 +574,12 @@ void AudioMgr::playbackLoop() {
                 wav.channels, wav.sampleRate, 1, 100000);
             if (result < 0) error = std::string("Cannot configure ALSA device: ") + snd_strerror(result);
         }
+        if (error.empty()) {
+            LOGI("AudioMgr ALSA opened. mode=%s rate=%u channels=%u bits=%u blockAlign=%u",
+                isStream ? "stream" : "file", static_cast<unsigned>(wav.sampleRate),
+                static_cast<unsigned>(wav.channels), static_cast<unsigned>(wav.bitsPerSample),
+                static_cast<unsigned>(wav.blockAlign));
+        }
 
         // ================================================================
         // 阶段 4：错误处理 — 关闭 PCM，进入 Error 状态，回到等待
@@ -520,6 +596,8 @@ void AudioMgr::playbackLoop() {
                     changed = true;
                 }
             }
+            LOGE("AudioMgr playback error. mode=%s file=%s canceled=%d error=%s",
+                isStream ? "stream" : "file", isStream ? "-" : path.c_str(), !changed, error.c_str());
             if (changed) postStateChanged(oldState, State::Error);
             continue;  // 回到循环顶部等待下一个请求
         }
@@ -528,13 +606,21 @@ void AudioMgr::playbackLoop() {
         // 阶段 5：进入 Playing 状态，计算总时长
         // ================================================================
         const uint64_t totalFrames = isStream ? 0 : wav.dataSize / wav.blockAlign;
+        const int64_t durationMs = static_cast<int64_t>(totalFrames * 1000 / wav.sampleRate);
         State oldState;
         {
             std::lock_guard<std::mutex> lock(mMutex);
-            if (requestId != mRequestId) { snd_pcm_close(pcm); continue; }
-            mDurationMs = static_cast<int64_t>(totalFrames * 1000 / wav.sampleRate);
+            if (requestId != mRequestId) {
+                snd_pcm_close(pcm);
+                LOGI("AudioMgr request canceled. requestId=%llu current=%llu",
+                    (unsigned long long)requestId, (unsigned long long)mRequestId);
+                continue;
+            }
+            mDurationMs = durationMs;
             oldState = setStateLocked(State::Playing);
         }
+        LOGI("AudioMgr playback start. mode=%s frames=%llu duration=%lldms",
+            isStream ? "stream" : "file", (unsigned long long)totalFrames, (long long)durationMs);
         postStateChanged(oldState, State::Playing);
 
         // ================================================================
@@ -562,18 +648,30 @@ void AudioMgr::playbackLoop() {
             {
                 std::unique_lock<std::mutex> lock(mMutex);
                 // 检查退出/取消/停止
-                if (mExit || requestId != mRequestId || mState == State::Stopped) break;
+                if (mExit || requestId != mRequestId || mState == State::Stopped) {
+                    LOGI("AudioMgr playback interrupted. exit=%d canceled=%d state=%s",
+                        mExit, requestId != mRequestId, stateName(mState));
+                    break;
+                }
 
                 // 暂停处理：暂停 ALSA 设备并等待恢复
                 if (mState == State::Paused) {
-                    if (!pausedInAlsa) { snd_pcm_pause(pcm, 1); pausedInAlsa = true; }
+                    if (!pausedInAlsa) {
+                        const int pauseResult = snd_pcm_pause(pcm, 1);
+                        LOGW_IF(pauseResult < 0, "AudioMgr ALSA pause failed. error=%s", snd_strerror(pauseResult));
+                        pausedInAlsa = true;
+                    }
                     mCondition.wait(lock, [this, requestId] {
                         return mExit || requestId != mRequestId || mState != State::Paused;
                     });
                     continue;  // 重新检查状态
                 }
                 // 恢复 ALSA 设备
-                if (pausedInAlsa) { snd_pcm_pause(pcm, 0); pausedInAlsa = false; }
+                if (pausedInAlsa) {
+                    const int resumeResult = snd_pcm_pause(pcm, 0);
+                    LOGW_IF(resumeResult < 0, "AudioMgr ALSA resume failed. error=%s", snd_strerror(resumeResult));
+                    pausedInAlsa = false;
+                }
 
                 // 流模式：等待数据到达或流结束
                 if (isStream && mStreamBuffers.empty()) {
@@ -608,6 +706,8 @@ void AudioMgr::playbackLoop() {
                 // drop + prepare 重置 ALSA 缓冲区以无缝跳转
                 snd_pcm_drop(pcm);
                 snd_pcm_prepare(pcm);
+                LOGI("AudioMgr seek applied. position=%lldms frame=%llu",
+                    (long long)seekMs, (unsigned long long)framePosition);
                 continue;
             }
 
@@ -639,14 +739,23 @@ void AudioMgr::playbackLoop() {
                 snd_pcm_sframes_t result = snd_pcm_writei(pcm,
                     buffer.data() + written * wav.blockAlign, frames - written);
                 // snd_pcm_recover 尝试从 underrun/overrun 等错误中恢复
-                if (result < 0) result = snd_pcm_recover(pcm, static_cast<int>(result), 1);
+                if (result < 0) {
+                    const int writeError = static_cast<int>(result);
+                    result = snd_pcm_recover(pcm, writeError, 1);
+                    LOGW("AudioMgr ALSA write recovered. remain=%zu error=%s recover=%s",
+                        frames - written, snd_strerror(writeError),
+                        result < 0 ? snd_strerror(static_cast<int>(result)) : "OK");
+                }
                 if (result < 0) {
                     error = std::string("ALSA playback failed: ") + snd_strerror(static_cast<int>(result));
                     break;
                 }
                 written += static_cast<size_t>(result);
             }
-            if (!error.empty()) break;
+            if (!error.empty()) {
+                LOGE("AudioMgr ALSA write failed. file=%s error=%s", isStream ? "-" : path.c_str(), error.c_str());
+                break;
+            }
 
             // 更新播放位置
             framePosition += frames;
@@ -677,6 +786,7 @@ void AudioMgr::playbackLoop() {
         if (shouldDrain) snd_pcm_drain(pcm);
         else snd_pcm_drop(pcm);
         snd_pcm_close(pcm);
+        LOGI("AudioMgr ALSA closed. drain=%d", shouldDrain);
         State completionOldState = State::Completed;
         State newState = State::Completed;
         bool changed = false;
@@ -697,6 +807,9 @@ void AudioMgr::playbackLoop() {
             }
         }
         if (changed) postStateChanged(completionOldState, newState);
+        LOGI("AudioMgr playback finish. mode=%s canceled=%d state=%s position=%lldms duration=%lldms",
+            isStream ? "stream" : "file", !changed, stateName(getState()),
+            (long long)getPosition(), (long long)getDuration());
     }
 #endif
 }

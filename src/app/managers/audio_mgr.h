@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-07-06 22:53:00
- * @LastEditTime: 2026-07-06 23:11:08
+ * @LastEditTime: 2026-10-13 18:30:30
  * @FilePath: /kk_frame/src/app/managers/audio_mgr.h
  * @Description: ALSA 音频播放管理器
  * @BugList:
@@ -119,7 +119,7 @@ public:
     std::string getCurrentFile() const;
     std::string getLastError() const;
 
-    /// @brief 检测 ALSA 支持。由 ENABLE_AUDIO 宏控制。
+    /// @brief 检测 ALSA 支持。由 ENABLE_ALSA 宏控制。
     static bool isSupported();
 
 protected:
