@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-06-26 00:44:10
- * @LastEditTime: 2026-08-12 11:32:31
+ * @LastEditTime: 2026-10-15 10:40:13
  * @FilePath: /kk_frame/src/comm/packet/packet_base.cc
  * @Description: 通讯数据包基类
  * @BugList:
@@ -17,12 +17,20 @@
 
 IAsk::~IAsk() { }
 
+/// @brief 获取发送数据区首地址
+/// @return 数据区首地址，未绑定返回 nullptr
 uint8_t* IAsk::data() {
     if (mBuf == nullptr) {
         LOGE("IAsk data failed: packet buffer is null");
         return nullptr;
     }
     return mBuf->buf;
+}
+
+/// @brief 获取绑定的数据包缓存
+/// @return 数据包缓存，未绑定返回 nullptr
+BuffData* IAsk::buffer() const {
+    return mBuf;
 }
 
 /// @brief 数据源绑定

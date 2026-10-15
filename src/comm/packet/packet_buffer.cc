@@ -72,6 +72,17 @@ void PacketBufferPool::recycle(BuffData* buf) {
     mBuffs.push_back(buf);
 }
 
+/// @brief 按现有数据包的类型与容量取得一个清空后的新数据包
+/// @param src 参照数据包
+/// @return 新数据包，失败返回 nullptr
+BuffData* PacketBufferPool::obtainLike(const BuffData* src) {
+    if (src == nullptr) {
+        LOGE("Packet buffer obtainLike failed: src is null");
+        return nullptr;
+    }
+    return obtainWithCapacity(src->type, src->slen);
+}
+
 /// @brief 取得一个指定类型和容量的清空数据包
 /// @param type 数据包类型
 /// @param baseCapacity 协议基础长度

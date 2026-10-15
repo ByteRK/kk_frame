@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-06-26 00:44:10
- * @LastEditTime: 2026-08-12 11:30:46
+ * @LastEditTime: 2026-10-15 10:39:49
  * @FilePath: /kk_frame/src/comm/packet/packet_base.h
  * @Description: 通讯数据包基类
  * @BugList:
@@ -37,11 +37,17 @@ protected:
 
 public:
     virtual ~IAsk();
-    uint8_t* data();
+    uint8_t*  data();
+    BuffData* buffer() const;
+
     virtual void parse(BuffData* buf);
     virtual void setData(size_t pos, uint8_t data);
     virtual void setData(const uint8_t* data, size_t pos, size_t len);
     virtual void checkCode() = 0; // 校验位设定
+
+    /// @brief 获取发送命令标识，默认 0
+    /// @note 单命令协议无需重写；多命令协议按需重写用于命令识别
+    virtual int  getCMD() const { return 0; }
 };
 
 /// @brief 收包解码器
@@ -58,7 +64,11 @@ private:
 
 public:
     virtual ~IAck() { }
-    virtual int    getType() = 0;  // 业务命令类型
+    virtual int getType() = 0;  // 业务命令类型
+
+    /// @brief 获取接收命令标识，默认 0
+    /// @note 单命令协议无需重写；多命令协议按需重写用于匹配待确认包
+    virtual int getCMD() const { return 0; }
 
 public: // Decoder 调用
     void           parse(BuffData* buf);

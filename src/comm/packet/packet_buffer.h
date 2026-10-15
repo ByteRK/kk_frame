@@ -45,6 +45,11 @@ public: // 数据包缓存池
     /// @param buf 数据包
     void recycle(BuffData* buf);
 
+    /// @brief 按现有数据包的类型与容量，取得一个清空后的新数据包
+    /// @param src 参照数据包
+    /// @return 新数据包（容量与 src 一致），失败返回 nullptr
+    BuffData* obtainLike(const BuffData* src);
+
     /// @brief 取得一个清空后的发送数据包
     /// @param dataLen 在协议基础长度之外追加的可变数据长度
     /// @return 数据包
