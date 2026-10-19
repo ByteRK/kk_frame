@@ -136,11 +136,14 @@ void KeyboardEditText::onVisibilityChanged(View& changedView, int visibility) {
     EditText::onVisibilityChanged(changedView, visibility);
 
     // 不可见时停止闪烁，可见且光标开关打开时恢复
-    if (!isShown()) stopBlink();
-    else if (mCaretVisible) startBlink();
+    if (!isShown()) {
+        mDragging = false;
+        stopBlink();
+    } else if (mCaretVisible) startBlink();
 }
 
 void KeyboardEditText::onDetachedFromWindow() {
+    mDragging = false;
     stopBlink();
     EditText::onDetachedFromWindow();
 }
@@ -247,19 +250,38 @@ void KeyboardEditText::onDraw(Canvas& canvas) {
     if (canBlink() && mCursorOn)drawCursor(canvas);
 }
 
-bool KeyboardEditText::onTouchEvent(MotionEvent& evt) {
-    const int action = evt.getActionMasked();
-    if (action == MotionEvent::ACTION_DOWN && isEnabled()) {
-        const int offset = indexAtX((int)evt.getX());
-        const int len = getContentLength();
-        const int clamped = offset < 0 ? 0 : (offset > len ? len : offset);
+void KeyboardEditText::moveCaretToX(int x) {
+    const int offset = indexAtX(x);
+    const int len = getContentLength();
+    const int clamped = offset < 0 ? 0 : (offset > len ? len : offset);
 
-        if (clamped != mCaretPos) {
-            setCaretPos(clamped);
-            if (mCaretChangeListener)mCaretChangeListener(clamped);
-        }
-        markInput();
-        invalidate(true);
+    if (clamped != mCaretPos) {
+        setCaretPos(clamped);
+        if (mCaretChangeListener)mCaretChangeListener(clamped);
+    }
+    // 拖拽期间保持光标常亮，避免移动到一半开始闪烁
+    markInput();
+    invalidate(true);
+}
+
+bool KeyboardEditText::onTouchEvent(MotionEvent& evt) {
+    if (!isEnabled()) return true;
+
+    switch (evt.getActionMasked()) {
+    case MotionEvent::ACTION_DOWN:
+        // 按下即定位，之后跟随手指滑动（拖拽移动光标）
+        mDragging = true;
+        moveCaretToX((int)evt.getX());
+        break;
+    case MotionEvent::ACTION_MOVE:
+        if (mDragging) moveCaretToX((int)evt.getX());
+        break;
+    case MotionEvent::ACTION_UP:
+    case MotionEvent::ACTION_CANCEL:
+        mDragging = false;
+        break;
+    default:
+        break;
     }
     // 手势整体消费：屏蔽引擎的拖动选中与长按菜单，交互统一走键盘
     return true;

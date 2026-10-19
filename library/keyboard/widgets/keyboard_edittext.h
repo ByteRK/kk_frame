@@ -25,7 +25,7 @@
 /// @note 相对引擎 EditText 补齐三点：
 ///       1. 自绘细光标：引擎光标宽度取"光标所在字符的宽度"，且在文本末尾不绘制，
 ///          导致光标过粗、且末尾无光标；
-///       2. 支持点击定位光标，便于在文本中间插入；
+///       2. 支持点击/拖拽定位光标，便于在文本中间插入；
 ///       3. 光标闪烁不依赖焦点：本控件不可聚焦（焦点会让输入框抢走物理按键与输入法事件），
 ///          显隐由 setCaretVisible 驱动，闪烁由独立定时器驱动并整控件重绘。
 ///       整控件重绘避免局部重绘（引擎按字符宽度失效一块区域）与绘制驱动翻转
@@ -82,6 +82,8 @@ private:
     int  caretXInText(int index) const;
     /// @brief 由 x（视图坐标）反查最近的宽字符索引
     int  indexAtX(int x) const;
+    /// @brief 把光标移到 x（视图坐标）对应的位置，变化时回调
+    void moveCaretToX(int x);
     /// @brief 光标纵向范围（含内边距与 gravity，与文本绘制位置一致）
     void cursorVerticalRange(int& top, int& height) const;
     void drawCursor(Canvas& canvas);
@@ -94,6 +96,7 @@ private:
 
     bool    mCaretVisible{ false };    // 光标显隐开关（由 setCaretVisible 驱动，不依赖焦点）
     bool    mCursorOn{ true };         // 光标当前是否点亮
+    bool    mDragging{ false };        // 是否处于拖拽定位光标的触摸序列中
     int64_t mLastInputTime{ 0 };       // 最近一次输入时间
     Runnable mBlinkTimer;              // 闪烁定时器
 
