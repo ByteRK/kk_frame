@@ -255,6 +255,24 @@ int TimeUtils::getDate(const time_t& timestamp) {
         + tmTime.tm_mday;
 }
 
+int TimeUtils::getDateDaysAgo(uint16_t days_ago) {
+    std::tm tmTime = localTime();
+    tmTime.tm_mday -= static_cast<int>(days_ago);
+    tmTime.tm_hour = 0;
+    tmTime.tm_min = 0;
+    tmTime.tm_sec = 0;
+    tmTime.tm_isdst = -1;
+
+    // mktime 负责归一化跨月、闰年以及夏令时
+    const std::time_t zero = std::mktime(&tmTime);
+    if (zero == static_cast<std::time_t>(-1)) {
+        LOGE("mktime failed while getDateDaysAgo, days_ago=%d", static_cast<int>(days_ago));
+        return 0;
+    }
+
+    return getDate(zero);
+}
+
 int TimeUtils::getTodayDayOnWeek() {
     const std::tm tmTime = localTime();
     return tmTime.tm_wday;

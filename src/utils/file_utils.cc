@@ -16,6 +16,7 @@
 #include <cdlog.h>
 #include <ghc/filesystem.hpp>
 #include <fstream>
+#include <system_error>
 #include <unistd.h>
 
 void FileUtils::sync() {
@@ -92,6 +93,29 @@ bool FileUtils::check(const std::vector<std::string>& fileList, std::function<bo
         if (check(file, &size)) if (callback(file, size))return true;
     }
     return false;
+}
+
+bool FileUtils::remove(const std::string& filePath) {
+    ghc::filesystem::path path(filePath);
+    std::error_code ec;
+
+    if (!ghc::filesystem::exists(path, ec)) return !ec;
+    if (ec) {
+        LOGE("Failed to check file: %s, err=%d", filePath.c_str(), ec.value());
+        return false;
+    }
+
+    if (!ghc::filesystem::is_regular_file(path, ec) || ec) {
+        LOGE("Path is not a regular file: %s", filePath.c_str());
+        return false;
+    }
+
+    if (!ghc::filesystem::remove(path, ec) || ec) {
+        LOGE("Failed to remove file: %s, err=%d", filePath.c_str(), ec.value());
+        return false;
+    }
+
+    return true;
 }
 
 bool FileUtils::isDir(const std::string& path) {

@@ -14,7 +14,6 @@
 #ifndef __WORK_MGR_H__
 #define __WORK_MGR_H__
 
-#include "struct.h"
 #include "timer_mgr.h"
 #include "template/singleton.h"
 

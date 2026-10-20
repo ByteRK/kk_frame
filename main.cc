@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-07-28 15:55:48
+ * @LastEditTime: 2026-10-20 09:21:21
  * @FilePath: /kk_frame/main.cc
  * @Description: 主程序入口
  * @BugList:
@@ -36,9 +36,9 @@ static const char avs[] = "AVS: " APP_VER_INFO;
 #include "http_mgr.h"        // HTTP管理器
 
 #include "global_data.h"     // 数据管理器
+// #include "history_data.h"    // 历史记录
+// #include "statistics_data.h" // 数据统计
 #include "config_mgr.h"      // 配置管理器
-#include "history_mgr.h"     // 历史管理器
-#include "statistics_mgr.h"  // 统计管理器
 
 #include "mcu_mgr.h"         // 电控通讯
 #include "btn_mgr.h"         // 按键板通讯
@@ -81,9 +81,9 @@ int main(int argc, const char* argv[]) {
 
     /* 数据与统计 */
     g_data->init();
+    // g_history->init();
+    // g_statistics->init();
     g_config->init();
-    g_history->init();
-    g_statistics->init();
 
     /* 通讯 */
     g_mcuMgr->init();

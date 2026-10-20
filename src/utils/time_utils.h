@@ -127,6 +127,12 @@ namespace TimeUtils {
     /// @return yyyymmdd，例如 20260619，失败返回 0
     int getDate(const time_t& timestamp);
 
+    /// @brief 获取 N 天前的本地日期整数
+    /// @param days_ago 向前天数，0 表示今天
+    /// @return yyyymmdd，例如 20260619，失败返回 0
+    /// @note 内部按日历日相减，跨月、闰年、夏令时由 mktime 归一化
+    int getDateDaysAgo(uint16_t days_ago);
+
     /// @brief 获取今天是星期几
     /// @return 0 表示星期日，6 表示星期六
     int getTodayDayOnWeek();

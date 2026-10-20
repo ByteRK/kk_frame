@@ -46,6 +46,12 @@ namespace FileUtils {
     /// @return true 文件存在
     bool check(const std::string& filePath, size_t* size = nullptr);
 
+    /// @brief 删除文件
+    /// @param filePath 文件名/路径
+    /// @return true 删除成功或文件本来就不存在
+    /// @note 仅删除普通文件，不会删除目录
+    bool remove(const std::string& filePath);
+
     /// @brief 遍历判断文件是否存在并根据回调检测文件是否正常
     /// @param fileList 文件路径列表
     /// @param callback 回调处理函数
