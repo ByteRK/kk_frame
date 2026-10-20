@@ -118,6 +118,15 @@ bool FileUtils::remove(const std::string& filePath) {
     return true;
 }
 
+bool FileUtils::remove(const std::string& filePath, const std::string& backupPath) {
+    // 不要用 && 串联，短路会跳过备份文件
+    const bool result1 = filePath.empty() || remove(filePath);
+    const bool result2 = backupPath.empty() || remove(backupPath);
+    sync();
+
+    return result1 && result2;
+}
+
 bool FileUtils::isDir(const std::string& path) {
     ghc::filesystem::path fsPath(path);
     return ghc::filesystem::exists(fsPath) && ghc::filesystem::is_directory(fsPath);

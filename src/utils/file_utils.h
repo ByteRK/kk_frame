@@ -52,6 +52,13 @@ namespace FileUtils {
     /// @note 仅删除普通文件，不会删除目录
     bool remove(const std::string& filePath);
 
+    /// @brief 删除主/备文件并同步
+    /// @param filePath 主文件路径
+    /// @param backupPath 备份文件路径，可传空
+    /// @return true 全部删除成功或文件本来就不存在
+    /// @note 两个文件都会尝试删除，不会因主文件失败而跳过备份文件
+    bool remove(const std::string& filePath, const std::string& backupPath);
+
     /// @brief 遍历判断文件是否存在并根据回调检测文件是否正常
     /// @param fileList 文件路径列表
     /// @param callback 回调处理函数

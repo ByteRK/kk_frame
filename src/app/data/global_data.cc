@@ -60,9 +60,7 @@ void GlobalData::init() {
 
 /// @brief 重置
 void GlobalData::reset() {
-    std::string command = std::string("rm")  \
-        + " " + APP_FILE_PATH + " " + APP_FILE_BAK_PATH;
-    std::system(command.c_str());
+    FileUtils::remove(APP_FILE_PATH, APP_FILE_BAK_PATH);
     setFirstInit(true);
     // FileUtils::sync(); // 不需要Sync，上一步已Sync
     init();
@@ -73,10 +71,12 @@ void GlobalData::reset() {
 /// @brief 设置首次初始化状态
 /// @param first true:删除已初始化标记 false:创建已初始化标记
 void GlobalData::setFirstInit(bool first) {
-    std::string command;
-    command += first ? "rm -f " : "touch ";
-    command += APP_FIRST_TAG;
-    std::system(command.c_str());
+    if (first) {
+        FileUtils::remove(APP_FIRST_TAG);
+    } else if (!FileUtils::write(APP_FIRST_TAG, std::string())) {
+        LOGE("create first-init tag failed. file=%s", APP_FIRST_TAG);
+    }
+
     mIsFirstInit = first;
     FileUtils::sync();
 }
@@ -85,21 +85,16 @@ void GlobalData::setFirstInit(bool first) {
 /// @return 
 bool GlobalData::load() {
     Json::Value appJson;
-    std::string loadingPath = "";
+    std::string loadingPath;
 
-    bool res = FileUtils::check(
-        { APP_FILE_PATH, APP_FILE_BAK_PATH },
-        [&appJson, &loadingPath](const std::string& file, size_t size) {
-        if (size <= 0)return false;
-        bool result = JsonUtils::load(file, appJson);
-        if (result)loadingPath = file;
-        return result;
-    });
+    const bool res = JsonUtils::load(
+        APP_FILE_PATH, APP_FILE_BAK_PATH, appJson, &loadingPath,
+        [](const Json::Value& value) { return value.isObject(); });
 
     if (res) {
         LOG(INFO) << "[app] load local data. file=" << loadingPath;
     } else {
-        LOG(ERROR) << "[app] no local data file found. use default data";
+        LOG(ERROR) << "[app] no valid local data file found. use default data";
         mHaveChange = true;
         return false;
     }
@@ -119,10 +114,16 @@ bool GlobalData::save(bool isBackup) {
     /**** 开始写入数据 ****/
     appJson["coffee"] = mCoffee;
     /**** 结束写入数据 ****/
+
+    // 写盘成功后才复位标记，避免写失败后数据不再重试
+    if (!JsonUtils::save(APP_FILE_PATH, APP_FILE_BAK_PATH, appJson, isBackup)) {
+        LOGE("global_data save failed. file=%s",
+            isBackup ? APP_FILE_BAK_PATH : APP_FILE_PATH);
+        return false;
+    }
+
     mHaveChange = false;
-    return JsonUtils::save(
-        isBackup ? APP_FILE_BAK_PATH : APP_FILE_PATH,
-        appJson);
+    return true;
 }
 
 /// @brief 检查是否存在变动，触发保存

@@ -18,9 +18,6 @@
 #include <cdlog.h>
 #include <core/app.h>
 #include <core/systemclock.h>
-#include <cerrno>
-#include <cstdio>
-#include <cstring>
 
 static const int WIFI_DATA_VERSION = 1;       // WIFI数据版本号
 static const int WIFI_ENABLE_RETRY_MS = 2000; // WIFI开启失败重试间隔
@@ -87,14 +84,7 @@ void WifiMgr::stop() {
 }
 
 void WifiMgr::reset() {
-    const char* paths[] = { WIFI_FILE_PATH, WIFI_FILE_BAK_PATH };
-    for (const char* path : paths) {
-        if (std::remove(path) != 0 && errno != ENOENT) {
-            LOGE("[wifi] remove option failed. file=%s errno=%d(%s)",
-                path, errno, std::strerror(errno));
-        }
-    }
-    FileUtils::sync();
+    FileUtils::remove(WIFI_FILE_PATH, WIFI_FILE_BAK_PATH);
     load();
     mEnablePending = false;
     LOGE("[wifi] reset option.");
@@ -252,8 +242,7 @@ bool WifiMgr::save(bool isBackup) {
     wifiJson["credentials"]["psk"] = mSavedPsk;
 
     const bool saved = JsonUtils::save(
-        isBackup ? WIFI_FILE_BAK_PATH : WIFI_FILE_PATH,
-        wifiJson);
+        WIFI_FILE_PATH, WIFI_FILE_BAK_PATH, wifiJson, isBackup);
     if (saved && !isBackup) mHaveChange = false;
     return saved;
 }
@@ -269,29 +258,21 @@ void WifiMgr::load() {
     mHaveChange = false;
 
     Json::Value wifiJson;
-    std::string loadingPath = "";
+    std::string loadingPath;
 
-    bool res = FileUtils::check(
-        { WIFI_FILE_PATH, WIFI_FILE_BAK_PATH },
-        [&wifiJson, &loadingPath](const std::string& file, size_t size) {
-        if (size <= 0) return false;
-
-        Json::Value candidate;
-        if (!JsonUtils::load(file, candidate) || !candidate.isObject()) {
-            return false;
-        }
+    const bool res = JsonUtils::load(
+        WIFI_FILE_PATH, WIFI_FILE_BAK_PATH, wifiJson, &loadingPath,
+        [](const Json::Value& candidate) {
+        if (!candidate.isObject()) return false;
         if (JsonUtils::get<int>(candidate, "version", 0) != WIFI_DATA_VERSION) {
-            LOGE("[wifi] unsupported data version. file=%s", file.c_str());
+            LOGE("[wifi] unsupported data version");
             return false;
         }
-
-        wifiJson = candidate;
-        loadingPath = file;
         return true;
     });
 
     if (!res) {
-        LOG(ERROR) << "[wifi] no local data file found. use default data";
+        LOG(ERROR) << "[wifi] no valid local data file found. use default data";
         mHaveChange = true;
         return;
     }

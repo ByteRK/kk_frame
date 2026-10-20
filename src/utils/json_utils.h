@@ -15,9 +15,13 @@
 #define __JSON_UTILS_H__
 
 #include <json/json.h>
+#include <functional>
 #include <string>
 
 namespace JsonUtils {
+
+    /// @brief 内容校验回调，返回 false 表示该文件不可用，将继续尝试下一个文件
+    typedef std::function<bool(const Json::Value&)> Validator;
 
     /// @brief 将JSON转换为指定类型
     /// @tparam T 返回值类型
@@ -93,12 +97,33 @@ namespace JsonUtils {
     /// @return 是否成功
     bool load(const std::string& filePath, Json::Value& json);
 
+    /// @brief 从主/备文件加载JSON，主文件优先
+    /// @param filePath 主文件路径
+    /// @param backupPath 备份文件路径，可传空
+    /// @param json 输出的JSON数据
+    /// @param loadingPath 实际加载的文件路径，可传 nullptr
+    /// @param validator 内容校验，可传 nullptr
+    /// @return 是否成功
+    /// @note 读取失败、解析失败或校验不通过都会继续尝试备份文件
+    bool load(const std::string& filePath, const std::string& backupPath,
+        Json::Value& json, std::string* loadingPath = nullptr,
+        const Validator& validator = Validator());
+
     /// @brief 保存JSON到文件
     /// @param filePath 文件路径
     /// @param json JSON对象
     /// @param pretty 是否格式化
     /// @return 是否成功
     bool save(const std::string& filePath, const Json::Value& json, bool pretty = false);
+
+    /// @brief 保存JSON到主/备文件
+    /// @param filePath 主文件路径
+    /// @param backupPath 备份文件路径
+    /// @param json JSON对象
+    /// @param isBackup true 写入备份文件，false 写入主文件
+    /// @return 是否成功
+    bool save(const std::string& filePath, const std::string& backupPath,
+        const Json::Value& json, bool isBackup = false);
     
 } // JsonUtils
 

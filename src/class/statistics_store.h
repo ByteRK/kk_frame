@@ -34,8 +34,8 @@
 
 #include "auto_save.h"
 #include "template/singleton.h"
-#include "json_file_store.h"
 #include "json_utils.h"
+#include "file_utils.h"
 #include "time_utils.h"
 
 #include <json/json.h>
@@ -127,7 +127,7 @@ void StatisticsStore<TraitsT>::init() {
 
 template<typename TraitsT>
 void StatisticsStore<TraitsT>::reset() {
-    JsonFileStore::remove(TraitsT::filePath(), TraitsT::backupPath());
+    FileUtils::remove(TraitsT::filePath(), TraitsT::backupPath());
     load();
     mHaveChange = true;
     LOGE("data factory reset. file=%s", TraitsT::filePath());
@@ -145,8 +145,8 @@ bool StatisticsStore<TraitsT>::load() {
 
     Json::Value root;
     std::string loadingPath;
-    const bool loaded = JsonFileStore::load(
-        root, TraitsT::filePath(), TraitsT::backupPath(), &loadingPath,
+    const bool loaded = JsonUtils::load(
+        TraitsT::filePath(), TraitsT::backupPath(), root, &loadingPath,
         [](const Json::Value& value) {
         return value.isObject() && value["days"].isArray();
     });
@@ -223,7 +223,7 @@ bool StatisticsStore<TraitsT>::save(bool isBackup) {
     /**** 结束写入数据 ****/
 
     // 写盘成功后才复位标记，避免写失败后数据不再重试
-    if (!JsonFileStore::save(root, TraitsT::filePath(), TraitsT::backupPath(), isBackup)) {
+    if (!JsonUtils::save(TraitsT::filePath(), TraitsT::backupPath(), root, isBackup)) {
         LOGE("save failed. file=%s",
             isBackup ? TraitsT::backupPath() : TraitsT::filePath());
         return false;
