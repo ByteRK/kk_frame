@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-10-20 09:21:21
+ * @LastEditTime: 2026-10-22 11:11:44
  * @FilePath: /kk_frame/main.cc
  * @Description: 主程序入口
  * @BugList:
@@ -22,6 +22,8 @@ static const char avs[] = "AVS: " APP_VER_INFO;
 #endif
 
 #include "custom_app.h"      // 自定义APP
+
+#include "watchdog.h"        // 应用喂狗（硬件看门狗）
 
 #include "arg_utils.h"       // 参数工具集
 #include "project_utils.h"   // 项目工具集
@@ -60,6 +62,9 @@ int main(int argc, const char* argv[]) {
 
     /* 框架 */
     CustomApp app(argc, argv);
+
+    /* 看门狗 */
+    watchdog::Watchdog::instance().start(argc, argv);
 
     /* 心跳、定时、线程 */
     g_tick->init();

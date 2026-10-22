@@ -10,6 +10,9 @@ set(USE_KEYBOARD ${ENABLED_KEYBOARD})
 # 视频库（常驻编译，库内部决定开关逻辑）
 set(USE_VIDEO            ON)
 
+# 看门狗库（运行时由配置文件/环境变量/命令行决定是否启用）
+set(USE_WATCHDOG         ON)
+
 # 可独立配置的工具库
 set(USE_HVTOOLS          OFF)       # hvTools 网络工具库
 set(USE_FASTGAUSSIANBLUR ON)        # 快速高斯模糊库
