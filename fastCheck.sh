@@ -2,7 +2,7 @@
  # @Author: Ricken
  # @Email: me@ricken.cn
  # @Date: 2026-06-17 01:21:46
- # @LastEditTime: 2026-07-06 00:00:00
+ # @LastEditTime: 2026-10-23 11:05:18
  # @FilePath: /kk_frame/fastCheck.sh
  # @Description: 快速编译检验脚本
  # @BugList: 
@@ -21,7 +21,8 @@ NAME=kk_frame
 
 # 编译参数
 PRODUCT=x64
-PRODUCT_DIR=outX64-Debug
+BUILD_TYPE=Debug
+PRODUCT_DIR=out${PRODUCT^^}-${BUILD_TYPE}
 MAKE_JOBS=-j8
 
 # 构建相关路径
@@ -78,7 +79,7 @@ fi
 # 检查编译目录是否存在
 if [ ! -d "$OUT_DIR" ]; then
     cd $CDROID_DIR
-    ./build.sh --product=$PRODUCT
+    ./build.sh --product=$PRODUCT --build=$BUILD_TYPE
     if [ ! -d "$OUT_DIR" ]; then
         echo "Cannot make out dir: $PRODUCT_DIR"
         exit 1
@@ -96,8 +97,17 @@ fi
 
 # 编译
 cd $OUT_DIR
+
+# 新项目首次编译时，cdroid 顶层用 FILE(GLOB) 在 cmake 配置阶段固化 app 列表，
+# target 未注册会报 "No rule to make target"，此时重新配置后重试一次。
 make $NAME $MAKE_JOBS
 BUILD_STATUS=$?
+if [ $BUILD_STATUS -ne 0 ] && ! make -n "$NAME" >/dev/null 2>&1; then
+    echo "Target '$NAME' 未注册，重新执行 cmake 配置..."
+    cmake ..
+    make $NAME $MAKE_JOBS
+    BUILD_STATUS=$?
+fi
 if [ $BUILD_STATUS -ne 0 ]; then
     echo "Build failed, skip copying and running."
     exit $BUILD_STATUS
