@@ -775,7 +775,7 @@ bool WifiHal::parseScanResults(std::vector<ApInfo>& out) {
         "Ricken_5G", "\\*&?-_!$%^&*()_+", "Office_AP", "Guest_Network",
         "大胆狗贼", "Coffee_Free", "LivingRoom", "IoT_Network",
         "ChinaNet-5G", "CMCC-WEB", "TP-Link_2.4G", "Xiaomi_5G",
-        "HUAWEI-Home", "我家WIFI", "IMKK", "kk_frame"
+        "HUAWEI-Home", "我家WIFI", "IMKK", "Cdroid_AP"
     };
 
     static thread_local std::mt19937 engine(std::random_device{}());

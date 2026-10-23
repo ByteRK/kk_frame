@@ -2,7 +2,7 @@
 Author: Ricken
 Email: me@ricken.cn
 Date: 2025-04-25 12:52:59
-LastEditTime: 2026-07-30 10:03:49
+LastEditTime: 2026-10-23 09:45:46
 FilePath: /kk_frame/build.py
 Description: 项目构建脚本
 BugList: 
@@ -16,8 +16,12 @@ import subprocess
 import shutil
 import re
 import sys
+import fnmatch
 from datetime import datetime
 import configparser
+
+# 模板项目名
+TEMPLATE_NAME = 'kk_frame'
 
 # 颜色定义
 COLOR = {
@@ -31,6 +35,44 @@ COLOR = {
     'UNDERLINE': '\033[4m',
     'END': '\033[0m'
 }
+
+# 需要替换项目名的配置文件（相对项目根目录）
+PROJECT_NAME_FILES = [
+    'fastCheck.sh',              # x64 快速编译脚本
+    'script/build.sh',           # 板端 Release 编译脚本
+    'script/release.sh',         # 打包脚本
+    'script/x64.sh',             # x64 辅助脚本
+    'script/README.md',          # 脚本清单中的文件名
+    'board/script/name.sh',      # 板端启动脚本的应用名来源
+    'script/kk_frame.ps1',       # Windows 软链脚本（同时会重命名）
+]
+
+# 遍历时跳过的目录（不参与重命名与残留检查）
+SKIP_DIRS = {'.git', 'tmp', 'dist', 'package', '.venv', '__pycache__', 'node_modules'}
+
+# 复制模板时排除的内容，可写相对路径或文件名 glob
+DEFAULT_IGNORE = [
+    # 本地环境与缓存
+    '.venv',
+    '__pycache__',
+    '*.pyc',
+    'tmp',
+    'dist',
+    'package',
+    '.vscode/x11/display.env',
+    '.vscode/x11/picker.vsix',
+    # 本机构建产物，首次构建时自动生成
+    'config/app_version.h',
+    'config/fonts_info.h',
+    'fonts/fonts.conf',
+    'library/library_config.h',
+    'library/*/lib_*_config.h',
+    'library/keyboard/pinyin/data/*.txt',
+    'R.h',
+    'assets/values/ID.xml',
+    'project_changes.patch',
+    'cdroid_changes.patch',
+]
 
 # 颜色输出辅助函数
 def cprint(text, color=None, bold=False):
@@ -193,7 +235,7 @@ def replace_r_h(new_project_name):
             cprint(f"处理文件 {r_h_file_path} 时出错: {str(e)}", "RED")
 
     if found_count == 0:
-        cprint("未找到 R.h 文件。", "YELLOW")
+        cprint("未找到 R.h（构建时会自动生成，跳过）", "YELLOW")
         return
 
     cprint(f"已处理 R.h 文件: 找到 {found_count} 个, 更新 {updated_count} 个", "GREEN")
@@ -220,6 +262,114 @@ def replace_project_name_in_cmake(new_project_name):
         file.write(updated_content)
 
     cprint(f"已生成项目cmake", "GREEN")
+
+# 替换指定配置文件中的模板项目名
+def replace_project_name_in_files(new_project_name, file_list):
+    updated = 0
+
+    for rel_path in file_list:
+        if not os.path.isfile(rel_path):
+            cprint(f"  - 跳过（不存在）: {rel_path}", "YELLOW")
+            continue
+
+        try:
+            with open(rel_path, 'r', encoding='utf-8') as file:
+                content = file.read()
+
+            updated_content = content.replace(TEMPLATE_NAME, new_project_name)
+            if updated_content == content:
+                continue
+
+            with open(rel_path, 'w', encoding='utf-8') as file:
+                file.write(updated_content)
+
+            updated += 1
+            cprint(f"  - 已更新配置: {rel_path}", "GREEN")
+        except Exception as e:
+            cprint(f"处理文件 {rel_path} 时出错: {str(e)}", "RED")
+
+    cprint(f"配置文件替换: 更新 {updated} 个文件", "GREEN")
+
+# 重命名文件名中包含模板项目名的文件
+def rename_project_named_files(new_project_name):
+    renamed = 0
+
+    for root, dirs, files in os.walk('.'):
+        # 原地裁剪，避免进入无关目录
+        dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
+
+        for file in files:
+            if TEMPLATE_NAME not in file:
+                continue
+
+            old_path = os.path.join(root, file)
+            new_path = os.path.join(root, file.replace(TEMPLATE_NAME, new_project_name))
+
+            if os.path.exists(new_path):
+                cprint(f"  - 跳过（目标已存在）: {new_path}", "YELLOW")
+                continue
+
+            try:
+                os.rename(old_path, new_path)
+                renamed += 1
+                cprint(f"  - 已重命名: {os.path.relpath(old_path)} -> {os.path.basename(new_path)}", "GREEN")
+            except Exception as e:
+                cprint(f"重命名 {old_path} 时出错: {str(e)}", "RED")
+
+    cprint(f"文件重命名: {renamed} 个", "GREEN")
+
+# 扫描新项目中残留的模板名，便于人工确认
+def report_remaining_template_refs(target_dir, new_project_name):
+    scan_exts = (
+        '.sh', '.ps1', '.json', '.h', '.hpp', '.c', '.cc', '.cpp',
+        '.cmake', '.txt', '.xml', '.conf', '.py', '.md',
+    )
+
+    # 有意保留模板名说明的文件
+    allow_files = {
+        'README.md',                        # 模板仓库门面
+        'build.py',                         # 模板初始化脚本自身
+        'docs/GUIDE.md',                    # 模板/框架说明
+        'script/brand_encode.py',           # 署名示例
+        'library/watchdog/README.md',       # 参数示例
+        '.agents/build_validation.md',      # AI 指引
+    }
+
+    remaining = []
+
+    for root, dirs, files in os.walk(target_dir):
+        dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
+
+        for file in files:
+            if not file.endswith(scan_exts):
+                continue
+
+            full_path = os.path.join(root, file)
+            rel_path = os.path.relpath(full_path, target_dir).replace(os.sep, '/')
+            if rel_path in allow_files:
+                continue
+
+            try:
+                with open(full_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    lines = f.readlines()
+            except Exception:
+                continue
+
+            # 忽略文件头 FilePath 等作者元信息行，这类路径不参与替换
+            for line in lines:
+                if 'FilePath' in line:
+                    continue
+                if TEMPLATE_NAME in line:
+                    remaining.append(rel_path)
+                    break
+
+    if not remaining:
+        cprint(f"\n项目名检查: 未发现残留的 '{TEMPLATE_NAME}'", "GREEN")
+        return
+
+    cprint(f"\n项目名检查: 以下 {len(remaining)} 个文件仍包含 '{TEMPLATE_NAME}'，请人工确认：", "YELLOW", bold=True)
+    for rel_path in remaining:
+        cprint(f"  - {rel_path}", "YELLOW")
 
 # 更新Git远程仓库地址
 def update_git_remote(project_dir, new_project_name, template_name="kk_frame"):
@@ -558,52 +708,56 @@ def perform_replacements_in_target(target_dir, project_name):
             './src/widgets'
         ]
         replace_id_in_source_files(project_name, source_dirs)
+
+        # 替换脚本、板端配置等文件中的项目名称
+        replace_project_name_in_files(project_name, PROJECT_NAME_FILES)
+
+        # 重命名文件名中带模板项目名的文件（如 script/kk_frame.ps1）
+        rename_project_named_files(project_name)
     finally:
         os.chdir(original_cwd)
         cprint(f"已切换回原始目录: {os.getcwd()}", "CYAN")
 
 # 复制模板所有内容到目标位置
 def copy_directory_contents(src, dst, ignore=None):
-    """复制目录内容，支持排除指定文件/文件夹。
-    
+    """复制目录内容，支持按相对路径或文件名排除。
+
     Args:
         src:    源目录路径
         dst:    目标目录路径
-        ignore: 要排除的文件/文件夹名列表，如 ['.git', 'tmp', '__pycache__', '*.pyc']
-                支持精确名称匹配和 shutil.ignore_patterns 风格的 glob 模式
+        ignore: 排除规则列表，可写相对路径（如 config/app_version.h）
+                或文件名 glob（如 *.pyc），相对路径优先匹配
     """
-    os.makedirs(dst, exist_ok=True)
-
     if ignore is None:
         ignore = []
 
-    # 构建 shutil.ignore_patterns 风格的过滤函数
-    def _should_ignore(name):
+    skipped = []
+
+    def _should_ignore(dir_path, name):
+        rel_path = os.path.relpath(os.path.join(dir_path, name), src).replace(os.sep, '/')
         for pattern in ignore:
-            # 精确名称匹配
-            if name == pattern:
-                return True
-            # 简单的 glob 模式匹配（* 通配符）
-            if '*' in pattern:
-                import fnmatch
-                if fnmatch.fnmatch(name, pattern):
+            # 含路径分隔符时按相对路径匹配，否则只匹配文件名
+            if '/' in pattern:
+                if fnmatch.fnmatch(rel_path, pattern):
                     return True
+            elif fnmatch.fnmatch(name, pattern):
+                return True
         return False
 
-    # 遍历复制
-    for item in os.listdir(src):
-        if _should_ignore(item):
-            cprint(f"  - 已跳过: {item}", "YELLOW")
-            continue
+    def _ignore_cb(dir_path, names):
+        ignored = []
+        for name in names:
+            if _should_ignore(dir_path, name):
+                ignored.append(name)
+                skipped.append(os.path.relpath(os.path.join(dir_path, name), src))
+        return ignored
 
-        src_path = os.path.join(src, item)
-        dst_path = os.path.join(dst, item)
+    os.makedirs(dst, exist_ok=True)
+    shutil.copytree(src, dst, symlinks=True,
+                    ignore=_ignore_cb, dirs_exist_ok=True)
 
-        if os.path.isdir(src_path):
-            shutil.copytree(src_path, dst_path, symlinks=True,
-                           ignore_dangling_symlinks=True, dirs_exist_ok=True)
-        else:
-            shutil.copy2(src_path, dst_path)
+    for item in skipped:
+        cprint(f"  - 已跳过: {item}", "YELLOW")
 
 # 创建目标目录
 def create_target_directory(target_dir):
@@ -681,13 +835,6 @@ def main():
         create_target_directory(new_project_dir)
         
         # e. 复制当前目录内容到目标目录
-        # 默认排除项：构建产物、缓存、临时文件等
-        DEFAULT_IGNORE = [
-            'tmp',            # 临时文件目录
-            '.venv',          # Python 虚拟环境
-            '__pycache__',    # Python 缓存
-            '*.pyc',          # Python 字节码
-        ]
         cprint("\n正在复制项目文件...", "CYAN")
         cprint(f"已排除: {', '.join(DEFAULT_IGNORE)}", "YELLOW")
         copy_directory_contents(current_dir, new_project_dir, ignore=DEFAULT_IGNORE)
@@ -695,11 +842,14 @@ def main():
         
         # f. 切换到目标目录并执行替换操作
         perform_replacements_in_target(new_project_dir, new_project_name)
+
+        # g. 检查是否还有残留的模板项目名
+        report_remaining_template_refs(new_project_dir, new_project_name)
         
-        # g. 更新Git远程仓库配置
-        update_git_remote(new_project_dir, new_project_name, "kk_frame")
+        # h. 更新Git远程仓库配置
+        update_git_remote(new_project_dir, new_project_name, TEMPLATE_NAME)
         
-        # h. 输出成功信息
+        # i. 输出成功信息
         cprint(f"\n------------------------- SUCCESS -------------------------", "GREEN", bold=True)
         cprint(f"已成功创建项目: '{new_project_name}'", "GREEN", bold=True)
         cprint(f"项目路径: '{new_project_dir}'", "GREEN", bold=True)
