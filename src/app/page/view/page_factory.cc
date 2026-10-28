@@ -12,7 +12,16 @@
 **/
 
 #include "page_factory.h"
-#include "page_factory_item.h"
+
+#include "factory_system.h"
+#include "factory_info.h"
+#include "factory_network.h"
+#include "factory_auth.h"
+#include "factory_switch.h"
+#include "factory_touch.h"
+#include "factory_color.h"
+#include "factory_wifi.h"
+#include "factory_aging.h"
 
 #include "wind_mgr.h"
 

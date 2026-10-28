@@ -62,6 +62,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     src/app/page/core
     src/app/page/view
     src/app/page/components
+    src/app/page/factory
 
     # 通讯
     src/comm/core
