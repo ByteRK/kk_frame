@@ -44,6 +44,13 @@ namespace SystemUtils {
     /// @note 可替代echo，节约消耗
     bool sysfs(const std::string& path, const std::string& value);
 
+    /// @brief 读取系统路径中的整数值
+    /// @param path 路径
+    /// @param def 读取失败时的默认值
+    /// @return 读取到的整数，失败返回 def
+    /// @note 可替代cat，节约消耗
+    int readSysfsInt(const std::string& path, int def = 0);
+
     /// @brief 设置系统亮度
     /// @param value 亮度值 [0-100]
     /// @param swap 是否反转亮度值

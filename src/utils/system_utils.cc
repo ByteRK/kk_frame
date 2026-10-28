@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 14:40:26
- * @LastEditTime: 2026-07-29 14:17:16
+ * @LastEditTime: 2026-10-28 14:20:20
  * @FilePath: /kk_frame/src/utils/system_utils.cc
  * @Description: 系统相关的一些函数
  * @BugList:
@@ -26,8 +26,57 @@
 #include <cerrno>
 #include <cstdio>
 #include <cstdlib>
+#include <algorithm>
 
 #define TIME_CACHE_FILE "timeCache"
+
+namespace {
+
+    /// @brief 屏幕背光控制参数
+    struct BrightnessConfig {
+        bool        available = false;  // 当前平台是否已适配，false 时只打印日志
+        std::string root;               // 设备节点根路径
+        std::string enablePath;         // 使能/电源节点
+        std::string valuePath;          // 亮度节点
+        std::string onValue;            // 点亮时写入使能节点的值
+        std::string offValue;           // 熄屏时写入使能节点的值
+        int         minValue = 0;       // 亮屏状态下亮度节点的最小有效值
+        int         maxValue = 100;     // 亮度节点满量程
+    };
+
+    /// @brief 获取背光配置（首次调用时初始化，设备节点缺失则标记为未适配）
+    const BrightnessConfig& brightnessConfig() {
+        static const BrightnessConfig config = []() {
+            BrightnessConfig cfg;
+#if defined(PRODUCT_SIGMA)
+            // duty_cycle 直接为占空比百分比，有效范围 [1-99]，无需调整 period
+            cfg.root = "/sys/class/pwm/pwmchip0/pwm2";
+            cfg.enablePath = cfg.root + "/enable";
+            cfg.valuePath = cfg.root + "/duty_cycle";
+            cfg.onValue = "1";
+            cfg.offValue = "0";
+            cfg.minValue = 1;
+            cfg.maxValue = 99;
+#elif defined(PRODUCT_RK3506)
+            // bl_power 为 FB_BLANK 等级：0 点亮，4 熄屏
+            cfg.root = "/sys/class/backlight/backlight";
+            cfg.enablePath = cfg.root + "/bl_power";
+            cfg.valuePath = cfg.root + "/brightness";
+            cfg.onValue = "0";
+            cfg.offValue = "4";
+            cfg.minValue = 0;
+            int max = SystemUtils::readSysfsInt(cfg.root + "/max_brightness", 0);
+            if (max > 0) cfg.maxValue = max;
+#endif
+            if (!cfg.valuePath.empty() && access(cfg.root.c_str(), F_OK) == 0) {
+                cfg.available = true;
+            }
+            return cfg;
+        }();
+        return config;
+    }
+
+} // namespace
 
 void SystemUtils::reboot() {
     ProjectUtils::saveTime(std::string(APP_DATA_DIR) + TIME_CACHE_FILE);
@@ -111,62 +160,76 @@ bool SystemUtils::sysfs(const std::string& path, const std::string& value) {
     if (!success) {
         LOGE("Write failed: %s -> %s", value.c_str(), path.c_str());
     } else {
-        LOGI("Write %s -> %s", value.c_str(), path.c_str());
+        LOGV("Write %s -> %s", value.c_str(), path.c_str());
     }
     return success;
 }
 
-void SystemUtils::setBrightness(int value, bool swap) {
-    value %= 101;
-    if (swap) value = 100 - value;
-#if defined(PRODUCT_SIGMA)
-#define BRIGHTNESS_PWM_PATH "/sys/class/pwm/pwmchip0/pwm2"
-#define BRIGHTNESS_ENABLE_PATH BRIGHTNESS_PWM_PATH "/enable"
-#define BRIGHTNESS_VALUE_PATH BRIGHTNESS_PWM_PATH "/duty_cycle"
-
-    if (access(BRIGHTNESS_PWM_PATH, F_OK)) { return; }
-
-    if (value) {
-        if (value == 0) value = 1;
-        sysfs(BRIGHTNESS_ENABLE_PATH, "1");
-        sysfs(BRIGHTNESS_VALUE_PATH, std::to_string(value));
-        LOGV("设置屏幕背光 %d", value);
+int SystemUtils::readSysfsInt(const std::string& path, int def) {
+    FILE* fp = fopen(path.c_str(), "r");
+    if (!fp) {
+        LOGE("Failed to open %s", path.c_str());
+        return def;
+    }
+    int value = def;
+    if (fscanf(fp, "%d", &value) != 1) {
+        LOGE("Read failed: %s", path.c_str());
+        value = def;
     } else {
-        sysfs(BRIGHTNESS_ENABLE_PATH, "0");
-        LOGV("关闭屏幕背光");
+        LOGV("Read %d <- %s", value, path.c_str());
+    }
+    fclose(fp);
+    return value;
+}
+
+void SystemUtils::setBrightness(int value, bool swap) {
+    value = std::min(std::max(value, 0), 100);
+    if (swap) value = 100 - value;
+
+    const BrightnessConfig& cfg = brightnessConfig();
+    if (!cfg.available) {
+        LOGI("设置屏幕背光 %d | %d", value, swap);
+        return;
     }
 
-#undef BRIGHTNESS_VALUE_PATH
-#undef BRIGHTNESS_ENABLE_PATH
-#undef BRIGHTNESS_PWM_PATH
-#elif defined(PRODUCT_RK3506)
-    int val = 255 * value / 100;
-    if (val < 0) val = 0;
-    if (val > 255) val = 255;
-    char cmd[256];
-    snprintf(cmd, sizeof(cmd), "echo %d > /sys/class/backlight/backlight/brightness", val);
-    system(cmd);
-#else
-    LOGI("设置屏幕背光 %d | %d", value, swap);
-#endif
+    // 去重，避免滑块拖动时频繁写 sysfs
+    static int lastValue = -1;
+    if (value == lastValue) return;
+    lastValue = value;
+
+    if (value) {
+        // +50 为四舍五入（补半个除数），避免整数除法截断导致亮度整体偏暗
+        int duty = (value * cfg.maxValue + 50) / 100;
+        duty = std::min(std::max(duty, cfg.minValue), cfg.maxValue);
+        sysfs(cfg.enablePath, cfg.onValue);
+        sysfs(cfg.valuePath, std::to_string(duty));
+        LOGV("设置屏幕背光 %d", value);
+    } else {
+        sysfs(cfg.enablePath, cfg.offValue);
+        LOGV("关闭屏幕背光");
+    }
 }
 
 void SystemUtils::setVolume(int value) {
-    value %= 101;
+    value = std::min(std::max(value, 0), 100);
+
+    // 去重，避免拖动音量条时频繁执行命令
+    static int lastValue = -1;
+    if (value == lastValue) return;
+    lastValue = value;
+
 #if defined(PRODUCT_RK3506)
-    char cmd[256];
     // amixer scontrols
     // amixer set 'DAC Digital' 155~255
     // amixer set 'Master' 0~100
     if (value > 0) {
-        value = 155 + value;
-        snprintf(cmd, sizeof(cmd), "amixer set 'DAC Digital' %d", value);
         system("amixer set 'Master' 100");
+        system("amixer set 'DAC Digital' " + std::to_string(155 + value));
     } else {
-        snprintf(cmd, sizeof(cmd), "amixer set 'DAC Digital' 0");
         system("amixer set 'Master' 0");
+        system("amixer set 'DAC Digital' 0");
     }
-    system(cmd);
+    LOGV("设置音量 %d", value);
 #else
     LOGI("设置音量 %d", value);
 #endif
