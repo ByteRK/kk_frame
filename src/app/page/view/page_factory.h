@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-22 12:32:19
- * @LastEditTime: 2026-10-28 16:17:34
+ * @LastEditTime: 2026-10-28 16:56:16
  * @FilePath: /kk_frame/src/app/page/view/page_factory.h
  * @Description: 工厂界面
  * @BugList:
@@ -36,6 +36,7 @@ public:
         virtual ~FactoryItem();
         void callShow();
         void callHide();
+        virtual bool onKey(KeyEvent& evt);
 
     protected:
         virtual void onShow() { };   // 显示回调
@@ -70,6 +71,7 @@ protected:
     void         setView() override;
     void         onAttach() override;
     void         onDetach() override;
+    bool         onKey(KeyEvent& evt) override;
 
 public:
     void         showMenu();

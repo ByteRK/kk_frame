@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-22 12:32:26
- * @LastEditTime: 2026-10-28 16:12:01
+ * @LastEditTime: 2026-10-28 16:56:23
  * @FilePath: /kk_frame/src/app/page/view/page_factory.cc
  * @Description:
  * @BugList:
@@ -116,6 +116,13 @@ void PageFactory::FactoryItem::callHide() {
     detachView();
 }
 
+/// @brief 按键回调
+/// @param evt 按键事件
+/// @return true 消费
+bool PageFactory::FactoryItem::onKey(KeyEvent& evt) {
+    return false;
+}
+
 /// @brief 从容器摘除视图
 void PageFactory::FactoryItem::detachView() {
     if (mRootView && mContainer && mRootView->getParent() == mContainer) {
@@ -196,6 +203,10 @@ void PageFactory::onDetach() {
     g_window->restoreSidebarState();
     // 恢复屏保计时
     g_window->setScreenSave(true);
+}
+
+bool PageFactory::onKey(KeyEvent & evt) {
+    return mCurItem && mCurItem->onKey(evt);
 }
 
 /// @brief 显示菜单项
