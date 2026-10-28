@@ -19,6 +19,22 @@
 #include "wifi_mgr.h"
 #include "message_mgr.h"
 
+/// @brief 系统信息
+class FactorySystem : public PageFactory::FactoryItem {
+private:
+    TextView*              mSystemInfo{ nullptr };  // 信息显示区
+    TickMgr::ITickVariable mTicker;                 // 刷新定时器
+public:
+    FactorySystem(View* view, PageFactory* factory);
+    ~FactorySystem() override;
+protected:
+    void onShow() override;
+    void onHide() override;
+private:
+    void setInfo();
+    void onTick(int64_t);
+};
+
 /// @brief 项目信息
 class FactoryInfo : public PageFactory::FactoryItem {
 public:

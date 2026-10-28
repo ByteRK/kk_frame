@@ -39,6 +39,7 @@ public:
 private:
     typedef enum {
         FACTORY_MENU = 0,  // 菜单页
+        FACTORY_SYSTEM,    // 系统信息页
         FACTORY_INFO,      // 项目信息页
         FACTORY_NETWORK,   // 网络信息页
         FACTORY_AUTH,      // 授权信息页

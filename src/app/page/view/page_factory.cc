@@ -101,6 +101,7 @@ void PageFactory::onDetach() {
 
 void PageFactory::onMenuClick(View& v) {
     switch (v.getId()) {
+    case AppRid::to_system:   checkoutShow(FACTORY_SYSTEM);   break;
     case AppRid::to_info:     checkoutShow(FACTORY_INFO);     break;
     case AppRid::to_network:  checkoutShow(FACTORY_NETWORK);  break;
     case AppRid::to_auth:     checkoutShow(FACTORY_AUTH);     break;
@@ -151,6 +152,9 @@ PageFactory::FactoryItem* PageFactory::getFactoryItem(FactoryPageType page) {
 PageFactory::FactoryItem* PageFactory::createFactoryItem(FactoryPageType page) {
     PageFactory::FactoryItem* item = nullptr;
     switch (page) {
+    case FACTORY_SYSTEM: {
+        item = new FactorySystem(mFlipper->getChildAt(page), this);
+    }   break;
     case FACTORY_INFO: {
         item = new FactoryInfo(mFlipper->getChildAt(page), this);
     }   break;

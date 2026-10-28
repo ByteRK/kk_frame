@@ -13,6 +13,10 @@
             android:columnCount="8"
             android:padding="10dp">
             <Button
+                android:id="@+id/to_system"
+                style="@style/factory_menu_btn"
+                android:text="系统信息"/>
+            <Button
                 android:id="@+id/to_info"
                 style="@style/factory_menu_btn"
                 android:text="项目信息"/>
@@ -63,6 +67,10 @@
             android:textSize="20sp"
             android:text="Power By Cdroid [https://gitee.com/houstudio/Cdroid]"/>
     </RelativeLayout>
+
+    <!-- 系统信息 -->
+    <include layout="@layout/page_factory_system"
+        android:id="@+id/system_test"/>
 
     <!-- 项目信息 -->
     <include layout="@layout/page_factory_info"
