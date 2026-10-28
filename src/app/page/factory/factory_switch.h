@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-10-28 12:00:00
- * @LastEditTime: 2026-10-28 12:00:00
+ * @LastEditTime: 2026-10-28 15:55:06
  * @FilePath: /kk_frame/src/app/page/factory/factory_switch.h
  * @Description: 功能开关
  * @BugList:
@@ -19,7 +19,8 @@
 /// @brief 功能开关
 class FactorySwitch : public PageFactory::FactoryItem {
 public:
-    FactorySwitch(View* view, PageFactory* factory);
+    FactorySwitch(ViewGroup* container, PageFactory* factory);
+
 private:
     void setSwitch();
 };

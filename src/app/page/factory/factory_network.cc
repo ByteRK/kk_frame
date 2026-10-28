@@ -16,8 +16,8 @@
 #include "network_utils.h"
 #include "string_utils.h"
 
-FactoryNetwork::FactoryNetwork(View* view, PageFactory* factory) :
-    PageFactory::FactoryItem(view, factory) {
+FactoryNetwork::FactoryNetwork(ViewGroup* container, PageFactory* factory) :
+    PageFactory::FactoryItem(container, factory, "@layout/page_factory_network") {
     setExitBtn(AppRid::exit);
     setInterface();
     PBase::click(mRootView, AppRid::refresh, [this](View&) {setInterface();});
@@ -97,3 +97,5 @@ void FactoryNetwork::setInterface() {
 
     interFace->setText(info.c_str());
 }
+
+FACTORY_ITEM_REGISTER(AppRid::to_network, FactoryNetwork);

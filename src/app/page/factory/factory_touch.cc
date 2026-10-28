@@ -15,8 +15,8 @@
 
 #include "touch_test_view.h"
 
-FactoryTouch::FactoryTouch(View* view, PageFactory* factory) :
-    PageFactory::FactoryItem(view, factory) {
+FactoryTouch::FactoryTouch(ViewGroup* container, PageFactory* factory) :
+    PageFactory::FactoryItem(container, factory, "@layout/page_factory_touch") {
     setTouch();
 }
 
@@ -31,3 +31,5 @@ void FactoryTouch::setTouch() {
         exit();
     });
 }
+
+FACTORY_ITEM_REGISTER(AppRid::to_touch, FactoryTouch);

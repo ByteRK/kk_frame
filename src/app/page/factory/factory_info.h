@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-10-28 12:00:00
- * @LastEditTime: 2026-10-28 12:00:00
+ * @LastEditTime: 2026-10-28 15:51:57
  * @FilePath: /kk_frame/src/app/page/factory/factory_info.h
  * @Description: 项目信息
  * @BugList:
@@ -19,7 +19,8 @@
 /// @brief 项目信息
 class FactoryInfo : public PageFactory::FactoryItem {
 public:
-    FactoryInfo(View* view, PageFactory* factory);
+    FactoryInfo(ViewGroup* container, PageFactory* factory);
+
 private:
     void setInfo();
 };

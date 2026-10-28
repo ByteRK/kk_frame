@@ -164,12 +164,15 @@ namespace {
 
 } // namespace
 
-FactorySystem::FactorySystem(View* view, PageFactory* factory) :
-    PageFactory::FactoryItem(view, factory) {
+FactorySystem::FactorySystem(ViewGroup* container, PageFactory* factory) :
+    PageFactory::FactoryItem(container, factory, "@layout/page_factory_system") {
     setExitBtn(AppRid::exit);
 
     mSystemInfo = PBase::get<TextView>(mRootView, AppRid::system_info);
     PBase::click(mRootView, AppRid::refresh, [this](View&) {setInfo();});
+
+    // 静态信息仅采集一次，后续刷新只重读动态项
+    buildStaticInfo();
 
     mTicker.setTick(1000);
     mTicker.setCallBack(std::bind(&FactorySystem::onTick, this, std::placeholders::_1));
@@ -191,6 +194,37 @@ void FactorySystem::onHide() {
 
 void FactorySystem::onTick(int64_t) {
     setInfo();
+}
+
+void FactorySystem::buildStaticInfo() {
+    // 主机与内核
+    struct utsname uts = {};
+    if (uname(&uts) == 0) {
+        mStatic.hostName = uts.nodename;
+        mStatic.kernel = std::string(uts.sysname) + " " + uts.release + " " + uts.machine;
+    } else {
+        mStatic.hostName = "-";
+        mStatic.kernel = "-";
+    }
+
+    // CPU
+    mStatic.cpuModel = getCpuModel();
+    const long cpuCount = sysconf(_SC_NPROCESSORS_ONLN);
+    mStatic.cpuCount = cpuCount > 0 ? cpuCount : 0;
+
+    // 内存与交换分区总量
+    std::string memText;
+    if (readTextFile("/proc/meminfo", memText)) {
+        mStatic.memTotalKb = readFieldValue(memText, "MemTotal");
+        mStatic.swapTotalKb = readFieldValue(memText, "SwapTotal");
+    }
+
+    // 进程信息
+    mStatic.pid = getpid();
+
+    // 分区总量（仅需容量，不必每次刷新都重复取）
+    mStatic.rootDiskTotal = getDiskUsage("/").total;
+    mStatic.dataDiskTotal = getDiskUsage(APP_RW_DIR).total;
 }
 
 void FactorySystem::setInfo() {
@@ -221,16 +255,11 @@ void FactorySystem::setInfo() {
 
     info += "\n";
 
-    // 硬件信息
-    struct utsname uts = {};
-    if (uname(&uts) == 0) {
-        info += StringUtils::format("主机名称: %s\n", uts.nodename);
-        info += StringUtils::format("内核版本: %s %s %s\n", uts.sysname, uts.release, uts.machine);
-    }
-    info += "CPU 型号: " + getCpuModel() + "\n";
-
-    const long cpuCount = sysconf(_SC_NPROCESSORS_ONLN);
-    info += StringUtils::format("CPU 核心: %ld\n", cpuCount > 0 ? cpuCount : 0);
+    // 硬件信息（运行期不变，取自静态缓存）
+    info += "主机名称: " + mStatic.hostName + "\n";
+    info += "内核版本: " + mStatic.kernel + "\n";
+    info += "CPU 型号: " + mStatic.cpuModel + "\n";
+    info += StringUtils::format("CPU 核心: %ld\n", mStatic.cpuCount);
 
     std::string loadText;
     double load1 = 0, load5 = 0, load15 = 0;
@@ -246,30 +275,35 @@ void FactorySystem::setInfo() {
 
     info += "\n";
 
-    // 内存信息
+    // 内存信息（仅读取变化项）
+    uint64_t availableKb = 0;
+    uint64_t swapFreeKb = 0;
     std::string memText;
     if (readTextFile("/proc/meminfo", memText)) {
-        const uint64_t totalKb = readFieldValue(memText, "MemTotal");
-        uint64_t availableKb = readFieldValue(memText, "MemAvailable");
+        availableKb = readFieldValue(memText, "MemAvailable");
         if (availableKb == 0) {
             // 老内核无 MemAvailable，退化为 Free + Buffers + Cached
             availableKb = readFieldValue(memText, "MemFree")
                 + readFieldValue(memText, "Buffers")
                 + readFieldValue(memText, "Cached");
         }
-        if (totalKb > 0) {
-            info += "内存总计: " + formatSize(totalKb * 1024) + "\n";
-            info += "内存可用: " + formatSize(availableKb * 1024) + "\n";
-            info += StringUtils::format("内存占用: %.1f%%\n",
-                (totalKb - availableKb) * 100.0 / totalKb);
-        }
+        swapFreeKb = readFieldValue(memText, "SwapFree");
+    }
 
-        const uint64_t swapTotalKb = readFieldValue(memText, "SwapTotal");
-        const uint64_t swapFreeKb = readFieldValue(memText, "SwapFree");
-        if (swapTotalKb > 0) {
-            info += "交换分区: " + formatSize((swapTotalKb - swapFreeKb) * 1024)
-                + " / " + formatSize(swapTotalKb * 1024) + "\n";
-        }
+    if (mStatic.memTotalKb > 0) {
+        const uint64_t usedKb = (availableKb < mStatic.memTotalKb)
+            ? (mStatic.memTotalKb - availableKb) : 0;
+        info += "内存总计: " + formatSize(mStatic.memTotalKb * 1024) + "\n";
+        info += "内存可用: " + formatSize(availableKb * 1024) + "\n";
+        info += StringUtils::format("内存占用: %.1f%%\n",
+            usedKb * 100.0 / mStatic.memTotalKb);
+    }
+
+    if (mStatic.swapTotalKb > 0) {
+        const uint64_t swapUsedKb = (swapFreeKb < mStatic.swapTotalKb)
+            ? (mStatic.swapTotalKb - swapFreeKb) : 0;
+        info += "交换分区: " + formatSize(swapUsedKb * 1024)
+            + " / " + formatSize(mStatic.swapTotalKb * 1024) + "\n";
     }
 
     // 进程信息
@@ -284,24 +318,26 @@ void FactorySystem::setInfo() {
                 static_cast<unsigned long long>(threads));
         }
     }
-    info += StringUtils::format("进程 PID: %d\n", getpid());
+    info += StringUtils::format("进程 PID: %d\n", mStatic.pid);
 
     info += "\n";
 
-    // 储存信息
-    auto appendDisk = [&info](const char* name, const DiskUsage& disk) {
-        if (!disk.valid || disk.total == 0) {
+    // 储存信息（总量取自静态缓存，仅查询可用容量）
+    auto appendDisk = [&info](const char* name, uint64_t total, const DiskUsage& disk) {
+        if (!disk.valid || total == 0) {
             info += StringUtils::format("%s: -\n", name);
             return;
         }
         info += StringUtils::format("%s: %s 可用 / %s (剩余 %.1f%%)\n",
             name,
             formatSize(disk.available).c_str(),
-            formatSize(disk.total).c_str(),
-            disk.available * 100.0 / disk.total);
+            formatSize(total).c_str(),
+            disk.available * 100.0 / total);
     };
-    appendDisk("根分区", getDiskUsage("/"));
-    appendDisk("数据分区", getDiskUsage(APP_RW_DIR));
+    appendDisk("根分区", mStatic.rootDiskTotal, getDiskUsage("/"));
+    appendDisk("数据分区", mStatic.dataDiskTotal, getDiskUsage(APP_RW_DIR));
 
     mSystemInfo->setText(info.c_str());
 }
+
+FACTORY_ITEM_REGISTER(AppRid::to_system, FactorySystem);

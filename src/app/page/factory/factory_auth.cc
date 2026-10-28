@@ -17,8 +17,8 @@
 #include "config_mgr.h"
 #include "string_utils.h"
 
-FactoryAuth::FactoryAuth(View* view, PageFactory* factory) :
-    PageFactory::FactoryItem(view, factory) {
+FactoryAuth::FactoryAuth(ViewGroup* container, PageFactory* factory) :
+    PageFactory::FactoryItem(container, factory, "@layout/page_factory_auth") {
     setExitBtn(AppRid::exit);
 
     mAuthInfo = PBase::get<TextView>(mRootView, AppRid::auth_info);
@@ -63,3 +63,5 @@ void FactoryAuth::onMessage(int msgType, int msgValue, void* msgPtr) {
         mAuthRequest->setActivated(false);
     }
 }
+
+FACTORY_ITEM_REGISTER(AppRid::to_auth, FactoryAuth);

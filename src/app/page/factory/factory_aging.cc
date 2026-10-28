@@ -13,16 +13,24 @@
 
 #include "factory_aging.h"
 
-FactoryAging::FactoryAging(View* view, PageFactory* factory) :
-    PageFactory::FactoryItem(view, factory) {
+namespace {
+    const static int sTickTime = 3000;
+}
+
+FactoryAging::FactoryAging(ViewGroup* container, PageFactory* factory) :
+    PageFactory::FactoryItem(container, factory, "@layout/page_factory_color") {
     PBase::click(mRootView, [this](View&) {exit();});
-    mTicker.setTick(3000);
+    mTicker.setTick(sTickTime);
     mTicker.setCallBack(std::bind(&FactoryAging::onTick, this, std::placeholders::_1));
+}
+
+FactoryAging::~FactoryAging() {
+    mTicker.stopTick();
 }
 
 void FactoryAging::onShow() {
     mRootView->getBackground()->setLevel(1);
-    mTicker.startTick();
+    mTicker.startTick(sTickTime);
 }
 
 void FactoryAging::onHide() {
@@ -38,3 +46,5 @@ void FactoryAging::onTick(int64_t) {
         bg->setLevel(1);
     }
 }
+
+FACTORY_ITEM_REGISTER(AppRid::to_aging, FactoryAging);

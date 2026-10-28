@@ -25,13 +25,16 @@ private:
     TextView* mWifiConnInfo{ nullptr };
     TextView* mWifiRefresh{ nullptr };
     TextView* mWifiSwitch{ nullptr };
+
 public:
-    FactoryWifi(View* view, PageFactory* factory);
+    FactoryWifi(ViewGroup* container, PageFactory* factory);
     ~FactoryWifi() override;
+
 protected:
     void onShow() override;
     void onStateChanged() override;
     void onScanResult() override;
+
 private:
     void updateWifiInfo();
 };

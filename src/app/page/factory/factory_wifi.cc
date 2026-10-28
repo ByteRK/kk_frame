@@ -15,8 +15,8 @@
 
 #include "string_utils.h"
 
-FactoryWifi::FactoryWifi(View* view, PageFactory* factory) :
-    PageFactory::FactoryItem(view, factory) {
+FactoryWifi::FactoryWifi(ViewGroup* container, PageFactory* factory) :
+    PageFactory::FactoryItem(container, factory, "@layout/page_factory_wifi") {
     setExitBtn(AppRid::exit);
 
     mWifiList = PBase::get<TextView>(mRootView, AppRid::wifi_list);
@@ -133,3 +133,5 @@ void FactoryWifi::updateWifiInfo() {
     }
     mWifiList->setText(list.c_str());
 }
+
+FACTORY_ITEM_REGISTER(AppRid::to_wifi, FactoryWifi);

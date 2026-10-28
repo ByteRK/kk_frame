@@ -19,9 +19,11 @@
 /// @brief 显示测试
 class FactoryColor : public PageFactory::FactoryItem {
 public:
-    FactoryColor(View* view, PageFactory* factory);
+    FactoryColor(ViewGroup* container, PageFactory* factory);
+
 protected:
     void onShow() override;
+
 private:
     void setColor();
 };

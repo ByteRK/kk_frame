@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ViewFlipper xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bg_demo">
+
+    <!-- 菜单页 -->
     <RelativeLayout
+        android:id="@+id/factory_menu_page"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
         <GridLayout
@@ -68,40 +71,10 @@
             android:text="Power By Cdroid [https://gitee.com/houstudio/Cdroid]"/>
     </RelativeLayout>
 
-    <!-- 系统信息 -->
-    <include layout="@layout/page_factory_system"
-        android:id="@+id/system_test"/>
+    <!-- 测试项容器（内容由各测试项自行载入并持有） -->
+    <RelativeLayout
+        android:id="@+id/factory_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
 
-    <!-- 项目信息 -->
-    <include layout="@layout/page_factory_info"
-        android:id="@+id/info_test"/>
-
-    <!-- 网络信息 -->
-    <include layout="@layout/page_factory_network"
-        android:id="@+id/network_test"/>
-
-    <!-- 授权信息 -->
-    <include layout="@layout/page_factory_auth"
-        android:id="@+id/auth_test"/>
-
-    <!-- 功能开关 -->
-    <include layout="@layout/page_factory_switch"
-        android:id="@+id/switch_test"/>
-
-    <!-- 触摸测试 -->
-    <include layout="@layout/page_factory_touch"
-        android:id="@+id/touch_test"/>
-
-    <!-- 显示测试 -->
-    <include layout="@layout/page_factory_color"
-        android:id="@+id/color_test"/>
-
-    <!-- WIFI检测 -->
-    <include layout="@layout/page_factory_wifi"
-        android:id="@+id/wifi_test"/>
-
-    <!-- 屏幕老化 -->
-    <include layout="@layout/page_factory_color"
-        android:id="@+id/aging_test"/>
-
-</ViewFlipper>
+</RelativeLayout>

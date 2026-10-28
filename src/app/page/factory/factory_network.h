@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-10-28 12:00:00
- * @LastEditTime: 2026-10-28 12:00:00
+ * @LastEditTime: 2026-10-28 15:54:34
  * @FilePath: /kk_frame/src/app/page/factory/factory_network.h
  * @Description: 网络信息
  * @BugList:
@@ -19,7 +19,8 @@
 /// @brief 网络信息
 class FactoryNetwork : public PageFactory::FactoryItem {
 public:
-    FactoryNetwork(View* view, PageFactory* factory);
+    FactoryNetwork(ViewGroup* container, PageFactory* factory);
+
 private:
     void setInterface();
 };

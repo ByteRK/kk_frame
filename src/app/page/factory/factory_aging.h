@@ -20,11 +20,15 @@
 class FactoryAging : public PageFactory::FactoryItem {
 private:
     TickMgr::ITickVariable mTicker;
+
 public:
-    FactoryAging(View* view, PageFactory* factory);
+    FactoryAging(ViewGroup* container, PageFactory* factory);
+    ~FactoryAging() override;
+
 protected:
     void onShow() override;
     void onHide() override;
+
 private:
     void onTick(int64_t);
 };

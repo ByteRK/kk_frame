@@ -13,8 +13,8 @@
 
 #include "factory_color.h"
 
-FactoryColor::FactoryColor(View* view, PageFactory* factory) :
-    PageFactory::FactoryItem(view, factory) {
+FactoryColor::FactoryColor(ViewGroup* container, PageFactory* factory) :
+    PageFactory::FactoryItem(container, factory, "@layout/page_factory_color") {
     setColor();
 }
 
@@ -34,3 +34,5 @@ void FactoryColor::setColor() {
         }
     });
 }
+
+FACTORY_ITEM_REGISTER(AppRid::to_color, FactoryColor);

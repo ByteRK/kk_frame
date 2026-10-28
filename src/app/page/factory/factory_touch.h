@@ -19,9 +19,11 @@
 /// @brief 触摸测试
 class FactoryTouch : public PageFactory::FactoryItem {
 public:
-    FactoryTouch(View* view, PageFactory* factory);
+    FactoryTouch(ViewGroup* container, PageFactory* factory);
+
 protected:
     void onShow() override;
+
 private:
     void setTouch();
 };

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-22 12:32:19
- * @LastEditTime: 2026-07-04 04:22:06
+ * @LastEditTime: 2026-10-28 16:17:34
  * @FilePath: /kk_frame/src/app/page/view/page_factory.h
  * @Description: 工厂界面
  * @BugList:
@@ -15,54 +15,55 @@
 #define __PAGE_FACTORY_H__
 
 #include "page.h"
-#include <widget/viewflipper.h>
+
+#include <functional>
+#include <map>
+#include <string>
 
 class PageFactory :public PageBase {
 public:
-    // 子测试项基类
+    /// @brief 子测试项基类
+    /// @note 布局由子类在构造时通过基类传入并自行持有所有权
+    /// @note 切换时由基类负责挂载/摘除，子类只关心业务回调
     class FactoryItem {
     protected:
-        View*          mRootView{ nullptr };  // 根视图
-        PageFactory*   mFactory{ nullptr };   // 所属工厂界面
+        ViewGroup*     mContainer{ nullptr };  // 内容容器（由 PageFactory 提供）
+        View*          mRootView{ nullptr };   // 页面根视图（自身持有所有权）
+        PageFactory*   mFactory{ nullptr };    // 所属工厂界面
 
     public:
-        FactoryItem(View* root, PageFactory* factory);
-        virtual ~FactoryItem() { };
-        virtual void onShow() { };   // 显示回调
-        virtual void onHide() { };   // 隐藏回调
+        FactoryItem(ViewGroup* container, PageFactory* factory, const std::string& layout);
+        virtual ~FactoryItem();
+        void callShow();
+        void callHide();
 
     protected:
-        void exit();             // 退出
-        void setExitBtn(int id); // 设置退出按钮
+        virtual void onShow() { };   // 显示回调
+        virtual void onHide() { };   // 隐藏回调
+        void exit();                 // 退出
+        void setExitBtn(int id);     // 设置退出按钮
+
+    private:
+        void detachView();           // 从容器摘除视图（不触发虚函数，供析构使用）
     };
 
-private:
-    typedef enum {
-        FACTORY_MENU = 0,  // 菜单页
-        FACTORY_SYSTEM,    // 系统信息页
-        FACTORY_INFO,      // 项目信息页
-        FACTORY_NETWORK,   // 网络信息页
-        FACTORY_AUTH,      // 授权信息页
-        FACTORY_SWITCH,    // 功能开关页
-        FACTORY_TOUCH,     // 触摸测试页
-        FACTORY_COLOR,     // 显示测试页
-        FACTORY_WIFI,      // WIFI检测页
-        FACTORY_AGING,     // 屏幕老化页
+    // 子测试项构建函数
+    using FactoryItemCreator = std::function<FactoryItem*(ViewGroup*, PageFactory*)>;
 
-        FACTORY_MAX,       // 最大值
-    } FactoryPageType;
+public:
+    static const int FACTORY_MENU = 0;  // 菜单页标识（非资源id）
 
 private:
-    ViewFlipper*    mFlipper{ nullptr };                   // 页面容器
-    FactoryPageType mCurPage{ FACTORY_MENU };              // 当前显示的子页面
-    std::map<FactoryPageType, FactoryItem*> mFactoryItems; // 测试子项
+    ViewGroup*      mMenuPage{ nullptr };       // 菜单页容器
+    ViewGroup*      mContent{ nullptr };        // 测试项内容容器
+    int             mCurPage{ FACTORY_MENU };   // 当前显示的子页面标识
+    FactoryItem*    mCurItem{ nullptr };        // 当前显示的子项
+    std::map<int, FactoryItem*> mFactoryItems;  // 测试子项[menuId]，构建后常驻
 
 public:
     PageFactory();
     ~PageFactory();
     int8_t getType() const override;
-
-    void         showMenu();
 
 protected:
     void         getView() override;
@@ -70,11 +71,24 @@ protected:
     void         onAttach() override;
     void         onDetach() override;
 
+public:
+    void         showMenu();
+
+    static bool  registerItem(int menuId, FactoryItemCreator creator);
+    static bool  hasItem(int menuId);
+
 private:
-    void         onMenuClick(View& v);                    // 菜单点击事件
-    void         checkoutShow(FactoryPageType page);      // 切换显示项
-    FactoryItem* getFactoryItem(FactoryPageType page);    // 获取子项类
-    FactoryItem* createFactoryItem(FactoryPageType page); // 创建子项类
+    void         onMenuClick(View& v);
+    void         checkoutShow(int menuId);
+    FactoryItem* getFactoryItem(int menuId);
 };
+
+/// @brief 测试项注册宏，于子项的.cc文件末尾调用
+/// @param MENU_ID 测试项标识（取菜单按钮id，需唯一且非0）
+/// @param CLASS 子项类名
+#define FACTORY_ITEM_REGISTER(MENU_ID, CLASS) \
+    static const bool __FACTORY_ITEM_REG_##CLASS = PageFactory::registerItem( \
+        MENU_ID, \
+        [](ViewGroup* c, PageFactory* f) -> PageFactory::FactoryItem* { return new CLASS(c, f); })
 
 #endif // __PAGE_FACTORY_H__

@@ -24,9 +24,11 @@ private:
     TextView* mAuthInfo{ nullptr };
     TextView* mAuthRequest{ nullptr };
     TextView* mAuthRequestInfo{ nullptr };
+
 public:
-    FactoryAuth(View* view, PageFactory* factory);
+    FactoryAuth(ViewGroup* container, PageFactory* factory);
     ~FactoryAuth() override;
+
 protected:
     void onShow() override;
     void onMessage(int msgType, int msgValue = 0, void* msgPtr = nullptr) override;

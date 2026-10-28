@@ -23,8 +23,8 @@
 
 #include <unistd.h>
 
-FactoryInfo::FactoryInfo(View* view, PageFactory* factory) :
-    PageFactory::FactoryItem(view, factory) {
+FactoryInfo::FactoryInfo(ViewGroup* container, PageFactory* factory) :
+    PageFactory::FactoryItem(container, factory, "@layout/page_factory_info") {
     setExitBtn(AppRid::exit);
     setInfo();
 }
@@ -54,3 +54,5 @@ void FactoryInfo::setInfo() {
 
     tv->setText(info.c_str());
 }
+
+FACTORY_ITEM_REGISTER(AppRid::to_info, FactoryInfo);

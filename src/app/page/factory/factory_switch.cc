@@ -13,10 +13,12 @@
 
 #include "factory_switch.h"
 
-FactorySwitch::FactorySwitch(View* view, PageFactory* factory) :
-    PageFactory::FactoryItem(view, factory) {
+FactorySwitch::FactorySwitch(ViewGroup* container, PageFactory* factory) :
+    PageFactory::FactoryItem(container, factory, "@layout/page_factory_switch") {
     setExitBtn(AppRid::exit);
     setSwitch();
 }
 
 void FactorySwitch::setSwitch() { }
+
+FACTORY_ITEM_REGISTER(AppRid::to_switch, FactorySwitch);
