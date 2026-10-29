@@ -2,21 +2,13 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
+    <!-- 开关项由 FactorySwitch::setSwitch() 声明的数量动态生成 -->
     <GridLayout
+        android:id="@+id/switch_box"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:columnCount="8"
-        android:padding="10dp">
-        <include layout="@layout/page_factory_switch_item"/>
-        <include layout="@layout/page_factory_switch_item"/>
-        <include layout="@layout/page_factory_switch_item"/>
-        <include layout="@layout/page_factory_switch_item"/>
-        <include layout="@layout/page_factory_switch_item"/>
-        <include layout="@layout/page_factory_switch_item"/>
-        <include layout="@layout/page_factory_switch_item"/>
-        <include layout="@layout/page_factory_switch_item"/>
-        <include layout="@layout/page_factory_switch_item"/>
-    </GridLayout>
+        android:padding="10dp"/>
 
     <Button style="@style/factory_exit_btn"
         android:id="@+id/exit"

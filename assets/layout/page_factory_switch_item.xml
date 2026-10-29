@@ -8,6 +8,7 @@
     android:background="@drawable/factory_switch_item">
     <TextView
         style="@style/font_medium"
+        android:id="@+id/title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:paddingTop="3dp"
@@ -16,6 +17,7 @@
         android:textSize="20sp"
         android:text="功能X"/>
     <Switch
+        android:id="@+id/status"
         android:layout_width="80dp"
         android:layout_height="48dp"
         android:layout_centerHorizontal="true"

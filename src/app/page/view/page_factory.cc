@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-22 12:32:26
- * @LastEditTime: 2026-10-28 16:56:23
+ * @LastEditTime: 2026-10-28 18:39:41
  * @FilePath: /kk_frame/src/app/page/view/page_factory.cc
  * @Description:
  * @BugList:
@@ -80,7 +80,7 @@ bool PageFactory::hasItem(int menuId) {
 
 /************************** 子项类 **************************/
 
-/// @brief 构造函数（自动载入布局并挂载到容器）
+/// @brief 构造函数（载入布局并加入容器）
 /// @param container 内容容器
 /// @param factory 工厂界面
 /// @param layout 布局资源路径
@@ -101,12 +101,17 @@ PageFactory::FactoryItem::~FactoryItem() {
 }
 
 /// @brief 挂载并通知显示
+/// @note addView 会触发 onAttachedToWindow 清除 laid-out 标志，依赖 isLaidOut() 的组件
+///       （如 Switch 的 thumb 动画）需在 onShow 中自行 requestLayout 重建该状态
 void PageFactory::FactoryItem::callShow() {
-    if (mRootView && mContainer && mRootView->getParent() != mContainer) {
+    if (mRootView == nullptr) return;
+
+    if (mContainer && mRootView->getParent() != mContainer) {
         // 清除可能残留的动画，避免 mParent 未被清空导致 addView 抛异常
         mRootView->clearAnimation();
         mContainer->addView(mRootView, mRootView->getLayoutParams());
     }
+
     onShow();
 }
 
@@ -124,11 +129,21 @@ bool PageFactory::FactoryItem::onKey(KeyEvent& evt) {
 }
 
 /// @brief 从容器摘除视图
+/// @note 不触发虚函数，供析构使用
 void PageFactory::FactoryItem::detachView() {
     if (mRootView && mContainer && mRootView->getParent() == mContainer) {
         mRootView->clearAnimation();
         mContainer->removeView(mRootView);
     }
+}
+
+/// @brief 动态载入子布局并挂载到指定容器
+/// @param layout 布局资源路径
+/// @param parent 目标容器
+/// @return 载入的根视图，失败返回 nullptr
+View* PageFactory::FactoryItem::inflateItem(const std::string& layout, ViewGroup* parent) {
+    if (parent == nullptr) return nullptr;
+    return mFactory->mInflater->inflate(layout, parent, true);
 }
 
 /// @brief 退出测试项
@@ -235,7 +250,7 @@ void PageFactory::onMenuClick(View& v) {
 void PageFactory::checkoutShow(int menuId) {
     if (menuId == mCurPage) return;
 
-    // 先摘除当前项，保证容器内始终只有一个测试项
+    // 先摘除当前项，保证容器内始终只有一项
     if (mCurItem) {
         mCurItem->callHide();
         mCurItem = nullptr;

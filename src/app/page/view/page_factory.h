@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-22 12:32:19
- * @LastEditTime: 2026-10-28 16:56:16
+ * @LastEditTime: 2026-10-29 09:08:54
  * @FilePath: /kk_frame/src/app/page/view/page_factory.h
  * @Description: 工厂界面
  * @BugList:
@@ -41,11 +41,13 @@ public:
     protected:
         virtual void onShow() { };   // 显示回调
         virtual void onHide() { };   // 隐藏回调
-        void exit();                 // 退出
-        void setExitBtn(int id);     // 设置退出按钮
+
+        void  exit();
+        void  setExitBtn(int id);
+        View* inflateItem(const std::string& layout, ViewGroup* parent);
 
     private:
-        void detachView();           // 从容器摘除视图（不触发虚函数，供析构使用）
+        void detachView();
     };
 
     // 子测试项构建函数
