@@ -23,7 +23,7 @@
 #include <sys/eventfd.h>
 #include <unistd.h>
 
-#if ENABLED(ALSA) || defined(__VSCODE__)
+#if ENABLED(ALSA)
 #include <alsa/asoundlib.h>
 #endif
 
@@ -416,7 +416,7 @@ std::string AudioMgr::getCurrentFile() const { std::lock_guard<std::mutex> lock(
 std::string AudioMgr::getLastError() const { std::lock_guard<std::mutex> lock(mMutex); return mLastError; }
 
 bool AudioMgr::isSupported() {
-#if ENABLED(ALSA) || defined(__VSCODE__)
+#if ENABLED(ALSA)
     return true;
 #else
     return false;
@@ -509,7 +509,7 @@ void AudioMgr::dispatchStateEvents() {
 // ============================================================================
 
 void AudioMgr::playbackLoop() {
-#if !ENABLED(ALSA)  && !defined(__VSCODE__)
+#if !ENABLED(ALSA)
     LOGI("AudioMgr playback thread exit. ALSA is not enabled.");
     return;
 #else

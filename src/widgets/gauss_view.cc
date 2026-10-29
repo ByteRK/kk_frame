@@ -13,7 +13,7 @@
 
 #include "gauss_view.h"
 
-#if ENABLED(GAUSS_VIEW) || defined(__VSCODE__)
+#if ENABLED(GAUSS_VIEW)
 
 #include "utils/math_utils.h"
 #include <core/windowmanager.h>

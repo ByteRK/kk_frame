@@ -14,7 +14,7 @@
 
 #include "gauss_drawable.h"
 
-#if ENABLED(GAUSS_DRAWABLE) || defined(__VSCODE__)
+#if ENABLED(GAUSS_DRAWABLE)
 
 #include "utils/math_utils.h"
 #include <cdlog.h>

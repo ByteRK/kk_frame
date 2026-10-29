@@ -104,7 +104,7 @@ void PopBase::setPadding(int start, int top, int end, int bottom) {
 /// @param radius 模糊半径，默认为10
 /// @param color 颜色，默认0x99000000
 void PopBase::setGauss(int radius, uint64_t color) {
-#if ENABLED(GAUSS_DRAWABLE) || defined(__VSCODE__)
+#if ENABLED(GAUSS_DRAWABLE)
     mIsGauss = true;
     mGaussRadius = radius;
     mGaussColor = color;
@@ -135,7 +135,7 @@ void PopBase::setPageDisplay(bool show) {
 
 /// @brief 应用模糊背景
 void PopBase::applyGauss() {
-#if ENABLED(GAUSS_DRAWABLE) || defined(__VSCODE__)
+#if ENABLED(GAUSS_DRAWABLE)
     mPopRootView->setBackground(new GaussDrawable(getRootView(), mGaussRadius, 0.5f, mGaussColor, true));
 #endif
 }

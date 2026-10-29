@@ -99,7 +99,7 @@ void WindCoverToast::onTick(int64_t now) {
 
 /// @brief 应用高斯模糊
 void WindCoverToast::applyGauss() {
-#if ENABLED(GAUSS_DRAWABLE) || defined(__VSCODE__)
+#if ENABLED(GAUSS_DRAWABLE)
     mToastBox->setBackground(new GaussDrawable(g_window->getRegularLayer(), mGaussRadius, 0.5f, mGaussColor, true));
 #else
     mToastBox->setBackgroundResource(mGaussColor);

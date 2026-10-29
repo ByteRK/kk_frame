@@ -13,7 +13,7 @@
 
 #include "quick_define.h"
 
-#if ENABLED(GAUSS_VIEW) || defined(__VSCODE__)
+#if ENABLED(GAUSS_VIEW)
 
 #include <view/view.h>
 

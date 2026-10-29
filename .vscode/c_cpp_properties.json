@@ -15,8 +15,21 @@
                 "__linux__",
                 "__VSCODE__",
                 "PRODUCT_X64",
-                "ENABLE_KEYBOARD",
-                "ENABLE_CURL"
+
+                // 开关宏取值参考 cmake/features.cmake，便于静态检查覆盖全部代码路径；
+                // 与 GAUSS_VIEW / ALSA 等实际关闭项存在差异时，仅影响 IntelliSense，不影响真实构建
+                "ENABLE_WIFI=1",
+                "ENABLE_CURL=1",
+                "ENABLE_OPENSSL=0",
+                "ENABLE_KEYBOARD=1",
+                "ENABLE_KEYBOARD_PINYIN=1",
+                "ENABLE_GAUSS_VIEW=1",
+                "ENABLE_GAUSS_DRAWABLE=1",
+                "ENABLE_FILE_SYSTEM=1",
+                "ENABLE_JSON=1",
+                "ENABLE_PIXMAN=1",
+                "ENABLE_VIDEO=1",
+                "ENABLE_ALSA=1"
             ],
             "compilerPath": "/usr/bin/gcc",
             "cStandard": "c11",

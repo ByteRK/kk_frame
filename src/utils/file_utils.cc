@@ -14,10 +14,24 @@
 #include "file_utils.h"
 #include "system_utils.h"
 #include <cdlog.h>
+
+#if ENABLED(FILE_SYSTEM)
 #include <ghc/filesystem.hpp>
 #include <fstream>
 #include <system_error>
+#endif
+
 #include <unistd.h>
+
+bool FileUtils::isSupported() {
+#if ENABLED(FILE_SYSTEM)
+    return true;
+#else
+    return false;
+#endif
+}
+
+#if ENABLED(FILE_SYSTEM)
 
 void FileUtils::sync() {
     SystemUtils::sync();
@@ -163,3 +177,43 @@ bool FileUtils::clearDir(const std::string& path) {
     sync();
     return true;
 }
+
+#else // !ENABLED(FILE_SYSTEM)
+
+// ============================================================================
+// ENABLE_FILE_SYSTEM 关闭时的失效实现
+// 所有接口统一返回 false / 空操作，保证上层调用方无需改动即可编译运行。
+// ============================================================================
+namespace {
+    /// @brief 统一提示，便于排查“功能未生效”的原因。
+    void warnDisabled(const char* func) {
+        LOGW("FileUtils::%s is unavailable: ENABLE_FILE_SYSTEM is disabled", func);
+    }
+}
+
+void FileUtils::sync() { }
+
+bool FileUtils::have(const std::string&) { warnDisabled("have"); return false; }
+
+bool FileUtils::read(const std::string&, std::string&) { warnDisabled("read"); return false; }
+
+bool FileUtils::write(const std::string&, const std::string&) { warnDisabled("write"); return false; }
+
+bool FileUtils::check(const std::string&, size_t*) { warnDisabled("check"); return false; }
+
+bool FileUtils::check(const std::vector<std::string>&, std::function<bool(const std::string&, size_t)>) {
+    warnDisabled("check");
+    return false;
+}
+
+bool FileUtils::remove(const std::string&) { warnDisabled("remove"); return false; }
+
+bool FileUtils::remove(const std::string&, const std::string&) { warnDisabled("remove"); return false; }
+
+bool FileUtils::isDir(const std::string&) { warnDisabled("isDir"); return false; }
+
+bool FileUtils::mkdir(const std::string&) { warnDisabled("mkdir"); return false; }
+
+bool FileUtils::clearDir(const std::string&) { warnDisabled("clearDir"); return false; }
+
+#endif // ENABLED(FILE_SYSTEM)

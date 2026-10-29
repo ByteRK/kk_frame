@@ -30,7 +30,7 @@
 
 #include "quick_define.h"
 
-#if ENABLED(GAUSS_DRAWABLE) || defined(__VSCODE__)
+#if ENABLED(GAUSS_DRAWABLE)
 
 #ifndef __GAUSS_DRAWABLE_H__
 #define __GAUSS_DRAWABLE_H__

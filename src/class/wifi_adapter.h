@@ -16,7 +16,7 @@
 
 #include "quick_define.h"
 
-#if ENABLED(WIFI) || defined(__VSCODE__)
+#if ENABLED(WIFI)
 
 #include "wifi_mgr.h"
 #include "template/singleton.h"

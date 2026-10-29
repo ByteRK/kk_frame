@@ -22,11 +22,6 @@
 
 #include "quick_define.h"
 
-#ifdef __VSCODE__
-#undef ENABLE_WIFI
-#define ENABLE_WIFI 1
-#endif
-
 #if ENABLED(WIFI)
 extern "C" {
 #include <wpa_ctrl.h>

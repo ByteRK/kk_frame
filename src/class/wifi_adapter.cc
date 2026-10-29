@@ -13,7 +13,7 @@
 
 #include "wifi_adapter.h"
 
-#if ENABLED(WIFI) || defined(__VSCODE__)
+#if ENABLED(WIFI)
 
 #include "config_mgr.h"
 #include "global_data.h"

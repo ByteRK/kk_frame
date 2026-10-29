@@ -14,11 +14,20 @@
 #ifndef __FILE_UTILS_H__
 #define __FILE_UTILS_H__
 
+#include "quick_define.h"
+
 #include <string>
 #include <vector>
 #include <functional>
 
+/// @note 本模块受 ENABLE_FILE_SYSTEM 宏控制：
+///       开关关闭时所有接口均不可用（返回 false / 空操作），调用方无需改动即可编译。
+///       可用 FileUtils::isSupported() 在运行时判断当前能力。
 namespace FileUtils {
+
+    /// @brief 检测文件系统支持。由 ENABLE_FILE_SYSTEM 宏控制。
+    /// @return true 可用；false 时本模块所有接口均返回失败
+    bool isSupported();
 
     /// @brief 同步写入文件
     void sync();

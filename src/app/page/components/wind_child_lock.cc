@@ -137,7 +137,7 @@ bool WindChildLock::showChildLockBox() {
     if (mChildLockBox->getVisibility() == View::VISIBLE) return false;
     mChildLockBox->setVisibility(View::VISIBLE);
     mChildLockCover->setVisibility(View::VISIBLE);
-#if ENABLED(GAUSS_DRAWABLE) || defined(__VSCODE__)
+#if ENABLED(GAUSS_DRAWABLE)
     if (mGaussEnable)
         mChildLockCover->setBackground(new GaussDrawable(g_window->getRegularLayer(), mGaussRadius, 0.5f, mGaussColor, true));
 #endif

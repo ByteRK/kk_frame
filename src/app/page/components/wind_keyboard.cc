@@ -200,7 +200,7 @@ void WindKeyboard::onKeyBoardFinish(bool isEnter, const std::string& text) {
 /// @brief 应用背景模糊
 void WindKeyboard::applyGauss() {
     if (!mKeyBoardRoot) return; // 键盘库未启用或未初始化
-#if ENABLED(GAUSS_DRAWABLE) || defined(__VSCODE__)
+#if ENABLED(GAUSS_DRAWABLE)
     if (mGaussEnable) {
         mKeyBoardRoot->setBackground(new GaussDrawable(mKeyBoardRoot, mGaussRadius, 0.5f, mGaussColor, true));
         return;

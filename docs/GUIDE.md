@@ -234,11 +234,15 @@ TCP socket / POSIX UART
 | `ENABLED_KEYBOARD_PINYIN` | 键盘拼音输入 |
 | `ENABLED_GAUSS_VIEW` | 高斯模糊视图 |
 | `ENABLED_GAUSS_DRAWABLE` | 高斯模糊 Drawable（依赖 Pixman） |
-| `ENABLED_FILE_SYSTEM` | 文件系统支持 |
-| `ENABLED_JSON` | JsonCpp 支持 |
+| `ENABLED_FILE_SYSTEM` | 文件系统支持；关闭后 `FileUtils` 全部接口失效（返回 `false` / 空操作），可用 `FileUtils::isSupported()` 判断 |
+| `ENABLED_JSON` | JsonCpp 支持；JsonCpp 为常驻依赖，关闭会直接 CMake 报错 |
 | `ENABLED_PIXMAN` | Pixman 支持 |
 | `ENABLED_VIDEO` | 视频支持 |
 | `ENABLED_ALSA` | ALSA 音频播放 |
+
+> 开关生成的编译宏统一为 `-DENABLE_XXX=1`（配合 `quick_define.h` 的 `ENABLED()` / `DISABLED()` 使用）。
+> 编辑器（IntelliSense）的开关宏统一在 `.vscode/c_cpp_properties.json` 的 `defines` 中维护，
+> 建议与 `features.cmake` 的当前取值保持一致，源码中不再需要 `defined(__VSCODE__)` 之类的兜底判断。
 
 ### 9.2 子库开关 `library/options.cmake`
 
