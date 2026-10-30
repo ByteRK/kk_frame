@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 01:53:51
- * @LastEditTime: 2026-08-19 10:58:35
+ * @LastEditTime: 2026-10-30 14:50:46
  * @FilePath: /kk_frame/src/utils/cdroid_utils.h
  * @Description: Cdroid相关的一些函数
  * @BugList:
@@ -17,6 +17,7 @@
 #include <view/keyevent.h>
 #include <widget/imageview.h>
 #include <gui/drawables/drawable.h>
+#include <cdinput.h>
 
 #define SEND_WIND_KEY(down) CdroidUtils::sendKey(cdroid::KeyEvent::KEYCODE_WINDOW, down);
 
@@ -27,10 +28,15 @@ namespace CdroidUtils {
     /// @param down 按下或抬起
     void sendKey(int code, bool down);
 
-    /// @brief 模拟按键事件
+    /// @brief 注入按键事件
     /// @param code 按键码
     /// @param value 按键值
     void analogInput(int code, int value);
+
+    /// @brief 注入触摸事件
+    /// @param events 事件数组(type/code/value 已填，时间戳与设备号由本函数统一重打)
+    /// @param count 事件数
+    void injectTouch(const INPUTEVENT* events, int count);
 
     /// @brief 创建Logo.dat
     /// @param input Logo源图片路径(如 logo.png)

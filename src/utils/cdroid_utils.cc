@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 01:53:51
- * @LastEditTime: 2026-08-19 11:15:05
+ * @LastEditTime: 2026-10-30 11:35:05
  * @FilePath: /kk_frame/src/utils/cdroid_utils.cc
  * @Description: Cdroid相关的一些函数
  * @BugList:
@@ -40,6 +40,23 @@ void CdroidUtils::analogInput(int code, int value) {
     i.value = value;
     i.device = INJECTDEV_KEY;
     InputInjectEvents(&i, 1, 1);
+}
+
+/// @brief 注入触摸事件
+/// @param events 事件数组(type/code/value 已填)
+/// @param count 事件数
+void CdroidUtils::injectTouch(const INPUTEVENT* events, int count) {
+    if (events == nullptr || count <= 0) return;
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+
+    std::vector<INPUTEVENT> evs(events, events + count);
+    for (int i = 0; i < count; i++) {
+        evs[i].tv_sec = ts.tv_sec;
+        evs[i].tv_usec = ts.tv_nsec / 1000;
+        evs[i].device = INJECTDEV_TOUCH;
+    }
+    InputInjectEvents(evs.data(), static_cast<uint32_t>(count), 1);
 }
 
 bool CdroidUtils::createLogoDat(std::string input, std::string output) {
