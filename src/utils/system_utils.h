@@ -15,6 +15,7 @@
 #define __SYSTEM_UTILS_H__
 
 #include <string>
+#include <cstdint>
 
 namespace SystemUtils {
 
@@ -50,6 +51,34 @@ namespace SystemUtils {
     /// @return 读取到的整数，失败返回 def
     /// @note 可替代cat，节约消耗
     int readSysfsInt(const std::string& path, int def = 0);
+
+    /// @brief 读取系统路径中的 64 位整数值
+    /// @param path 路径
+    /// @param def 读取失败时的默认值
+    /// @return 读取到的整数，失败返回 def
+    /// @note 可替代cat，节约消耗
+    int64_t readSysfsInt64(const std::string& path, int64_t def = 0);
+
+    /// @brief 读取系统路径中的浮点值
+    /// @param path 路径
+    /// @param def 读取失败时的默认值
+    /// @return 读取到的浮点数，失败返回 def
+    /// @note 可替代cat，节约消耗
+    double readSysfsDouble(const std::string& path, double def = 0.0);
+
+    /// @brief 读取系统路径中的字符串
+    /// @param path 路径
+    /// @param def 读取失败或内容为空时的默认值
+    /// @return 读取到的字符串（已去除首尾空白与换行），失败返回 def
+    /// @note 可替代cat，节约消耗
+    std::string readSysfsString(const std::string& path, const std::string& def = "");
+
+    /// @brief 读取系统路径中的布尔值
+    /// @param path 路径
+    /// @param def 读取失败或无法识别时的默认值
+    /// @return 1/Y/ON/TRUE/ENABLE 等视为 true，0/N/OFF/FALSE 等视为 false，无法识别返回 def
+    /// @note 可替代cat，节约消耗
+    bool readSysfsBool(const std::string& path, bool def = false);
 
     /// @brief 设置系统亮度
     /// @param value 亮度值 [0-100]

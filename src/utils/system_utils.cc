@@ -24,6 +24,7 @@
 #include <sys/time.h>
 #include <fcntl.h>
 #include <cerrno>
+#include <climits>
 #include <cstdio>
 #include <cstdlib>
 #include <algorithm>
@@ -74,6 +75,43 @@ namespace {
             return cfg;
         }();
         return config;
+    }
+
+    /// @brief 读取 sysfs/proc 节点的完整文本内容
+    /// @param path 路径
+    /// @param text 读取结果，已去除首尾空白与换行
+    /// @return true 成功
+    bool readSysfsText(const std::string& path, std::string& text) {
+        FILE* fp = fopen(path.c_str(), "r");
+        if (!fp) {
+            LOGE("Failed to open %s", path.c_str());
+            return false;
+        }
+
+        char   buffer[512];
+        size_t len = 0;
+        text.clear();
+        while ((len = fread(buffer, 1, sizeof(buffer), fp)) > 0) {
+            text.append(buffer, len);
+        }
+        bool success = (ferror(fp) == 0);
+        fclose(fp);
+
+        if (!success) {
+            LOGE("Read failed: %s", path.c_str());
+            return false;
+        }
+
+        // 去除首尾空白（含换行符）
+        const char* spaces = " \t\r\n";
+        size_t      begin = text.find_first_not_of(spaces);
+        if (begin == std::string::npos) {
+            text.clear();
+        } else {
+            size_t end = text.find_last_not_of(spaces);
+            text = text.substr(begin, end - begin + 1);
+        }
+        return true;
     }
 
 } // namespace
@@ -166,20 +204,81 @@ bool SystemUtils::sysfs(const std::string& path, const std::string& value) {
 }
 
 int SystemUtils::readSysfsInt(const std::string& path, int def) {
-    FILE* fp = fopen(path.c_str(), "r");
-    if (!fp) {
-        LOGE("Failed to open %s", path.c_str());
+    int64_t value = readSysfsInt64(path, def);
+    if (value > INT_MAX) {
+        LOGW("Read [%lld] overflow int <- %s", (long long)value, path.c_str());
+        return INT_MAX;
+    }
+    if (value < INT_MIN) {
+        LOGW("Read [%lld] overflow int <- %s", (long long)value, path.c_str());
+        return INT_MIN;
+    }
+    return static_cast<int>(value);
+}
+
+int64_t SystemUtils::readSysfsInt64(const std::string& path, int64_t def) {
+    std::string text;
+    if (!readSysfsText(path, text)) return def;
+
+    char*     end = nullptr;
+    errno = 0;
+    long long value = strtoll(text.c_str(), &end, 10);
+    if (end == text.c_str() || *end != '\0' || errno == ERANGE) {
+        LOGE("Read failed: %s [%s]", path.c_str(), text.c_str());
         return def;
     }
-    int value = def;
-    if (fscanf(fp, "%d", &value) != 1) {
-        LOGE("Read failed: %s", path.c_str());
-        value = def;
-    } else {
-        LOGV("Read %d <- %s", value, path.c_str());
+
+    LOGV("Read [%lld] <- %s", value, path.c_str());
+    return static_cast<int64_t>(value);
+}
+
+double SystemUtils::readSysfsDouble(const std::string& path, double def) {
+    std::string text;
+    if (!readSysfsText(path, text)) return def;
+
+    char*  end = nullptr;
+    errno = 0;
+    double value = strtod(text.c_str(), &end);
+    if (end == text.c_str() || *end != '\0' || errno == ERANGE) {
+        LOGE("Read failed: %s [%s]", path.c_str(), text.c_str());
+        return def;
     }
-    fclose(fp);
+
+    LOGV("Read [%f] <- %s", value, path.c_str());
     return value;
+}
+
+std::string SystemUtils::readSysfsString(const std::string& path, const std::string& def) {
+    std::string text;
+    if (!readSysfsText(path, text) || text.empty()) return def;
+
+    LOGV("Read [%s] <- %s", text.c_str(), path.c_str());
+    return text;
+}
+
+bool SystemUtils::readSysfsBool(const std::string& path, bool def) {
+    std::string text;
+    if (!readSysfsText(path, text) || text.empty()) return def;
+
+    static const char* const trueValues[] = { "1", "y", "yes", "true", "on", "enable", "enabled" };
+    static const char* const falseValues[] = { "0", "n", "no", "false", "off", "disable", "disabled" };
+
+    const std::string key = StringUtils::lowerNew(text);
+    for (const char* item : trueValues) {
+        if (key == item) {
+            LOGV("Read [true] <- %s", path.c_str());
+            return true;
+        }
+    }
+    for (const char* item : falseValues) {
+        if (key == item) {
+            LOGV("Read [false] <- %s", path.c_str());
+            return false;
+        }
+    }
+
+    LOGE("Read failed: %s [%s]", path.c_str(), text.c_str());
+    return def;
 }
 
 void SystemUtils::setBrightness(int value, bool swap) {
