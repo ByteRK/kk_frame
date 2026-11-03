@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_demo">
+
+    <!-- 挂测统计显示区（未开始时隐藏） -->
+    <TextView
+        android:id="@+id/http_stress_stat"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:paddingVertical="6dp"
+        android:textColor="#10ac84"
+        android:textSize="24sp"
+        android:visibility="gone"
+        android:text="挂测未开始"/>
+
+    <!-- 测试结果滚动显示区 -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/http_stress_stat"
+        android:scrollbars="vertical"
+        android:fadeScrollbars="false"
+        android:paddingVertical="10dp"
+        android:paddingStart="10dp"
+        android:paddingBottom="280dp"
+        android:scrollbarThumbVertical="@drawable/factory_scrollview_thumb">
+        <TextView
+            android:id="@+id/http_result"
+            style="@style/font_medium"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingBottom="40dp"
+            android:textColor="#2f3542"
+            android:textSize="20sp"
+            android:text="Network HTTP Test"/>
+    </ScrollView>
+
+    <!-- 底部测试按钮区 -->
+    <GridLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
+        android:columnCount="4"
+        android:padding="10dp">
+        <Button android:id="@+id/http_ping" style="@style/factory_menu_btn" android:text="连通性"/>
+        <Button android:id="@+id/http_download" style="@style/factory_menu_btn" android:text="下载"/>
+        <Button android:id="@+id/http_cancel" style="@style/factory_menu_btn" android:text="取消下载"/>
+        <Button android:id="@+id/http_retry" style="@style/factory_menu_btn" android:text="重试"/>
+        <Button android:id="@+id/http_post" style="@style/factory_menu_btn" android:text="POST"/>
+        <Button android:id="@+id/http_head" style="@style/factory_menu_btn" android:text="HEAD"/>
+        <Button android:id="@+id/http_upload" style="@style/factory_menu_btn" android:text="上传"/>
+        <Button android:id="@+id/http_big" style="@style/factory_menu_btn" android:text="大文件"/>
+        <Button android:id="@+id/http_all" style="@style/factory_menu_btn" android:text="全部"/>
+        <Button android:id="@+id/http_stress" style="@style/factory_menu_btn" android:text="挂测"/>
+        <Button android:id="@+id/exit" style="@style/factory_menu_btn" android:text="退出"/>
+    </GridLayout>
+</RelativeLayout>

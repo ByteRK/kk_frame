@@ -48,6 +48,10 @@
                 style="@style/factory_menu_btn"
                 android:text="WIFI检测"/>
             <Button
+                android:id="@+id/to_http"
+                style="@style/factory_menu_btn"
+                android:text="网络测试"/>
+            <Button
                 android:id="@+id/to_aging"
                 style="@style/factory_menu_btn"
                 android:text="屏幕老化"/>
