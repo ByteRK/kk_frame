@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-08 22:48:56
- * @LastEditTime: 2026-07-13 11:14:40
+ * @LastEditTime: 2026-11-03 16:21:52
  * @FilePath: /kk_frame/src/app/managers/http_mgr.h
  * @Description: Http 请求管理
  * @BugList:
@@ -18,13 +18,12 @@
 
 #include <stdint.h>
 #include <atomic>
-#include <condition_variable>
 #include <cstddef>
-#include <cstdio>
 #include <deque>
 #include <memory>
 #include <mutex>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -34,34 +33,39 @@
 
 #if ENABLED(CURL)
 #include <curl/curl.h>
+#include <curl/multi.h>
 #else
 typedef int   CURLcode;
 typedef long  curl_off_t;
 typedef void* curl_slist;
+typedef void* CURL;
+typedef void* CURLM;
+typedef void* CURLSH;
 #define CURL_ERROR_SIZE 1
 #define CURLE_OK 0
 #endif
 
-#define g_http HttpManager::instance()
+#define g_http HttpManager::instance() // 单例快捷访问
 
+/// @brief HTTP 请求管理器
 class HttpManager : public Singleton<HttpManager> {
     friend Singleton<HttpManager>;
 
 public:
-    typedef uint64_t RequestId;
+    typedef uint64_t RequestId; // 请求唯一 ID
 
-    /* 支持的 HTTP 请求方法 */
+    /// @brief 支持的 HTTP 请求方法
     enum class HttpMethod {
-        GET,
-        POST,
-        PUT,
-        PATCH,
-        DELETE_,
-        HEAD,
-        CUSTOM,
+        GET,     // GET 请求
+        POST,    // POST 请求
+        PUT,     // PUT 请求
+        PATCH,   // PATCH 请求
+        DELETE_, // DELETE 请求
+        HEAD,    // HEAD 请求
+        CUSTOM,  // 自定义请求（需指定 customMethod）
     };
 
-    /* 回调到主线程的事件类型 */
+    /// @brief 回调到主线程的事件类型
     enum class EventType {
         STARTED,   // 请求开始
         PROGRESS,  // 请求进度
@@ -69,253 +73,255 @@ public:
         CANCELLED, // 请求取消
     };
 
-    /* 响应结果或阶段性响应数据 */
+    /// @brief 响应数据
     struct Response {
-        CURLcode curlCode;                        /* libcurl 返回码 */
-        long httpStatusCode;                      /* HTTP 状态码 */
-        std::string errorMessage;                 /* 错误描述 */
-        std::vector<unsigned char> body;          /* 响应体，storeResponseBody=true 时有效 */
-        std::vector<std::string> responseHeaders; /* 原始响应头 */
-        std::string effectiveUrl;                 /* 重定向后的最终 URL */
-        std::string outputFilePath;               /* 下载落盘路径 */
-        double totalTimeSeconds;                  /* 总耗时 */
-        curl_off_t downloadedBytes;               /* 当前已下载字节数 */
-        curl_off_t downloadTotalBytes;            /* 总下载字节数 */
-        curl_off_t uploadedBytes;                 /* 当前已上传字节数 */
-        curl_off_t uploadTotalBytes;              /* 总上传字节数 */
-        bool timedOut;                            /* 是否超时 */
-        bool cancelled;                           /* 是否已取消 */
+        CURLcode                   curlCode{ CURLE_OK };    // curl 错误码
+        long                       httpStatusCode{ 0 };     // HTTP 状态码
+        std::string                errorMessage;            // 错误信息
+        bool                       timedOut{ false };       // 是否超时
+        bool                       cancelled{ false };      // 是否已取消
 
-        Response();
+        std::vector<unsigned char> body;                    // 响应体（storeResponseBody 时填充）
+        std::vector<std::string>   responseHeaders;         // 响应头
+        std::string                effectiveUrl;            // 最终 URL（含重定向）
+        std::string                outputFilePath;          // 下载落盘路径
+
+        double                     totalTimeSeconds{ 0.0 }; // 总耗时（s）
+        curl_off_t                 downloadedBytes{ 0 };    // 已下载字节数
+        curl_off_t                 downloadTotalBytes{ 0 }; // 待下载总字节数
+        curl_off_t                 uploadedBytes{ 0 };      // 已上传字节数
+        curl_off_t                 uploadTotalBytes{ 0 };   // 待上传总字节数
+
+        Response() = default;
+
+        /// @brief 是否成功（未取消、curl 无错、HTTP 2xx/3xx）
+        /// @note httpStatusCode 为 0 视为成功（无 HTTP 响应可判断）
         bool isSuccess() const;
     };
 
-    /* 回调事件对象 */
+    /// @brief 回调事件对象
     struct Event {
-        EventType type;       /* 事件类型 */
-        RequestId requestId;  /* 请求 ID */
-        HttpMethod method;    /* 请求方法 */
-        std::string url;      /* 原始 URL */
-        std::string tag;      /* 业务标签 */
-        void* opaque;         /* 业务透传指针 */
-        Response response;    /* 当前事件的响应数据 */
+        EventType   type{ EventType::COMPLETED }; // 事件类型
+        RequestId   requestId{ 0 };               // 请求 ID
+        HttpMethod  method{ HttpMethod::GET };    // 请求方法
+        std::string url;                          // 请求 URL
+        std::string tag;                          // 业务标签
+        void*       opaque{ nullptr };            // 业务透传指针
+        Response    response;                     // 响应快照
 
-        Event();
+        Event() = default;
     };
 
-    /*
-     * 回调接口
-     */
+    /// @brief HTTP 请求回调基类
+    /// @note 自带回调生命周期管理：listener 析构后不会再收到事件
     class IEventListener {
+    private:
+        std::shared_ptr<std::atomic<bool>> mAliveToken; // 监听者存活标记
     public:
-        virtual ~IEventListener() { }
+        IEventListener();
+        virtual ~IEventListener();
         virtual void onHttpEvent(const Event& event) = 0;
+    public:
+        /// @brief 获取存活标记
+        /// @note 用于 HttpManager 内部判断 listener 是否已析构
+        const std::shared_ptr<std::atomic<bool>>& aliveToken() const { return mAliveToken; }
     };
 
-    /* 单次请求描述对象 */
+    /// @brief HTTP 请求对象
     struct Request {
-        HttpMethod method;                /* HTTP 方法 */
-        std::string url;                  /* 目标 URL */
-        std::string tag;                  /* 业务标签，用于批量取消 */
-        std::string customMethod;         /* method=CUSTOM 时的自定义方法名 */
-        std::vector<std::string> headers; /* 自定义请求头 */
-        std::string body;                 /* 内存请求体 */
-        std::string uploadFilePath;       /* 上传文件路径 */
-        std::string downloadFilePath;     /* 下载文件路径；CreateDownload 传入目录时自动追加 URL 文件名 */
-        std::string contentType;          /* 仅便于业务记录或补默认头 */
-        std::string caFilePath;           /* 自定义 CA 文件路径 */
-        void* opaque;                     /* 业务透传指针 */
-        IEventListener* listener;         /* 监听者，不能为空 */
-        long connectTimeoutMs;            /* 连接超时 */
-        long requestTimeoutMs;            /* 整体请求超时 */
-        long lowSpeedTimeSeconds;         /* 低速持续时间限制 */
-        long maxRecvSpeedBytesPerSec;     /* 最大下载速率 */
-        long maxSendSpeedBytesPerSec;     /* 最大上传速率 */
-        long lowSpeedLimitBytesPerSec;    /* 低速判定阈值 */
-        bool followRedirects;             /* 是否自动跟随重定向 */
-        bool verifyPeer;                  /* 是否校验证书 */
-        bool storeResponseBody;           /* 是否把响应体缓存到内存 */
-        bool emitProgress;                /* 是否派发进度事件 */
-        long progressIntervalMs;          /* 进度回调最小间隔 */
+        HttpMethod               method{ HttpMethod::GET };      // 请求方法
+        std::string              url;                            // 请求 URL
+        std::string              customMethod;                   // CUSTOM 时的方法名
 
-        Request();
+        std::vector<std::string> headers;                        // 请求头
+        std::string              contentType;                    // 内容类型（Create* 时自动补 Content-Type 头）
+        std::string              body;                           // 内存请求体
+
+        std::string              uploadFilePath;                 // 上传文件路径
+        std::string              downloadFilePath;               // 下载目录或文件路径（CreateDownload 时自动补 URL 文件名）
+        std::string              caFilePath;                     // CA 证书路径
+
+        IEventListener*          listener{ nullptr };            // 事件回调（不可为空）
+        void*                    opaque{ nullptr };              // 业务透传指针
+        std::string              tag;                            // 业务标签（用于批量取消）
+
+        long                     connectTimeoutMs{ 5000 };       // 连接超时（ms）
+        long                     requestTimeoutMs{ 30000 };      // 请求总超时（ms）
+        int                      maxRetry{ 0 };                  // 网络失败重试次数（仅 GET/HEAD 生效）
+        long                     progressIntervalMs{ 100 };      // 进度回调间隔（ms）
+
+        long                     lowSpeedTimeSeconds{ 0 };       // 低速持续超时（s）
+        long                     lowSpeedLimitBytesPerSec{ 0 };  // 低速阈值（B/s）
+        long                     maxRecvSpeedBytesPerSec{ 0 };   // 下载限速（B/s）
+        long                     maxSendSpeedBytesPerSec{ 0 };   // 上传限速（B/s）
+
+        bool                     followRedirects{ true };        // 自动跟随重定向
+        bool                     verifyPeer{ true };             // 校验证书
+        bool                     storeResponseBody{ true };      // 缓存响应体到内存
+        bool                     emitProgress{ true };           // 派发进度事件
+
+        Request() = default;
 
         static Request CreateGet(const std::string& url,
-            IEventListener* listener,
+            IEventListener*    listener,
             const std::string& tag = std::string(),
-            void* opaque = nullptr);
+            void*              opaque = nullptr);
 
         static Request CreatePost(const std::string& url,
             const std::string& body,
-            IEventListener* listener,
+            IEventListener*    listener,
             const std::string& tag = std::string(),
-            void* opaque = nullptr,
+            void*              opaque = nullptr,
             const std::string& contentType = "application/json");
 
         static Request CreatePut(const std::string& url,
             const std::string& body,
-            IEventListener* listener,
+            IEventListener*    listener,
             const std::string& tag = std::string(),
-            void* opaque = nullptr,
+            void*              opaque = nullptr,
             const std::string& contentType = "application/json");
 
         static Request CreateDownload(const std::string& url,
             const std::string& downloadFilePath,
-            IEventListener* listener,
+            IEventListener*    listener,
             const std::string& tag = std::string(),
-            void* opaque = nullptr);
+            void*              opaque = nullptr);
 
         static Request CreateUpload(const std::string& url,
             const std::string& uploadFilePath,
-            IEventListener* listener,
+            IEventListener*    listener,
             const std::string& tag = std::string(),
-            void* opaque = nullptr,
+            void*              opaque = nullptr,
             const std::string& contentType = "application/octet-stream");
     };
+
+private:
+    struct RequestContext;    // 请求上下文
+    struct MainThreadMessage; // 主线程消息
+    struct RetryEntry;        // 重试记录
+
+private:
+    typedef std::shared_ptr<RequestContext>           RequestPtr;  // 请求上下文智能指针
+    typedef std::unordered_map<RequestId, RequestPtr> RequestMap;  // 请求上下文表（按 RequestId 索引）
 
 protected:
     HttpManager();
     ~HttpManager();
 
 public:
-    /*
-     * 初始化管理器
-     * 1. 必须在 submit/cancel 等接口前调用；
-     * 2. 不会预创建 worker，worker 在 submit 时按需创建；
-     * 3. maxWorkerCount 仅表示允许创建的最大 worker 数；
-     * 4. workerIdleExitMs > 0 时，worker 在空闲等待该时长后会自动退出；
-     *    workerIdleExitMs <= 0 时，worker 会一直等待新任务，不自动退出；
-     */
-    void init(cdroid::Looper* mainLooper = nullptr,
-        size_t maxWorkerCount = 0,
-        long workerIdleExitMs = 0);
+    /// @brief 初始化管理器
+    /// @param mainLooper 主线程 Looper（为空时取当前线程 Looper）
+    /// @param maxConcurrent 最大并发请求数（0 表示默认值 4）
+    /// @param pollTimeoutMs 轮询超时（0 表示默认值 1000 ms）
+    /// @note 必须在 submit / cancel 之前调用，初始化失败直接终止进程
+    void      init(cdroid::Looper* mainLooper = nullptr, size_t maxConcurrent = 0, long pollTimeoutMs = 0);
 
-    /* 主动释放线程、fd、curl 全局资源 */
-    void shutdown();
+    /// @brief 关闭管理器，释放线程、fd 与 curl 资源
+    void      shutdown();
 
-    /* 当前单例是否已完成初始化 */
-    bool isInitialized() const;
+    /// @brief 是否已初始化
+    bool      isInitialized() const;
 
-    /* 提交一个请求到队列，返回其唯一请求 ID */
+    /// @brief 提交请求到待执行队列
+    /// @return 请求 ID（0 表示未启用 curl，提交失败）
     RequestId submit(const Request& request);
 
-    /* 按请求 ID 取消单个请求 */
-    bool cancel(RequestId requestId);
+    /// @brief 按请求 ID 取消
+    /// @return true 已受理；false 请求不存在（已完成/已取消）
+    bool      cancel(RequestId requestId);
 
-    /* 按 tag 批量取消请求，返回取消数量 */
-    size_t cancelByTag(const std::string& tag);
+    /// @brief 按 tag 批量取消
+    /// @return 受理的请求数量；tag 为空时返回 0
+    size_t    cancelByTag(const std::string& tag);
 
-    /* 取消当前所有待执行/执行中的请求 */
-    void cancelAll();
+    /// @brief 取消全部待执行、执行中与重试中的请求
+    void      cancelAll();
 
-    /* 查询队列状态 */
-    size_t pendingCount() const;
-    size_t runningCount() const;
-    size_t requestCount() const;
-    bool   contains(RequestId requestId) const;
+    /// @brief 待执行请求数量
+    size_t    pendingCount() const;
+
+    /// @brief 执行中请求数量
+    size_t    runningCount() const;
+
+    /// @brief 队列中的请求总数（待执行 + 执行中 + 重试中）
+    size_t    requestCount() const;
+
+    /// @brief 请求是否仍在队列中（不含已完成）
+    bool      contains(RequestId requestId) const;
 
 private:
-    struct RequestContext;
-    struct MainThreadMessage;
+    /* 全局资源与参数校验 */
+    static void   initializeCurlGlobal();
+    static void   cleanupCurlGlobal();
+    static void   validateRequestOrDie(const Request& request);
 
-private:
-    static void initializeCurlGlobal();
-    static void cleanupCurlGlobal();
-    static void validateRequestOrDie(const Request& request);
+    /* 线程唤醒与事件派发（回调统一切回主线程） */
+    static int    onMainThreadWake(int fd, int events, void* context);
+    void          wakeMainThread();
+    void          wakeIoThread();
+    void          drainMainThreadMessages();
+    void          postEvent(const RequestPtr& requestContext, EventType type);
+    void          postEvent(RequestContext* requestContext, EventType type);
+    void          postProgressEvent(RequestContext* requestContext, curl_off_t downloadTotal, curl_off_t downloadNow, curl_off_t uploadTotal, curl_off_t uploadNow);
 
-    /*
-     * 根据当前队列压力按需创建 worker
-     * 调用时要求已持有 mRequestMutex
-     */
-    void ensureWorkerCapacityLocked();
+    /* I/O 线程主循环与调度 */
+    void          ioLoop();
+    void          processPendingOperations();
+    void          processCompleted();
+    void          processRetries();
 
-    /*
-     * worker 退出时统一收尾
-     * 调用时要求已持有 mRequestMutex
-     */
-    void onWorkerExitLocked();
-
-    /* eventfd 被主线程 Looper 唤醒后的回调入口 */
-    static int onMainThreadWake(int fd, int events, void* context);
-
-    /* 向主线程投递消息并唤醒 Looper */
-    void wakeMainThread();
-    void drainMainThreadMessages();
-    void postEvent(const std::shared_ptr<RequestContext>& requestContext, EventType type);
-    void postEvent(RequestContext* requestContext, EventType type);
-    void postProgressEvent(RequestContext* requestContext,
-        curl_off_t downloadTotal,
-        curl_off_t downloadNow,
-        curl_off_t uploadTotal,
-        curl_off_t uploadNow);
-
-    /* 工作线程主循环 */
-    void workerLoop();
-
-    /* 执行单个请求的完整流程 */
-    void executeRequest(const std::shared_ptr<RequestContext>& requestContext);
+    /* 单请求执行流程 */
+    void          startRequest(const RequestPtr& requestContext);
+    CURL*         buildEasy(const RequestPtr& requestContext);
+    void          handleCompletion(const RequestPtr& requestContext, CURL* easy, CURLcode result);
+    void          finalizeDownload(RequestContext* requestContext, bool keepFile);
+    static bool   isRetryable(CURLcode code, long httpStatusCode);
 
     /* libcurl 回调 */
     static size_t onWrite(char* data, size_t size, size_t count, void* context);
     static size_t onHeader(char* data, size_t size, size_t count, void* context);
     static size_t onRead(char* buffer, size_t size, size_t count, void* context);
-    static int onProgress(void* context,
-        curl_off_t downloadTotal,
-        curl_off_t downloadNow,
-        curl_off_t uploadTotal,
-        curl_off_t uploadNow);
+    static int    onProgress(void* context, curl_off_t downloadTotal, curl_off_t downloadNow, curl_off_t uploadTotal, curl_off_t uploadNow);
 
 private:
-    /* 生命周期保护，防止重复 init/shutdown */
-    mutable std::mutex mLifecycleMutex;
+    /* 生命周期 */
+    mutable std::mutex            mLifecycleMutex;        // 生命周期锁（防重复 init/shutdown）
+    std::atomic<bool>             mInitialized{ false };  // 是否已初始化
+    std::atomic<bool>             mStopping{ false };     // 是否正在停止
 
-    /* 是否已经完成初始化 */
-    std::atomic<bool> mInitialized;
+    /* 主线程回调 */
+    cdroid::Looper*               mMainLooper{ nullptr }; // 主线程 Looper（回调线程回归）
+    int                           mMainWakeFd{ -1 };      // 主线程唤醒 fd
+    mutable std::mutex            mMainThreadMutex;       // 事件队列锁
+    std::deque<MainThreadMessage> mMainThreadMessages;    // 待派发事件队列
 
-    /* 主线程 Looper，用于将回调切回业务线程 */
-    cdroid::Looper* mMainLooper;
+    /* I/O 线程与 curl */
+    std::thread                   mIoThread;              // I/O 线程
+    int                           mIoWakeFd{ -1 };        // I/O 线程唤醒 fd
+    CURLM*                        mMulti{ nullptr };      // curl_multi 句柄
+    CURLSH*                       mShare{ nullptr };      // 连接池句柄（复用 DNS / keep-alive）
+    std::recursive_mutex          mShareMutex;            // 连接池锁（递归锁，避免同线程重入死锁）
 
-    /* eventfd：工作线程通过它唤醒主线程处理回调 */
-    int mWakeFd;
+    /* 请求表 */
+    std::atomic<RequestId>        mNextRequestId{ 1 };    // 请求 ID 计数器
+    mutable std::mutex            mRequestMutex;          // 请求表锁
+    std::deque<RequestPtr>        mPendingRequests;       // 待执行队列
+    RequestMap                    mActiveRequests;        // 执行中请求表（已加入 multi）
+    std::deque<RetryEntry>        mRetryQueue;            // 重试队列（按到期时间排序）
 
-    /* 管理器是否处于停止流程中 */
-    std::atomic<bool> mStopping;
+    /* 运行参数 */
+    size_t                        mMaxConcurrent{ 4 };    // 并发上限（同时在 multi 中的请求数）
+    long                          mPollTimeoutMs{ 1000 }; // curl_multi_wait 轮询超时（ms）
 
-    /* 全局递增请求 ID */
-    std::atomic<RequestId> mNextRequestId;
+    /* 运行期统计 */
+    std::atomic<size_t>           mTotalSubmitted{ 0 };   // 总提交数
+    std::atomic<size_t>           mTotalCompleted{ 0 };   // 总完成数
+    std::atomic<size_t>           mTotalCancelled{ 0 };   // 总取消数
+    std::atomic<size_t>           mTotalRetried{ 0 };     // 总重试数
 
-    /* 请求队列锁与条件变量 */
-    mutable std::mutex mRequestMutex;
-    std::condition_variable mRequestCond;
-
-    /* worker 全部退出时用于 shutdown 等待 */
-    std::condition_variable mWorkerExitCond;
-
-    /* 等待执行的请求队列 */
-    std::deque<std::shared_ptr<RequestContext> > mPendingRequests;
-
-    /* 正在执行的请求表，便于取消与查询 */
-    std::unordered_map<RequestId, std::shared_ptr<RequestContext> > mRunningRequests;
-
-    /* 仅作为并发上限，不等于当前已创建线程数 */
-    size_t mMaxWorkerCount;
-
-    /* worker 空闲自动退出时间，单位 ms；<=0 表示不自动退出 */
-    long mWorkerIdleExitMs;
-
-    /* 当前存活的 worker 数 */
-    size_t mAliveWorkerCount;
-
-    /* 当前处于空闲等待状态的 worker 数 */
-    size_t mIdleWorkerCount;
-
-    /* 主线程事件队列 */
-    mutable std::mutex mMainThreadMutex;
-    std::deque<MainThreadMessage> mMainThreadMessages;
-
-    /* curl_global_init/cleanup 的跨实例引用计数 */
-    static std::mutex sCurlGlobalMutex;
-    static size_t sCurlGlobalRefCount;
+    /* curl 全局资源引用计数 */
+    static std::mutex             sCurlGlobalMutex;       // curl 全局资源锁
+    static size_t                 sCurlGlobalRefCount;    // curl 全局资源引用计数
 };
 
 #endif // __HTTP_MGR_H__
