@@ -212,6 +212,18 @@ std::string StringUtils::trimRight(std::string str) {
     return str;
 }
 
+std::string StringUtils::trimLeft(std::string str) {
+    auto it = std::find_if(str.begin(), str.end(), [](unsigned char ch) {
+        return !(std::isspace(ch) || ch == '\n' || ch == '\r' || ch == '\t');
+    });
+    str.erase(str.begin(), it);
+    return str;
+}
+
+std::string StringUtils::trim(std::string str) {
+    return trimLeft(trimRight(str));
+}
+
 const char* StringUtils::strcasestr(const char* haystack, const char* needle) {
     if (haystack == nullptr || needle == nullptr) return nullptr;
     if (!*needle) return haystack; // 如果 str2 为空，返回 str1

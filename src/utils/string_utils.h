@@ -88,6 +88,16 @@ namespace StringUtils {
     /// @return 修剪空白字符后的字符串
     std::string trimRight(std::string str);
 
+    /// @brief 修剪字符串头部的空白字符
+    /// @param str 字符串
+    /// @return 修剪空白字符后的字符串
+    std::string trimLeft(std::string str);
+
+    /// @brief 修剪字符串两端的空白字符（含 \r\n\t）
+    /// @param str 字符串
+    /// @return 修剪空白字符后的字符串
+    std::string trim(std::string str);
+
     /// @brief 不区分大小写的字符串查找
     /// @param haystack 查找的字符串
     /// @param needle 被查找的子串(匹配对象)
