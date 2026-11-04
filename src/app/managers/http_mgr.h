@@ -42,7 +42,14 @@ typedef void* CURL;
 typedef void* CURLM;
 typedef void* CURLSH;
 #define CURL_ERROR_SIZE 1
-#define CURLE_OK 0
+
+/**
+ * 非 CURL 构建下的错误码占位，数值与 libcurl 保持一致；
+ * 仅在此处定义「在 #if ENABLED(CURL) 之外仍被引用」的宏，
+ * 新增此类引用时务必同步补充，否则会导致编译失败
+**/
+#define CURLE_OK          0  // 无错误
+#define CURLE_WRITE_ERROR 23 // 写入数据失败（下载临时文件落盘失败时使用）
 #endif
 
 #define g_http HttpManager::instance() // 单例快捷访问

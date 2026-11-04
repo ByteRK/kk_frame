@@ -508,7 +508,8 @@ bool HttpManager::cancel(RequestId requestId) {
     LOGV("http cancel. id=%llu hit=none", static_cast<unsigned long long>(requestId));
     return false;
 #else
-    return true;
+    // 未启用 CURL 时 一律视为「未受理」
+    return false;
 #endif
 }
 
