@@ -119,15 +119,14 @@ namespace {
 
 char* CheckUtils::md5Check(const void* data, size_t len, char md5Str[MD5_STR_LEN]) {
 #if PRJ_LIB_ENABLED(MD5)
-    int           i;
     MD5_CTX       md5;
-    unsigned char md5Value[16];
+    unsigned char md5Value[MD5_SIZE];
     MD5Init(&md5);
     MD5Update(&md5, (unsigned char *)data, len);
     MD5Final(&md5, md5Value);
-    for (i = 0; i < 16; i++) {
-        snprintf(md5Str + i * 2, 2 + 1, "%02x", md5Value[i]);
-    }
+    // 输出小写十六进制串（不写结尾 '\0'，缓冲区长度恰为 MD5_STR_LEN）
+    const std::string hex = EncodingUtils::hexEncode(md5Value, MD5_SIZE);
+    memcpy(md5Str, hex.data(), MD5_STR_LEN);
 #else
     LOGW("MD5 library is not enabled, cannot perform md5Check");
 #endif
@@ -137,7 +136,6 @@ char* CheckUtils::md5Check(const void* data, size_t len, char md5Str[MD5_STR_LEN
 char * CheckUtils::md5Check(const char * filePath, char md5Str[MD5_STR_LEN]) {
     static const int READ_DATA_SIZE = 1024;
 #if PRJ_LIB_ENABLED(MD5)
-    int           i;
     int           fd;
     int           ret;
     unsigned char data[READ_DATA_SIZE];
@@ -161,9 +159,9 @@ char * CheckUtils::md5Check(const char * filePath, char md5Str[MD5_STR_LEN]) {
     }
     close(fd);
     MD5Final(&md5, md5_value);
-    for (i = 0; i < MD5_SIZE; i++) {
-        snprintf(md5Str + i * 2, 2 + 1, "%02x", md5_value[i]);
-    }
+    // 输出小写十六进制串（不写结尾 '\0'，缓冲区长度恰为 MD5_STR_LEN）
+    const std::string hex = EncodingUtils::hexEncode(md5_value, MD5_SIZE);
+    memcpy(md5Str, hex.data(), MD5_STR_LEN);
 #else
     LOGW("MD5 library is not enabled, cannot perform md5Check");
 #endif
@@ -211,15 +209,9 @@ uint8_t* CheckUtils::sha256Check(const void* data, size_t len, uint8_t sha256Val
 }
 
 std::string CheckUtils::sha256CheckStr(const void* data, size_t len) {
-    static const char hex[] = "0123456789abcdef";
     uint8_t sha_hex[SHA256_SIZE];
-    char    sha_str[SHA256_STR_LEN + 1] = { 0 };
     sha256Check(data, len, sha_hex);
-    for (uint8_t i = 0; i < SHA256_SIZE; i++) {
-        sha_str[i * 2]     = hex[sha_hex[i] >> 4];
-        sha_str[i * 2 + 1] = hex[sha_hex[i] & 0x0F];
-    }
-    return std::string(sha_str);
+    return EncodingUtils::hexEncode(sha_hex, SHA256_SIZE);
 }
 
 std::string CheckUtils::sha256CheckStr(const std::string& src) {
