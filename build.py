@@ -381,6 +381,56 @@ def ensure_git_identity(project_dir):
     return True
 
 
+# 当前分支名（空仓库时也能返回占位分支名）
+def get_current_branch(project_dir):
+    result = git(['symbolic-ref', '--short', '-q', 'HEAD'], cwd=project_dir)
+    return result.stdout.strip() if result.returncode == 0 else ''
+
+
+# 仓库是否已有提交
+def has_commit(project_dir):
+    return git(['rev-parse', '--verify', '--quiet', 'HEAD'], cwd=project_dir).returncode == 0
+
+
+# 切换到 master 分支（新项目保留模板历史后会停留在模板的开发分支，容易误推）
+def switch_to_master_branch(project_dir):
+    current = get_current_branch(project_dir)
+    if current == 'master':
+        cprint("当前已在 master 分支", "GREEN")
+        return True
+
+    if not has_commit(project_dir):
+        # 空仓库（尚无提交），直接重命名当前分支
+        result = git(['branch', '-m', 'master'], cwd=project_dir)
+        ok = result.returncode == 0
+    elif git(['rev-parse', '--verify', '--quiet', 'refs/heads/master'], cwd=project_dir).returncode == 0:
+        result = git(['checkout', 'master'], cwd=project_dir)
+        ok = result.returncode == 0
+        if not ok:
+            # 工作区改动与 master 冲突：若 master 是当前提交的祖先，可安全地快进 master 到当前提交
+            if git(['merge-base', '--is-ancestor', 'master', 'HEAD'], cwd=project_dir).returncode == 0:
+                cprint("警告: 工作区改动与 master 冲突，改为基于当前提交快进 master", "YELLOW")
+                result = git(['checkout', '-B', 'master'], cwd=project_dir)
+                ok = result.returncode == 0
+            else:
+                cprint("警告: 工作区改动与 master 冲突，未自动切换分支", "YELLOW")
+                cprint("  请手动执行: git stash && git checkout master && git stash pop", "CYAN")
+                return False
+    else:
+        result = git(['checkout', '-b', 'master'], cwd=project_dir)
+        ok = result.returncode == 0
+
+    if ok:
+        cprint(f"已从 '{current or 'HEAD'}' 切换到 master 分支", "GREEN")
+    else:
+        message = (result.stderr or result.stdout or '').strip().splitlines()
+        cprint("警告: 未能自动切换到 master 分支", "YELLOW")
+        if message:
+            cprint(f"  {message[-1]}", "YELLOW")
+        cprint("  请手动执行: git checkout master", "CYAN")
+    return ok
+
+
 # 按策略配置 git 仓库与远程
 def configure_git(project_dir, name, strategy, add_template_remote, origin_url=None, ask_origin=True):
     git_dir = os.path.join(project_dir, '.git')
@@ -441,6 +491,9 @@ def configure_git(project_dir, name, strategy, add_template_remote, origin_url=N
                 cprint("注意: 未创建初始提交，可稍后手动提交", "YELLOW")
         else:
             cprint("跳过初始提交（git 用户信息未配置）", "YELLOW")
+
+    # 切回 master：避免新项目停留在模板的开发分支上，后续 push 时误推
+    switch_to_master_branch(project_dir)
 
     cprint("\n" + "=" * 50, "GREEN")
     cprint("Git 配置完成!", "GREEN", bold=True)
