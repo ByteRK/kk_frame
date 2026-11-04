@@ -13,9 +13,12 @@
 
 #include "wifi_hal.h"
 #include "encoding_utils.h"
+#include "network_utils.h"
+#include "string_utils.h"
 #include <sstream>
 #include <cstdlib>
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cstring>
 #include <random>
@@ -69,37 +72,17 @@ static const char kWpaEventNetworkNotFound[] = "CTRL-EVENT-NETWORK-NOT-FOUND ";
 
 static bool GetIpv4(const std::string& ifname, std::string& outIp) {
     outIp.clear();
-    int fd = ::socket(AF_INET, SOCK_DGRAM, 0);
-    if (fd < 0) return false;
 
-    struct ifreq ifr;
-    std::memset(&ifr, 0, sizeof(ifr));
-    std::snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), "%s", ifname.c_str());
+    NetworkUtils::InterfaceInfo info;
+    if (!NetworkUtils::getInterfaceInfo(ifname, info)) return false;
 
-    if (::ioctl(fd, SIOCGIFADDR, &ifr) == 0) {
-        auto* addr = reinterpret_cast<struct sockaddr_in*>(&ifr.ifr_addr);
-        outIp = ::inet_ntoa(addr->sin_addr);
-        ::close(fd);
-        return !outIp.empty() && outIp != "0.0.0.0";
+    for (const std::string& address : info.ipv4Addresses) {
+        if (!address.empty() && address != "0.0.0.0") {
+            outIp = address;
+            return true;
+        }
     }
-
-    ::close(fd);
     return false;
-}
-
-static inline bool starts_with(const std::string& s, const char* prefix) {
-    return s.compare(0, ::strlen(prefix), prefix) == 0;
-}
-
-static std::string HexEncode(const std::string& value) {
-    static const char kHex[] = "0123456789abcdef";
-    std::string result;
-    result.reserve(value.size() * 2);
-    for (unsigned char ch : value) {
-        result.push_back(kHex[ch >> 4]);
-        result.push_back(kHex[ch & 0x0f]);
-    }
-    return result;
 }
 
 static bool EncodeWpaQuoted(const std::string& value, std::string& result) {
@@ -142,7 +125,7 @@ static bool GetWpaEventScanId(const std::string& msg, int& scanId) {
     std::string token;
     while (iss >> token) {
         static const char kIdPrefix[] = "id=";
-        if (!starts_with(token, kIdPrefix)) continue;
+        if (!StringUtils::startsWith(token, kIdPrefix)) continue;
         return ParseNonNegativeInt(token.substr(sizeof(kIdPrefix) - 1), scanId);
     }
     return false;
@@ -387,7 +370,7 @@ void WifiHal::onWpaEvent(const std::string& msg) {
     // CTRL-EVENT-DISCONNECTED
     // CTRL-EVENT-SSID-TEMP-DISABLED（密码错/握手失败常见）
     // CTRL-EVENT-ASSOC-REJECT（AP 不接受）
-    if (starts_with(msg, WPA_EVENT_SCAN_RESULTS)) {
+    if (StringUtils::startsWith(msg, WPA_EVENT_SCAN_RESULTS)) {
         int eventScanId = -1;
         if (!GetWpaEventScanId(msg, eventScanId)) {
             LOGV("ignore scan results without active scan id (likely bgscan)");
@@ -419,7 +402,7 @@ void WifiHal::onWpaEvent(const std::string& msg) {
         return;
     }
 
-    if (starts_with(msg, kWpaEventScanFailed)) {
+    if (StringUtils::startsWith(msg, kWpaEventScanFailed)) {
         int eventScanId = -1;
         const bool hasScanId = GetWpaEventScanId(msg, eventScanId);
         if (hasScanId) {
@@ -433,7 +416,7 @@ void WifiHal::onWpaEvent(const std::string& msg) {
         return;
     }
 
-    if (starts_with(msg, WPA_EVENT_CONNECTED)) {
+    if (StringUtils::startsWith(msg, WPA_EVENT_CONNECTED)) {
         if (mShuttingDown.load()) return;
         setState(State::Connected, "CTRL-EVENT-CONNECTED");
 
@@ -446,7 +429,7 @@ void WifiHal::onWpaEvent(const std::string& msg) {
         return;
     }
 
-    if (starts_with(msg, WPA_EVENT_DISCONNECTED)) {
+    if (StringUtils::startsWith(msg, WPA_EVENT_DISCONNECTED)) {
         stopDhcpWorker();
         setState(State::Disconnected, "CTRL-EVENT-DISCONNECTED");
 
@@ -460,7 +443,7 @@ void WifiHal::onWpaEvent(const std::string& msg) {
         return;
     }
 
-    if (starts_with(msg, WPA_EVENT_TEMP_DISABLED)) {
+    if (StringUtils::startsWith(msg, WPA_EVENT_TEMP_DISABLED)) {
         finishReconnectAttempt();
         const std::string reason = getWpaEventParam(msg, "reason");
         if (reason == "CONN_FAILED") {
@@ -478,7 +461,7 @@ void WifiHal::onWpaEvent(const std::string& msg) {
         return;
     }
 
-    if (starts_with(msg, WPA_EVENT_ASSOC_REJECT)) {
+    if (StringUtils::startsWith(msg, WPA_EVENT_ASSOC_REJECT)) {
         setState(State::ApNotFound, "ASSOC REJECT");
         finishReconnectAttempt();
         if (mOpt.auto_reconnect && !mUserDisconnect.load()) {
@@ -487,7 +470,7 @@ void WifiHal::onWpaEvent(const std::string& msg) {
         return;
     }
 
-    if (starts_with(msg, kWpaEventNetworkNotFound)) {
+    if (StringUtils::startsWith(msg, kWpaEventNetworkNotFound)) {
         setState(State::ApNotFound, "NETWORK NOT FOUND");
         finishReconnectAttempt();
         if (mOpt.auto_reconnect && !mUserDisconnect.load()) {
@@ -590,7 +573,7 @@ bool WifiHal::ensureNetworkConfigured(const std::string& ssid, const std::string
 
     // SSID uses the wpa_supplicant hexadecimal representation, so quotes,
     // backslashes and control bytes cannot alter the control command.
-    if (!runCmd("SET_NETWORK " + netId + " ssid " + HexEncode(ssid), nullptr)) {
+    if (!runCmd("SET_NETWORK " + netId + " ssid " + EncodingUtils::hexEncode(ssid), nullptr)) {
         removeNewNetwork();
         return false;
     }
@@ -796,16 +779,12 @@ bool WifiHal::parseScanResults(std::vector<ApInfo>& out) {
     const size_t targetCount = static_cast<size_t>(countDist(engine));
 
     auto appendAp = [&](const std::string& ssid) {
-        unsigned int mac[6];
-        for (auto& byte : mac) byte = static_cast<unsigned int>(byteDist(engine));
-        mac[0] = (mac[0] & 0xfcU) | 0x02U; // locally administered unicast address
-
-        char bssid[18];
-        std::snprintf(bssid, sizeof(bssid), "%02x:%02x:%02x:%02x:%02x:%02x",
-            mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+        std::array<uint8_t, 6> mac{};
+        for (auto& byte : mac) byte = static_cast<uint8_t>(byteDist(engine));
+        mac[0] = static_cast<uint8_t>((mac[0] & 0xfcU) | 0x02U); // locally administered unicast address
 
         ApInfo ap;
-        ap.bssid = bssid;
+        ap.bssid = NetworkUtils::formatMac(mac);
         ap.ssid = ssid;
         ap.freq = frequencies[frequencyDist(engine)];
         ap.signal = signalDist(engine);

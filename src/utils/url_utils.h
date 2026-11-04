@@ -27,6 +27,11 @@ namespace UrlUtils {
     /// @brief 判断 URL 是否带有完整协议头（如 "http://"）
     bool hasScheme(const std::string& url);
 
+    /// @brief 判断 URL 是否为 http 或 https 地址
+    /// @param url 目标 URL
+    /// @return true 为 http/https 地址
+    bool isHttpUrl(const std::string& url);
+
     /// @brief 取主机名
     /// @param url 目标 URL
     /// @return 主机名（已去掉 userinfo、端口与 IPv6 方括号）；无法解析时返回空字符串

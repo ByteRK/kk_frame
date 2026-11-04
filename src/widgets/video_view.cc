@@ -13,10 +13,11 @@
 
 #include "video_view.h"
 #include "env_utils.h"
+#include "file_utils.h"
+#include "path_utils.h"
 
 #include <chrono>
 #include <cstring>
-#include <unistd.h>
 
 /**
 xml sample
@@ -204,26 +205,22 @@ void VideoView::setPoints(const std::vector<Point>& points) {
 /// @param fpath 文件路径
 void VideoView::setPointsFile(const std::string& fpath) {
     if (fpath.empty()) return;
-    if (access(fpath.c_str(), F_OK)) {
+    if (!PathUtils::isFile(fpath)) {
         LOGE("point file not exists. fpath=%s", fpath.c_str());
         return;
     }
 
-    char buffer[4096];
-    FILE* fp = fopen(fpath.c_str(), "r");
-    if (fp == nullptr) {
-        LOGE("point file open failed. fpath=%s", fpath.c_str());
+    std::string content;
+    if (!FileUtils::read(fpath, content)) {
+        LOGE("point file read failed. fpath=%s", fpath.c_str());
         return;
     }
-    const int rlen = static_cast<int>(fread(buffer, 1, sizeof(buffer) - 1, fp));
-    fclose(fp);
-    if (rlen <= 0) return;
-    buffer[rlen] = '\0';
-    if (rlen == static_cast<int>(sizeof(buffer) - 1)) LOGW("buffer maybe not enough!!!");
+    if (content.empty()) return;
 
+    const char* buffer = content.c_str();
     Point pt;
     mPoints.clear();
-    for (char* p = buffer; *p; p++) {
+    for (const char* p = buffer; *p; p++) {
         if (*p == '{') {
             pt.x = atoi(p + 1);
         } else if (*p == ',' && *(p + 1) >= '0' && *(p + 1) <= '9') {

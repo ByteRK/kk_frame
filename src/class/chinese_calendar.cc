@@ -13,6 +13,8 @@
 
 #include "chinese_calendar.h"
 
+#include "time_utils.h"
+
 #include <sstream>
 #include <stdexcept>
 
@@ -500,23 +502,8 @@ std::string ChineseCalendar::gz(int stemIdx, int branchIdx) {
  */
 bool ChineseCalendar::isValidDateTime(int year, int month, int day,
     int hour, int minute, int second) {
-    if (year < 1) return false;
-    if (month < 1 || month > 12) return false;
-    if (hour < 0 || hour > 23) return false;
-    if (minute < 0 || minute > 59) return false;
-    if (second < 0 || second > 59) return false;
-
-    static const int kDaysInMonth[] = {
-        0, 31,28,31,30,31,30,31,31,30,31,30,31
-    };
-
-    int maxDay = kDaysInMonth[month];
-    if (month == 2 && isLeapYear(year)) {
-        maxDay = 29;
-    }
-    if (day < 1 || day > maxDay) return false;
-
-    return true;
+    return TimeUtils::isValidDate(year, month, day)
+        && TimeUtils::isValidClock(hour, minute, second);
 }
 
 /**
@@ -526,7 +513,7 @@ bool ChineseCalendar::isValidDateTime(int year, int month, int day,
  * @return 闰年返回 true，否则返回 false
  */
 bool ChineseCalendar::isLeapYear(int year) {
-    return ((year % 4 == 0) && (year % 100 != 0)) || (year % 400 == 0);
+    return TimeUtils::isLeapYear(year);
 }
 
 /**
@@ -653,13 +640,7 @@ bool ChineseCalendar::greaterEqual(const DateTime& a, const DateTime& b) {
  * @return 本地时间结构体
  */
 std::tm ChineseCalendar::toLocalTm(std::time_t t) {
-    std::tm localTm;
-#if defined(_WIN32)
-    localtime_s(&localTm, &t);
-#else
-    localtime_r(&t, &localTm);
-#endif
-    return localTm;
+    return TimeUtils::localTime(t);
 }
 
 /**

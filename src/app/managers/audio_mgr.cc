@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-07-06 22:53:00
- * @LastEditTime: 2026-10-13 18:30:23
+ * @LastEditTime: 2026-11-04 10:06:18
  * @FilePath: /kk_frame/src/app/managers/audio_mgr.cc
  * @Description: ALSA 音频播放管理器
  * @BugList:
@@ -13,6 +13,7 @@
 
 #include "audio_mgr.h"
 #include "quick_define.h"
+#include "system_utils.h"
 
 #include <algorithm>
 #include <cerrno>
@@ -20,7 +21,6 @@
 #include <fstream>
 #include <vector>
 #include <cdlog.h>
-#include <sys/eventfd.h>
 #include <unistd.h>
 
 #if ENABLED(ALSA)
@@ -159,14 +159,13 @@ AudioMgr::AudioMgr() {
         LOGE("AudioMgr callback looper is null");
     } else {
         // 创建 eventfd 用于跨线程唤醒 Looper
-        mWakeFd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+        mWakeFd = SystemUtils::createEventFd();
         if (mWakeFd < 0) {
             LOGE("AudioMgr eventfd failed. errno=%d err=%s", errno, std::strerror(errno));
         } else if (mCallbackLooper->addFd(
             mWakeFd, 0, cdroid::Looper::EVENT_INPUT, onWake, this) < 0) {
             LOGE("AudioMgr addFd failed. fd=%d", mWakeFd);
-            close(mWakeFd);
-            mWakeFd = -1;
+            SystemUtils::destroyEventFd(mWakeFd);
         }
     }
     // 启动播放线程
@@ -189,8 +188,7 @@ AudioMgr::~AudioMgr() {
 
     // 2. 清理 eventfd / Looper
     if (mCallbackLooper != nullptr && mWakeFd >= 0) mCallbackLooper->removeFd(mWakeFd);
-    if (mWakeFd >= 0) close(mWakeFd);
-    mWakeFd = -1;
+    SystemUtils::destroyEventFd(mWakeFd);
     mCallbackLooper = nullptr;
 
     // 3. 清空未分发的事件
@@ -239,7 +237,7 @@ bool AudioMgr::play(const std::string& filePath, bool loop) {
 bool AudioMgr::startStream(const PcmFormat& format, size_t maxBufferedBytes) {
     if (!isSupported() || format.sampleRate == 0 || format.channels == 0 ||
         (format.bitsPerSample != 8 && format.bitsPerSample != 16 &&
-         format.bitsPerSample != 24 && format.bitsPerSample != 32)) {
+            format.bitsPerSample != 24 && format.bitsPerSample != 32)) {
         LOGE("AudioMgr startStream rejected. support=%d rate=%u channels=%u bits=%u",
             isSupported(), static_cast<unsigned>(format.sampleRate),
             static_cast<unsigned>(format.channels), static_cast<unsigned>(format.bitsPerSample));
@@ -443,9 +441,7 @@ void AudioMgr::postStateChanged(State oldState, State newState) {
         mStateEvents.push({ oldState, newState });
     }
     // 向 eventfd 写入任意值以唤醒 Looper
-    const uint64_t value = 1;
-    const ssize_t result = write(mWakeFd, &value, sizeof(value));
-    if (result < 0 && errno != EAGAIN) {
+    if (!SystemUtils::notifyEventFd(mWakeFd)) {
         LOGE("AudioMgr wake failed. errno=%d err=%s", errno, std::strerror(errno));
     }
 }
@@ -466,8 +462,7 @@ int AudioMgr::onWake(int fd, int events, void* context) {
 
 /// @brief 排空 eventfd，避免多次写入只触发一次回调时的积压。
 void AudioMgr::drainWakeFd() {
-    uint64_t value = 0;
-    while (mWakeFd >= 0 && read(mWakeFd, &value, sizeof(value)) > 0) { }
+    SystemUtils::drainEventFd(mWakeFd);
 }
 
 /// @brief 在 Looper 线程中分发所有待处理的状态事件。

@@ -16,11 +16,11 @@
 #include <core/systemclock.h>
 #include <cdlog.h>
 
-#include <sys/eventfd.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
 #include "string_utils.h"
+#include "system_utils.h"
 #include "url_utils.h"
 
 #include <algorithm>
@@ -340,14 +340,14 @@ void HttpManager::init(cdroid::Looper* mainLooper, size_t maxConcurrent, long po
     curl_share_setopt(mShare, CURLSHOPT_USERDATA, &mShareMutex);
 
     // 主线程唤醒 eventfd
-    mMainWakeFd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+    mMainWakeFd = SystemUtils::createEventFd();
     FailFast(mMainWakeFd < 0, "eventfd(main) failed, errno=%d", errno);
     const int addResult = mMainLooper->addFd(mMainWakeFd, 0,
         cdroid::Looper::EVENT_INPUT, onMainThreadWake, this);
     FailFast(addResult < 0, "Looper::addFd failed, fd=%d", mMainWakeFd);
 
     // I/O 线程唤醒 eventfd
-    mIoWakeFd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+    mIoWakeFd = SystemUtils::createEventFd();
     FailFast(mIoWakeFd < 0, "eventfd(io) failed, errno=%d", errno);
 
     // 启动单 I/O 线程
@@ -379,14 +379,8 @@ void HttpManager::shutdown() {
     if (mMainLooper != nullptr && mMainWakeFd >= 0) {
         mMainLooper->removeFd(mMainWakeFd);
     }
-    if (mMainWakeFd >= 0) {
-        close(mMainWakeFd);
-        mMainWakeFd = -1;
-    }
-    if (mIoWakeFd >= 0) {
-        close(mIoWakeFd);
-        mIoWakeFd = -1;
-    }
+    SystemUtils::destroyEventFd(mMainWakeFd);
+    SystemUtils::destroyEventFd(mIoWakeFd);
 
     if (mMulti != nullptr) {
         curl_multi_cleanup(mMulti);
@@ -783,9 +777,7 @@ void HttpManager::validateRequestOrDie(const Request& request) {
 
 /// @brief 主线程唤醒回调
 int HttpManager::onMainThreadWake(int fd, int /*events*/, void* context) {
-    uint64_t value = 0;
-    while (read(fd, &value, sizeof(value)) > 0) {
-    }
+    SystemUtils::drainEventFd(fd);
 
     HttpManager* manager = static_cast<HttpManager*>(context);
     manager->drainMainThreadMessages();
@@ -798,9 +790,7 @@ void HttpManager::wakeMainThread() {
         return;
     }
 
-    const uint64_t value = 1;
-    const ssize_t rc = write(mMainWakeFd, &value, sizeof(value));
-    FailFast(rc < 0 && errno != EAGAIN, "write(eventfd) failed, errno=%d", errno);
+    FailFast(!SystemUtils::notifyEventFd(mMainWakeFd), "write(eventfd) failed, errno=%d", errno);
 }
 
 /// @brief 唤醒 I/O 线程处理请求
@@ -809,9 +799,7 @@ void HttpManager::wakeIoThread() {
         return;
     }
 
-    const uint64_t value = 1;
-    const ssize_t rc = write(mIoWakeFd, &value, sizeof(value));
-    FailFast(rc < 0 && errno != EAGAIN, "write(eventfd) failed, errno=%d", errno);
+    FailFast(!SystemUtils::notifyEventFd(mIoWakeFd), "write(eventfd) failed, errno=%d", errno);
 }
 
 /// @brief 派发主线程事件队列
@@ -961,9 +949,7 @@ void HttpManager::ioLoop() {
         waitFd.revents = 0;
         curl_multi_wait(mMulti, &waitFd, 1, waitTimeoutMs, &numFds);
 
-        uint64_t value = 0;
-        while (read(mIoWakeFd, &value, sizeof(value)) > 0) {
-        }
+        SystemUtils::drainEventFd(mIoWakeFd);
     }
 #endif
 }

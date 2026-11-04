@@ -224,6 +224,28 @@ std::string StringUtils::trim(std::string str) {
     return trimLeft(trimRight(str));
 }
 
+bool StringUtils::startsWith(const std::string& str, const std::string& prefix) {
+    return str.size() >= prefix.size()
+        && str.compare(0, prefix.size(), prefix) == 0;
+}
+
+bool StringUtils::endsWith(const std::string& str, const std::string& suffix) {
+    return str.size() >= suffix.size()
+        && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
+
+bool StringUtils::endsWithIgnoreCase(const std::string& str, const std::string& suffix) {
+    if (str.size() < suffix.size()) return false;
+
+    const size_t offset = str.size() - suffix.size();
+    for (size_t i = 0; i < suffix.size(); ++i) {
+        const unsigned char lhs = static_cast<unsigned char>(str[offset + i]);
+        const unsigned char rhs = static_cast<unsigned char>(suffix[i]);
+        if (std::tolower(lhs) != std::tolower(rhs)) return false;
+    }
+    return true;
+}
+
 const char* StringUtils::strcasestr(const char* haystack, const char* needle) {
     if (haystack == nullptr || needle == nullptr) return nullptr;
     if (!*needle) return haystack; // 如果 str2 为空，返回 str1
@@ -410,19 +432,18 @@ std::string StringUtils::truncateWithLimit(const char* str, size_t maxChars, int
     return result;
 }
 
-std::string StringUtils::sizeVisualization(size_t byteSize) {
-    static const char* units[] = {"B", "KB", "MB", "GB"};
+std::string StringUtils::sizeVisualization(size_t byteSize, int precision, bool includeTB) {
+    static const char* units[] = { "B", "KB", "MB", "GB", "TB" };
+    const int maxUnit = includeTB ? 4 : 3;
+
     double size = static_cast<double>(byteSize);
     int unitIndex = 0;
-    while (size >= 1024.0 && unitIndex < 3) {
+    while (size >= 1024.0 && unitIndex < maxUnit) {
         size /= 1024.0;
         ++unitIndex;
     }
-    char buf[64];
-    if (unitIndex == 0) {
-        snprintf(buf, sizeof(buf), "%.0f %s", size, units[unitIndex]);
-    } else {
-        snprintf(buf, sizeof(buf), "%.2f %s", size, units[unitIndex]);
-    }
-    return buf;
+
+    if (precision < 0) precision = 0;
+    const int decimals = (unitIndex == 0) ? 0 : precision;
+    return StringUtils::format("%.*f %s", decimals, size, units[unitIndex]);
 }

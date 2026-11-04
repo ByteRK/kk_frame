@@ -13,10 +13,10 @@
 
 #include "factory_http.h"
 
+#include "file_utils.h"
+#include "path_utils.h"
 #include "string_utils.h"
-
-#include <sys/stat.h>
-#include <cstdio>
+#include "time_utils.h"
 
 namespace {
 
@@ -32,29 +32,13 @@ namespace {
     const int kStressMaxInFlight = 2;         // 在途请求上限（防堆积）
     const char* kStressTagPrefix = "stress."; // 挂测请求 tag 前缀
 
-    bool ensureTestDir() {
-        struct stat st;
-        if (::stat(kTestDir, &st) == 0 && S_ISDIR(st.st_mode)) {
-            return true;
-        }
-        return ::mkdir(kTestDir, 0755) == 0;
-    }
-
-    bool fileExists(const std::string& path) {
-        struct stat st;
-        return ::stat(path.c_str(), &st) == 0;
-    }
-
     /// @brief 生成一个用于上传测试的本地文件
     bool prepareUploadFile(const std::string& path) {
-        FILE* f = std::fopen(path.c_str(), "wb");
-        if (f == nullptr) return false;
         const std::string payload = "kk_frame upload test data\n";
-        for (int i = 0; i < 64; ++i) {
-            std::fwrite(payload.data(), 1, payload.size(), f);
-        }
-        std::fclose(f);
-        return true;
+        std::string content;
+        content.reserve(payload.size() * 64);
+        for (int i = 0; i < 64; ++i) content += payload;
+        return FileUtils::write(path, content);
     }
 
     /// @brief 将 HTTP 方法转为可读字符串（用于日志）
@@ -81,7 +65,7 @@ FactoryHttp::FactoryHttp(ViewGroup* container, PageFactory* factory) :
     mStressStat = PBase::get<TextView>(mRootView, AppRid::http_stress_stat);
     mStressBtn = PBase::get<Button>(mRootView, AppRid::http_stress);
 
-    ensureTestDir();
+    FileUtils::mkdir(kTestDir);
     prepareUploadFile(kUploadPath);
 
     PBase::click(mRootView, AppRid::http_ping, [this](View&) { testPing(); });
@@ -185,7 +169,7 @@ void FactoryHttp::testHead() {
 void FactoryHttp::testUpload() {
     mLog.clear();
     appendResult("--- 上传测试: PUT /upload ---");
-    if (!fileExists(kUploadPath)) {
+    if (!PathUtils::exists(kUploadPath)) {
         prepareUploadFile(kUploadPath);
     }
     g_http->submit(HttpManager::Request::CreateUpload(
@@ -318,9 +302,9 @@ void FactoryHttp::onHttpEvent(const HttpManager::Event& event) {
         if (tag == "http.slow") {
             const std::string partPath = std::string(kSlowPath) + ".part";
             appendResult(StringUtils::format("   临时文件残留: %s",
-                fileExists(partPath) ? "有(异常!)" : "无"));
+                PathUtils::exists(partPath) ? "有(异常!)" : "无"));
             appendResult(StringUtils::format("   目标文件存在: %s",
-                fileExists(kSlowPath) ? "是(异常!)" : "否"));
+                PathUtils::exists(kSlowPath) ? "是(异常!)" : "否"));
         }
     } break;
 
@@ -433,10 +417,7 @@ void FactoryHttp::refreshStressStat() {
     }
 
     const int64_t elapsedMs = cdroid::SystemClock::uptimeMillis() - mStressStartMs;
-    const int64_t elapsedSec = elapsedMs / 1000;
-    const int hh = static_cast<int>(elapsedSec / 3600);
-    const int mm = static_cast<int>((elapsedSec % 3600) / 60);
-    const int ss = static_cast<int>(elapsedSec % 60);
+    const std::string elapsed = TimeUtils::formatDuration(elapsedMs / 1000, false);
 
     const int successRate = mStressTotal > 0
         ? static_cast<int>(mStressSuccess * 100 / mStressTotal)
@@ -445,9 +426,9 @@ void FactoryHttp::refreshStressStat() {
     mStressStat->setVisibility(View::VISIBLE);
     mStressStat->setText(StringUtils::format(
         mStressRunning
-        ? "挂测运行中 | %02d:%02d:%02d | 发起 %llu 完成 %llu\n成功 %llu 失败 %llu | 成功率 %d%%"
-        : "挂测已停止 | %02d:%02d:%02d | 发起 %llu 完成 %llu\n成功 %llu 失败 %llu | 成功率 %d%%",
-        hh, mm, ss,
+        ? "挂测运行中 | %s | 发起 %llu 完成 %llu\n成功 %llu 失败 %llu | 成功率 %d%%"
+        : "挂测已停止 | %s | 发起 %llu 完成 %llu\n成功 %llu 失败 %llu | 成功率 %d%%",
+        elapsed.c_str(),
         static_cast<unsigned long long>(mStressRounds),
         static_cast<unsigned long long>(mStressTotal),
         static_cast<unsigned long long>(mStressSuccess),

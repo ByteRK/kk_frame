@@ -13,6 +13,7 @@
 
 #include "thread_mgr.h"
 #include "quick_define.h"
+#include "system_utils.h"
 
 #include <core/systemclock.h>
 #include <cdlog.h>
@@ -22,7 +23,6 @@
 #include <exception>
 #include <inttypes.h>
 #include <string.h>
-#include <sys/eventfd.h>
 #include <unistd.h>
 
 using cdroid::Looper;
@@ -50,7 +50,7 @@ void ThreadPool::init(int count) {
     mMainLooper = Looper::getMainLooper();
     FailFast(mMainLooper == nullptr, "main looper is null");
 
-    const int wakeFd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+    const int wakeFd = SystemUtils::createEventFd();
     FailFast(wakeFd < 0, "eventfd failed, errno=%d err=%s", errno, strerror(errno));
 
     const int addResult = mMainLooper->addFd(wakeFd, 0, Looper::EVENT_INPUT, onWake, this);
@@ -111,10 +111,7 @@ void ThreadPool::shutdown() {
         if (mainLooper != nullptr && mWakeFd >= 0) {
             mainLooper->removeFd(mWakeFd);
         }
-        if (mWakeFd >= 0) {
-            close(mWakeFd);
-            mWakeFd = -1;
-        }
+        SystemUtils::destroyEventFd(mWakeFd);
     }
 
     {
@@ -291,13 +288,7 @@ void ThreadPool::wakeMainThread() {
     std::lock_guard<std::mutex> wakeLock(mWakeMutex);
     if (mWakeFd < 0) return;
 
-    const uint64_t value = 1;
-    ssize_t result = 0;
-    do {
-        result = write(mWakeFd, &value, sizeof(value));
-    } while (result < 0 && errno == EINTR);
-
-    if (result < 0 && errno != EAGAIN) {
+    if (!SystemUtils::notifyEventFd(mWakeFd)) {
         LOGE("ThreadPool wake failed. errno=%d err=%s", errno, strerror(errno));
     }
 }
@@ -307,13 +298,7 @@ void ThreadPool::drainWakeFd() {
     std::lock_guard<std::mutex> wakeLock(mWakeMutex);
     if (mWakeFd < 0) return;
 
-    uint64_t value = 0;
-    ssize_t result = 0;
-    do {
-        result = read(mWakeFd, &value, sizeof(value));
-    } while (result < 0 && errno == EINTR);
-
-    if (result < 0 && errno != EAGAIN) {
+    if (!SystemUtils::drainEventFd(mWakeFd)) {
         LOGE("ThreadPool wake drain failed. errno=%d err=%s", errno, strerror(errno));
     }
 }

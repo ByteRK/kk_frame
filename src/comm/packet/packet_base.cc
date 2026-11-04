@@ -214,13 +214,9 @@ bool IAck::readU8(size_t offset, uint8_t& value) const {
 /// @return true 成功
 bool IAck::readU16(size_t offset, uint16_t& value, ByteOrder order) const {
     if (!hasRange(offset, sizeof(value))) return false;
-    if (order == ByteOrder::BigEndian) {
-        value = (static_cast<uint16_t>(mBuf[offset]) << 8)
-            | static_cast<uint16_t>(mBuf[offset + 1]);
-    } else {
-        value = (static_cast<uint16_t>(mBuf[offset + 1]) << 8)
-            | static_cast<uint16_t>(mBuf[offset]);
-    }
+    value = (order == ByteOrder::BigEndian)
+        ? EncodingUtils::readBig16(mBuf + offset)
+        : EncodingUtils::readLittle16(mBuf + offset);
     return true;
 }
 
@@ -231,16 +227,9 @@ bool IAck::readU16(size_t offset, uint16_t& value, ByteOrder order) const {
 /// @return true 成功
 bool IAck::readU32(size_t offset, uint32_t& value, ByteOrder order) const {
     if (!hasRange(offset, sizeof(value))) return false;
-    value = 0;
-    if (order == ByteOrder::BigEndian) {
-        for (size_t i = 0; i < sizeof(value); ++i) {
-            value = (value << 8) | static_cast<uint32_t>(mBuf[offset + i]);
-        }
-    } else {
-        for (size_t i = 0; i < sizeof(value); ++i) {
-            value |= static_cast<uint32_t>(mBuf[offset + i]) << (i * 8);
-        }
-    }
+    value = (order == ByteOrder::BigEndian)
+        ? EncodingUtils::readBig32(mBuf + offset)
+        : EncodingUtils::readLittle32(mBuf + offset);
     return true;
 }
 
@@ -251,16 +240,9 @@ bool IAck::readU32(size_t offset, uint32_t& value, ByteOrder order) const {
 /// @return true 成功
 bool IAck::readU64(size_t offset, uint64_t& value, ByteOrder order) const {
     if (!hasRange(offset, sizeof(value))) return false;
-    value = 0;
-    if (order == ByteOrder::BigEndian) {
-        for (size_t i = 0; i < sizeof(value); ++i) {
-            value = (value << 8) | static_cast<uint64_t>(mBuf[offset + i]);
-        }
-    } else {
-        for (size_t i = 0; i < sizeof(value); ++i) {
-            value |= static_cast<uint64_t>(mBuf[offset + i]) << (i * 8);
-        }
-    }
+    value = (order == ByteOrder::BigEndian)
+        ? EncodingUtils::readBig64(mBuf + offset)
+        : EncodingUtils::readLittle64(mBuf + offset);
     return true;
 }
 

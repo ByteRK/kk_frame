@@ -98,6 +98,24 @@ namespace StringUtils {
     /// @return 修剪空白字符后的字符串
     std::string trim(std::string str);
 
+    /// @brief 判断字符串是否以指定前缀开头
+    /// @param str 源字符串
+    /// @param prefix 前缀
+    /// @return true 以指定前缀开头
+    bool startsWith(const std::string& str, const std::string& prefix);
+
+    /// @brief 判断字符串是否以指定后缀结尾
+    /// @param str 源字符串
+    /// @param suffix 后缀
+    /// @return true 以指定后缀结尾
+    bool endsWith(const std::string& str, const std::string& suffix);
+
+    /// @brief 判断字符串是否以指定后缀结尾（忽略大小写）
+    /// @param str 源字符串
+    /// @param suffix 后缀
+    /// @return true 以指定后缀结尾
+    bool endsWithIgnoreCase(const std::string& str, const std::string& suffix);
+
     /// @brief 不区分大小写的字符串查找
     /// @param haystack 查找的字符串
     /// @param needle 被查找的子串(匹配对象)
@@ -149,10 +167,13 @@ namespace StringUtils {
     std::string truncateWithLimit(const char* str, size_t maxChars, 
                              int chineseWeight = 1, const std::string& suffix = "");
 
-    /// @brief 字节数可视化，如1024 -> 1KB
-    /// @param size 字节数
+    /// @brief 字节数可视化，如1024 -> 1.00 KB
+    /// @param byteSize 字节数
+    /// @param precision 进位后保留的小数位数（字节单位不保留小数）
+    /// @param includeTB 是否允许进位到 TB
     /// @return 可视化后的字符串
-    std::string sizeVisualization(size_t byteSize);
+    std::string sizeVisualization(size_t byteSize, int precision = 2,
+        bool includeTB = false);
 
 } // StringUtils
 

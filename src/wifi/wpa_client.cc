@@ -12,6 +12,10 @@
 **/
 
 #include "wpa_client.h"
+
+#include "path_utils.h"
+#include "string_utils.h"
+
 #include <cstring>
 #include <chrono>
 #include <cerrno>
@@ -29,16 +33,15 @@ static std::string NormalizeWpaEvent(std::string msg) {
 
     // 去掉 "IFNAME=wlan0 " 这类前缀（可能还有 "IFNAME=wlan0 " + "CTRL-EVENT-..."）
     const std::string key = "IFNAME=";
-    if (msg.compare(0, key.size(), key) == 0) {
+    if (StringUtils::startsWith(msg, key)) {
         auto sp = msg.find(' ');
         if (sp != std::string::npos) {
             msg.erase(0, sp + 1);
         }
     }
 
-    // 去掉开头空格
-    while (!msg.empty() && (msg[0] == ' ' || msg[0] == '\t')) msg.erase(0, 1);
-    return msg;
+    // 去掉开头空白
+    return StringUtils::trimLeft(std::move(msg));
 }
 
 WpaClient::WpaClient(const Options& opt) : mOpt(opt) {
@@ -57,7 +60,7 @@ bool WpaClient::open() {
     if (mCmd) return true;
 
     // ctrl interface socket path 通常是: /var/run/wpa_supplicant/wlan0
-    const std::string sock = mOpt.ctrl_path + "/" + mOpt.ifname;
+    const std::string sock = PathUtils::join(mOpt.ctrl_path, mOpt.ifname);
 
     mCmd = wpa_ctrl_open(sock.c_str());
     if (!mCmd) return false;
@@ -125,9 +128,7 @@ bool WpaClient::request(const std::string& cmd, std::string& reply) {
 
     // reply 末尾可能带 '\n'
     reply.assign(buf, len);
-    while (!reply.empty() && (reply.back() == '\n' || reply.back() == '\r')) {
-        reply.pop_back();
-    }
+    reply = StringUtils::trimRight(std::move(reply));
 #else
     reply = "OK";
     LOGI("WpaClient::request(%s)", cmd.c_str());
@@ -233,9 +234,7 @@ void WpaClient::monitorLoop() {
         if (ret == 0 && len > 0) {
             LOG(VERBOSE) << "WPA-EVENT(raw): " << std::string(buf, len);
             std::string msg(buf, len);
-            while (!msg.empty() && (msg.back() == '\n' || msg.back() == '\r')) {
-                msg.pop_back();
-            }
+            msg = StringUtils::trimRight(std::move(msg));
             if (mEventCb) mEventCb(NormalizeWpaEvent(msg));
         }
     }

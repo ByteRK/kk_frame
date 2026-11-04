@@ -12,13 +12,13 @@
 **/
 
 #include "transport.h"
+#include "system_utils.h"
 
 #include <cdlog.h>
 
 #include <chrono>
 #include <errno.h>
 #include <string.h>
-#include <sys/eventfd.h>
 #include <unistd.h>
 
 constexpr int EVENT_QUEUE_WAIT_TIMEOUT_MS = 100; // 事件队列等待超时时间
@@ -108,7 +108,7 @@ int AsyncTransport::initAsyncDispatcher(cdroid::Looper* callbackLooper) {
         return -1;
     }
 
-    mWakeFd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+    mWakeFd = SystemUtils::createEventFd();
     if (mWakeFd < 0) {
         LOGE("AsyncTransport eventfd failed. errno=%d err=%s", errno, strerror(errno));
         return -2;
@@ -118,8 +118,7 @@ int AsyncTransport::initAsyncDispatcher(cdroid::Looper* callbackLooper) {
         mWakeFd, 0, cdroid::Looper::EVENT_INPUT, onWake, this);
     if (addResult < 0) {
         LOGE("AsyncTransport addFd failed. fd=%d", mWakeFd);
-        close(mWakeFd);
-        mWakeFd = -1;
+        SystemUtils::destroyEventFd(mWakeFd);
         mCallbackLooper = nullptr;
         return -3;
     }
@@ -133,10 +132,7 @@ void AsyncTransport::shutdownAsyncDispatcher() {
     if (mCallbackLooper != nullptr && mWakeFd >= 0) {
         mCallbackLooper->removeFd(mWakeFd);
     }
-    if (mWakeFd >= 0) {
-        close(mWakeFd);
-        mWakeFd = -1;
-    }
+    SystemUtils::destroyEventFd(mWakeFd);
     mCallbackLooper = nullptr;
     cancelAsyncEvents();
 }
@@ -210,18 +206,14 @@ int AsyncTransport::onWake(int fd, int events, void* context) {
 /// @brief 通过 FD 唤醒主线程
 void AsyncTransport::wakeMainThread() {
     if (mWakeFd < 0) return;
-    const uint64_t value = 1;
-    const ssize_t rc = write(mWakeFd, &value, sizeof(value));
-    if (rc < 0 && errno != EAGAIN) {
+    if (!SystemUtils::notifyEventFd(mWakeFd)) {
         LOGE("AsyncTransport wake failed. errno=%d err=%s", errno, strerror(errno));
     }
 }
 
 /// @brief 清空唤醒 FD
 void AsyncTransport::drainWakeFd() {
-    if (mWakeFd < 0) return;
-    uint64_t value = 0;
-    while (read(mWakeFd, &value, sizeof(value)) > 0) { }
+    SystemUtils::drainEventFd(mWakeFd);
 }
 
 /// @brief 分发事件

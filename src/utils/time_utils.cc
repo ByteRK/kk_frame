@@ -12,6 +12,7 @@
 **/
 
 #include "time_utils.h"
+#include "string_utils.h"
 #include <cdlog.h>
 
 #include <algorithm>
@@ -339,6 +340,35 @@ int TimeUtils::getMaxYear(int upperLimit) {
     }
 
     return std::min(year, upperLimit);
+}
+
+std::string TimeUtils::formatDuration(int64_t seconds, bool showDays) {
+    if (seconds < 0) seconds = 0;
+
+    const int64_t days = seconds / DAY_SECONDS;
+    const int64_t hours = (seconds % DAY_SECONDS) / HOUR_SECONDS;
+    const int64_t minutes = (seconds % HOUR_SECONDS) / MINUTE_SECONDS;
+    const int64_t secs = seconds % MINUTE_SECONDS;
+
+    if (showDays) {
+        if (days > 0) {
+            return StringUtils::format("%lld天 %02lld:%02lld:%02lld",
+                static_cast<long long>(days),
+                static_cast<long long>(hours),
+                static_cast<long long>(minutes),
+                static_cast<long long>(secs));
+        }
+        return StringUtils::format("%02lld:%02lld:%02lld",
+            static_cast<long long>(hours),
+            static_cast<long long>(minutes),
+            static_cast<long long>(secs));
+    }
+
+    // 不显示天数时，小时按总小时数展示（可超过 24）
+    return StringUtils::format("%02lld:%02lld:%02lld",
+        static_cast<long long>(seconds / HOUR_SECONDS),
+        static_cast<long long>(minutes),
+        static_cast<long long>(secs));
 }
 
 int TimeUtils::getMaxDay(int year, int month) {

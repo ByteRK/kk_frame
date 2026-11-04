@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-12-26 14:40:26
- * @LastEditTime: 2026-10-28 14:20:20
+ * @LastEditTime: 2026-11-04 10:20:18
  * @FilePath: /kk_frame/src/utils/system_utils.cc
  * @Description: 系统相关的一些函数
  * @BugList:
@@ -15,18 +15,22 @@
 #include "project_utils.h"
 #include "time_utils.h"
 #include "string_utils.h"
+#include "path_utils.h"
 #include "series_info.h"
 #include "config_info.h"
 #include <cdlog.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
+#include <sys/eventfd.h>
+#include <sys/statvfs.h>
 #include <sys/time.h>
 #include <fcntl.h>
 #include <cerrno>
 #include <climits>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <algorithm>
 
 #define TIME_CACHE_FILE "timeCache"
@@ -52,8 +56,8 @@ namespace {
 #if defined(PRODUCT_SIGMA)
             // duty_cycle 直接为占空比百分比，有效范围 [1-99]，无需调整 period
             cfg.root = "/sys/class/pwm/pwmchip0/pwm2";
-            cfg.enablePath = cfg.root + "/enable";
-            cfg.valuePath = cfg.root + "/duty_cycle";
+            cfg.enablePath = PathUtils::join(cfg.root, "enable");
+            cfg.valuePath = PathUtils::join(cfg.root, "duty_cycle");
             cfg.onValue = "1";
             cfg.offValue = "0";
             cfg.minValue = 1;
@@ -61,12 +65,12 @@ namespace {
 #elif defined(PRODUCT_RK3506)
             // bl_power 为 FB_BLANK 等级：0 点亮，4 熄屏
             cfg.root = "/sys/class/backlight/backlight";
-            cfg.enablePath = cfg.root + "/bl_power";
-            cfg.valuePath = cfg.root + "/brightness";
+            cfg.enablePath = PathUtils::join(cfg.root, "bl_power");
+            cfg.valuePath = PathUtils::join(cfg.root, "brightness");
             cfg.onValue = "0";
             cfg.offValue = "4";
             cfg.minValue = 0;
-            int max = SystemUtils::readSysfsInt(cfg.root + "/max_brightness", 0);
+            int max = SystemUtils::readSysfsInt(PathUtils::join(cfg.root, "max_brightness"), 0);
             if (max > 0) cfg.maxValue = max;
 #endif
             if (!cfg.valuePath.empty() && access(cfg.root.c_str(), F_OK) == 0) {
@@ -77,52 +81,13 @@ namespace {
         return config;
     }
 
-    /// @brief 读取 sysfs/proc 节点的完整文本内容
-    /// @param path 路径
-    /// @param text 读取结果，已去除首尾空白与换行
-    /// @return true 成功
-    bool readSysfsText(const std::string& path, std::string& text) {
-        FILE* fp = fopen(path.c_str(), "r");
-        if (!fp) {
-            LOGE("Failed to open %s", path.c_str());
-            return false;
-        }
-
-        char   buffer[512];
-        size_t len = 0;
-        text.clear();
-        while ((len = fread(buffer, 1, sizeof(buffer), fp)) > 0) {
-            text.append(buffer, len);
-        }
-        bool success = (ferror(fp) == 0);
-        fclose(fp);
-
-        if (!success) {
-            LOGE("Read failed: %s", path.c_str());
-            return false;
-        }
-
-        // 去除首尾空白（含换行符）
-        const char* spaces = " \t\r\n";
-        size_t      begin = text.find_first_not_of(spaces);
-        if (begin == std::string::npos) {
-            text.clear();
-        } else {
-            size_t end = text.find_last_not_of(spaces);
-            text = text.substr(begin, end - begin + 1);
-        }
-        return true;
-    }
-
 } // namespace
 
-void SystemUtils::reboot() {
-    ProjectUtils::saveTime(std::string(APP_DATA_DIR) + TIME_CACHE_FILE);
-    sync();
+void SystemUtils::sync() {
 #ifndef PRODUCT_X64
-    std::system("reboot");
+    std::system("sync");
 #else
-    ::exit(0);
+    LOGI("-------- sync --------");
 #endif
 }
 
@@ -132,11 +97,13 @@ void SystemUtils::exit() {
     ::exit(0);
 }
 
-void SystemUtils::sync() {
+void SystemUtils::reboot() {
+    ProjectUtils::saveTime(std::string(APP_DATA_DIR) + TIME_CACHE_FILE);
+    sync();
 #ifndef PRODUCT_X64
-    std::system("sync");
+    std::system("reboot");
 #else
-    LOGI("-------- sync --------");
+    ::exit(0);
 #endif
 }
 
@@ -184,101 +151,6 @@ bool SystemUtils::asyncSystem(const std::string& cmd) {
     }
     // 父进程，fork() 成功
     return true;
-}
-
-bool SystemUtils::sysfs(const std::string& path, const std::string& value) {
-    FILE* fp = fopen(path.c_str(), "w");
-    if (!fp) {
-        LOGE("Failed to open %s", path);
-        return false;
-    }
-    bool success = (fprintf(fp, "%s", value.c_str()) > 0);
-    fclose(fp);
-
-    if (!success) {
-        LOGE("Write failed: %s -> %s", value.c_str(), path.c_str());
-    } else {
-        LOGV("Write %s -> %s", value.c_str(), path.c_str());
-    }
-    return success;
-}
-
-int SystemUtils::readSysfsInt(const std::string& path, int def) {
-    int64_t value = readSysfsInt64(path, def);
-    if (value > INT_MAX) {
-        LOGW("Read [%lld] overflow int <- %s", (long long)value, path.c_str());
-        return INT_MAX;
-    }
-    if (value < INT_MIN) {
-        LOGW("Read [%lld] overflow int <- %s", (long long)value, path.c_str());
-        return INT_MIN;
-    }
-    return static_cast<int>(value);
-}
-
-int64_t SystemUtils::readSysfsInt64(const std::string& path, int64_t def) {
-    std::string text;
-    if (!readSysfsText(path, text)) return def;
-
-    char*     end = nullptr;
-    errno = 0;
-    long long value = strtoll(text.c_str(), &end, 10);
-    if (end == text.c_str() || *end != '\0' || errno == ERANGE) {
-        LOGE("Read failed: %s [%s]", path.c_str(), text.c_str());
-        return def;
-    }
-
-    LOGV("Read [%lld] <- %s", value, path.c_str());
-    return static_cast<int64_t>(value);
-}
-
-double SystemUtils::readSysfsDouble(const std::string& path, double def) {
-    std::string text;
-    if (!readSysfsText(path, text)) return def;
-
-    char*  end = nullptr;
-    errno = 0;
-    double value = strtod(text.c_str(), &end);
-    if (end == text.c_str() || *end != '\0' || errno == ERANGE) {
-        LOGE("Read failed: %s [%s]", path.c_str(), text.c_str());
-        return def;
-    }
-
-    LOGV("Read [%f] <- %s", value, path.c_str());
-    return value;
-}
-
-std::string SystemUtils::readSysfsString(const std::string& path, const std::string& def) {
-    std::string text;
-    if (!readSysfsText(path, text) || text.empty()) return def;
-
-    LOGV("Read [%s] <- %s", text.c_str(), path.c_str());
-    return text;
-}
-
-bool SystemUtils::readSysfsBool(const std::string& path, bool def) {
-    std::string text;
-    if (!readSysfsText(path, text) || text.empty()) return def;
-
-    static const char* const trueValues[] = { "1", "y", "yes", "true", "on", "enable", "enabled" };
-    static const char* const falseValues[] = { "0", "n", "no", "false", "off", "disable", "disabled" };
-
-    const std::string key = StringUtils::lowerNew(text);
-    for (const char* item : trueValues) {
-        if (key == item) {
-            LOGV("Read [true] <- %s", path.c_str());
-            return true;
-        }
-    }
-    for (const char* item : falseValues) {
-        if (key == item) {
-            LOGV("Read [false] <- %s", path.c_str());
-            return false;
-        }
-    }
-
-    LOGE("Read failed: %s [%s]", path.c_str(), text.c_str());
-    return def;
 }
 
 void SystemUtils::setBrightness(int value, bool swap) {
@@ -332,16 +204,6 @@ void SystemUtils::setVolume(int value) {
 #else
     LOGI("设置音量 %d", value);
 #endif
-}
-
-void SystemUtils::recoverTime() {
-    ProjectUtils::loadTime(std::string(APP_DATA_DIR) + TIME_CACHE_FILE);
-}
-
-void SystemUtils::clearTimeCache() {
-    std::string cacheFile = std::string(APP_DATA_DIR) + TIME_CACHE_FILE;
-    system(std::string("rm -f ") + cacheFile);
-    sync();
 }
 
 void SystemUtils::setTime(const int64_t & timestamp) {
@@ -451,18 +313,198 @@ void SystemUtils::syncHWClock() {
 #endif
 }
 
-int SystemUtils::getTwscTpVersion() {
-#ifndef PRODUCT_X64
-    return 0;
-#else
-    int fd = open("/dev/techwin_ioctl", O_RDONLY);
-    if (fd < 0) {
-        perror("open failed");
-        return -1;
+void SystemUtils::recoverTime() {
+    ProjectUtils::loadTime(std::string(APP_DATA_DIR) + TIME_CACHE_FILE);
+}
+
+void SystemUtils::clearTimeCache() {
+    std::string cacheFile = std::string(APP_DATA_DIR) + TIME_CACHE_FILE;
+    system(std::string("rm -f ") + cacheFile);
+    sync();
+}
+
+bool SystemUtils::sysfs(const std::string& path, const std::string& value) {
+    FILE* fp = fopen(path.c_str(), "w");
+    if (!fp) {
+        LOGE("Failed to open %s", path);
+        return false;
     }
-    int ret = ioctl(fd, 0xff);
-    LOG(INFO) << "getTwscTpVersion: " << ret << std::endl;
-    close(fd);
-    return ret;
-#endif
+    bool success = (fprintf(fp, "%s", value.c_str()) > 0);
+    fclose(fp);
+
+    if (!success) {
+        LOGE("Write failed: %s -> %s", value.c_str(), path.c_str());
+    } else {
+        LOGV("Write %s -> %s", value.c_str(), path.c_str());
+    }
+    return success;
+}
+
+int SystemUtils::readSysfsInt(const std::string& path, int def) {
+    int64_t value = readSysfsInt64(path, def);
+    if (value > INT_MAX) {
+        LOGW("Read [%lld] overflow int <- %s", (long long)value, path.c_str());
+        return INT_MAX;
+    }
+    if (value < INT_MIN) {
+        LOGW("Read [%lld] overflow int <- %s", (long long)value, path.c_str());
+        return INT_MIN;
+    }
+    return static_cast<int>(value);
+}
+
+int64_t SystemUtils::readSysfsInt64(const std::string& path, int64_t def) {
+    std::string text;
+    if (!readTextFile(path, text)) return def;
+
+    char*     end = nullptr;
+    errno = 0;
+    long long value = strtoll(text.c_str(), &end, 10);
+    if (end == text.c_str() || *end != '\0' || errno == ERANGE) {
+        LOGE("Read failed: %s [%s]", path.c_str(), text.c_str());
+        return def;
+    }
+
+    LOGV("Read [%lld] <- %s", value, path.c_str());
+    return static_cast<int64_t>(value);
+}
+
+double SystemUtils::readSysfsDouble(const std::string& path, double def) {
+    std::string text;
+    if (!readTextFile(path, text)) return def;
+
+    char*  end = nullptr;
+    errno = 0;
+    double value = strtod(text.c_str(), &end);
+    if (end == text.c_str() || *end != '\0' || errno == ERANGE) {
+        LOGE("Read failed: %s [%s]", path.c_str(), text.c_str());
+        return def;
+    }
+
+    LOGV("Read [%f] <- %s", value, path.c_str());
+    return value;
+}
+
+std::string SystemUtils::readSysfsString(const std::string& path, const std::string& def) {
+    std::string text;
+    if (!readTextFile(path, text) || text.empty()) return def;
+
+    LOGV("Read [%s] <- %s", text.c_str(), path.c_str());
+    return text;
+}
+
+bool SystemUtils::readSysfsBool(const std::string& path, bool def) {
+    std::string text;
+    if (!readTextFile(path, text) || text.empty()) return def;
+
+    static const char* const trueValues[] = { "1", "y", "yes", "true", "on", "enable", "enabled" };
+    static const char* const falseValues[] = { "0", "n", "no", "false", "off", "disable", "disabled" };
+
+    const std::string key = StringUtils::lowerNew(text);
+    for (const char* item : trueValues) {
+        if (key == item) {
+            LOGV("Read [true] <- %s", path.c_str());
+            return true;
+        }
+    }
+    for (const char* item : falseValues) {
+        if (key == item) {
+            LOGV("Read [false] <- %s", path.c_str());
+            return false;
+        }
+    }
+
+    LOGE("Read failed: %s [%s]", path.c_str(), text.c_str());
+    return def;
+}
+
+bool SystemUtils::readTextFile(const std::string& path, std::string& content) {
+    FILE* fp = fopen(path.c_str(), "r");
+    if (!fp) {
+        LOGE("Failed to open %s", path.c_str());
+        return false;
+    }
+
+    char   buffer[512];
+    size_t len = 0;
+    content.clear();
+    while ((len = fread(buffer, 1, sizeof(buffer), fp)) > 0) {
+        content.append(buffer, len);
+    }
+    const bool success = (ferror(fp) == 0);
+    fclose(fp);
+
+    if (!success) {
+        LOGE("Read failed: %s", path.c_str());
+        return false;
+    }
+
+    // 去除首尾空白（含换行符），便于直接按值解析
+    content = StringUtils::trim(std::move(content));
+    return true;
+}
+
+SystemUtils::DiskUsage SystemUtils::getDiskUsage(const std::string& path) {
+    DiskUsage usage;
+    struct statvfs stat = {};
+    if (statvfs(path.c_str(), &stat) != 0) return usage;
+
+    usage.valid = true;
+    usage.total = static_cast<uint64_t>(stat.f_blocks) * stat.f_frsize;
+    usage.available = static_cast<uint64_t>(stat.f_bavail) * stat.f_frsize;
+    return usage;
+}
+
+int SystemUtils::createEventFd() {
+    return eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+}
+
+bool SystemUtils::notifyEventFd(int fd) {
+    if (fd < 0) return false;
+
+    const uint64_t value = 1;
+    ssize_t result = 0;
+    do {
+        result = write(fd, &value, sizeof(value));
+    } while (result < 0 && errno == EINTR);
+
+    // 计数器已满只说明通知已处于待处理状态，无需视为失败
+    return result >= 0 || errno == EAGAIN || errno == EWOULDBLOCK;
+}
+
+bool SystemUtils::drainEventFd(int fd) {
+    if (fd < 0) return false;
+
+    uint64_t value = 0;
+    while (true) {
+        const ssize_t result = read(fd, &value, sizeof(value));
+        if (result > 0) continue;
+        if (result < 0 && errno == EINTR) continue;
+        return result < 0 && (errno == EAGAIN || errno == EWOULDBLOCK);
+    }
+}
+
+bool SystemUtils::destroyEventFd(int& fd) {
+    if (fd < 0) {
+        fd = -1;
+        return true;
+    }
+
+    // close 返回 EINTR 时 fd 状态不确定，按惯例不重试
+    const int result = close(fd);
+    fd = -1;
+    if (result != 0) {
+        LOGE("close eventfd failed. errno=%d", errno);
+        return false;
+    }
+    return true;
+}
+
+std::string SystemUtils::errnoMessage(const char* prefix, int errorCode) {
+    std::string message(prefix == nullptr ? "errno" : prefix);
+    message += ", errno=";
+    message += std::to_string(errorCode);
+    message += ", ";
+    message += std::strerror(errorCode);
+    return message;
 }

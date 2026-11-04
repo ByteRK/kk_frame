@@ -65,3 +65,21 @@ std::string EncodingUtils::hexEscapes(const std::string& input) {
     }
     return std::string(bytes.begin(), bytes.end());
 }
+
+std::string EncodingUtils::hexEncode(const void* data, size_t length) {
+    static const char kHex[] = "0123456789abcdef";
+    const unsigned char* bytes = static_cast<const unsigned char*>(data);
+    if (bytes == nullptr || length == 0) return std::string();
+
+    std::string result;
+    result.reserve(length * 2);
+    for (size_t i = 0; i < length; ++i) {
+        result.push_back(kHex[bytes[i] >> 4]);
+        result.push_back(kHex[bytes[i] & 0x0f]);
+    }
+    return result;
+}
+
+std::string EncodingUtils::hexEncode(const std::string& data) {
+    return hexEncode(data.data(), data.size());
+}

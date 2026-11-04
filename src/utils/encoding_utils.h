@@ -170,6 +170,17 @@ namespace EncodingUtils {
     /// @note 当看到文本显示为类似 "\xe4\xbd\xa0\xe5\xa5\xbd" 时，可以调用此函数将其转换为实际的字节流
     std::string hexEscapes(const std::string& input);
 
+    /// @brief 将字节数据编码为连续的十六进制字符串（小写，无分隔符）
+    /// @param data 数据指针
+    /// @param length 数据长度
+    /// @return 十六进制字符串
+    std::string hexEncode(const void* data, size_t length);
+
+    /// @brief 将字符串内容按字节编码为连续的十六进制字符串
+    /// @param data 字符串数据
+    /// @return 十六进制字符串
+    std::string hexEncode(const std::string& data);
+
 } // EncodingUtils
 
 #endif // !__ENCODING_UTILS_H__

@@ -12,9 +12,9 @@
 **/
 
 #include "custom_app.h"
-#include <unistd.h>
 #include <cdlog.h>
 #include "cdroid_utils.h"
+#include "path_utils.h"
 
 CustomApp::CustomApp(int argc, const char* argv[]) :cdroid::App(argc, argv) {
 #ifdef PRODUCT_X64
@@ -27,7 +27,7 @@ bool CustomApp::checkPackage(const std::string& name) {
 }
 
 void CustomApp::addPackage(const std::string& path, const std::string& name) {
-    if (access(path.c_str(), F_OK) != 0) {
+    if (!PathUtils::exists(path)) {
         LOGE("package %s not found", path.c_str());
         return;
     }

@@ -15,6 +15,7 @@
 
 #include "path_utils.h"
 
+#include <algorithm>
 #include <cctype>
 
 namespace {
@@ -63,6 +64,13 @@ std::string UrlUtils::scheme(const std::string& url) {
 
 bool UrlUtils::hasScheme(const std::string& url) {
     return !scheme(url).empty();
+}
+
+bool UrlUtils::isHttpUrl(const std::string& url) {
+    std::string proto = scheme(url);
+    std::transform(proto.begin(), proto.end(), proto.begin(),
+        [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+    return proto == "http" || proto == "https";
 }
 
 std::string UrlUtils::host(const std::string& url) {

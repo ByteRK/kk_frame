@@ -177,6 +177,13 @@ namespace TimeUtils {
     /// @return 最大年份
     int getMaxYear(int upperLimit = 2099);
 
+    /// @brief 将秒数格式化为时长文本
+    /// @param seconds 秒数，负数按 0 处理
+    /// @param showDays 是否显示天数
+    /// @return showDays=true 时返回 "3天 05:21:08"（不足一天为 "05:21:08"）；
+    ///         showDays=false 时返回 "HH:MM:SS"，小时不按天取模
+    std::string formatDuration(int64_t seconds, bool showDays = true);
+
     /// @brief 获取指定年份指定月份的最大天数
     /// @param year 年
     /// @param month 月，范围 1-12

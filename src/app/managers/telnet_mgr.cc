@@ -12,11 +12,11 @@
 
 #include "telnet_mgr.h"
 #include "quick_define.h"
+#include "system_utils.h"
 
 #include <core/systemclock.h>
 #include <cdlog.h>
 
-#include <sys/eventfd.h>
 #include <sys/socket.h>
 #include <sys/select.h>
 #include <netinet/in.h>
@@ -40,31 +40,22 @@
 
 namespace {
 
-static const unsigned char TELNET_IAC  = 255;
-static const unsigned char TELNET_DONT = 254;
-static const unsigned char TELNET_DO   = 253;
-static const unsigned char TELNET_WONT = 252;
-static const unsigned char TELNET_WILL = 251;
-static const unsigned char TELNET_SB   = 250;
-static const unsigned char TELNET_SE   = 240;
+    static const unsigned char TELNET_IAC  = 255;
+    static const unsigned char TELNET_DONT = 254;
+    static const unsigned char TELNET_DO   = 253;
+    static const unsigned char TELNET_WONT = 252;
+    static const unsigned char TELNET_WILL = 251;
+    static const unsigned char TELNET_SB   = 250;
+    static const unsigned char TELNET_SE   = 240;
 
-static size_t resolveDefaultMaxWorkerCount() {
-    const size_t hardwareCount = static_cast<size_t>(std::thread::hardware_concurrency());
-    return std::max<size_t>(2, hardwareCount == 0 ? 2 : hardwareCount);
-}
+    static size_t resolveDefaultMaxWorkerCount() {
+        const size_t hardwareCount = static_cast<size_t>(std::thread::hardware_concurrency());
+        return std::max<size_t>(2, hardwareCount == 0 ? 2 : hardwareCount);
+    }
 
-static bool isWouldBlockErrno(int errorCode) {
-    return errorCode == EAGAIN || errorCode == EWOULDBLOCK;
-}
-
-static std::string makeErrnoMessage(const char* prefix, int errorCode) {
-    std::string message(prefix == nullptr ? "errno" : prefix);
-    message += ", errno=";
-    message += std::to_string(errorCode);
-    message += ", ";
-    message += std::strerror(errorCode);
-    return message;
-}
+    static bool isWouldBlockErrno(int errorCode) {
+        return errorCode == EAGAIN || errorCode == EWOULDBLOCK;
+    }
 
 } // namespace
 
@@ -81,16 +72,16 @@ struct TelnetManager::RequestContext {
         RequestId inRequestId,
         TelnetManager* inOwner)
         : request(inRequest),
-          requestId(inRequestId),
-          owner(inOwner),
-          cancelRequested(false),
-          started(false),
-          completed(false),
-          socketFd(-1),
-          currentCommandIndex(0),
-          telnetState(TelnetState::DATA),
-          pendingTelnetCommand(0),
-          lastDataCallbackMs(0) { }
+        requestId(inRequestId),
+        owner(inOwner),
+        cancelRequested(false),
+        started(false),
+        completed(false),
+        socketFd(-1),
+        currentCommandIndex(0),
+        telnetState(TelnetState::DATA),
+        pendingTelnetCommand(0),
+        lastDataCallbackMs(0) { }
 
     ~RequestContext() {
         TelnetManager::closeContextSocket(this);
@@ -123,14 +114,14 @@ struct TelnetManager::MainThreadMessage {
 
 TelnetManager::Response::Response()
     : socketErrno(0),
-      sentBytes(0),
-      receivedBytes(0),
-      connected(false),
-      loggedIn(false),
-      timedOut(false),
-      cancelled(false),
-      peerClosed(false),
-      outputTruncated(false) { }
+    sentBytes(0),
+    receivedBytes(0),
+    connected(false),
+    loggedIn(false),
+    timedOut(false),
+    cancelled(false),
+    peerClosed(false),
+    outputTruncated(false) { }
 
 bool TelnetManager::Response::isSuccess() const {
     return connected && !timedOut && !cancelled && socketErrno == 0 && errorMessage.empty();
@@ -138,31 +129,31 @@ bool TelnetManager::Response::isSuccess() const {
 
 TelnetManager::Event::Event()
     : type(EventType::COMPLETED),
-      requestId(0),
-      port(23),
-      opaque(nullptr),
-      commandIndex(0) { }
+    requestId(0),
+    port(23),
+    opaque(nullptr),
+    commandIndex(0) { }
 
 TelnetManager::Request::Request()
     : port(23),
-      opaque(nullptr),
-      listener(nullptr),
-      loginPrompt("login:"),
-      passwordPrompt("Password:"),
-      lineEnding("\r\n"),
-      connectTimeoutMs(5000),
-      loginTimeoutMs(10000),
-      commandTimeoutMs(10000),
-      initialReadTimeoutMs(1000),
-      readIdleTimeoutMs(300),
-      sendTimeoutMs(5000),
-      dataIntervalMs(0),
-      storeOutput(true),
-      emitData(false),
-      replyTelnetNegotiation(true),
-      tcpNoDelay(true),
-      closeAfterCompleted(true),
-      maxOutputBytes(64 * 1024) { }
+    opaque(nullptr),
+    listener(nullptr),
+    loginPrompt("login:"),
+    passwordPrompt("Password:"),
+    lineEnding("\r\n"),
+    connectTimeoutMs(5000),
+    loginTimeoutMs(10000),
+    commandTimeoutMs(10000),
+    initialReadTimeoutMs(1000),
+    readIdleTimeoutMs(300),
+    sendTimeoutMs(5000),
+    dataIntervalMs(0),
+    storeOutput(true),
+    emitData(false),
+    replyTelnetNegotiation(true),
+    tcpNoDelay(true),
+    closeAfterCompleted(true),
+    maxOutputBytes(64 * 1024) { }
 
 TelnetManager::Request TelnetManager::Request::CreateCommand(const std::string& host,
     const std::string& command,
@@ -226,14 +217,14 @@ TelnetManager::Request TelnetManager::Request::CreateLoginCommands(const std::st
 
 TelnetManager::TelnetManager()
     : mInitialized(false),
-      mMainLooper(nullptr),
-      mWakeFd(-1),
-      mStopping(false),
-      mNextRequestId(1),
-      mMaxWorkerCount(0),
-      mWorkerIdleExitMs(0),
-      mAliveWorkerCount(0),
-      mIdleWorkerCount(0) { }
+    mMainLooper(nullptr),
+    mWakeFd(-1),
+    mStopping(false),
+    mNextRequestId(1),
+    mMaxWorkerCount(0),
+    mWorkerIdleExitMs(0),
+    mAliveWorkerCount(0),
+    mIdleWorkerCount(0) { }
 
 TelnetManager::~TelnetManager() {
     shutdown();
@@ -288,11 +279,11 @@ void TelnetManager::init(cdroid::Looper* mainLooper,
     mAliveWorkerCount = 0;
     mIdleWorkerCount = 0;
 
-    mWakeFd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+    mWakeFd = SystemUtils::createEventFd();
     FailFast(mWakeFd < 0, "eventfd failed, errno=%d", errno);
 
     const int addResult = mMainLooper->addFd(mWakeFd, 0, cdroid::Looper::EVENT_INPUT, onMainThreadWake, this);
-    FailFast(addResult == 0, "Looper::addFd failed, fd=%d", mWakeFd);
+    FailFast(addResult < 0, "Looper::addFd failed, fd=%d", mWakeFd);
 
     mInitialized.store(true);
 }
@@ -318,10 +309,7 @@ void TelnetManager::shutdown() {
         mMainLooper->removeFd(mWakeFd);
     }
 
-    if (mWakeFd >= 0) {
-        close(mWakeFd);
-        mWakeFd = -1;
-    }
+    SystemUtils::destroyEventFd(mWakeFd);
 
     {
         std::lock_guard<std::mutex> lock(mMainThreadMutex);
@@ -532,9 +520,7 @@ void TelnetManager::onWorkerExitLocked() {
 }
 
 int TelnetManager::onMainThreadWake(int fd, int /*events*/, void* context) {
-    uint64_t value = 0;
-    while (read(fd, &value, sizeof(value)) > 0) {
-    }
+    SystemUtils::drainEventFd(fd);
 
     TelnetManager* manager = static_cast<TelnetManager*>(context);
     manager->drainMainThreadMessages();
@@ -546,9 +532,7 @@ void TelnetManager::wakeMainThread() {
         return;
     }
 
-    const uint64_t value = 1;
-    const ssize_t rc = write(mWakeFd, &value, sizeof(value));
-    FailFast(rc < 0 && errno != EAGAIN, "write(eventfd) failed, errno=%d", errno);
+    FailFast(!SystemUtils::notifyEventFd(mWakeFd), "write(eventfd) failed, errno=%d", errno);
 }
 
 void TelnetManager::drainMainThreadMessages() {
@@ -760,7 +744,7 @@ bool TelnetManager::connectSocket(RequestContext* requestContext) {
         int fd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
         if (fd < 0) {
             response.socketErrno = errno;
-            response.errorMessage = makeErrnoMessage("socket failed", errno);
+            response.errorMessage = SystemUtils::errnoMessage("socket failed", errno);
             continue;
         }
 
@@ -773,7 +757,7 @@ bool TelnetManager::connectSocket(RequestContext* requestContext) {
 
         if (!setNonBlocking(fd, true)) {
             response.socketErrno = errno;
-            response.errorMessage = makeErrnoMessage("fcntl(O_NONBLOCK) failed", errno);
+            response.errorMessage = SystemUtils::errnoMessage("fcntl(O_NONBLOCK) failed", errno);
             closeContextSocket(requestContext);
             continue;
         }
@@ -786,7 +770,7 @@ bool TelnetManager::connectSocket(RequestContext* requestContext) {
 
         if (rc < 0 && errno != EINPROGRESS) {
             response.socketErrno = errno;
-            response.errorMessage = makeErrnoMessage("connect failed", errno);
+            response.errorMessage = SystemUtils::errnoMessage("connect failed", errno);
             closeContextSocket(requestContext);
             continue;
         }
@@ -822,7 +806,7 @@ bool TelnetManager::connectSocket(RequestContext* requestContext) {
                     continue;
                 }
                 response.socketErrno = errno;
-                response.errorMessage = makeErrnoMessage("select(connect) failed", errno);
+                response.errorMessage = SystemUtils::errnoMessage("select(connect) failed", errno);
                 closeContextSocket(requestContext);
                 break;
             }
@@ -839,14 +823,14 @@ bool TelnetManager::connectSocket(RequestContext* requestContext) {
             socklen_t soErrorLen = sizeof(soError);
             if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &soError, &soErrorLen) != 0) {
                 response.socketErrno = errno;
-                response.errorMessage = makeErrnoMessage("getsockopt(SO_ERROR) failed", errno);
+                response.errorMessage = SystemUtils::errnoMessage("getsockopt(SO_ERROR) failed", errno);
                 closeContextSocket(requestContext);
                 break;
             }
 
             if (soError != 0) {
                 response.socketErrno = soError;
-                response.errorMessage = makeErrnoMessage("connect failed", soError);
+                response.errorMessage = SystemUtils::errnoMessage("connect failed", soError);
                 closeContextSocket(requestContext);
                 break;
             }
@@ -1069,7 +1053,7 @@ bool TelnetManager::sendRaw(RequestContext* requestContext,
                 return false;
             }
             response.socketErrno = errno;
-            response.errorMessage = makeErrnoMessage("select(send) failed", errno);
+            response.errorMessage = SystemUtils::errnoMessage("select(send) failed", errno);
             return false;
         }
 
@@ -1091,7 +1075,7 @@ bool TelnetManager::sendRaw(RequestContext* requestContext,
                 return false;
             }
             response.socketErrno = errno;
-            response.errorMessage = makeErrnoMessage("send failed", errno);
+            response.errorMessage = SystemUtils::errnoMessage("send failed", errno);
             return false;
         }
 
@@ -1169,7 +1153,7 @@ TelnetManager::ReadStatus TelnetManager::readUntil(RequestContext* requestContex
                 return ReadStatus::CANCELLED;
             }
             response.socketErrno = errno;
-            response.errorMessage = makeErrnoMessage("select(recv) failed", errno);
+            response.errorMessage = SystemUtils::errnoMessage("select(recv) failed", errno);
             return ReadStatus::ERROR;
         }
 
@@ -1188,7 +1172,7 @@ TelnetManager::ReadStatus TelnetManager::readUntil(RequestContext* requestContex
                 return ReadStatus::CANCELLED;
             }
             response.socketErrno = errno;
-            response.errorMessage = makeErrnoMessage("recv failed", errno);
+            response.errorMessage = SystemUtils::errnoMessage("recv failed", errno);
             return ReadStatus::ERROR;
         }
 

@@ -12,6 +12,10 @@
 **/
 
 #include "image_animation_view.h"
+
+#include "path_utils.h"
+#include "string_utils.h"
+
 #include <dirent.h>
 #include <algorithm>
 #include <cstring>
@@ -125,7 +129,7 @@ void ImageAnimationView::showFrame(int index) {
     mCurrentFrame = index;
     const std::string fileName = mFrameProvider(index);
     if (!fileName.empty()) {
-        setImageResource(mAnimationPath + "/" + fileName);
+        setImageResource(PathUtils::join(mAnimationPath, fileName));
     }
 }
 
@@ -226,7 +230,7 @@ void ImageAnimationView::initAnimator() {
             mCurrentFrame = value;
             const std::string fileName = mFrameProvider(mCurrentFrame);
             if (!fileName.empty()) {
-                setImageResource(mAnimationPath + "/" + fileName);
+                setImageResource(PathUtils::join(mAnimationPath, fileName));
             }
         }
     }));
@@ -251,7 +255,7 @@ int ImageAnimationView::countPNGFiles(const std::string& path) {
     while ((entry = readdir(dir)) != nullptr) {
         const char* name = entry->d_name;
         size_t len = strlen(name);
-        if (len > 4 && strcasecmp(name + len - 4, ".png") == 0) {
+        if (len > 4 && StringUtils::endsWithIgnoreCase(name, ".png")) {
             count++;
         }
     }

@@ -13,14 +13,15 @@
 
 #include "factory_system.h"
 
+#include "path_utils.h"
 #include "string_utils.h"
+#include "system_utils.h"
 #include "time_utils.h"
 #include "global_data.h"
 #include "config_info.h"
 
 #include <core/systemclock.h>
 
-#include <sys/statvfs.h>
 #include <sys/utsname.h>
 #include <unistd.h>
 #include <cstdio>
@@ -28,18 +29,6 @@
 #include <cstring>
 
 namespace {
-
-    /// @brief 读取文本文件内容（适用于 /proc、/sys 等虚拟文件）
-    bool readTextFile(const std::string& path, std::string& content) {
-        FILE* fp = fopen(path.c_str(), "r");
-        if (!fp) return false;
-
-        content.clear();
-        char buffer[256];
-        while (fgets(buffer, sizeof(buffer), fp)) content.append(buffer);
-        fclose(fp);
-        return true;
-    }
 
     /// @brief 读取 "Key: Value" 格式文本中的数值
     /// @param content 文本内容
@@ -52,67 +41,10 @@ namespace {
         return strtoull(content.c_str() + pos + tag.size(), nullptr, 10);
     }
 
-    /// @brief 容量格式化
-    /// @param bytes 字节数
-    /// @return 例如 512.0 MB
-    std::string formatSize(uint64_t bytes) {
-        static const char* units[] = { "B", "KB", "MB", "GB", "TB" };
-        double value = static_cast<double>(bytes);
-        int unit = 0;
-        while (value >= 1024.0 && unit < 4) {
-            value /= 1024.0;
-            ++unit;
-        }
-        return StringUtils::format("%.1f %s", value, units[unit]);
-    }
-
-    /// @brief 时长格式化
-    /// @param seconds 秒数
-    /// @return 例如 3天 05:21:08 / 05:21:08
-    std::string formatDuration(uint64_t seconds) {
-        const uint64_t days = seconds / TimeUtils::DAY_SECONDS;
-        seconds %= TimeUtils::DAY_SECONDS;
-        const uint64_t hours = seconds / TimeUtils::HOUR_SECONDS;
-        seconds %= TimeUtils::HOUR_SECONDS;
-        const uint64_t minutes = seconds / TimeUtils::MINUTE_SECONDS;
-        const uint64_t secs = seconds % TimeUtils::MINUTE_SECONDS;
-
-        if (days > 0) {
-            return StringUtils::format("%llu天 %02llu:%02llu:%02llu",
-                static_cast<unsigned long long>(days),
-                static_cast<unsigned long long>(hours),
-                static_cast<unsigned long long>(minutes),
-                static_cast<unsigned long long>(secs));
-        }
-        return StringUtils::format("%02llu:%02llu:%02llu",
-            static_cast<unsigned long long>(hours),
-            static_cast<unsigned long long>(minutes),
-            static_cast<unsigned long long>(secs));
-    }
-
-    /// @brief 分区容量信息
-    struct DiskUsage {
-        bool     valid{ false };      // 是否获取成功
-        uint64_t total{ 0 };          // 总容量（字节）
-        uint64_t available{ 0 };      // 可用容量（字节）
-    };
-
-    /// @brief 获取指定路径所在分区的容量信息
-    DiskUsage getDiskUsage(const std::string& path) {
-        DiskUsage usage;
-        struct statvfs stat = {};
-        if (statvfs(path.c_str(), &stat) != 0) return usage;
-
-        usage.valid = true;
-        usage.total = static_cast<uint64_t>(stat.f_blocks) * stat.f_frsize;
-        usage.available = static_cast<uint64_t>(stat.f_bavail) * stat.f_frsize;
-        return usage;
-    }
-
     /// @brief 获取 CPU 型号
     std::string getCpuModel() {
         std::string content;
-        if (!readTextFile("/proc/cpuinfo", content)) return "-";
+        if (!SystemUtils::readTextFile("/proc/cpuinfo", content)) return "-";
 
         std::string fallback;  // 备用值（Processor 等信息）
         size_t pos = 0;
@@ -125,7 +57,7 @@ namespace {
             const size_t sep = line.find(':');
             if (sep == std::string::npos) continue;
 
-            const std::string value = StringUtils::trimRight(line.substr(sep + 1));
+            const std::string value = StringUtils::trim(line.substr(sep + 1));
             if (value.empty()) continue;
 
             if (line.compare(0, strlen("Hardware"), "Hardware") == 0
@@ -146,14 +78,12 @@ namespace {
     /// @return true 获取成功
     bool getCpuTemperature(double& celsius) {
         for (int i = 0; i < 8; ++i) {
-            const std::string path = "/sys/class/thermal/thermal_zone" + std::to_string(i) + "/temp";
-            FILE* fp = fopen(path.c_str(), "r");
-            if (!fp) continue;
+            const std::string path = PathUtils::join(
+                "/sys/class/thermal/thermal_zone" + std::to_string(i), "temp");
+            if (!PathUtils::isFile(path)) continue;
 
-            long value = 0;
-            const bool ok = (fscanf(fp, "%ld", &value) == 1);
-            fclose(fp);
-            if (!ok || value <= 0) continue;
+            const int value = SystemUtils::readSysfsInt(path, 0);
+            if (value <= 0) continue;
 
             // 部分驱动以毫摄氏度上报，部分直接上报摄氏度
             celsius = (value > 1000) ? (value / 1000.0) : static_cast<double>(value);
@@ -214,7 +144,7 @@ void FactorySystem::buildStaticInfo() {
 
     // 内存与交换分区总量
     std::string memText;
-    if (readTextFile("/proc/meminfo", memText)) {
+    if (SystemUtils::readTextFile("/proc/meminfo", memText)) {
         mStatic.memTotalKb = readFieldValue(memText, "MemTotal");
         mStatic.swapTotalKb = readFieldValue(memText, "SwapTotal");
     }
@@ -223,8 +153,8 @@ void FactorySystem::buildStaticInfo() {
     mStatic.pid = getpid();
 
     // 分区总量（仅需容量，不必每次刷新都重复取）
-    mStatic.rootDiskTotal = getDiskUsage("/").total;
-    mStatic.dataDiskTotal = getDiskUsage(APP_RW_DIR).total;
+    mStatic.rootDiskTotal = SystemUtils::getDiskUsage("/").total;
+    mStatic.dataDiskTotal = SystemUtils::getDiskUsage(APP_RW_DIR).total;
 }
 
 void FactorySystem::setInfo() {
@@ -234,7 +164,7 @@ void FactorySystem::setInfo() {
     const time_t nowSec = TimeUtils::getTimeSec();
     uint64_t uptimeSec = 0;
     std::string uptimeText;
-    if (readTextFile("/proc/uptime", uptimeText)) {
+    if (SystemUtils::readTextFile("/proc/uptime", uptimeText)) {
         uptimeSec = strtoull(uptimeText.c_str(), nullptr, 10);
     }
 
@@ -247,11 +177,11 @@ void FactorySystem::setInfo() {
         info += "开机时间: " + TimeUtils::getTimeFmtStr(
             static_cast<time_t>(nowSec - uptimeSec), "%Y-%m-%d %H:%M:%S") + "\n";
     }
-    info += "系统运行: " + formatDuration(uptimeSec) + "\n";
+    info += "系统运行: " + TimeUtils::formatDuration(uptimeSec) + "\n";
 
     const uint64_t nowMs = static_cast<uint64_t>(cdroid::SystemClock::uptimeMillis());
     const uint64_t appRunSec = (nowMs > g_data->mAppStart) ? (nowMs - g_data->mAppStart) / 1000 : 0;
-    info += "程序运行: " + formatDuration(appRunSec) + "\n";
+    info += "程序运行: " + TimeUtils::formatDuration(appRunSec) + "\n";
 
     info += "\n";
 
@@ -263,7 +193,7 @@ void FactorySystem::setInfo() {
 
     std::string loadText;
     double load1 = 0, load5 = 0, load15 = 0;
-    if (readTextFile("/proc/loadavg", loadText)
+    if (SystemUtils::readTextFile("/proc/loadavg", loadText)
         && sscanf(loadText.c_str(), "%lf %lf %lf", &load1, &load5, &load15) == 3) {
         info += StringUtils::format("系统负载: %.2f / %.2f / %.2f\n", load1, load5, load15);
     }
@@ -279,7 +209,7 @@ void FactorySystem::setInfo() {
     uint64_t availableKb = 0;
     uint64_t swapFreeKb = 0;
     std::string memText;
-    if (readTextFile("/proc/meminfo", memText)) {
+    if (SystemUtils::readTextFile("/proc/meminfo", memText)) {
         availableKb = readFieldValue(memText, "MemAvailable");
         if (availableKb == 0) {
             // 老内核无 MemAvailable，退化为 Free + Buffers + Cached
@@ -293,8 +223,8 @@ void FactorySystem::setInfo() {
     if (mStatic.memTotalKb > 0) {
         const uint64_t usedKb = (availableKb < mStatic.memTotalKb)
             ? (mStatic.memTotalKb - availableKb) : 0;
-        info += "内存总计: " + formatSize(mStatic.memTotalKb * 1024) + "\n";
-        info += "内存可用: " + formatSize(availableKb * 1024) + "\n";
+        info += "内存总计: " + StringUtils::sizeVisualization(mStatic.memTotalKb * 1024, 1, true) + "\n";
+        info += "内存可用: " + StringUtils::sizeVisualization(availableKb * 1024, 1, true) + "\n";
         info += StringUtils::format("内存占用: %.1f%%\n",
             usedKb * 100.0 / mStatic.memTotalKb);
     }
@@ -302,15 +232,15 @@ void FactorySystem::setInfo() {
     if (mStatic.swapTotalKb > 0) {
         const uint64_t swapUsedKb = (swapFreeKb < mStatic.swapTotalKb)
             ? (mStatic.swapTotalKb - swapFreeKb) : 0;
-        info += "交换分区: " + formatSize(swapUsedKb * 1024)
-            + " / " + formatSize(mStatic.swapTotalKb * 1024) + "\n";
+        info += "交换分区: " + StringUtils::sizeVisualization(swapUsedKb * 1024, 1, true)
+            + " / " + StringUtils::sizeVisualization(mStatic.swapTotalKb * 1024, 1, true) + "\n";
     }
 
     // 进程信息
     std::string selfText;
-    if (readTextFile("/proc/self/status", selfText)) {
+    if (SystemUtils::readTextFile("/proc/self/status", selfText)) {
         const uint64_t rssKb = readFieldValue(selfText, "VmRSS");
-        if (rssKb > 0) info += "程序内存: " + formatSize(rssKb * 1024) + "\n";
+        if (rssKb > 0) info += "程序内存: " + StringUtils::sizeVisualization(rssKb * 1024, 1, true) + "\n";
 
         const uint64_t threads = readFieldValue(selfText, "Threads");
         if (threads > 0) {
@@ -323,19 +253,19 @@ void FactorySystem::setInfo() {
     info += "\n";
 
     // 储存信息（总量取自静态缓存，仅查询可用容量）
-    auto appendDisk = [&info](const char* name, uint64_t total, const DiskUsage& disk) {
+    auto appendDisk = [&info](const char* name, uint64_t total, const SystemUtils::DiskUsage& disk) {
         if (!disk.valid || total == 0) {
             info += StringUtils::format("%s: -\n", name);
             return;
         }
         info += StringUtils::format("%s: %s 可用 / %s (剩余 %.1f%%)\n",
             name,
-            formatSize(disk.available).c_str(),
-            formatSize(total).c_str(),
+            StringUtils::sizeVisualization(disk.available, 1, true).c_str(),
+            StringUtils::sizeVisualization(total, 1, true).c_str(),
             disk.available * 100.0 / total);
     };
-    appendDisk("根分区", mStatic.rootDiskTotal, getDiskUsage("/"));
-    appendDisk("数据分区", mStatic.dataDiskTotal, getDiskUsage(APP_RW_DIR));
+    appendDisk("根分区", mStatic.rootDiskTotal, SystemUtils::getDiskUsage("/"));
+    appendDisk("数据分区", mStatic.dataDiskTotal, SystemUtils::getDiskUsage(APP_RW_DIR));
 
     mSystemInfo->setText(info.c_str());
 }
