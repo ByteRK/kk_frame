@@ -13,9 +13,12 @@
 
 #include "factory_system.h"
 
+
+#include "format_utils.h"
+#include "file_utils.h"
 #include "path_utils.h"
 #include "string_utils.h"
-#include "system_utils.h"
+#include "sysnode_utils.h"
 #include "time_utils.h"
 #include "global_data.h"
 #include "config_info.h"
@@ -44,7 +47,7 @@ namespace {
     /// @brief 获取 CPU 型号
     std::string getCpuModel() {
         std::string content;
-        if (!SystemUtils::readTextFile("/proc/cpuinfo", content)) return "-";
+        if (!SysNodeUtils::readTextFile("/proc/cpuinfo", content)) return "-";
 
         std::string fallback;  // 备用值（Processor 等信息）
         size_t pos = 0;
@@ -80,9 +83,9 @@ namespace {
         for (int i = 0; i < 8; ++i) {
             const std::string path = PathUtils::join(
                 "/sys/class/thermal/thermal_zone" + std::to_string(i), "temp");
-            if (!PathUtils::isFile(path)) continue;
+            if (!FileUtils::isFile(path)) continue;
 
-            const int value = SystemUtils::readSysfsInt(path, 0);
+            const int value = SysNodeUtils::readInt(path, 0);
             if (value <= 0) continue;
 
             // 部分驱动以毫摄氏度上报，部分直接上报摄氏度
@@ -144,7 +147,7 @@ void FactorySystem::buildStaticInfo() {
 
     // 内存与交换分区总量
     std::string memText;
-    if (SystemUtils::readTextFile("/proc/meminfo", memText)) {
+    if (SysNodeUtils::readTextFile("/proc/meminfo", memText)) {
         mStatic.memTotalKb = readFieldValue(memText, "MemTotal");
         mStatic.swapTotalKb = readFieldValue(memText, "SwapTotal");
     }
@@ -153,8 +156,8 @@ void FactorySystem::buildStaticInfo() {
     mStatic.pid = getpid();
 
     // 分区总量（仅需容量，不必每次刷新都重复取）
-    mStatic.rootDiskTotal = SystemUtils::getDiskUsage("/").total;
-    mStatic.dataDiskTotal = SystemUtils::getDiskUsage(APP_RW_DIR).total;
+    mStatic.rootDiskTotal = FileUtils::getUsage("/").total;
+    mStatic.dataDiskTotal = FileUtils::getUsage(APP_RW_DIR).total;
 }
 
 void FactorySystem::setInfo() {
@@ -164,7 +167,7 @@ void FactorySystem::setInfo() {
     const time_t nowSec = TimeUtils::getTimeSec();
     uint64_t uptimeSec = 0;
     std::string uptimeText;
-    if (SystemUtils::readTextFile("/proc/uptime", uptimeText)) {
+    if (SysNodeUtils::readTextFile("/proc/uptime", uptimeText)) {
         uptimeSec = strtoull(uptimeText.c_str(), nullptr, 10);
     }
 
@@ -193,7 +196,7 @@ void FactorySystem::setInfo() {
 
     std::string loadText;
     double load1 = 0, load5 = 0, load15 = 0;
-    if (SystemUtils::readTextFile("/proc/loadavg", loadText)
+    if (SysNodeUtils::readTextFile("/proc/loadavg", loadText)
         && sscanf(loadText.c_str(), "%lf %lf %lf", &load1, &load5, &load15) == 3) {
         info += StringUtils::format("系统负载: %.2f / %.2f / %.2f\n", load1, load5, load15);
     }
@@ -209,7 +212,7 @@ void FactorySystem::setInfo() {
     uint64_t availableKb = 0;
     uint64_t swapFreeKb = 0;
     std::string memText;
-    if (SystemUtils::readTextFile("/proc/meminfo", memText)) {
+    if (SysNodeUtils::readTextFile("/proc/meminfo", memText)) {
         availableKb = readFieldValue(memText, "MemAvailable");
         if (availableKb == 0) {
             // 老内核无 MemAvailable，退化为 Free + Buffers + Cached
@@ -223,8 +226,8 @@ void FactorySystem::setInfo() {
     if (mStatic.memTotalKb > 0) {
         const uint64_t usedKb = (availableKb < mStatic.memTotalKb)
             ? (mStatic.memTotalKb - availableKb) : 0;
-        info += "内存总计: " + StringUtils::sizeVisualization(mStatic.memTotalKb * 1024, 1, true) + "\n";
-        info += "内存可用: " + StringUtils::sizeVisualization(availableKb * 1024, 1, true) + "\n";
+        info += "内存总计: " + FormatUtils::sizeVisualization(mStatic.memTotalKb * 1024, 1, true) + "\n";
+        info += "内存可用: " + FormatUtils::sizeVisualization(availableKb * 1024, 1, true) + "\n";
         info += StringUtils::format("内存占用: %.1f%%\n",
             usedKb * 100.0 / mStatic.memTotalKb);
     }
@@ -232,15 +235,15 @@ void FactorySystem::setInfo() {
     if (mStatic.swapTotalKb > 0) {
         const uint64_t swapUsedKb = (swapFreeKb < mStatic.swapTotalKb)
             ? (mStatic.swapTotalKb - swapFreeKb) : 0;
-        info += "交换分区: " + StringUtils::sizeVisualization(swapUsedKb * 1024, 1, true)
-            + " / " + StringUtils::sizeVisualization(mStatic.swapTotalKb * 1024, 1, true) + "\n";
+        info += "交换分区: " + FormatUtils::sizeVisualization(swapUsedKb * 1024, 1, true)
+            + " / " + FormatUtils::sizeVisualization(mStatic.swapTotalKb * 1024, 1, true) + "\n";
     }
 
     // 进程信息
     std::string selfText;
-    if (SystemUtils::readTextFile("/proc/self/status", selfText)) {
+    if (SysNodeUtils::readTextFile("/proc/self/status", selfText)) {
         const uint64_t rssKb = readFieldValue(selfText, "VmRSS");
-        if (rssKb > 0) info += "程序内存: " + StringUtils::sizeVisualization(rssKb * 1024, 1, true) + "\n";
+        if (rssKb > 0) info += "程序内存: " + FormatUtils::sizeVisualization(rssKb * 1024, 1, true) + "\n";
 
         const uint64_t threads = readFieldValue(selfText, "Threads");
         if (threads > 0) {
@@ -253,19 +256,19 @@ void FactorySystem::setInfo() {
     info += "\n";
 
     // 储存信息（总量取自静态缓存，仅查询可用容量）
-    auto appendDisk = [&info](const char* name, uint64_t total, const SystemUtils::DiskUsage& disk) {
+    auto appendDisk = [&info](const char* name, uint64_t total, const FileUtils::DiskUsage& disk) {
         if (!disk.valid || total == 0) {
             info += StringUtils::format("%s: -\n", name);
             return;
         }
         info += StringUtils::format("%s: %s 可用 / %s (剩余 %.1f%%)\n",
             name,
-            StringUtils::sizeVisualization(disk.available, 1, true).c_str(),
-            StringUtils::sizeVisualization(total, 1, true).c_str(),
+            FormatUtils::sizeVisualization(disk.available, 1, true).c_str(),
+            FormatUtils::sizeVisualization(total, 1, true).c_str(),
             disk.available * 100.0 / total);
     };
-    appendDisk("根分区", mStatic.rootDiskTotal, SystemUtils::getDiskUsage("/"));
-    appendDisk("数据分区", mStatic.dataDiskTotal, SystemUtils::getDiskUsage(APP_RW_DIR));
+    appendDisk("根分区", mStatic.rootDiskTotal, FileUtils::getUsage("/"));
+    appendDisk("数据分区", mStatic.dataDiskTotal, FileUtils::getUsage(APP_RW_DIR));
 
     mSystemInfo->setText(info.c_str());
 }

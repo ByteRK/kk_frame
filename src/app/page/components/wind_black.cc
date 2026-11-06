@@ -14,7 +14,7 @@
 #include "wind_black.h"
 #include "base.h"
 #include "config_mgr.h"
-#include "system_utils.h"
+#include "device_utils.h"
 #include "wind_mgr.h"
 
 WindBlack::WindBlack() { }
@@ -24,7 +24,7 @@ WindBlack::~WindBlack() { }
 /// @brief 显示息屏
 void WindBlack::showBlack() {
     if (!checkInit() || isBlackShow()) return;
-    SystemUtils::setBrightness(0);
+    DeviceUtils::setBrightness(0);
     mBlackView->setVisibility(View::VISIBLE);
 }
 
@@ -33,7 +33,7 @@ void WindBlack::hideBlack() {
     if (!checkInit() || !isBlackShow()) return;
     g_window->hideScreenSave();
     mBlackView->setVisibility(View::GONE);
-    SystemUtils::setBrightness(g_config->brightness());
+    DeviceUtils::setBrightness(g_config->brightness());
 }
 
 /// @brief 检查当前是否显示
@@ -55,7 +55,7 @@ void WindBlack::init(ViewGroup* parent) {
     mBlackView->setOnClickListener([this](View& view) { hideBlack(); });
 
     // 初始化亮度
-    SystemUtils::setBrightness(g_config->brightness());
+    DeviceUtils::setBrightness(g_config->brightness());
 
     mIsInit = true;
 }

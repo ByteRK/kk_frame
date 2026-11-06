@@ -77,7 +77,7 @@ void NetImageView::setImageResource(const std::string& res) {
     }
 
     const std::string localPath = PathUtils::join(mCachePath, fileName);
-    if (PathUtils::isFile(localPath)) {
+    if (FileUtils::isFile(localPath)) {
         LOGI("[NetImageView] Use Cache Image: %s", localPath.c_str());
         ImageView::setImageResource(localPath);
         return;
@@ -123,7 +123,7 @@ void NetImageView::cancelDownload(bool reset) {
 /// @brief 初始化
 void NetImageView::init() {
     mCachePath = normalizeDirPath(mCachePath);
-    if (!PathUtils::isDir(mCachePath)) FileUtils::mkdir(mCachePath);
+    if (!FileUtils::isDir(mCachePath)) FileUtils::mkdir(mCachePath);
 }
 
 /// @brief 处理http事件
@@ -148,7 +148,7 @@ void NetImageView::onHttpEvent(const HttpManager::Event& event) {
         mRequestId = 0;
         if (event.response.isSuccess() &&
             !localPath.empty() &&
-            PathUtils::isFile(localPath)) {
+            FileUtils::isFile(localPath)) {
             ImageView::setImageResource(localPath);
         } else {
             ImageView::setImageResource(mDefaultImageRes);

@@ -14,7 +14,7 @@
 #ifndef __PACKET_BASE_H__
 #define __PACKET_BASE_H__
 
-#include "encoding_utils.h"
+#include "bytes_utils.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -53,7 +53,7 @@ public:
 /// @brief 收包解码器
 class IAck {
 public:
-    using ByteOrder = EncodingUtils::ByteOrder;
+    using ByteOrder = BytesUtils::ByteOrder;
 
 protected:
     uint8_t*  mBuf{ nullptr };     // 接收缓存数据区首地址

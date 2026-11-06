@@ -21,7 +21,7 @@
 
 #include "ntp_sync.h"
 #include "time_utils.h"
-#include "system_utils.h"
+#include "clock_utils.h"
 #include "library_config.h"
 
 #include <cdlog.h>
@@ -161,7 +161,7 @@ void NtpSync::onMain(int id, void* data) {
     mNtpTaskId = 0; // 重置任务ID
     if (s_NTPResult != 0) {
         int64_t seconds = s_NTPResult / 1000 + mUTC * TimeUtils::HOUR_SECONDS;
-        SystemUtils::setTime(seconds);
+        ClockUtils::setTime(seconds);
         mLastSyncMs = cdroid::SystemClock::uptimeMillis();
     }
 }

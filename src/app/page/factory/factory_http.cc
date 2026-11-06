@@ -14,7 +14,6 @@
 #include "factory_http.h"
 
 #include "file_utils.h"
-#include "path_utils.h"
 #include "string_utils.h"
 #include "time_utils.h"
 
@@ -169,7 +168,7 @@ void FactoryHttp::testHead() {
 void FactoryHttp::testUpload() {
     mLog.clear();
     appendResult("--- 上传测试: PUT /upload ---");
-    if (!PathUtils::exists(kUploadPath)) {
+    if (!FileUtils::exists(kUploadPath)) {
         prepareUploadFile(kUploadPath);
     }
     g_http->submit(HttpManager::Request::CreateUpload(
@@ -302,9 +301,9 @@ void FactoryHttp::onHttpEvent(const HttpManager::Event& event) {
         if (tag == "http.slow") {
             const std::string partPath = std::string(kSlowPath) + ".part";
             appendResult(StringUtils::format("   临时文件残留: %s",
-                PathUtils::exists(partPath) ? "有(异常!)" : "无"));
+                FileUtils::exists(partPath) ? "有(异常!)" : "无"));
             appendResult(StringUtils::format("   目标文件存在: %s",
-                PathUtils::exists(kSlowPath) ? "是(异常!)" : "否"));
+                FileUtils::exists(kSlowPath) ? "是(异常!)" : "否"));
         }
     } break;
 

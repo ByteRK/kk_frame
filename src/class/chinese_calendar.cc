@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-11 00:51:34
- * @LastEditTime: 2026-10-08 17:43:16
+ * @LastEditTime: 2026-11-04 18:58:17
  * @FilePath: /kk_frame/src/class/chinese_calendar.cc
  * @Description: 农历+干支+生肖+节气 计算
  * @BugList:
@@ -500,10 +500,8 @@ std::string ChineseCalendar::gz(int stemIdx, int branchIdx) {
  * @param second 秒
  * @return 合法返回 true，否则返回 false
  */
-bool ChineseCalendar::isValidDateTime(int year, int month, int day,
-    int hour, int minute, int second) {
-    return TimeUtils::isValidDate(year, month, day)
-        && TimeUtils::isValidClock(hour, minute, second);
+bool ChineseCalendar::isValidDateTime(int year, int month, int day, int hour, int minute, int second) {
+    return TimeUtils::isValidDate(year, month, day) && TimeUtils::isValidClock(hour, minute, second);
 }
 
 /**

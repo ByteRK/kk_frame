@@ -16,7 +16,7 @@
 
 #if ENABLED(GAUSS_DRAWABLE)
 
-#include "utils/math_utils.h"
+#include "image_utils.h"
 #include <cdlog.h>
 #include <random>
 
@@ -294,18 +294,18 @@ void GaussDrawable::computeBitmapGasuss(){
     //////////////////////////////////////////////////////////////////////////
 #if defined(USER_NENO) && (USER_NENO)
     // 使用Neon的指令集进行模糊的计算 
-    MathUtils::gaussianBlur2(bitmapRGBData, bitmapRGBGaussData, mGaussHeight , mGaussWidth, 4, mGaussRadius);
+    ImageUtils::gaussianBlurNeon(bitmapRGBData, bitmapRGBGaussData, mGaussHeight , mGaussWidth, 4, mGaussRadius);
 
 #elif defined(USER_OPENGL) && (USER_OPENGL)
     /* 高斯处理 */
-    MathUtils::gaussianBlur3(bitmapRGBData, bitmapRGBGaussData, mGaussWidth, mGaussHeight, 4,
+    ImageUtils::gaussianBlurFast(bitmapRGBData, bitmapRGBGaussData, mGaussWidth, mGaussHeight, 4,
                     mGaussRadius * mScale);
 #else 
     // 使用纯算法进行模糊的计算
-    MathUtils::gaussianBlur(bitmapRGBData, mGaussWidth ,mGaussHeight, mGaussRadius);
+    ImageUtils::gaussianBlur(bitmapRGBData, mGaussWidth ,mGaussHeight, mGaussRadius);
 #endif
     /////////////////////////////////////////////////////////////////////////
-    LOGV("MathUtils::gaussianBlur2 time = %ld USER_NENO = %d",SystemClock::uptimeMillis()-startTime2,USER_NENO);
+    LOGV("ImageUtils::gaussianBlurNeon time = %ld USER_NENO = %d",SystemClock::uptimeMillis()-startTime2,USER_NENO);
     int64_t startTime3 = SystemClock::uptimeMillis();
 
     // 执行缩放的image

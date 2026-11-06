@@ -13,7 +13,7 @@
 
 #include "auto_save.h"
 #include "template/singleton.h"
-#include "utils/file_utils.h"
+#include "file_utils.h"
 #include <core/uieventsource.h>
 #include <core/systemclock.h>
 #include <algorithm>

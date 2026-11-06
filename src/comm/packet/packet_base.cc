@@ -215,8 +215,8 @@ bool IAck::readU8(size_t offset, uint8_t& value) const {
 bool IAck::readU16(size_t offset, uint16_t& value, ByteOrder order) const {
     if (!hasRange(offset, sizeof(value))) return false;
     value = (order == ByteOrder::BigEndian)
-        ? EncodingUtils::readBig16(mBuf + offset)
-        : EncodingUtils::readLittle16(mBuf + offset);
+        ? BytesUtils::readBig16(mBuf + offset)
+        : BytesUtils::readLittle16(mBuf + offset);
     return true;
 }
 
@@ -228,8 +228,8 @@ bool IAck::readU16(size_t offset, uint16_t& value, ByteOrder order) const {
 bool IAck::readU32(size_t offset, uint32_t& value, ByteOrder order) const {
     if (!hasRange(offset, sizeof(value))) return false;
     value = (order == ByteOrder::BigEndian)
-        ? EncodingUtils::readBig32(mBuf + offset)
-        : EncodingUtils::readLittle32(mBuf + offset);
+        ? BytesUtils::readBig32(mBuf + offset)
+        : BytesUtils::readLittle32(mBuf + offset);
     return true;
 }
 
@@ -241,8 +241,8 @@ bool IAck::readU32(size_t offset, uint32_t& value, ByteOrder order) const {
 bool IAck::readU64(size_t offset, uint64_t& value, ByteOrder order) const {
     if (!hasRange(offset, sizeof(value))) return false;
     value = (order == ByteOrder::BigEndian)
-        ? EncodingUtils::readBig64(mBuf + offset)
-        : EncodingUtils::readLittle64(mBuf + offset);
+        ? BytesUtils::readBig64(mBuf + offset)
+        : BytesUtils::readLittle64(mBuf + offset);
     return true;
 }
 

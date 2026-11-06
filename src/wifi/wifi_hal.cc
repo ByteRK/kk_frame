@@ -12,7 +12,7 @@
 **/
 
 #include "wifi_hal.h"
-#include "encoding_utils.h"
+#include "bytes_utils.h"
 #include "network_utils.h"
 #include "string_utils.h"
 #include <sstream>
@@ -31,7 +31,6 @@
 #include <net/if.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-#include <cstring>
 #include <cdlog.h>
 #include <core/systemclock.h>
 
@@ -573,7 +572,7 @@ bool WifiHal::ensureNetworkConfigured(const std::string& ssid, const std::string
 
     // SSID uses the wpa_supplicant hexadecimal representation, so quotes,
     // backslashes and control bytes cannot alter the control command.
-    if (!runCmd("SET_NETWORK " + netId + " ssid " + EncodingUtils::hexEncode(ssid), nullptr)) {
+    if (!runCmd("SET_NETWORK " + netId + " ssid " + BytesUtils::hexEncode(ssid), nullptr)) {
         removeNewNetwork();
         return false;
     }
@@ -838,7 +837,7 @@ bool WifiHal::parseScanResults(std::vector<ApInfo>& out) {
         ap.freq = std::atoi(cols[1].c_str());
         ap.signal = std::atoi(cols[2].c_str());
         ap.encrypted = (cols[3].find("WPA") != std::string::npos) || (cols[3].find("WEP") != std::string::npos);
-        ap.ssid = EncodingUtils::hexEscapes(cols[4]);
+        ap.ssid = BytesUtils::hexEscapes(cols[4]);
 
         // 过滤空 SSID
         if (!ap.ssid.empty()) {

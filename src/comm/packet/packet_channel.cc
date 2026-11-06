@@ -14,7 +14,7 @@
 #include "packet_channel.h"
 
 #include "packet_mgr.h"
-#include "string_utils.h"
+#include "format_utils.h"
 
 #include <string.h>
 
@@ -66,7 +66,7 @@ int PacketStreamDecoder::onBytes(const uint8_t* data, size_t len, int id) {
 
     // 转换为底层解码接口使用的长度类型
     const int totalLen = static_cast<int>(len);
-    LOGV("packet channel recv len: %zu hex: \n%s", totalLen, StringUtils::hexStr(data, totalLen).c_str());
+    LOGV("packet channel recv len: %zu hex: \n%s", totalLen, FormatUtils::hexStr(data, totalLen).c_str());
 
     // 数据流推入协议器缓存
     mAck->parse(mCurrRecv);
@@ -77,7 +77,7 @@ int PacketStreamDecoder::onBytes(const uint8_t* data, size_t len, int id) {
     }
 
     // 数据包完整
-    LOGV("packet complete:\n%s", StringUtils::hexStr(mCurrRecv->buf, mCurrRecv->len).c_str());
+    LOGV("packet complete:\n%s", FormatUtils::hexStr(mCurrRecv->buf, mCurrRecv->len).c_str());
     ++mRecvCount;
 
     // 数据包校验
@@ -93,7 +93,7 @@ int PacketStreamDecoder::onBytes(const uint8_t* data, size_t len, int id) {
     } else {
         ++mCheckErrorCount;
         LOGE("packet check failed. len=%d check_fail=%d", mCurrRecv->len, mCheckErrorCount);
-        StringUtils::hexdump("packet channel check failed", mCurrRecv->buf, mCurrRecv->len, 100);
+        FormatUtils::hexdump("packet channel check failed", mCurrRecv->buf, mCurrRecv->len, 100);
     }
 
     // 当前数据包复原并返回消费长度

@@ -14,7 +14,6 @@
 #include "video_view.h"
 #include "env_utils.h"
 #include "file_utils.h"
-#include "path_utils.h"
 
 #include <chrono>
 #include <cstring>
@@ -205,7 +204,7 @@ void VideoView::setPoints(const std::vector<Point>& points) {
 /// @param fpath 文件路径
 void VideoView::setPointsFile(const std::string& fpath) {
     if (fpath.empty()) return;
-    if (!PathUtils::isFile(fpath)) {
+    if (!FileUtils::isFile(fpath)) {
         LOGE("point file not exists. fpath=%s", fpath.c_str());
         return;
     }

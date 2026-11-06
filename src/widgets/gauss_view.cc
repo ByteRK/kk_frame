@@ -15,7 +15,7 @@
 
 #if ENABLED(GAUSS_VIEW)
 
-#include "utils/math_utils.h"
+#include "image_utils.h"
 #include <core/windowmanager.h>
 typedef unsigned char uchar;
 
@@ -252,7 +252,7 @@ void GaussView::draw(Canvas &ctx) {
             // SC_CT_DIFF(0, ct[cn++]); // 8
 
             /* 高斯处理 */
-            MathUtils::gaussianBlur3(cairo_image_surface_get_data(dst_sf), d_ptr->data(), scaled_width, scaled_height, channel,
+            ImageUtils::gaussianBlurFast(cairo_image_surface_get_data(dst_sf), d_ptr->data(), scaled_width, scaled_height, channel,
                           mRadius * scale_factor);
             // SC_CT_DIFF(0, ct[cn++]); // 81
 
@@ -313,7 +313,7 @@ void GaussView::draw(Canvas &ctx) {
             // SC_CT_DIFF(0, ct[cn++]); // ?
 
             d_ptr->save();
-            MathUtils::gaussianBlur3(d_ptr->data2(), d_ptr->data(), cairo_image_surface_get_width(d_ptr->surface()),
+            ImageUtils::gaussianBlurFast(d_ptr->data2(), d_ptr->data(), cairo_image_surface_get_width(d_ptr->surface()),
                           cairo_image_surface_get_height(d_ptr->surface()), channel, mRadius * scale_factor);
             d_ptr->restore();
             // SC_CT_DIFF(0, ct[cn++]); // ?
