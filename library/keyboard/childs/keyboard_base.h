@@ -21,7 +21,7 @@
 #endif
 
 #include "cKeyBoard.h"
-#include "quick_define.h"
+#include "macro_define.h"
 #include "lib_keyboard_config.h"
 
 /// @brief Lib命名空间

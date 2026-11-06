@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-09-23 00:00:00
- * @LastEditTime: 2026-09-23 00:00:00
+ * @LastEditTime: 2026-11-04 17:52:39
  * @FilePath: /kk_frame/library/keyboard/widgets/keyboard_edittext.cc
  * @Description: 键盘输入框
  * @BugList:
@@ -12,8 +12,6 @@
 **/
 
 #include "keyboard_edittext.h"
-
-#include "quick_define.h"
 
 #include <core/textutils.h>
 #include <view/gravity.h>

@@ -31,17 +31,18 @@ configure_file(
 target_compile_definitions(${TARGET_NAME} PRIVATE
     PRODUCT_${CDROID_CHIPSET_UPPER}
 )
-if(ENABLED_KEYBOARD_PINYIN)
-    target_compile_definitions(${TARGET_NAME} PRIVATE
-        ENABLE_KEYBOARD_PINYIN=1
-    )
-endif()
+
+target_compile_definitions(${TARGET_NAME} PRIVATE
+    ENABLE_KEYBOARD_PINYIN=$<BOOL:${ENABLED_KEYBOARD_PINYIN}>
+)
+
 target_include_directories(${TARGET_NAME}
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
     PRIVATE
         ${CMAKE_CURRENT_BINARY_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/utils
         ${CMAKE_CURRENT_SOURCE_DIR}/childs
         ${CMAKE_CURRENT_SOURCE_DIR}/widgets
         ${CDROID_INCLUDE_DIRS}
@@ -49,9 +50,8 @@ target_include_directories(${TARGET_NAME}
         ${CMAKE_BINARY_DIR}/include
         ${CMAKE_BINARY_DIR}/include/gui
         ${CMAKE_BINARY_DIR}/include/porting
-        ${APP_ROOT_DIR}/src
-        ${APP_ROOT_DIR}/src/utils
-        ${APP_ROOT_DIR}/src/class
+        ${APP_ROOT_DIR}/library    # macro_define.h
+        ${APP_ROOT_DIR}/src/class  # 获取 CustomApp
 )
 set_target_properties(${TARGET_NAME} PROPERTIES
     POSITION_INDEPENDENT_CODE ON

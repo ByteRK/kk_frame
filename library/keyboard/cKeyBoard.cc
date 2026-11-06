@@ -12,11 +12,11 @@
 **/
 
 #include "cKeyBoard.h"
-#include "string_utils.h"
-#include "custom_app.h"
-#include "quick_define.h"
+#include "macro_define.h"
+#include "keyboard_utf8.h"
 #include "keyboard_edittext.h"
 
+#include "custom_app.h"
 #include <core/textutils.h>
 
 #include "keyboard_en.h"
@@ -98,7 +98,7 @@ void CKeyBoard::setEnableChilds(const std::vector<KeyBoardType>& childs) {
         if (isTypeEnable(t))continue;
 #if !ENABLED(KEYBOARD_PINYIN)
         if (t == KB_TYPE_CN) {
-            LOGW("keyboard type CN needs ENABLE_KEYBOARD_PINYIN, skip");
+            LOGW("keyboard type CN needs ENABLED(KEYBOARD_PINYIN), skip");
             continue;
         }
 #endif
@@ -150,8 +150,8 @@ void CKeyBoard::appendText(const std::string& txt) {
     std::string result = cdroid::TextUtils::unicode2utf8(wideText);
 
     bool truncated = false;
-    if (mMaxInputCount > 0 && StringUtils::characterCount(result.c_str(), mChineseWeight) > mMaxInputCount) {
-        result = StringUtils::substringByChars(result.c_str(), mMaxInputCount, mChineseWeight);
+    if (mMaxInputCount > 0 && KeyboardUtf8::characterCount(result.c_str(), mChineseWeight) > mMaxInputCount) {
+        result = KeyboardUtf8::substringByChars(result.c_str(), mMaxInputCount, mChineseWeight);
         truncated = true;
     }
 
