@@ -12,8 +12,7 @@
 **/
 
 #include "thread_mgr.h"
-#include "quick_define.h"
-#include "system_utils.h"
+#include "macro_define.h"
 
 #include <core/systemclock.h>
 #include <cdlog.h>
@@ -50,15 +49,16 @@ void ThreadPool::init(int count) {
     mMainLooper = Looper::getMainLooper();
     FailFast(mMainLooper == nullptr, "main looper is null");
 
-    const int wakeFd = SystemUtils::createEventFd();
-    FailFast(wakeFd < 0, "eventfd failed, errno=%d err=%s", errno, strerror(errno));
+    EventFd wakeFd;
+    wakeFd.create();
+    FailFast(!wakeFd.valid(), "eventfd failed, errno=%d err=%s", errno, strerror(errno));
 
-    const int addResult = mMainLooper->addFd(wakeFd, 0, Looper::EVENT_INPUT, onWake, this);
-    FailFast(addResult <= 0, "Looper::addFd failed, fd=%d result=%d", wakeFd, addResult);
+    const int addResult = mMainLooper->addFd(wakeFd.get(), 0, Looper::EVENT_INPUT, onWake, this);
+    FailFast(addResult <= 0, "Looper::addFd failed, fd=%d result=%d", wakeFd.get(), addResult);
 
     {
         std::lock_guard<std::mutex> wakeLock(mWakeMutex);
-        mWakeFd = wakeFd;
+        mWakeFd = std::move(wakeFd);
     }
 
     try {
@@ -108,10 +108,10 @@ void ThreadPool::shutdown() {
 
     {
         std::lock_guard<std::mutex> wakeLock(mWakeMutex);
-        if (mainLooper != nullptr && mWakeFd >= 0) {
-            mainLooper->removeFd(mWakeFd);
+        if (mainLooper != nullptr && mWakeFd.valid()) {
+            mainLooper->removeFd(mWakeFd.get());
         }
-        SystemUtils::destroyEventFd(mWakeFd);
+        mWakeFd.close();
     }
 
     {
@@ -286,9 +286,9 @@ int ThreadPool::onWake(int fd, int events, void* context) {
 /// @brief 通过 eventfd 唤醒主 Looper
 void ThreadPool::wakeMainThread() {
     std::lock_guard<std::mutex> wakeLock(mWakeMutex);
-    if (mWakeFd < 0) return;
+    if (!mWakeFd.valid()) return;
 
-    if (!SystemUtils::notifyEventFd(mWakeFd)) {
+    if (!mWakeFd.notify()) {
         LOGE("ThreadPool wake failed. errno=%d err=%s", errno, strerror(errno));
     }
 }
@@ -296,9 +296,9 @@ void ThreadPool::wakeMainThread() {
 /// @brief 读取并清空 eventfd 计数器
 void ThreadPool::drainWakeFd() {
     std::lock_guard<std::mutex> wakeLock(mWakeMutex);
-    if (mWakeFd < 0) return;
+    if (!mWakeFd.valid()) return;
 
-    if (!SystemUtils::drainEventFd(mWakeFd)) {
+    if (!mWakeFd.drain()) {
         LOGE("ThreadPool wake drain failed. errno=%d err=%s", errno, strerror(errno));
     }
 }

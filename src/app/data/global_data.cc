@@ -18,7 +18,7 @@
 #include "file_utils.h"
 #include "base_data.h"
 #include "config_info.h"
-#include "system_utils.h"
+#include "time_cache.h"
 #include "base.h"
 
 #include <unistd.h>
@@ -43,8 +43,8 @@ void GlobalData::init() {
     mIsFirstInit = !FileUtils::check(APP_FIRST_TAG);
 
     // 恢复系统时间
-    if (mIsFirstInit) SystemUtils::clearTimeCache();
-    else SystemUtils::recoverTime();
+    if (mIsFirstInit) TimeCache::clear();
+    else TimeCache::recover();
 
     // 检测进入的模式
     if (cdroid::App::getInstance().getName() == FRAME_NAME) mDeviceMode = DEVICE_MODE_DEMO;

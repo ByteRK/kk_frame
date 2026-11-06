@@ -15,6 +15,8 @@
 #define __THREAD_MGR_H__
 
 #include "template/singleton.h"
+#include "event_fd.h"
+
 #include <core/looper.h>
 #include <atomic>
 #include <condition_variable>
@@ -154,7 +156,7 @@ private:
     std::deque<TaskPtr>              mMainTasks;                // 等待 onMain() 的队列
     std::unordered_map<int, TaskPtr> mTasks;                    // 所有未结束任务
     cdroid::Looper*                  mMainLooper{ nullptr };    // 非拥有的主 Looper
-    int                              mWakeFd{ -1 };             // 主线程回调唤醒FD
+    EventFd                          mWakeFd;                   // 主线程回调唤醒FD
 };
 
 #endif // __THREAD_MGR_H__

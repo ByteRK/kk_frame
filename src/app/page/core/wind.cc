@@ -12,7 +12,8 @@
 **/
 
 #include "wind.h"
-#include "system_utils.h"
+#include "time_cache.h"
+#include "process_utils.h"
 #include <core/app.h>
 
 /// @brief 点击时系统自动调用
@@ -159,6 +160,14 @@ bool MainWindow::selfKey(KeyEvent& evt) {
 void MainWindow::endTick(int64_t now) {
     LOGW("RebootTime = %lld, ExitTime = %lld, Now = %lld", mRebootTime, mExitTime, now);
 
-    if (mRebootTime && now >= mRebootTime) SystemUtils::reboot();
-    else if (mExitTime && now >= mExitTime) SystemUtils::exit();
+    const bool needReboot = mRebootTime > 0 && now >= mRebootTime;
+    const bool needExit = !needReboot && mExitTime > 0 && now >= mExitTime;
+    if (!needReboot && !needExit) return;
+
+    // 退出/重启前保存软件时钟，供下次上电恢复
+    // 保存动作必须发生在真正退出之前，否则没有机会写盘
+    if (!TimeCache::save()) LOGE("TimeCache save failed");
+
+    if (needReboot) ProcessUtils::reboot();
+    else ProcessUtils::exit();
 }

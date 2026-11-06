@@ -28,6 +28,8 @@
 
 #include "template/singleton.h"
 
+#include "event_fd.h"
+
 #define g_telnet TelnetManager::instance()
 
 class TelnetManager : public Singleton<TelnetManager> {
@@ -249,7 +251,7 @@ private:
     mutable std::mutex mLifecycleMutex;
     std::atomic<bool> mInitialized;
     cdroid::Looper* mMainLooper;
-    int mWakeFd;
+    EventFd                     mWakeFd;              // 主线程回调唤醒FD
     std::atomic<bool> mStopping;
     std::atomic<RequestId> mNextRequestId;
 

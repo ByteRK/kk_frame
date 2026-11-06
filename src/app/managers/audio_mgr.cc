@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-07-06 22:53:00
- * @LastEditTime: 2026-11-04 10:06:18
+ * @LastEditTime: 2026-11-04 18:47:01
  * @FilePath: /kk_frame/src/app/managers/audio_mgr.cc
  * @Description: ALSA 音频播放管理器
  * @BugList:
@@ -12,8 +12,7 @@
 **/
 
 #include "audio_mgr.h"
-#include "quick_define.h"
-#include "system_utils.h"
+#include "macro_define.h"
 
 #include <algorithm>
 #include <cerrno>
@@ -159,19 +158,19 @@ AudioMgr::AudioMgr() {
         LOGE("AudioMgr callback looper is null");
     } else {
         // 创建 eventfd 用于跨线程唤醒 Looper
-        mWakeFd = SystemUtils::createEventFd();
-        if (mWakeFd < 0) {
+        mWakeFd.create();
+        if (!mWakeFd.valid()) {
             LOGE("AudioMgr eventfd failed. errno=%d err=%s", errno, std::strerror(errno));
         } else if (mCallbackLooper->addFd(
-            mWakeFd, 0, cdroid::Looper::EVENT_INPUT, onWake, this) < 0) {
-            LOGE("AudioMgr addFd failed. fd=%d", mWakeFd);
-            SystemUtils::destroyEventFd(mWakeFd);
+            mWakeFd.get(), 0, cdroid::Looper::EVENT_INPUT, onWake, this) < 0) {
+            LOGE("AudioMgr addFd failed. fd=%d", mWakeFd.get());
+            mWakeFd.close();
         }
     }
     // 启动播放线程
     mThread = std::thread(&AudioMgr::playbackLoop, this);
-    LOGI("AudioMgr created. support=%d wakeFd=%d", isSupported(), mWakeFd);
-    if (mWakeFd < 0) LOGW("AudioMgr state callback unavailable. wakeFd=%d", mWakeFd);
+    LOGI("AudioMgr created. support=%d wakeFd=%d", isSupported(), mWakeFd.get());
+    if (!mWakeFd.valid()) LOGW("AudioMgr state callback unavailable. wakeFd=%d", mWakeFd.get());
 }
 
 AudioMgr::~AudioMgr() {
@@ -187,8 +186,8 @@ AudioMgr::~AudioMgr() {
     LOGI("AudioMgr playback thread exited.");
 
     // 2. 清理 eventfd / Looper
-    if (mCallbackLooper != nullptr && mWakeFd >= 0) mCallbackLooper->removeFd(mWakeFd);
-    SystemUtils::destroyEventFd(mWakeFd);
+    if (mCallbackLooper != nullptr && mWakeFd.valid()) mCallbackLooper->removeFd(mWakeFd.get());
+    mWakeFd.close();
     mCallbackLooper = nullptr;
 
     // 3. 清空未分发的事件
@@ -435,13 +434,13 @@ AudioMgr::State AudioMgr::setStateLocked(State state) {
 
 /// @brief 将状态变更事件入队，并通过 eventfd 写入唤醒 Looper 线程分发。
 void AudioMgr::postStateChanged(State oldState, State newState) {
-    if (oldState == newState || mWakeFd < 0) return;
+    if (oldState == newState || !mWakeFd.valid()) return;
     {
         std::lock_guard<std::mutex> lock(mEventMutex);
         mStateEvents.push({ oldState, newState });
     }
     // 向 eventfd 写入任意值以唤醒 Looper
-    if (!SystemUtils::notifyEventFd(mWakeFd)) {
+    if (!mWakeFd.notify()) {
         LOGE("AudioMgr wake failed. errno=%d err=%s", errno, std::strerror(errno));
     }
 }
@@ -462,7 +461,7 @@ int AudioMgr::onWake(int fd, int events, void* context) {
 
 /// @brief 排空 eventfd，避免多次写入只触发一次回调时的积压。
 void AudioMgr::drainWakeFd() {
-    SystemUtils::drainEventFd(mWakeFd);
+    mWakeFd.drain();
 }
 
 /// @brief 在 Looper 线程中分发所有待处理的状态事件。

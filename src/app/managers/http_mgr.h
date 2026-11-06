@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-08 22:48:56
- * @LastEditTime: 2026-11-03 16:21:52
+ * @LastEditTime: 2026-11-06 09:24:58
  * @FilePath: /kk_frame/src/app/managers/http_mgr.h
  * @Description: Http 请求管理
  * @BugList:
@@ -29,7 +29,8 @@
 
 #include "template/singleton.h"
 
-#include "quick_define.h"
+#include "macro_define.h"
+#include "event_fd.h"
 
 #if ENABLED(CURL)
 #include <curl/curl.h>
@@ -200,6 +201,16 @@ public:
             const std::string& tag = std::string(),
             void*              opaque = nullptr,
             const std::string& contentType = "application/octet-stream");
+
+    private:
+        /// @brief 解析下载落盘路径
+        /// @param url 下载地址
+        /// @param downloadPath 目标路径（已存在的目录会自动补 URL 文件名）
+        /// @return 目录场景返回 <dir>/<文件名>；非目录原样返回；
+        ///         无法从 URL 取得安全文件名、或结果逃出目标目录时返回空串
+        /// @note 文件名取自 UrlUtils::fileName（已拒绝 %2F/%2E%2E 解码穿越），
+        ///       此处再用 PathUtils::isSubPath 兜底
+        static std::string resolveDownloadPath(const std::string& url, const std::string& downloadPath);
     };
 
 private:
@@ -298,13 +309,13 @@ private:
 
     /* 主线程回调 */
     cdroid::Looper*               mMainLooper{ nullptr }; // 主线程 Looper（回调线程回归）
-    int                           mMainWakeFd{ -1 };      // 主线程唤醒 fd
+    EventFd                       mMainWakeFd;            // 主线程唤醒 fd
     mutable std::mutex            mMainThreadMutex;       // 事件队列锁
     std::deque<MainThreadMessage> mMainThreadMessages;    // 待派发事件队列
 
     /* I/O 线程与 curl */
     std::thread                   mIoThread;              // I/O 线程
-    int                           mIoWakeFd{ -1 };        // I/O 线程唤醒 fd
+    EventFd                       mIoWakeFd;              // I/O 线程唤醒 fd
     CURLM*                        mMulti{ nullptr };      // curl_multi 句柄
     CURLSH*                       mShare{ nullptr };      // 连接池句柄（复用 DNS / keep-alive）
     std::recursive_mutex          mShareMutex;            // 连接池锁（递归锁，避免同线程重入死锁）

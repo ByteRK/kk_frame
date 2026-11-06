@@ -12,7 +12,7 @@
 **/
 
 #include "transport.h"
-#include "system_utils.h"
+#include "event_fd.h"
 
 #include <cdlog.h>
 
@@ -98,7 +98,7 @@ size_t AsyncTransport::droppedEventCount() const {
 /// @param callbackLooper 目标 Looper
 /// @return 0 成功，非 0 失败
 int AsyncTransport::initAsyncDispatcher(cdroid::Looper* callbackLooper) {
-    if (mWakeFd >= 0) {
+    if (mWakeFd.valid()) {
         return 0;
     }
 
@@ -108,17 +108,17 @@ int AsyncTransport::initAsyncDispatcher(cdroid::Looper* callbackLooper) {
         return -1;
     }
 
-    mWakeFd = SystemUtils::createEventFd();
-    if (mWakeFd < 0) {
+    mWakeFd.create();
+    if (!mWakeFd.valid()) {
         LOGE("AsyncTransport eventfd failed. errno=%d err=%s", errno, strerror(errno));
         return -2;
     }
 
     const int addResult = mCallbackLooper->addFd(
-        mWakeFd, 0, cdroid::Looper::EVENT_INPUT, onWake, this);
+        mWakeFd.get(), 0, cdroid::Looper::EVENT_INPUT, onWake, this);
     if (addResult < 0) {
-        LOGE("AsyncTransport addFd failed. fd=%d", mWakeFd);
-        SystemUtils::destroyEventFd(mWakeFd);
+        LOGE("AsyncTransport addFd failed. fd=%d", mWakeFd.get());
+        mWakeFd.close();
         mCallbackLooper = nullptr;
         return -3;
     }
@@ -129,10 +129,10 @@ int AsyncTransport::initAsyncDispatcher(cdroid::Looper* callbackLooper) {
 /// @brief 关闭跨线程事件分发器
 /// @note 注销 eventfd、清空待处理事件并释放分发资源
 void AsyncTransport::shutdownAsyncDispatcher() {
-    if (mCallbackLooper != nullptr && mWakeFd >= 0) {
-        mCallbackLooper->removeFd(mWakeFd);
+    if (mCallbackLooper != nullptr && mWakeFd.valid()) {
+        mCallbackLooper->removeFd(mWakeFd.get());
     }
-    SystemUtils::destroyEventFd(mWakeFd);
+    mWakeFd.close();
     mCallbackLooper = nullptr;
     cancelAsyncEvents();
 }
@@ -146,7 +146,7 @@ void AsyncTransport::flushAsyncEvents() {
 /// @brief 判断跨线程事件分发器是否可用
 /// @return true 可用，false 不可用
 bool AsyncTransport::isAsyncDispatcherReady() const {
-    return mWakeFd >= 0 && mCallbackLooper != nullptr;
+    return mWakeFd.valid() && mCallbackLooper != nullptr;
 }
 
 /// @brief 清空所有待处理的事件
@@ -205,15 +205,15 @@ int AsyncTransport::onWake(int fd, int events, void* context) {
 
 /// @brief 通过 FD 唤醒主线程
 void AsyncTransport::wakeMainThread() {
-    if (mWakeFd < 0) return;
-    if (!SystemUtils::notifyEventFd(mWakeFd)) {
+    if (!mWakeFd.valid()) return;
+    if (!mWakeFd.notify()) {
         LOGE("AsyncTransport wake failed. errno=%d err=%s", errno, strerror(errno));
     }
 }
 
 /// @brief 清空唤醒 FD
 void AsyncTransport::drainWakeFd() {
-    SystemUtils::drainEventFd(mWakeFd);
+    mWakeFd.drain();
 }
 
 /// @brief 分发事件

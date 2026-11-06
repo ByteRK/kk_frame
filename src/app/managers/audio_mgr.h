@@ -15,6 +15,8 @@
 #define __AUDIO_MGR_H__
 
 #include "template/singleton.h"
+#include "event_fd.h"
+
 #include <core/looper.h>
 #include <condition_variable>
 #include <cstdint>
@@ -176,7 +178,7 @@ private:
     std::mutex              mEventMutex;        ///< 事件队列锁
     std::queue<StateEvent>  mStateEvents;       ///< 待分发状态事件队列
     cdroid::Looper*         mCallbackLooper{ nullptr };  ///< 主线程 Looper，用于 eventfd 回调
-    int                     mWakeFd{ -1 };      ///< eventfd 文件描述符，用于跨线程唤醒
+    EventFd                 mWakeFd;            ///< eventfd 文件描述符，用于跨线程唤醒
 };
 
 #endif // __AUDIO_MGR_H__

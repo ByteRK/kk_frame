@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-08 22:48:56
- * @LastEditTime: 2026-11-03 18:13:02
+ * @LastEditTime: 2026-11-04 18:47:29
  * @FilePath: /kk_frame/src/app/managers/http_mgr.cc
  * @Description: Http 请求管理
  * @BugList:
@@ -20,7 +20,8 @@
 #include <unistd.h>
 
 #include "string_utils.h"
-#include "system_utils.h"
+#include "file_utils.h"
+#include "path_utils.h"
 #include "url_utils.h"
 
 #include <algorithm>
@@ -182,6 +183,38 @@ HttpManager::Request HttpManager::Request::CreatePut(const std::string& url,
     return request;
 }
 
+/// @brief 解析下载落盘路径
+/// @param url 下载地址
+/// @param downloadPath 目标路径（已存在的目录会自动补 URL 文件名）
+/// @return 目录场景返回 <dir>/<文件名>；非目录原样返回；
+///         无法从 URL 取得安全文件名、或结果逃出目标目录时返回空串
+/// @note 下载必然经由 CreateDownload，因此本函数不单独成模块，就近内聚在这里；
+///       声明在头文件（Request 私有静态成员）以保证可被检索到
+std::string HttpManager::Request::resolveDownloadPath(const std::string& url,
+    const std::string& downloadPath) {
+    // 不是已存在的目录：调用方给的就是完整文件路径
+    if (!FileUtils::isDir(downloadPath)) {
+        return downloadPath;
+    }
+
+    const std::string name = UrlUtils::fileName(url);
+    if (name.empty()) {
+        LOGE("resolveDownloadPath: cannot get file name from url: %s", url.c_str());
+        return std::string();
+    }
+
+    const std::string resolved = PathUtils::join(downloadPath, name);
+
+    // 兜底校验：结果必须是目标目录下的"文件"，等于目录本身同样视为非法
+    const std::string normalizedDir = PathUtils::removeTrailingSeparator(PathUtils::normalize(downloadPath));
+    if (resolved == normalizedDir || !PathUtils::isSubPath(downloadPath, resolved)) {
+        LOGE("resolveDownloadPath: resolved path escapes target dir: %s + %s",
+            downloadPath.c_str(), name.c_str());
+        return std::string();
+    }
+    return resolved;
+}
+
 /// @brief 创建下载请求对象
 /// @param url 请求地址
 /// @param downloadFilePath 下载目录或文件路径（传目录时自动补 URL 文件名）
@@ -197,7 +230,7 @@ HttpManager::Request HttpManager::Request::CreateDownload(const std::string& url
     Request request;
     request.method = HttpMethod::GET;
     request.url = url;
-    request.downloadFilePath = UrlUtils::resolveDownloadPath(url, downloadFilePath);
+    request.downloadFilePath = resolveDownloadPath(url, downloadFilePath);
     request.listener = listener;
     request.tag = tag;
     request.opaque = opaque;
@@ -340,21 +373,21 @@ void HttpManager::init(cdroid::Looper* mainLooper, size_t maxConcurrent, long po
     curl_share_setopt(mShare, CURLSHOPT_USERDATA, &mShareMutex);
 
     // 主线程唤醒 eventfd
-    mMainWakeFd = SystemUtils::createEventFd();
-    FailFast(mMainWakeFd < 0, "eventfd(main) failed, errno=%d", errno);
-    const int addResult = mMainLooper->addFd(mMainWakeFd, 0,
+    mMainWakeFd.create();
+    FailFast(!mMainWakeFd.valid(), "eventfd(main) failed, errno=%d", errno);
+    const int addResult = mMainLooper->addFd(mMainWakeFd.get(), 0,
         cdroid::Looper::EVENT_INPUT, onMainThreadWake, this);
-    FailFast(addResult < 0, "Looper::addFd failed, fd=%d", mMainWakeFd);
+    FailFast(addResult < 0, "Looper::addFd failed, fd=%d", mMainWakeFd.get());
 
     // I/O 线程唤醒 eventfd
-    mIoWakeFd = SystemUtils::createEventFd();
-    FailFast(mIoWakeFd < 0, "eventfd(io) failed, errno=%d", errno);
+    mIoWakeFd.create();
+    FailFast(!mIoWakeFd.valid(), "eventfd(io) failed, errno=%d", errno);
 
     // 启动单 I/O 线程
     mIoThread = std::thread(&HttpManager::ioLoop, this);
 
     mInitialized.store(true);
-    LOGI("http initialized. mainFd=%d ioFd=%d", mMainWakeFd, mIoWakeFd);
+    LOGI("http initialized. mainFd=%d ioFd=%d", mMainWakeFd.get(), mIoWakeFd.get());
 #endif
 }
 
@@ -376,11 +409,11 @@ void HttpManager::shutdown() {
         mIoThread.join();
     }
 
-    if (mMainLooper != nullptr && mMainWakeFd >= 0) {
-        mMainLooper->removeFd(mMainWakeFd);
+    if (mMainLooper != nullptr && mMainWakeFd.valid()) {
+        mMainLooper->removeFd(mMainWakeFd.get());
     }
-    SystemUtils::destroyEventFd(mMainWakeFd);
-    SystemUtils::destroyEventFd(mIoWakeFd);
+    mMainWakeFd.close();
+    mIoWakeFd.close();
 
     if (mMulti != nullptr) {
         curl_multi_cleanup(mMulti);
@@ -778,7 +811,7 @@ void HttpManager::validateRequestOrDie(const Request& request) {
 
 /// @brief 主线程唤醒回调
 int HttpManager::onMainThreadWake(int fd, int /*events*/, void* context) {
-    SystemUtils::drainEventFd(fd);
+    EventFd::drainFd(fd);
 
     HttpManager* manager = static_cast<HttpManager*>(context);
     manager->drainMainThreadMessages();
@@ -787,20 +820,20 @@ int HttpManager::onMainThreadWake(int fd, int /*events*/, void* context) {
 
 /// @brief 唤醒主线程处理事件
 void HttpManager::wakeMainThread() {
-    if (mMainWakeFd < 0) {
+    if (!mMainWakeFd.valid()) {
         return;
     }
 
-    FailFast(!SystemUtils::notifyEventFd(mMainWakeFd), "write(eventfd) failed, errno=%d", errno);
+    FailFast(!mMainWakeFd.notify(), "write(eventfd) failed, errno=%d", errno);
 }
 
 /// @brief 唤醒 I/O 线程处理请求
 void HttpManager::wakeIoThread() {
-    if (mIoWakeFd < 0) {
+    if (!mIoWakeFd.valid()) {
         return;
     }
 
-    FailFast(!SystemUtils::notifyEventFd(mIoWakeFd), "write(eventfd) failed, errno=%d", errno);
+    FailFast(!mIoWakeFd.notify(), "write(eventfd) failed, errno=%d", errno);
 }
 
 /// @brief 派发主线程事件队列
@@ -945,12 +978,12 @@ void HttpManager::ioLoop() {
 
         int numFds = 0;
         curl_waitfd waitFd;
-        waitFd.fd = mIoWakeFd;
+        waitFd.fd = mIoWakeFd.get();
         waitFd.events = CURL_WAIT_POLLIN;
         waitFd.revents = 0;
         curl_multi_wait(mMulti, &waitFd, 1, waitTimeoutMs, &numFds);
 
-        SystemUtils::drainEventFd(mIoWakeFd);
+        mIoWakeFd.drain();
     }
 #endif
 }

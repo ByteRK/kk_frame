@@ -14,6 +14,8 @@
 #ifndef __TRANSPORT_H__
 #define __TRANSPORT_H__
 
+#include "event_fd.h"
+
 #include <core/looper.h>
 
 #include <atomic>
@@ -115,7 +117,7 @@ private:
     size_t                  mDroppedEventCount{ 0 };      // 因队列满载而丢弃的事件数量
     std::atomic<uint64_t>   mDispatchGeneration{ 0 };     // 事件分发批次标识
     cdroid::Looper*         mCallbackLooper{ nullptr };   // 事件分发目标 Looper
-    int                     mWakeFd{ -1 };                // 事件分发唤醒 FD
+    EventFd                 mWakeFd;                      // 事件分发唤醒 FD
 
 protected:
     AsyncTransport();
