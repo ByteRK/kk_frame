@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-10-22 11:11:44
+ * @LastEditTime: 2026-11-05 17:24:20
  * @FilePath: /kk_frame/main.cc
  * @Description: 主程序入口
  * @BugList:
@@ -23,10 +23,10 @@ static const char avs[] = "AVS: " APP_VER_INFO;
 
 #include "custom_app.h"      // 自定义APP
 
-#include "watchdog.h"        // 应用喂狗（硬件看门狗）
+#include "watch_dog.h"       // 应用喂狗（硬件看门狗）
 
 #include "arg_utils.h"       // 参数工具集
-#include "project_utils.h"   // 项目工具集
+#include "startup_utils.h"   // 启动工具集
 
 #include "tick_mgr.h"        // 心跳管理器
 #include "timer_mgr.h"       // 定时管理器
@@ -54,22 +54,25 @@ static const char avs[] = "AVS: " APP_VER_INFO;
 /// @param argv 参数列表
 /// @return 返回值
 int main(int argc, const char* argv[]) {
-    ProjectUtils::env();              // 设定环境变量（x64生效）
-    ProjectUtils::pInfo(argc, argv);  // 打印项目信息
-    ProjectUtils::pKeyMap();          // 打印项目按键映射
-    ProjectUtils::createDir();        // 创建项目目录
+    StartupUtils::env();              // 设定环境变量（x64生效）
+    StartupUtils::pInfo(argc, argv);  // 打印项目信息
+    StartupUtils::pKeyMap();          // 打印项目按键映射
+    StartupUtils::createDir();        // 创建项目目录
     ArgUtils::parse(argc, argv);      // 解析命令行参数
 
     /* 框架 */
     CustomApp app(argc, argv);
 
     /* 看门狗 */
-    watchdog::Watchdog::instance().start(argc, argv);
+    watchdog::WatchDog::instance().start(argc, argv);
 
     /* 心跳、定时、线程 */
     g_tick->init();
     g_timer->init();
     g_threadMgr->init(3);
+
+    /* 时钟缓存 */
+    StartupUtils::startTimeCache();
 
     /* 消息 */
     g_msg->init();

@@ -1,5 +1,5 @@
 /**
- * @file  watchdog.h
+ * @file  watch_dog.h
  * @brief 应用喂狗（硬件看门狗）与主线程卡死监护
  *
  * ---------------------------------------------------------------------------
@@ -20,7 +20,7 @@
  *
  * 应用层只需要启动一次：
  * @code
- *   watchdog::Watchdog::instance().start(argc, argv);
+ *   watchdog::WatchDog::instance().start(argc, argv);
  * @endcode
  * 开关与参数由"配置文件 / 环境变量 / 命令行"决定，换平台只改配置，不改代码。
  *
@@ -128,10 +128,10 @@ namespace watchdog {
 
     /// @brief 应用喂狗（硬件看门狗）与主线程卡死监护
     /// @note 单例；start() 之后由内部线程负责喂狗，主线程只需正常跑事件循环。
-    class Watchdog : public cdroid::EventHandler {
+    class WatchDog : public cdroid::EventHandler {
     public:
         /// @brief 获取单例
-        static Watchdog& instance();
+        static WatchDog& instance();
 
         /// @brief 按"配置文件 -> 环境变量 -> 命令行"的顺序装配配置并启动
         /// @param argc 参数个数（可为 0）
@@ -163,15 +163,15 @@ namespace watchdog {
         int64_t skips() const { return mSkips.load(std::memory_order_relaxed); }
 
     protected:
-        Watchdog();
-        ~Watchdog() override;
+        WatchDog();
+        ~WatchDog() override;
 
         int checkEvents() override;
         int handleEvents() override;
 
     private:
-        Watchdog(const Watchdog&) = delete;
-        Watchdog& operator=(const Watchdog&) = delete;
+        WatchDog(const WatchDog&) = delete;
+        WatchDog& operator=(const WatchDog&) = delete;
 
         void run();                                   ///< 喂狗线程主体
         bool feed();                                  ///< 写一次 KEEPALIVE

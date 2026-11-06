@@ -11,7 +11,7 @@
 只需一行（`main.cc` 已接入）：
 
 ```cpp
-watchdog::Watchdog::instance().start(argc, argv);
+watchdog::WatchDog::instance().start(argc, argv);
 ```
 
 - 内部自行注册事件处理，用来感知主线程存活，应用不需要写心跳代码。

@@ -1,9 +1,9 @@
 /**
- * @file  watchdog.cc
- * @brief 应用喂狗（硬件看门狗）实现，接口说明见 watchdog.h
+ * @file  watch_dog.cc
+ * @brief 应用喂狗（硬件看门狗）实现，接口说明见 watch_dog.h
 **/
 
-#include "watchdog.h"
+#include "watch_dog.h"
 
 #include <cdlog.h>
 #include <core/systemclock.h>
@@ -337,31 +337,31 @@ namespace watchdog {
     }
 
     /* ======================================================================== */
-    /* Watchdog                                                                  */
+    /* WatchDog                                                                  */
     /* ======================================================================== */
 
-    Watchdog& Watchdog::instance() {
-        static Watchdog s;
+    WatchDog& WatchDog::instance() {
+        static WatchDog s;
         return s;
     }
 
-    Watchdog::Watchdog() { }
+    WatchDog::WatchDog() { }
 
-    Watchdog::~Watchdog() {
+    WatchDog::~WatchDog() {
         /* 进程正常退出时默认不做 magic close：若守护脚本没能把应用拉起来，
          * 让狗咬一口重启系统，比"静默停机"更好。需要干净停机请显式 stop(true)。
          * 此时不再访问主 Looper —— 静态析构阶段它可能已被销毁。 */
         shutdown(false, false);
     }
 
-    void Watchdog::tick() {
+    void WatchDog::tick() {
         /* 手动上报入口（默认不会被调用）。
          * mLastTickAtMs 同时是 handleEvents 的节流基准。 */
         mLastTickAtMs = nowMs();
         mTickSeq.fetch_add(1, std::memory_order_relaxed);
     }
 
-    int Watchdog::checkEvents() {
+    int WatchDog::checkEvents() {
         /* 主线程热路径（约每 1ms 一轮）：纯计数门闸，不读时钟、不做原子操作。
          * 每 kTickPollRounds 轮放行一次，真正的时间判断放到 handleEvents 里，
          * 这样无论轮速多快，这里都只有一次自增 + 比较（实测约 2ns）。 */
@@ -371,7 +371,7 @@ namespace watchdog {
         return 1;
     }
 
-    int Watchdog::handleEvents() {
+    int WatchDog::handleEvents() {
         /* 仅在计数门闸放行时进来（默认每 16 轮，空闲约 16~100+ms 一次）：
          * 这里才读时钟做真正的间隔判断，因此上报频率不会被轮速放大。 */
         if (mTickIntervalMs > 0) {
@@ -383,13 +383,13 @@ namespace watchdog {
         return 0;
     }
 
-    bool Watchdog::registerTickHandler() {
+    bool WatchDog::registerTickHandler() {
         if (mRegistered.load(std::memory_order_relaxed)) return true;
 
         cdroid::Looper* looper = cdroid::Looper::getMainLooper();
         if (!looper) {
             LOGW("WATCHDOG 主 Looper 尚未就绪，无法自动检测主线程存活；"
-                "请在主循环中调用 watchdog::Watchdog::instance().tick()");
+                "请在主循环中调用 watchdog::WatchDog::instance().tick()");
             return false;
         }
         looper->addEventHandler(this);
@@ -397,13 +397,13 @@ namespace watchdog {
         return true;
     }
 
-    void Watchdog::unregisterTickHandler() {
+    void WatchDog::unregisterTickHandler() {
         if (!mRegistered.exchange(false, std::memory_order_relaxed)) return;
         cdroid::Looper* looper = cdroid::Looper::getMainLooper();
         if (looper) looper->removeEventHandler(this);
     }
 
-    int Watchdog::openDevice(int& actualTimeoutS) {
+    int WatchDog::openDevice(int& actualTimeoutS) {
         actualTimeoutS = mCfg.timeoutS;
         if (devDisabled(mCfg.dev)) return -ENODEV;
 
@@ -431,7 +431,7 @@ namespace watchdog {
         return 0;
     }
 
-    void Watchdog::closeDevice(bool disarm) {
+    void WatchDog::closeDevice(bool disarm) {
         const int fd = mFd.exchange(-1, std::memory_order_relaxed);
         gSignalFd = -1;
         if (fd < 0) return;
@@ -447,7 +447,7 @@ namespace watchdog {
         ::close(fd);
     }
 
-    bool Watchdog::feed() {
+    bool WatchDog::feed() {
         const int fd = mFd.load(std::memory_order_relaxed);
         if (fd < 0) return false;
 
@@ -465,7 +465,7 @@ namespace watchdog {
         return false;
     }
 
-    void Watchdog::triggerAction() {
+    void WatchDog::triggerAction() {
         const std::string& action = mCfg.action;
         if (action.empty() || action == "none" || action == "off" || action == "log") {
             return;
@@ -497,7 +497,7 @@ namespace watchdog {
         LOGW("WATCHDOG 无法识别的动作 '%s'（支持 none/reboot/exec:<命令>）", action.c_str());
     }
 
-    void Watchdog::run() {
+    void WatchDog::run() {
         const int64_t feedMs  = mCfg.feedMs;
         const int64_t stallMs = (mCfg.stallMs > 0) ? (int64_t)mCfg.stallMs : 0;
         const int64_t graceMs = (mCfg.graceMs > 0) ? (int64_t)mCfg.graceMs : 0;
@@ -584,7 +584,7 @@ namespace watchdog {
         lk.unlock();
     }
 
-    int Watchdog::start(int argc, const char* const argv[]) {
+    int WatchDog::start(int argc, const char* const argv[]) {
         Config cfg;
 
         /* 命令行里的 --watchdog-conf 优先决定读取哪个配置文件 */
@@ -607,7 +607,7 @@ namespace watchdog {
         return start(cfg);
     }
 
-    int Watchdog::start(const Config& cfg) {
+    int WatchDog::start(const Config& cfg) {
         if (mArmed.load(std::memory_order_relaxed)) return 0;
 
         mCfg = cfg;
@@ -646,7 +646,7 @@ namespace watchdog {
 
         mRun.store(true, std::memory_order_relaxed);
         mArmed.store(true, std::memory_order_relaxed);
-        mThread = std::thread(&Watchdog::run, this);
+        mThread = std::thread(&WatchDog::run, this);
 
         if (mCfg.disarmOnSignal) installSignalHandlers();
 
@@ -668,7 +668,7 @@ namespace watchdog {
         return 0;
     }
 
-    void Watchdog::installSignalHandlers() {
+    void WatchDog::installSignalHandlers() {
         struct sigaction sa;
         ::memset(&sa, 0, sizeof(sa));
         sa.sa_handler = onTermSignal;
@@ -679,11 +679,11 @@ namespace watchdog {
         ::sigaction(SIGHUP,  &sa, nullptr);
     }
 
-    void Watchdog::stop(bool disarm) {
+    void WatchDog::stop(bool disarm) {
         shutdown(disarm, true);
     }
 
-    void Watchdog::shutdown(bool disarm, bool unregister) {
+    void WatchDog::shutdown(bool disarm, bool unregister) {
         {
             std::lock_guard<std::mutex> lk(mMtx);
             mRun.store(false, std::memory_order_relaxed);
