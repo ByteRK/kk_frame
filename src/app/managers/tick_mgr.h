@@ -40,7 +40,7 @@ public:
         virtual void onTick(int64_t nowMs) = 0;
     protected:
         void setTick(int64_t intervalMs);
-        void startTick(int64_t firstDelayMs = 0);
+        bool startTick(int64_t firstDelayMs = 0);
         void stopTick();
     };
 
@@ -56,7 +56,7 @@ public:
         virtual ~ITickVariable();
         void setCallBack(TickCallBack cb);
         void setTick(int64_t intervalMs);
-        void startTick(int64_t firstDelayMs = 0);
+        bool startTick(int64_t firstDelayMs = 0);
         void stopTick();
     protected:
         void onTick(int64_t now) override;

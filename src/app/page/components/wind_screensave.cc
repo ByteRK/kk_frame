@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-06-25 10:32:08
- * @LastEditTime: 2026-06-30 00:16:25
+ * @LastEditTime: 2026-11-05 17:09:49
  * @FilePath: /kk_frame/src/app/page/components/wind_screensave.cc
  * @Description: 屏保组件
  * @BugList:
@@ -31,7 +31,8 @@ WindScreenSave::~WindScreenSave() {
 /// @brief 启停屏保
 /// @param enable 
 void WindScreenSave::setScreenSave(bool enable) {
-    enable ? mTicker.startTick() : mTicker.stopTick();
+    if (enable) mTicker.startTick();
+    else mTicker.stopTick();
 }
 
 /// @brief 显示屏保

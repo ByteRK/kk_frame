@@ -43,12 +43,13 @@ void TickMgr::ITickClass::setTick(int64_t intervalMs) {
 
 /// @brief 开始 Tick 任务
 /// @param firstDelayMs 首次调度延迟：-1 立即执行；0 下一轮事件循环执行；>0 延迟指定毫秒后执行(已经注册的任务无效)
-void TickMgr::ITickClass::startTick(int64_t firstDelayMs) {
+/// @return true 已注册/已立即执行；false 参数非法或 TickMgr 未初始化
+bool TickMgr::ITickClass::startTick(int64_t firstDelayMs) {
     if (g_tick->hasTick(this)) {
-        if (firstDelayMs < 0) g_tick->runTickNow(this);
-    } else {
-        g_tick->addTick(this, mTickIntervalMs, firstDelayMs);
+        if (firstDelayMs < 0) return g_tick->runTickNow(this);
+        return true;
     }
+    return g_tick->addTick(this, mTickIntervalMs, firstDelayMs);
 }
 
 /// @brief 停止 Tick 任务
@@ -77,8 +78,9 @@ void TickMgr::ITickVariable::setTick(int64_t intervalMs) {
 
 /// @brief 开始 Tick 任务
 /// @param firstDelayMs 
-void TickMgr::ITickVariable::startTick(int64_t firstDelayMs) {
-    ITickClass::startTick(firstDelayMs);
+/// @return true 已注册；false 未初始化或参数非法
+bool TickMgr::ITickVariable::startTick(int64_t firstDelayMs) {
+    return ITickClass::startTick(firstDelayMs);
 }
 
 /// @brief 停止 Tick 任务
