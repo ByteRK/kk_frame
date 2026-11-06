@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-03-18 09:34:51
- * @LastEditTime: 2026-08-19 11:16:01
+ * @LastEditTime: 2026-11-05 09:54:14
  * @FilePath: /kk_frame/src/class/custom_app.cc
  * @Description: 自定义APP
  * @BugList:
@@ -14,7 +14,7 @@
 #include "custom_app.h"
 #include <cdlog.h>
 #include "cdroid_utils.h"
-#include "path_utils.h"
+#include "file_utils.h"
 
 CustomApp::CustomApp(int argc, const char* argv[]) :cdroid::App(argc, argv) {
 #ifdef PRODUCT_X64
@@ -26,11 +26,15 @@ bool CustomApp::checkPackage(const std::string& name) {
     return mAddPackagesTag.find(name) != mAddPackagesTag.end();
 }
 
-void CustomApp::addPackage(const std::string& path, const std::string& name) {
-    if (!PathUtils::exists(path)) {
-        LOGE("package %s not found", path.c_str());
+void CustomApp::addPackage(const std::string& filePath, const std::string& name) {
+    if (checkPackage(name)) {
+        LOGW("package %s already added", name.c_str());
+        return;
+    }
+    if (!FileUtils::isFile(filePath)) {
+        LOGE("package %s not found", filePath.c_str());
         return;
     }
     mAddPackagesTag.insert(name);
-    addResource(path, name);
+    addResource(filePath, name);
 }
