@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-10-19 10:00:00
- * @LastEditTime: 2026-10-20 09:19:45
+ * @LastEditTime: 2026-11-05 18:00:44
  * @FilePath: /kk_frame/src/app/data/statistics_data.h
  * @Description: 统计数据与实例
  * @BugList:
@@ -12,14 +12,14 @@
  *    项目自定义：
  *      - 直接修改下方 StatisticsData 字段
  *      - 同步修改 StatisticsTraits 中的序列化、叠加与保留天数
- *      - 通用逻辑在 src/class/statistics_store.h，无需改动
+ *      - 通用逻辑在 src/template/statistics_store.h，无需改动
  *
 **/
 
 #ifndef __STATISTICS_DATA_H__
 #define __STATISTICS_DATA_H__
 
-#include "class/statistics_store.h"
+#include "statistics_store.h"
 #include "config_info.h"
 
 /// @brief 统计数据

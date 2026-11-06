@@ -12,14 +12,14 @@
  *    项目自定义：
  *      - 直接修改下方 HistoryStruct 字段
  *      - 同步修改 HistoryTraits 中的序列化与容量
- *      - 通用逻辑在 src/class/history_store.h，无需改动
+ *      - 通用逻辑在 src/template/history_store.h，无需改动
  *
 **/
 
 #ifndef __HISTORY_DATA_H__
 #define __HISTORY_DATA_H__
 
-#include "class/history_store.h"
+#include "history_store.h"
 #include "config_info.h"
 
 /// @brief 历史记录数据
