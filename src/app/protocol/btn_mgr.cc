@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2025-11-24 09:40:23
- * @LastEditTime: 2026-07-06 11:03:19
+ * @LastEditTime: 2026-11-05 14:11:39
  * @FilePath: /kk_frame/src/app/protocol/btn_mgr.cc
  * @Description:按键板通讯
  * @BugList:
@@ -13,8 +13,8 @@
 
 #include "btn_mgr.h"
 #include "btn_packet.h"
-#include "string_utils.h"
-#include "project_utils.h"
+#include "format_utils.h"
+#include "startup_utils.h"
 #include "app_common.h"
 #include <core/app.h>
 #include <core/systemclock.h>
@@ -41,7 +41,7 @@ int BtnMgr::init() {
 
 #ifdef PRODUCT_X64
     TcpClient::Config config;
-    ProjectUtils::getDebugServiceInfo(config.host, config.port);
+    StartupUtils::getDebugServiceInfo(config.host, config.port);
     config.port += BT_BTN;
 #else
     UartClient::Config config;
@@ -99,7 +99,7 @@ void BtnMgr::send2Btn() {
     // TODO:设置数据
 
     snd.checkCode();
-    LOG(VERBOSE) << "[BTN -->] hex str: " << StringUtils::hexStr(bd->buf, bd->len);
+    LOGV("[BTN -->] hex str: %s", FormatUtils::hexStr(bd->buf, bd->len).c_str());
     mChannel->send(bd);
 }
 
@@ -110,5 +110,5 @@ void BtnMgr::onCommDeal(const IAck* ack) {
     // TODO:解析处理
 
     mLastAcceptTime = cdroid::SystemClock::uptimeMillis();
-    LOG(VERBOSE) << "[<-- BTN] hex str: " << StringUtils::hexStr(ack->data(), ack->dataLength());
+    LOGV("[<-- BTN] hex str: %s", FormatUtils::hexStr(ack->data(), ack->dataLength()).c_str());
 }

@@ -13,8 +13,8 @@
 
 #include "mcu_mgr.h"
 #include "mcu_packet.h"
-#include "string_utils.h"
-#include "project_utils.h"
+#include "format_utils.h"
+#include "startup_utils.h"
 #include "app_common.h"
 #include <core/app.h>
 #include <core/systemclock.h>
@@ -45,7 +45,7 @@ int McuMgr::init() {
 
 #ifdef PRODUCT_X64
     TcpClient::Config config;
-    ProjectUtils::getDebugServiceInfo(config.host, config.port);
+    StartupUtils::getDebugServiceInfo(config.host, config.port);
     config.port += BT_MCU;
 #else
     UartClient::Config config;
@@ -114,7 +114,7 @@ void McuMgr::send2Mcu() {
     // TODO:设置数据
 
     snd.checkCode();
-    LOG(VERBOSE) << "[CONN -->] hex str: " << StringUtils::hexStr(bd->buf, bd->len);
+    LOGV("[CONN -->] hex str: %s", FormatUtils::hexStr(bd->buf, bd->len).c_str());
     mChannel->send(bd);
 }
 
@@ -125,5 +125,5 @@ void McuMgr::onCommDeal(const IAck* ack) {
     // TODO:解析处理
 
     mLastAcceptTime = cdroid::SystemClock::uptimeMillis();
-    LOG(VERBOSE) << "[<-- CONN] hex str: " << StringUtils::hexStr(ack->data(), ack->dataLength());
+    LOGV("[<-- CONN] hex str: %s", FormatUtils::hexStr(ack->data(), ack->dataLength()).c_str());
 }
