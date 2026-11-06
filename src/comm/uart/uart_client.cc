@@ -12,7 +12,7 @@
 **/
 
 #include "uart_client.h"
-#include "quick_define.h"
+#include "macro_define.h"
 
 #include <cdlog.h>
 #include <core/systemclock.h>

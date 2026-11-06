@@ -28,7 +28,7 @@
  * 
 */
 
-#include "quick_define.h"
+#include "macro_define.h"
 
 #if ENABLED(GAUSS_DRAWABLE)
 

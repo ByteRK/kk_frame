@@ -20,7 +20,7 @@
 #include <thread>
 #include <atomic>
 
-#include "quick_define.h"
+#include "macro_define.h"
 
 #if ENABLED(WIFI)
 extern "C" {

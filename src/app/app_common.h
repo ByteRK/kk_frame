@@ -75,7 +75,7 @@
 /**
  * 快速操作定义
 **/
-#include "quick_define.h"
+#include "macro_define.h"
 
 #endif // __APP_COMMON_H__
 

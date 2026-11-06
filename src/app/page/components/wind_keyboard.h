@@ -15,7 +15,7 @@
 #define __WIND_KEYBOARD_H__
 
 #include <view/viewgroup.h>
-#include "quick_define.h"
+#include "macro_define.h"
 
 #if ENABLED(KEYBOARD)
 #include "cKeyBoard.h"

@@ -14,7 +14,7 @@
 #ifndef __WIFI_ADAPTER_H__
 #define __WIFI_ADAPTER_H__
 
-#include "quick_define.h"
+#include "macro_define.h"
 
 #if ENABLED(WIFI)
 

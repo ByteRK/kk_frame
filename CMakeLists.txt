@@ -13,23 +13,23 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 # 源文件收集
 file(GLOB_RECURSE PROJECT_SOURCES CONFIGURE_DEPENDS
-    "./main.cc" "./src/*/*.c" "./src/*/*.cc" "./src/*/*.cpp"
+    "./main.cc"
+    "./src/*/*.c"   "./src/*/*.cc"   "./src/*/*.cpp"
 )
+
+# 排除独立测试工程
+list(FILTER PROJECT_SOURCES EXCLUDE REGEX "/src/utils/tests/")
 
 # Bin配置
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
 
 # 项目环境定义
 string(TOUPPER ${CDROID_CHIPSET} CDROID_CHIPSET_UPPER)
-target_compile_definitions(${PROJECT_NAME} PRIVATE
-    PRODUCT_${CDROID_CHIPSET_UPPER}
-)
+list(APPEND PROJECT_DEFINITIONS PRODUCT_${CDROID_CHIPSET_UPPER})
 
 # 项目宏定义
 string(TOUPPER ${PROJECT_NAME} PROJECT_NAME_UPPER)
-target_compile_definitions(${PROJECT_NAME} PRIVATE
-    PROJECT_${PROJECT_NAME_UPPER}
-)
+list(APPEND PROJECT_DEFINITIONS PROJECT_${PROJECT_NAME_UPPER})
 
 # 项目变量定义
 set(PROJECT_LIBRARIES "")    # 项目库列表
@@ -53,8 +53,12 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     src
     config
 
+    # 库公共头
+    library
+
     # 项目头
     src/app
+    src/app/startup
     src/app/data
     src/app/managers
     src/app/protocol
@@ -76,12 +80,19 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     # 组件及模板工具
     src/class
     src/template
-    src/utils
     src/widgets
+
+    # 通用工具
+    src/utils/base
+    src/utils/platform
+    src/utils/integration
 
     # 项目库头文件
     ${PROJECT_INCLUDE_DIR}
 )
+
+# 统一收集并应用功能宏
+target_compile_definitions(${PROJECT_NAME} PRIVATE ${PROJECT_DEFINITIONS})
 
 # 链接库配置
 target_link_libraries(${PROJECT_NAME} PRIVATE
