@@ -20,6 +20,14 @@
 3. Use `--ff-only` when advancing a long-lived branch without rebasing it.
 4. **`git config pull.rebase true`** is already set globally, so `git pull` rebases by default.
 
+## Index and Commit Authorization
+
+- **Never run `git add`, `git rm --cached`, `git reset`, `git stash`, or `git commit` unless the user's current request explicitly asks for it.** Finishing code edits is not permission to stage or commit them.
+- Leaving changes unstaged is the default end state for every task: report what changed and stop.
+- Do not stage files "to keep a clean working tree", to prepare a later commit, or because an earlier turn in the same conversation approved staging once.
+- Authorization is per-operation and per-request: approval to commit does not imply approval to stage unrelated files; approval to stage does not imply approval to commit.
+- Read-only git usage (`git status`, `git diff`, `git log`, `git show`, `git blame`) is always allowed.
+
 ## Remote Write Authorization
 
 - **Never push unless the user's current request explicitly asks for a remote push.** A request to edit, commit, sync branches, merge `dev` into `master`, or prepare a release authorizes local operations only.
@@ -29,6 +37,8 @@
 - Never force-push `master`. Force-pushing any other shared branch requires explicit approval and coordination.
 
 ## Local Development Workflow
+
+The commands below are executed **only when the user explicitly requests** the corresponding operation (`git add` / `git commit` must be requested; see "Index and Commit Authorization").
 
 ```bash
 git checkout dev
@@ -76,6 +86,7 @@ git branch -d feature/my-feature
 
 ## Prohibited Operations
 
+- Do not stage or commit without an explicit request (no `git add`, `git rm --cached`, `git reset`, `git stash`, or `git commit` on your own initiative).
 - Do not merge long-lived branches with a merge commit.
 - Do not commit directly to `master`.
 - Do not run an unrequested `git push`.
