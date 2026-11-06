@@ -25,3 +25,6 @@ cdroid_changes.patch
 project_changes.patch
 
 __pycache__
+
+# utils 独立测试工程的构建目录（也在其中生成日志兼容层的 cdlog.h）
+/build-utils-tests/

@@ -1,4 +1,7 @@
 {
+    "C_Cpp.files.exclude": {
+        "**/build-utils-tests/**": true
+    },
     "files.associations": {
         "*.cjson": "jsonc",
         "*.wxss": "css",
