@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email:
  * @Date: 2026-01-14 16:09:30
- * @LastEditTime: 2026-01-23 00:14:00
+ * @LastEditTime: 2026-11-11 11:54:21
  * @FilePath: /kk_frame/src/class/button_group.h
  * @Description: 按键组(灵感来源于xialc)
  *               SingleChoice:单选  MultiChoice:多选
@@ -20,9 +20,11 @@
 #include <set>
 #include <view/view.h>
 
+#include "non_copyable.h"
+
 /// @brief 单选按键组
 /// @note 不持有 View 所有权；ButtonGroup 与关联 View 只能在 UI 线程使用和销毁。
-class SingleChoiceG {
+class SingleChoiceG : private NonCopyableNonMovable {
 public:
     typedef std::map<int, View*>             ButtonViews;
     typedef std::map<int, const std::string> ButtonSTRValues;
@@ -33,10 +35,6 @@ public:
 public:
     SingleChoiceG();
     ~SingleChoiceG();
-    SingleChoiceG(const SingleChoiceG&) = delete;
-    SingleChoiceG& operator=(const SingleChoiceG&) = delete;
-    SingleChoiceG(SingleChoiceG&&) = delete;
-    SingleChoiceG& operator=(SingleChoiceG&&) = delete;
 
     bool addView(View* view);
     void setStrMap(const ButtonSTRValues& values);
@@ -65,7 +63,7 @@ protected:
 
 /// @brief 多选按键组
 /// @note 不持有 View 所有权；ButtonGroup 与关联 View 只能在 UI 线程使用和销毁。
-class MultiChoiceG {
+class MultiChoiceG : private NonCopyableNonMovable {
 public:
     typedef std::map<int, View*>             ButtonViews;
     typedef std::map<int, const std::string> ButtonSTRValues;
@@ -77,10 +75,6 @@ public:
 public:
     MultiChoiceG();
     ~MultiChoiceG();
-    MultiChoiceG(const MultiChoiceG&) = delete;
-    MultiChoiceG& operator=(const MultiChoiceG&) = delete;
-    MultiChoiceG(MultiChoiceG&&) = delete;
-    MultiChoiceG& operator=(MultiChoiceG&&) = delete;
 
     bool addView(View* view);
     void setStrMap(const ButtonSTRValues& values);

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-04-08 22:48:56
- * @LastEditTime: 2026-11-04 18:47:29
+ * @LastEditTime: 2026-11-11 11:53:41
  * @FilePath: /kk_frame/src/app/managers/http_mgr.cc
  * @Description: Http 请求管理
  * @BugList:
@@ -23,6 +23,7 @@
 #include "file_utils.h"
 #include "path_utils.h"
 #include "url_utils.h"
+#include "scope_guard.h"
 
 #include <algorithm>
 #include <cerrno>
@@ -1195,6 +1196,8 @@ CURL* HttpManager::buildEasy(const RequestPtr& requestContext) {
         requestContext->response.errorMessage = "curl_easy_init failed";
         return nullptr;
     }
+    // 失败路径统一由守卫释放；成功返回前 release，交由调用方管理
+    ScopeGuard easyGuard([easy]() { curl_easy_cleanup(easy); });
 
     Request& request = requestContext->request;
     Response& response = requestContext->response;
@@ -1242,7 +1245,6 @@ CURL* HttpManager::buildEasy(const RequestPtr& requestContext) {
             LOGE("curl_slist_append failed. id=%llu header=%s",
                 static_cast<unsigned long long>(requestContext->requestId),
                 request.headers[i].c_str());
-            curl_easy_cleanup(easy);
             response.curlCode = CURLE_OUT_OF_MEMORY;
             response.errorMessage = "curl_slist_append failed";
             return nullptr;
@@ -1261,7 +1263,6 @@ CURL* HttpManager::buildEasy(const RequestPtr& requestContext) {
             LOGE("open download file failed. id=%llu path=%s errno=%d",
                 static_cast<unsigned long long>(requestContext->requestId),
                 requestContext->downloadTempPath.c_str(), errno);
-            curl_easy_cleanup(easy);
             response.curlCode = CURLE_WRITE_ERROR;
             response.errorMessage = "fopen download file failed, errno=" + std::to_string(errno);
             return nullptr;
@@ -1271,7 +1272,6 @@ CURL* HttpManager::buildEasy(const RequestPtr& requestContext) {
             static_cast<unsigned long long>(requestContext->requestId),
             requestContext->downloadTempPath.c_str());
     } else if (!request.storeResponseBody) {
-        curl_easy_cleanup(easy);
         response.curlCode = CURLE_WRITE_ERROR;
         response.errorMessage = "no output target for response body";
         return nullptr;
@@ -1285,7 +1285,6 @@ CURL* HttpManager::buildEasy(const RequestPtr& requestContext) {
             LOGE("upload file not readable. id=%llu path=%s",
                 static_cast<unsigned long long>(requestContext->requestId),
                 request.uploadFilePath.c_str());
-            curl_easy_cleanup(easy);
             response.curlCode = CURLE_READ_ERROR;
             response.errorMessage = "upload file not readable";
             return nullptr;
@@ -1296,7 +1295,6 @@ CURL* HttpManager::buildEasy(const RequestPtr& requestContext) {
             LOGE("open upload file failed. id=%llu path=%s errno=%d",
                 static_cast<unsigned long long>(requestContext->requestId),
                 request.uploadFilePath.c_str(), errno);
-            curl_easy_cleanup(easy);
             response.curlCode = CURLE_READ_ERROR;
             response.errorMessage = "fopen upload file failed";
             return nullptr;
@@ -1368,6 +1366,7 @@ CURL* HttpManager::buildEasy(const RequestPtr& requestContext) {
         break;
     }
 
+    easyGuard.release();
     return easy;
 #else
     return nullptr;

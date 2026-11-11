@@ -15,6 +15,7 @@
 #define __PACKET_BUFFER_H__
 
 #include "packet_base.h"
+#include "non_copyable.h"
 
 #include <memory>
 #include <vector>
@@ -22,7 +23,7 @@
 /// @brief 通讯数据包缓存池
 /// @note 负责协议数据包的分配、复用，并为接收流创建独立解码器
 /// @note obtainSend/obtainReceive 返回的数据包由外部持有，调用 recycle 回收
-class PacketBufferPool {
+class PacketBufferPool : private NonCopyableNonMovable {
 public:
     static constexpr size_t DEFAULT_MAX_CACHE_COUNT = 16; // 默认最大数据包缓存数量
 
@@ -33,9 +34,6 @@ private:
 public:
     PacketBufferPool();
     virtual ~PacketBufferPool();
-
-    PacketBufferPool(const PacketBufferPool&) = delete;
-    PacketBufferPool& operator=(const PacketBufferPool&) = delete;
 
     void    setMaxCacheCount(size_t count);
     size_t  maxCacheCount() const;
