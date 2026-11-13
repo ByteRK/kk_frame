@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <level-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:minLevel="8" android:maxLevel="8">
+        <shape>
+            <gradient android:startColor="#FF0000" android:centerColor="#00FF00" android:endColor="#0000FF" android:angle="90"/>
+        </shape>
+    </item>
     <item android:minLevel="7" android:maxLevel="7">
         <shape>
             <gradient android:startColor="#FF0000" android:centerColor="#00FF00" android:endColor="#0000FF"/>

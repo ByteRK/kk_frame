@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2026-10-28 12:00:00
- * @LastEditTime: 2026-10-28 12:00:00
+ * @LastEditTime: 2026-11-13 09:38:48
  * @FilePath: /kk_frame/src/app/page/factory/factory_color.cc
  * @Description: 显示测试
  * @BugList:
@@ -27,7 +27,7 @@ void FactoryColor::setColor() {
     PBase::click(mRootView, [this](View& v) {
         cdroid::Drawable* bg = v.getBackground();
         int level = bg->getLevel();
-        if (level < 7) {
+        if (level < 8) {
             bg->setLevel(++level);
         } else {
             exit();
