@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2026-08-05 09:54:09
+ * @LastEditTime: 2026-11-18 11:30:54
  * @FilePath: /kk_frame/src/app/data/global_data.h
  * @Description: 全局应用数据
  * @BugList:
@@ -39,7 +39,6 @@ public:  // 特殊信息
     DeviceMode       mDeviceMode = DEVICE_MODE_SAMPLE;  // 设备模式
     int              mTestPage = 0;                     // 测试页面
     bool             mHaveChange = false;               // 是否需要保存
-    bool             mIsFirstInit = true;               // 是否是首次初始化
 
 public:  // 状态数据
     bool             mCoffee = false;                   // 咖啡机[🎐演示保存逻辑的数据]
@@ -51,7 +50,6 @@ public:
     ~GlobalData();
     void init();
     void reset();
-    void setFirstInit(bool first = true);
 
 private:
     bool load();

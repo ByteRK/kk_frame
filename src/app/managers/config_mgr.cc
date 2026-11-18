@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2026-07-04 04:03:49
+ * @LastEditTime: 2026-11-18 11:24:06
  * @FilePath: /kk_frame/src/app/managers/config_mgr.cc
  * @Description:
  * @BugList:
@@ -19,7 +19,9 @@
 #include <cdlog.h>
 #include <unistd.h>
 
-#define CONFIG_SECTION "app_config" // 配置文件节点
+#define AUTH_SECTION   "auth_config"   // 认证配置节点
+#define SYSTEM_SECTION "system_config" // 系统配置节点
+#define CONFIG_SECTION "app_config"    // 应用配置节点
 
 ConfigMgr::ConfigMgr() :
     AutoSaveItem(2000, 10000) { }
@@ -100,15 +102,15 @@ bool ConfigMgr::haveChange() {
 /**************************************************************************************/
 
 std::string ConfigMgr::getProductId() {
-    return mDevConf.getString(CONFIG_SECTION, "ProductId", APP_ID);
+    return mDevConf.getString(AUTH_SECTION, "ProductId", APP_ID);
 }
 
 std::string ConfigMgr::getDeviceId() {
-    return mDevConf.getString(CONFIG_SECTION, "DeviceId", "");
+    return mDevConf.getString(AUTH_SECTION, "DeviceId", "");
 }
 
 std::string ConfigMgr::getLicense() {
-    return mDevConf.getString(CONFIG_SECTION, "License", "");
+    return mDevConf.getString(AUTH_SECTION, "License", "");
 }
 
 bool ConfigMgr::isAuthSuccess() {
@@ -116,15 +118,26 @@ bool ConfigMgr::isAuthSuccess() {
 }
 
 void ConfigMgr::setAuthInfo(const std::string& _pid, const std::string& _did, const std::string& _lic) {
-    mDevConf.setValue(CONFIG_SECTION, "ProductId", _pid);
-    mDevConf.setValue(CONFIG_SECTION, "DeviceId", _did);
-    mDevConf.setValue(CONFIG_SECTION, "License", _lic);
+    mDevConf.setValue(AUTH_SECTION, "ProductId", _pid);
+    mDevConf.setValue(AUTH_SECTION, "DeviceId", _did);
+    mDevConf.setValue(AUTH_SECTION, "License", _lic);
 
     mDevConf.save(DEVCONF_FILE_PATH);
     FileUtils::sync();
     mDevConf.save(DEVCONF_FILE_BAK_PATH);
     FileUtils::sync();
     LOGE("save read-only file. file=%s | %s", DEVCONF_FILE_PATH, DEVCONF_FILE_BAK_PATH);
+}
+
+/**************************************************************************************/
+
+bool ConfigMgr::firstStart() {
+    return mConfig.getBool(SYSTEM_SECTION, "firstStart", true);
+}
+
+void ConfigMgr::firstStart(bool value) {
+    if (value == firstStart()) return;
+    mConfig.setValue(SYSTEM_SECTION, "firstStart", value);
 }
 
 /**************************************************************************************/

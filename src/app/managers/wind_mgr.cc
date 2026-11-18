@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:55:35
- * @LastEditTime: 2026-08-11 11:54:40
+ * @LastEditTime: 2026-11-18 11:44:20
  * @FilePath: /kk_frame/src/app/managers/wind_mgr.cc
  * @Description: 页面管理类
  * @BugList:
@@ -19,6 +19,10 @@
 #include "global_data.h"
 #include <core/app.h>
 #include <core/inputeventsource.h>
+
+#include "config_mgr.h"
+#include "time_cache.h"
+#include "clock_utils.h"
 
 WindMgr::WindMgr() { }
 
@@ -43,6 +47,11 @@ void WindMgr::init() {
     mAutoRecyclePageMsg.what = MSG_AUTO_RECYCLE_PAGE;
     mAutoRecyclePopMsg.what = MSG_AUTO_RECYCLE_POP;
     mInitTime = SystemClock::uptimeMillis();
+
+    // 时间设置
+    // ClockUtils::setTime(2026, 1, 1, 0, 0, 0);
+    if (g_config->firstStart()) TimeCache::clear();
+    else TimeCache::recover();
 
     // 显示LOGO
     mWindow->showLogo();

@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 15:53:50
- * @LastEditTime: 2026-08-14 15:59:12
+ * @LastEditTime: 2026-11-18 11:37:29
  * @FilePath: /kk_frame/src/app/data/global_data.cc
  * @Description:
  * @BugList:
@@ -18,7 +18,6 @@
 #include "file_utils.h"
 #include "base_data.h"
 #include "config_info.h"
-#include "time_cache.h"
 #include "base.h"
 
 #include <unistd.h>
@@ -40,12 +39,6 @@ GlobalData::~GlobalData() { }
 
 /// @brief 初始化
 void GlobalData::init() {
-    mIsFirstInit = !FileUtils::check(APP_FIRST_TAG);
-
-    // 恢复系统时间
-    if (mIsFirstInit) TimeCache::clear();
-    else TimeCache::recover();
-
     // 检测进入的模式
     if (cdroid::App::getInstance().getName() == FRAME_NAME) mDeviceMode = DEVICE_MODE_DEMO;
     mDeviceMode = EnvUtils::getEnumOr<DeviceMode>("DEVICE_MODE", mDeviceMode);
@@ -61,24 +54,10 @@ void GlobalData::init() {
 /// @brief 重置
 void GlobalData::reset() {
     FileUtils::remove(APP_FILE_PATH, APP_FILE_BAK_PATH);
-    setFirstInit(true);
     // FileUtils::sync(); // 不需要Sync，上一步已Sync
     init();
     mHaveChange = true;
     LOGE("global_data factory reset.");
-}
-
-/// @brief 设置首次初始化状态
-/// @param first true:删除已初始化标记 false:创建已初始化标记
-void GlobalData::setFirstInit(bool first) {
-    if (first) {
-        FileUtils::remove(APP_FIRST_TAG);
-    } else if (!FileUtils::write(APP_FIRST_TAG, std::string())) {
-        LOGE("create first-init tag failed. file=%s", APP_FIRST_TAG);
-    }
-
-    mIsFirstInit = first;
-    FileUtils::sync();
 }
 
 /// @brief 载入本地文件

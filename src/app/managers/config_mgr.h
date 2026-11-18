@@ -48,6 +48,11 @@ public: // 设备配置
     bool        isAuthSuccess(); // 是否授权成功
     void        setAuthInfo(const std::string& _pid, const std::string& _did, const std::string& _lic);
 
+public: // 系统配置
+    // 首次启动
+    bool firstStart();
+    void firstStart(bool value);
+
 public: // 应用配置
     // 亮度
     int  brightness();

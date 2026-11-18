@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-22 14:51:04
- * @LastEditTime: 2026-11-05 17:24:20
+ * @LastEditTime: 2026-11-18 11:43:53
  * @FilePath: /kk_frame/main.cc
  * @Description: 主程序入口
  * @BugList:
@@ -72,7 +72,7 @@ int main(int argc, const char* argv[]) {
     g_threadMgr->init(3);
 
     /* 时钟缓存 */
-    StartupUtils::startTimeCache();
+    StartupUtils::startTimeCache(60 * 1000, 10 * 1000);
 
     /* 消息 */
     g_msg->init();

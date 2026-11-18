@@ -27,7 +27,6 @@
 #endif
 
 #define APP_DATA_DIR   APP_RW_DIR  "data/"               // 应用运行数据目录
-#define APP_FIRST_TAG  APP_RW_DIR  "APP_FIRST.TAG"       // 首次初始化完成标记
 
 /*********************** 文件信息 ***********************/
 // 设备信息宏
