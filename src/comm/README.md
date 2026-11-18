@@ -424,7 +424,7 @@ init()
 
 发送可变载荷协议时，应申请 `BASE_LEN + payloadLen`，由具体 `IAsk` 写包头、命令、长度和载荷并生成校验，最后交给 channel 自动回收。对应 `IAck` 应在长度字段完整后计算总帧长，再由业务 handler 解析命令。
 
-`page_test_tcp` 展示了不经过 packet 层的原始用法：分别给 `TcpServer`、`TcpClient` 设置 `TransportHandler`，服务端保存连接回调提供的客户端 ID，发送时将 ID 传回 `TcpServer::send()`。
+需要绕过 packet 层直接使用 transport 时：分别给 `TcpServer`、`TcpClient` 设置 `TransportHandler`，服务端保存连接回调提供的客户端 ID，发送时将 ID 传回 `TcpServer::send()`。
 
 ---
 
