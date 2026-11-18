@@ -2,7 +2,7 @@
  * @Author: Ricken
  * @Email: me@ricken.cn
  * @Date: 2024-05-23 00:04:23
- * @LastEditTime: 2026-04-23 16:19:36
+ * @LastEditTime: 2026-11-18 10:09:55
  * @FilePath: /kk_frame/src/app/page/view/page_demo.h
  * @Description: 框架演示主页面（建议保留）
  * @BugList:
@@ -17,11 +17,11 @@
 #include "page.h"
 
 class DemoPage :public PageBase {
-private:
 public:
     DemoPage();
     ~DemoPage();
     int8_t getType() const override;
+
 protected:
     void setView() override;
     void onAttach() override;

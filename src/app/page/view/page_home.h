@@ -17,11 +17,12 @@
 #include "page.h"
 
 class HomePage :public PageBase {
-private:
 public:
     HomePage();
     ~HomePage();
     int8_t getType() const override;
+    bool   canAutoRecycle() const override;
+
 protected:
     void setView() override;
     void onAttach() override;
