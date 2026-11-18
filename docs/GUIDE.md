@@ -154,12 +154,44 @@ make <project> -j8
 | 目录 | 说明 |
 | --- | --- |
 | `managers/` | 业务管理器：配置、Wi-Fi、音频、HTTP、消息、Telnet、线程、定时器、窗口、任务、鉴权、内存等 |
-| `page/core/` | `Page`、`Popup`、`Wind` 等基类与页面 ID 定义 |
+| `page/core/` | `Page`、`Popup`、`Wind` 等基类与页面 ID 定义；`ItemBase` / `ItemSwitcher` 容器子项切换封装 |
 | `page/view/` | 具体业务页面 |
 | `page/components/` | 可复用窗口组件：Logo、屏保、侧边栏、Toast、弹窗、键盘、童锁、遮罩等 |
 | `protocol/` | MCU 与按键通讯协议、协议 ID 及管理器 |
 | `data/` | 全局数据、历史数据、统计数据及结构定义 |
 | `app_common.h` | 应用通用头文件 |
+
+### 5.1 容器子项切换
+
+适用于「页面固定一个内容容器，由菜单/按键切换不同子项」的场景（如 `PageFactory`）：
+
+- `page/core/item_base.h`：子项基类 `ItemBase`，持有子项根视图，`callShow()` 负责挂载、`callHide()` 负责摘除；子类只需实现 `onShow()` / `onHide()`。
+- `page/core/item_switcher.h`：子项切换器模板 `ItemSwitcher<ItemT, Args...>`，提供静态注册、惰性创建、实例缓存与互斥显示（容器内始终只有一项）。
+
+接入步骤：
+
+```cpp
+// 1. 子项继承 ItemBase，并在构造时载入布局
+class MyItem : public ItemBase {
+public:
+    MyItem() : ItemBase("@layout/my_item") { }
+protected:
+    void onShow() override { /* 刷新数据 */ }
+};
+
+// 2. 宿主页面持有切换器
+using Switcher = ItemSwitcher<ItemBase>;
+Switcher mItems;
+mItems.init(contentView);   // 绑定内容容器
+mItems.show(itemId);        // 切换显示；0 表示仅隐藏
+
+// 3. 子项 .cc 末尾注册（宿主页面提供注册宏即可）
+static const bool __reg = HostPage::registerItem(itemId, [](ViewGroup*) {
+    return new MyItem();
+});
+```
+
+`Args...` 用于额外构建参数，例如 `ItemSwitcher<FactoryItem, PageFactory*>` 会在创建时把页面指针传给子项；容器则由切换器统一注入，子项无需自己保存。
 
 ---
 

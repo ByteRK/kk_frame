@@ -18,141 +18,46 @@
 #include "arg_utils.h"
 #include "brand_utils.h"
 
-#include <vector>
-
 PAGE_REGISTER(PAGE_FACTORY, PageFactory);
 
-/************************** 测试项注册 **************************/
-
-namespace {
-
-    /// @brief 测试项注册条目
-    struct ItemEntry {
-        int                             menuId{ 0 };        // 测试项标识
-        PageFactory::FactoryItemCreator creator{ nullptr }; // 构建函数
-    };
-
-    /// @brief 获取测试项注册表
-    std::vector<ItemEntry>& registry() {
-        static std::vector<ItemEntry> items;
-        return items;
-    }
-
-    /// @brief 按标识查找注册项
-    const ItemEntry* findEntry(int menuId) {
-        if (menuId == 0) return nullptr;
-        for (const auto& item : registry()) {
-            if (item.menuId == menuId) return &item;
-        }
-        return nullptr;
-    }
-
-} // namespace
-
-
 /// @brief 注册测试项
-/// @param menuId 测试项标识（取菜单按钮id，需唯一且非0）
-/// @param creator 子项构建函数
-/// @return true 注册成功
-/// @note 新增测试项：布局文件 -> 菜单中加按钮(可选) -> 子项.cc中注册
+/// @note 新增测试项：准备布局 -> 菜单加按钮（可选） -> 子项 .cc 中调用注册宏
 bool PageFactory::registerItem(int menuId, FactoryItemCreator creator) {
-    if (menuId == 0 || !creator) {
-        LOGE("factory item register failed, menuId=%d", menuId);
-        return false;
-    }
-    if (findEntry(menuId)) {
-        LOGE("factory item duplicated, menuId=%d", menuId);
-        return false;
-    }
-
-    ItemEntry entry;
-    entry.menuId = menuId;
-    entry.creator = creator;
-    registry().push_back(entry);
-    return true;
+    return FactorySwitcher::registerItem(menuId, creator);
 }
 
-/// @brief 是否已注册指定测试项
-/// @param menuId 测试项标识
 bool PageFactory::hasItem(int menuId) {
-    return findEntry(menuId) != nullptr;
+    return FactorySwitcher::hasItem(menuId);
 }
 
 /************************** 子项类 **************************/
 
-/// @brief 构造函数（载入布局并加入容器）
+/// @brief 构造（绑定容器并载入布局，不挂载）
 /// @param container 内容容器
 /// @param factory 工厂界面
-/// @param layout 布局资源路径
+/// @param layout 布局资源
 PageFactory::FactoryItem::FactoryItem(ViewGroup* container, PageFactory* factory,
     const std::string& layout) {
-    mContainer = container;
     mFactory = factory;
-    // 直接挂载到容器，由 inflate 生成与容器匹配的布局参数
-    mRootView = mFactory->mInflater->inflate(layout, mContainer, true);
+    // 先绑定容器，inflater 才会与容器上下文一致
+    setContainer(container);
+    mRootView = ItemBase::inflateItem(layout, false);
     FailFast(mRootView == nullptr, "inflate factory layout[%s] failed", layout.c_str());
 }
 
-/// @brief 析构函数
-/// @note 析构期间虚函数已退化，不能依赖子类 onHide，因此只做视图摘除与释放
-PageFactory::FactoryItem::~FactoryItem() {
-    detachView();
-    __delete(mRootView);
-}
-
-/// @brief 挂载并通知显示
-/// @note addView 会触发 onAttachedToWindow 清除 laid-out 标志，依赖 isLaidOut() 的组件
-///       （如 Switch 的 thumb 动画）需在 onShow 中自行 requestLayout 重建该状态
-void PageFactory::FactoryItem::callShow() {
-    if (mRootView == nullptr) return;
-
-    if (mContainer && mRootView->getParent() != mContainer) {
-        // 清除可能残留的动画，避免 mParent 未被清空导致 addView 抛异常
-        mRootView->clearAnimation();
-        mContainer->addView(mRootView, mRootView->getLayoutParams());
-    }
-
-    onShow();
-}
-
-/// @brief 通知隐藏并摘除
-void PageFactory::FactoryItem::callHide() {
-    onHide();
-    detachView();
-}
-
-/// @brief 按键回调
-/// @param evt 按键事件
-/// @return true 消费
 bool PageFactory::FactoryItem::onKey(KeyEvent& evt) {
     return false;
 }
 
-/// @brief 从容器摘除视图
-/// @note 不触发虚函数，供析构使用
-void PageFactory::FactoryItem::detachView() {
-    if (mRootView && mContainer && mRootView->getParent() == mContainer) {
-        mRootView->clearAnimation();
-        mContainer->removeView(mRootView);
-    }
-}
-
-/// @brief 动态载入子布局并挂载到指定容器
-/// @param layout 布局资源路径
-/// @param parent 目标容器
-/// @return 载入的根视图，失败返回 nullptr
-View* PageFactory::FactoryItem::inflateItem(const std::string& layout, ViewGroup* parent) {
-    if (parent == nullptr) return nullptr;
+View* PageFactory::FactoryItem::inflateSub(const std::string& layout, ViewGroup* parent) {
+    if (parent == nullptr || mFactory == nullptr) return nullptr;
     return mFactory->mInflater->inflate(layout, parent, true);
 }
 
-/// @brief 退出测试项
 void PageFactory::FactoryItem::exit() {
     mFactory->showMenu();
 }
 
-/// @brief 设置退出按钮
-/// @param id 
 void PageFactory::FactoryItem::setExitBtn(int id) {
     PBase::click(mRootView, id, [this](View&) {exit();});
 }
@@ -164,11 +69,7 @@ PageFactory::PageFactory() :PageBase("@layout/page_factory") {
 }
 
 PageFactory::~PageFactory() {
-    checkoutShow(FACTORY_MENU);
-    for (auto it = mFactoryItems.begin(); it != mFactoryItems.end(); ++it) {
-        delete it->second;
-    }
-    mFactoryItems.clear();
+    mSwitcher.clear();
 }
 
 int8_t PageFactory::getType() const {
@@ -179,6 +80,7 @@ void PageFactory::getView() {
     mMenuPage = __dc(ViewGroup, get(AppRid::factory_menu_page));
     mContent = __dc(ViewGroup, get(AppRid::factory_content));
     FailFast(mMenuPage == nullptr || mContent == nullptr, "factory layout view missing");
+    mSwitcher.init(mContent);
 }
 
 void PageFactory::setView() {
@@ -204,33 +106,27 @@ void PageFactory::onAttach() {
     } else {
         checkoutShow(FACTORY_MENU);
     }
-    // 侧边栏处理
     g_window->storeSidebarState();
     g_window->hideSidebar();
-    // 取消屏保计时，保证常亮
-    g_window->setScreenSave(false);
+    g_window->setScreenSave(false);   // 常亮，取消屏保计时
 }
 
 void PageFactory::onDetach() {
-    // 离开产测页时摘除当前测试项，避免其定时器/监听在后台继续运行
+    // 摘除当前测试项，避免其定时器/监听在后台继续运行
     checkoutShow(FACTORY_MENU);
-    // 恢复侧边栏状态
     g_window->restoreSidebarState();
-    // 恢复屏保计时
     g_window->setScreenSave(true);
 }
 
 bool PageFactory::onKey(KeyEvent & evt) {
-    return mCurItem && mCurItem->onKey(evt);
+    FactoryItem* item = mSwitcher.getCurrent();
+    return item && item->onKey(evt);
 }
 
-/// @brief 显示菜单项
 void PageFactory::showMenu() {
     checkoutShow(FACTORY_MENU);
 }
 
-/// @brief 菜单点击事件
-/// @param v 菜单按钮
 void PageFactory::onMenuClick(View& v) {
     const int id = v.getId();
     if (id == AppRid::exit) {
@@ -246,53 +142,12 @@ void PageFactory::onMenuClick(View& v) {
 }
 
 /// @brief 切换显示测试项
-/// @param menuId 
+/// @param menuId 测试项标识，FACTORY_MENU 表示仅隐藏当前项
 void PageFactory::checkoutShow(int menuId) {
-    if (menuId == mCurPage) return;
-
-    // 先摘除当前项，保证容器内始终只有一项
-    if (mCurItem) {
-        mCurItem->callHide();
-        mCurItem = nullptr;
-    }
-
-    // 构建目标项
-    FactoryItem* itemNew = nullptr;
-    if (menuId != FACTORY_MENU) {
-        itemNew = getFactoryItem(menuId);
-        if (itemNew == nullptr) {
-            // 构建失败，回落到菜单页
-            mMenuPage->setVisibility(View::VISIBLE);
-            mCurPage = FACTORY_MENU;
-            return;
-        }
-        itemNew->callShow();
-    }
+    mSwitcher.show(menuId, this);
 
     // 菜单页与测试项互斥显示
-    mMenuPage->setVisibility(itemNew ? View::GONE : View::VISIBLE);
-    mCurItem = itemNew;
-    mCurPage = menuId;
-}
-
-/// @brief 获取测试项
-/// @param menuId 菜单项 ID
-/// @return 测试项
-PageFactory::FactoryItem* PageFactory::getFactoryItem(int menuId) {
-    // 检查缓存
-    auto it = mFactoryItems.find(menuId);
-    if (it != mFactoryItems.end()) return it->second;
-
-    // 查找注册信息
-    const ItemEntry* entry = findEntry(menuId);
-    if (entry == nullptr) {
-        LOGE("factory item[%d] not registered", menuId);
-        return nullptr;
+    if (mMenuPage) {
+        mMenuPage->setVisibility(mSwitcher.isShown() ? View::GONE : View::VISIBLE);
     }
-
-    // 创建测试项
-    FactoryItem* item = entry->creator(mContent, this);
-    FailFast(item == nullptr, "create factory item[%d] failed", menuId);
-    if (item) mFactoryItems[menuId] = item;
-    return item;
 }

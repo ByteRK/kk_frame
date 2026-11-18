@@ -15,43 +15,33 @@
 #define __PAGE_FACTORY_H__
 
 #include "page.h"
+#include "item_base.h"
+#include "item_switcher.h"
 
 #include <functional>
-#include <map>
 #include <string>
 
 class PageFactory :public PageBase {
 public:
     /// @brief 子测试项基类
-    /// @note 布局由子类在构造时通过基类传入并自行持有所有权
-    /// @note 切换时由基类负责挂载/摘除，子类只关心业务回调
-    class FactoryItem {
+    /// @note 布局在构造时载入，挂载/摘除由 ItemSwitcher 统一驱动
+    class FactoryItem : public ItemBase {
     protected:
-        ViewGroup*     mContainer{ nullptr };  // 内容容器（由 PageFactory 提供）
-        View*          mRootView{ nullptr };   // 页面根视图（自身持有所有权）
         PageFactory*   mFactory{ nullptr };    // 所属工厂界面
 
     public:
         FactoryItem(ViewGroup* container, PageFactory* factory, const std::string& layout);
-        virtual ~FactoryItem();
-        void callShow();
-        void callHide();
         virtual bool onKey(KeyEvent& evt);
 
     protected:
-        virtual void onShow() { };   // 显示回调
-        virtual void onHide() { };   // 隐藏回调
-
         void  exit();
         void  setExitBtn(int id);
-        View* inflateItem(const std::string& layout, ViewGroup* parent);
-
-    private:
-        void detachView();
+        /// @brief 载入子布局并挂载到 parent（语义不同于 ItemBase::inflateItem）
+        View* inflateSub(const std::string& layout, ViewGroup* parent);
     };
 
-    // 子测试项构建函数
-    using FactoryItemCreator = std::function<FactoryItem*(ViewGroup*, PageFactory*)>;
+    using FactorySwitcher = ItemSwitcher<FactoryItem, PageFactory*>;  // 测试项切换器
+    using FactoryItemCreator = FactorySwitcher::Creator;              // 子测试项构建函数
 
 public:
     static const int FACTORY_MENU = 0;  // 菜单页标识（非资源id）
@@ -59,9 +49,7 @@ public:
 private:
     ViewGroup*      mMenuPage{ nullptr };       // 菜单页容器
     ViewGroup*      mContent{ nullptr };        // 测试项内容容器
-    int             mCurPage{ FACTORY_MENU };   // 当前显示的子页面标识
-    FactoryItem*    mCurItem{ nullptr };        // 当前显示的子项
-    std::map<int, FactoryItem*> mFactoryItems;  // 测试子项[menuId]，构建后常驻
+    FactorySwitcher mSwitcher;                  // 测试项切换器
 
 public:
     PageFactory();
@@ -84,7 +72,6 @@ public:
 private:
     void         onMenuClick(View& v);
     void         checkoutShow(int menuId);
-    FactoryItem* getFactoryItem(int menuId);
 };
 
 /// @brief 测试项注册宏，于子项的.cc文件末尾调用

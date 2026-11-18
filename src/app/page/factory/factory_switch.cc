@@ -103,7 +103,7 @@ View* FactorySwitch::getSwitch(SWITCH_TYPE type) {
 
     while (static_cast<int>(mSwitchBox->getChildCount()) <= static_cast<int>(type)) {
         // 未绑定前先隐藏，避免跳过某个序号时留下空白占位
-        View* item = inflateItem("@layout/page_factory_switch_item", mSwitchBox);
+        View* item = inflateSub("@layout/page_factory_switch_item", mSwitchBox);
         FailFast(item == nullptr, "FactorySwitch::getSwitch : inflate switch item failed");
         item->setVisibility(View::GONE);
     }
